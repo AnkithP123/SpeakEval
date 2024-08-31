@@ -19,10 +19,10 @@ dist-ssr
 .idea
 .DS_Store
 *.suo
-.json
+*.json
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 .vercel
-.config.js
+*.config.js
