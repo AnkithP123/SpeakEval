@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ProfileCard from './ProfileCard';
 
-function RoomPanel({ roomCode = '' }) {
+function RoomPanel({ roomCode = '2222' }) {
   const [participants, setParticipants] = useState([]);
 
   useEffect(() => {
