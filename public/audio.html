@@ -290,7 +290,28 @@
             recordingIcon.classList.add('hidden');
             transcriptionResult.classList.remove('hidden');
             transcriptionResult.textContent = 'Processing...';
-            await gradeAnswer(); // Proceed with transcription and grading
+            await sendAudio();
+            //await gradeAnswer(); // Proceed with transcription and grading
+        }
+
+        async function sendAudio() {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'answer.wav');
+
+            const response = await fetch('https://backend-8zsz.onrender.com/upload?code=123456&participant=Ankith', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to upload audio');
+            }
+
+            const data = await response.json();
+
+            console.log('Response:', data);
+
+
         }
 
         async function gradeAnswer() {  
