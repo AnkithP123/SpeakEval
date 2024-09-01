@@ -7,7 +7,7 @@ function RoomPanel({ roomCode = '383806' }) {
   useEffect(() => {
     const fetchParticipants = async () => {
       try {
-        console.log("Here: ", data);
+        console.log("Here: ");
         const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
         const data = await response.json();
         console.log("Here: ", data);
