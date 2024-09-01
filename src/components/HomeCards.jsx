@@ -15,6 +15,7 @@ function HomeCards() {
             <Link
               to="/create-room"
               className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
+              style={{'transition': 'background-color 0.6s'}}
             >
               Create
             </Link>
@@ -27,6 +28,7 @@ function HomeCards() {
             <Link
               to="/pv"
               className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
+              style={{'transition': 'background-color 0.6s'}}
             >
               Join
             </Link>
