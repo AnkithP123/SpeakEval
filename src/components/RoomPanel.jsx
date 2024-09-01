@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import ProfileCard from './ProfileCard';
 
-function RoomPanel({ roomCode = '383806' }) {
+function RoomPanel({ roomCode = '' }) {
   const [participants, setParticipants] = useState([]);
 
   useEffect(() => {
     const fetchParticipants = async () => {
       try {
-        console.log("Here: ");
+        console.log("Heres: ");
         const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
         const data = await response.json();
         console.log("Here: ", data);
-        setParticipants(data.members || []);
+        setParticipants(data.members);
       } catch (error) {
         console.error('Error fetching participants:', error);
       }
