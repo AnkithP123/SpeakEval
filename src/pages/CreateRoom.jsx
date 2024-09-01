@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import RoomPanel from '../components/RoomPanel';
 import { useNavigate } from 'react-router-dom';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
 
@@ -111,7 +112,7 @@ function CreateRoom({ initialUserId = '' }) {
                 placeholder="Enter Teacher Pin"
             />
             <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-        </div> : <>{roomCode}</>
+        </div> : <RoomPanel roomCode={roomCode}  />
     );
 }
 
