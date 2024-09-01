@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import ProfileCard from './ProfileCard';
 
-function RoomPanel({ roomCode = '2222' }) {
+function RoomPanel({ roomCode}) {
   const [participants, setParticipants] = useState([]);
 
   useEffect(() => {
     const fetchParticipants = async () => {
       try {
         console.log("Heres: ");
-        const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${123}`);
+        const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
         console.log("Here: ", response);
         const data = await response.json();
         setParticipants(data.members);
