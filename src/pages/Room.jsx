@@ -19,8 +19,8 @@ function Room() {
         return navigate('/join-room');
       }
       if(parsedData.code === 3){
-        toast.sucess("Exam has started");
-        return;
+        toast.success("Exam has started");
+        return navigate(`/audio.html?code=${roomCode}&participant=${name}`);
       }
       if(parsedData.code === 4){
         toast.error("Room dosent exist");

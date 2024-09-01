@@ -29,6 +29,7 @@ function RoomPanel({ roomCode }) {
     // Logic for starting the event or room
     const response = await fetch(`https://backend-8zsz.onrender.com/start_room?code=${roomCode}`);
     const data = await response.json();
+    console.log(data);
     if(data.code === 404){
       toast.error('Room not found');
       return navigate('/');
