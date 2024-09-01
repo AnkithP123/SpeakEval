@@ -9,8 +9,8 @@ function RoomPanel({ roomCode = '' }) {
       try {
         console.log("Heres: ");
         const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
+        console.log("Here: ", response);
         const data = await response.json();
-        console.log("Here: ", data);
         setParticipants(data.members);
       } catch (error) {
         console.error('Error fetching participants:', error);
