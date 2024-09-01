@@ -1,19 +1,27 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 
-function ProfileCard({ name }) {
-  const handleRemove = () => {
-    console.log(name);
+function ProfileCard({ name, code, onParticipantRemoved }) {
+  const handleRemove = async() => {
+    try {
+        const response = await fetch(`https://backend-8zsz.onrender.com/kick?code=${code}&participant=${name}`);
+        toast.success('Participant kicked');
+        onParticipantRemoved();
+      } catch (error) {
+        console.error('Error kicking participant:', error);
+        toast.error('Error kicking participant');
+      }
   };
 
   return (
-    <div className="relative w-52 h-24 rounded-lg bg-gray-200 flex items-center justify-center m-2">
+    <div className="relative flex items-center px-5 h-[45px] rounded-lg bg-gray-200 m-2">
+      <span className=" mr-[8px] text-[23px]">{name}</span>
       <button
-        className="absolute top-[-5px] right-2 text-xl font-bold text-red-500"
+        className="text-[25px] font-bold text-red-500 right-[5px] absolute "
         onClick={handleRemove}
       >
         ×
       </button>
-      {name}
     </div>
   );
 }

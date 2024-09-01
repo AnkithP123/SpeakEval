@@ -4,7 +4,7 @@ import HomeCards from '../components/HomeCards'
 
 function HomePage() {
   return (
-    <>
+    <div style={{fontFamily: "Montserrat"}}>
 
   {/* <!-- Hero --> */}
   
@@ -19,7 +19,7 @@ function HomePage() {
   <HomeCards/>
 
    
-  </>
+  </div>
   )
 }
 

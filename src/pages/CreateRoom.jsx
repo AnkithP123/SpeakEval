@@ -94,6 +94,7 @@ function CreateRoom({ initialUserId = '' }) {
         textAlign: 'center',
         textDecoration: 'none',
         display: 'inline-block',
+        fontFamily: 'Montserrat',
         fontSize: '16px',
         margin: '4px 2px',
         cursor: 'pointer',

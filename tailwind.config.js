@@ -5,7 +5,12 @@ content: [
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ["Roboto", "sans-serif"],
+        Montserrat: ["Montserrat", "sans-serif"],
+      },
+    },
   },
   plugins: [],
 }
