@@ -298,7 +298,23 @@
             const formData = new FormData();
             formData.append('audio', audioBlob, 'audio.wav');
 
-            const response = await fetch('https://backend-8zsz.onrender.com/upload?code=123456&participant=Ankith', {
+            const params = new URLSearchParams(window.location.search);
+
+            const code = params.get('code');
+
+            if (!code) {
+                transcriptionResult.textContent = 'No room code provided. Please provide a code in the URL.';
+                return;
+            }
+
+            const participant = params.get('participant');
+
+            if (!participant) {
+                transcriptionResult.textContent = 'No participant name provided. Please provide a participant name in the URL.';
+                return;
+            }
+
+            const response = await fetch(`https://backend-8zsz.onrender.com/upload?code=${code}&participant=${participant}`, {
                 method: 'POST',
                 body: formData
             });
@@ -310,6 +326,8 @@
             const data = await response.json();
 
             console.log('Response:', data);
+
+            transcriptionResult.textContent = 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
 
 
         }
