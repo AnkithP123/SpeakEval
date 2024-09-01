@@ -2,6 +2,8 @@ import React from 'react'
 import MainLayout from './layouts/MainLayout'
 import Maintainence from './pages/Maintainence'
 import HomePage from './pages/HomePage'
+import JoinRoom from './pages/JoinRoom'
+import Room from './pages/Room'
 import CreateRoom from './pages/CreateRoom'
 import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider} from 'react-router-dom'
 
@@ -13,6 +15,8 @@ function App() {
       <Route path="/" element={<MainLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/create-room" element={<CreateRoom />} />
+        <Route path="/join-room" element={<JoinRoom />} />
+        <Route path="/room/:roomCode" element={<Room />} />
         <Route path="*" element={<Maintainence />} />
       </Route>
       // <Route path="/" element={<MainLayout />}>
