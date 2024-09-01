@@ -8,7 +8,7 @@ function HomePage() {
 
   {/* <!-- Hero --> */}
   
-  <Hero title={["Examen Orales!", "Examen oral", "Oral Exam"]} subtitle="placeholder" />
+  <Hero title={["Examen Orales!", "Examen Oral", "Oral Exam"]} subtitle="placeholder" />
 
   {/* <!-- Developers and Employers --> */}
   
