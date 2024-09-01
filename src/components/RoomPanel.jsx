@@ -8,7 +8,7 @@ function RoomPanel({ roomCode = '2222' }) {
     const fetchParticipants = async () => {
       try {
         console.log("Heres: ");
-        const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
+        const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${123}`);
         console.log("Here: ", response);
         const data = await response.json();
         setParticipants(data.members);
