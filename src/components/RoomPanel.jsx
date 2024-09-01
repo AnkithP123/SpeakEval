@@ -21,7 +21,7 @@ function RoomPanel({ roomCode}) {
     const intervalId = setInterval(fetchParticipants, 5000);
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, []);
+  }, [ roomCode ]);
 
   return (
     <div className="flex flex-col items-center">
