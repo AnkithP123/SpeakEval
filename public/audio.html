@@ -327,6 +327,11 @@
 
             console.log('Response:', data);
 
+            if (data.error) {
+                transcriptionResult.textContent = data.error;
+                return;
+            }
+
             transcriptionResult.textContent = 'Uploaded to server successfully. Tentative transcription: ' + data.transcription.text;
 
 
