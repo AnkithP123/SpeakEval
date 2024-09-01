@@ -26,7 +26,7 @@ function JoinRoom() {
   };
 
   const handleNameChange = (e) => {
-    if (e.target.value.length <= 12) {
+    if (e.target.value.length <= 20) {
       setName(e.target.value);
     }
   };
@@ -48,7 +48,7 @@ function JoinRoom() {
             type="text"
             value={name}
             onChange={handleNameChange}
-            maxLength="12"
+            maxLength="20"
             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
             placeholder="Enter your name"
           />
