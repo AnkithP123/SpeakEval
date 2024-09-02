@@ -16,7 +16,8 @@ function TeacherPortalRoom() {
         const data2 = await responsev2.json();
         let obj = {members:[]};
         if(data2.error || data.error){  
-            return;
+            toast.error('Room not found');
+            return navigate('/');
         }
         for(let name of data.members){
             obj.members.push({name});
