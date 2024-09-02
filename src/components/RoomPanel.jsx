@@ -35,6 +35,8 @@ function RoomPanel({ roomCode }) {
       return navigate('/');
     }
     console.log('Start button clicked');
+    toast.success('Room started');
+    return navigate(`/teacher-portal/${roomCode}`);
   };
 
   return (
