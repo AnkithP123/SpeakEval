@@ -382,6 +382,9 @@
 
         }
 
+        sendStatus();
+        const statusInterval = setInterval(sendStatus, 1000);
+
         async function gradeAnswer() {  
             const base = 'c2stcHJvai13MXBJcU1iM1pZOU1HZC1hM3FUWl8yZXNibnFjdmlYMmFNMmVPLXFwT3lqWWU2LVRLNEpPdFpwemZ1VDNCbGJrRkpvRDR6RlRud3UwckhSLVMzUEduZTZPRFRLUnVPSDdMNFh1Q1pRTzZLN3RpMWFMRS1UcThDUWZ5WXdB';
             const apiKey = atob(base);
