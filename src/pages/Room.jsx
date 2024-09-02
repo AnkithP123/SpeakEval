@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 function Room() {
@@ -11,22 +11,21 @@ function Room() {
     const checkStatus = async () => {
       let res = await fetch(`https://backend-8zsz.onrender.com/check_status?code=${roomCode}&participant=${name}`);
       let parsedData = await res.json();
-      if(parsedData.code === 1){
+      if (parsedData.code === 1) {
         return;
       }
-      if(parsedData.code === 2){
+      if (parsedData.code === 2) {
         toast.error("You have been removed from the room");
         return navigate('/join-room');
       }
-      if(parsedData.code === 3){
+      if (parsedData.code === 3) {
         toast.success("Exam has started");
         return window.location = (`https://oral-examiner.vercel.app/audio.html?code=${roomCode}&participant=${name}`);
       }
-      if(parsedData.code === 4){
-        toast.error("Room dosent exist");
+      if (parsedData.code === 4) {
+        toast.error("Room doesn't exist");
         return navigate('/join-room');
       }
-
     }
 
     useEffect(() => {
@@ -34,13 +33,20 @@ function Room() {
       const intervalId = setInterval(checkStatus, 1000);
   
       return () => clearInterval(intervalId); // Cleanup interval on component unmount
-    }, [ roomCode ]);
-  
+    }, [roomCode]);
+
     return (
-      <div>
-        <h1>Welcome to Room {roomCode}</h1>
-        <p>Hello, {name}!</p>
+      <div className="flex flex-col items-center justify-center  text-center p-8" style={{fontFamily: "Montserrat"}}>
+        <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to Room {roomCode}</h1>
+        <p className="text-2xl text-gray-600 mb-8">Hello {name}, Please wait while the instructor starts the oral examination</p>
+        <div className="w-full max-w-xl  py-[30px]">
+          <div className="aspect-w-16 aspect-h-9">
+          <iframe width="640" height="360" className='rounded-[40px]' src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Rick Astley - Never Gonna Give You Up (Official Music Video)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            
+          </div>
+        </div>
       </div>
     );
-  }
-export default Room
+}
+
+export default Room;
