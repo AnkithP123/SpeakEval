@@ -1,18 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import ProfileCard from './ProfileCard';
+import { useNavigate, useParams } from 'react-router-dom';
+import ProfileCard from '../components/StatsCard';
 import { toast } from 'react-toastify';
 
-function TeacherPortalRoom({ roomCode }) {
-  const [participants, setParticipants] = useState([]);
+function TeacherPortalRoom() {
+  const [participants, setParticipants] = useState({members:[]});
   const navigate = useNavigate();
+    const { roomCode } = useParams();
 
   const fetchParticipants = async () => {
     try {
-      const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
-      const responsev2 = await fetch(`https://backend-8zsz.onrender.com/checkcompleted?code=${roomCode}`);
-      const data = await response.json();
-      setParticipants(data.members);
+        const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
+        const responsev2 = await fetch(`https://backend-8zsz.onrender.com/checkcompleted?code=${roomCode}`);
+        const data = await response.json();
+        const data2 = await responsev2.json();
+        let obj = {members:[]};
+        if(data2.error || data.error){  
+            return;
+        }
+        for(let name of data.members){
+            obj.members.push({name});
+        }
+        //check if people complted and add a complrted tag
+        for(let i = 0; i < data2.completedPartipants.length; i++){
+            const name = obj.members.findIndex(name => name.name === data2.completedPartipants[i]);
+            console.log(name + " " + data2.completedPartipants[i]);    
+            if(name === -1) continue;
+            obj.members[name].completed = true
+        }
+        console.log(obj);
+        setParticipants(obj);
     } catch (error) {
       console.error('Error fetching participants:', error);
       toast.error('Error fetching participants');
@@ -43,16 +60,8 @@ function TeacherPortalRoom({ roomCode }) {
       {/* Participant Count Box and Start Button */}
       <div className="absolute left-4 flex items-center space-x-4">
         <div className="bg-white text-black rounded-lg p-3 shadow-md">
-          Participants: {participants.length}
+          Participants: {participants.members.length}
         </div>
-      </div>
-      <div className="absolute right-4 flex items-center space-x-4">
-        <button
-          onClick={handleStart}
-          className="bg-red-500 text-white rounded-lg p-3 shadow-md hover:bg-red-600"
-        >
-          Start
-        </button>
       </div>
 
       <div className="flex items-center justify-center w-screen py-[20px]">
@@ -62,8 +71,8 @@ function TeacherPortalRoom({ roomCode }) {
       </div>
 
       <div className="flex flex-wrap justify-center">
-        {participants.map((participant, index) => (
-          <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} />
+        {participants.members.map((participant, index) => (
+          <ProfileCard key={index} name={participant} code={roomCode} />
         ))}
       </div>
     </div>
