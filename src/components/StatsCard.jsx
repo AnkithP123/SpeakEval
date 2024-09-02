@@ -3,16 +3,6 @@ import { toast } from 'react-toastify';
 import { FaDownload, FaPlay } from 'react-icons/fa';
 
 function ProfileCard({ name, code, onParticipantRemoved }) {
-  const handleRemove = async () => {
-    try {
-      const response = await fetch(`https://backend-8zsz.onrender.com/kick?code=${code}&participant=${name}`);
-      toast.success('Participant kicked');
-      onParticipantRemoved();
-    } catch (error) {
-      console.error('Error kicking participant:', error);
-      toast.error('Error kicking participant');
-    }
-  };
 
   const handlePlay = async () => {
     if(!name.completed)
