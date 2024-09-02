@@ -8,7 +8,7 @@ function HomePage() {
 
   {/* <!-- Hero --> */}
   
-  <Hero title={["Examen Orales!", "Examen Oral", "Oral Exam"]} subtitle="placeholder" />
+  <Hero title={["Welcome To SpeakEval", "Bienvenido a SpeakEval", "Bienvenue sur SpeakEval", "歡迎來到 SpeakEval", "SpeakEval へようこそ"]} subtitle="placeholder" />
 
   {/* <!-- Developers and Employers --> */}
   
