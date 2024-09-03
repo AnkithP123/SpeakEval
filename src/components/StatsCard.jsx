@@ -88,7 +88,7 @@ const convertOpusToWav = async (opusBlob) => {
 };
 
 return (
-  <div className="relative flex items-center px-5 h-[45px] rounded-lg bg-gray-200 m-2">
+  <div className="relative flex flex-col items-center px-5 h-[45px] rounded-lg bg-gray-200 m-2">
     <span className="mr-[8px] text-[23px]">{"" + name.name}</span>
     <div className="flex gap-[8px]">
       <button className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
@@ -104,6 +104,7 @@ return (
       </button>
     </div>
     <audio id={`audioPlayer-${name.name}`} />
+    <div className="mt-2">{data.text}</div>
   </div>
 );
 
