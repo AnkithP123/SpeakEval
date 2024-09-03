@@ -82,7 +82,7 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
   };
 
   return (
-    <div className="relative flex flex-col items-start px-5 h-auto max-w-[300px] rounded-lg bg-gray-200 m-2">
+    <div className={`relative flex flex-col items-start px-5 h-auto max-w-[300px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
       <div className="flex items-center w-full">
         <span className="mr-[8px] text-[23px] truncate">{name.name}</span>
         <div className="flex gap-[8px] ml-auto">
@@ -104,7 +104,6 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
       <audio id={`audioPlayer-${name.name}`} />
     </div>
   );
-  
 }
 
 export default ProfileCard;
