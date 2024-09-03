@@ -20,7 +20,7 @@ function Room() {
         }
         if (parsedData.code === 3) {
             toast.success("Exam has started");
-            return window.location = (`https://oral-examiner.vercel.app/audio.html?code=${roomCode}&participant=${name}`);
+            return window.location = (`https://speakeval.vercel.app/audio.html?code=${roomCode}&participant=${name}`);
         }
         if (parsedData.code === 4) {
             toast.error("Room doesn't exist");
