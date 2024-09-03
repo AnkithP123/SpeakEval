@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+import './AudioPlayer.css';
+
 const AudioPlayer = () => {
     const [playDisabled, setPlayDisabled] = useState(true);
     const [media, setMedia] = useState(null);
@@ -237,14 +239,15 @@ const AudioPlayer = () => {
     };
 
     return (
-        <div>
-            <h2>Oral Exam Assistant</h2>
-            <button onClick={handlePlayButtonClick} disabled={playDisabled}>Play</button>
-            <div>{transcriptionResult}</div>
-            <div>{detectedLanguage}</div>
-            <button onClick={handleCountdownClick}>Countdown</button>
-            <button onClick={handleRecordingIconClick}>Stop Recording</button>
-        </div>
+        <div class="container">
+        <h2>Oral Exam Assistant</h2>
+        <button id="playButton" class="play-button"></button>
+        <div id="playIndicator" class="play-indicator hidden">Playing...</div>
+        <div id="countdown" class="countdown hidden"></div>
+        <div id="recordingIcon" class="recording-icon hidden"><span></span></div>
+        <div id="transcriptionResult" class="transcription-result hidden"></div>
+        <div id="justification" class="justification hidden"></div>
+    </div>
     );
 };
 
