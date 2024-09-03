@@ -49,7 +49,7 @@ function HomeCards() {
           <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
             <h2 className="text-2xl font-bold">Configure Exams</h2>
             <p className="mt-4 mb-8 text-lg text-gray-800">
-              Create rubrics and question banks.
+              For teacher use. Create rubrics and question banks.
             </p>
             <Link
               to="/"
