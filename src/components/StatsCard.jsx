@@ -27,7 +27,6 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
         const audioUrl = URL.createObjectURL(audioBlob);
         const audioPlayer = document.getElementById(`audioPlayer-${name.name}`);
         audioPlayer.src = audioUrl;
-        audioPlayer.play();
       } else {
         console.error('Invalid audio data format');
       }
@@ -104,6 +103,9 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
             <FaPlay />
           </button>
         )}
+
+        <br/>
+        
         <div>{text}</div>
       </div>
       <audio id={`audioPlayer-${name.name}`} />
