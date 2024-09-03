@@ -31,7 +31,7 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
         console.error('Invalid audio data format');
       }
 
-      setText(data.text);
+      setText('Transcription: ' + data.text);
     } catch (error) {
       console.error('Error loading audio:', error);
     }
