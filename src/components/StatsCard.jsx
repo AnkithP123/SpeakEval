@@ -81,35 +81,29 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
     return opusBlob;
   };
 
-  return (
-    <div className="relative flex items-center px-5 h-[45px] rounded-lg bg-gray-200 m-2">
-      <span className="mr-[8px] text-[23px]">{"" + name.name}</span>
+return (
+  <div className="relative flex flex-col items-start px-5 h-auto rounded-lg bg-gray-200 m-2">
+    <div className="flex items-center w-full">
+      <span className="mr-[8px] text-[23px]">{name.name}</span>
       <div className="flex gap-[8px]">
-        {(
-          <>
-            <button
-              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
-              onClick={handleDownload}
-            >
-              <FaDownload />
-            </button>
-          </>
-        )}
-        {(
-          <button
-            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
-            onClick={handlePlay}
-          >
-            <FaPlay />
-          </button>
-        )}
-        
+        <button
+          className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
+          onClick={handleDownload}
+        >
+          <FaDownload />
+        </button>
+        <button
+          className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
+          onClick={handlePlay}
+        >
+          <FaPlay />
+        </button>
       </div>
-      <audio id={`audioPlayer-${name.name}`} />
-      <div className="mt-2">{text}</div>
     </div>
-    
-  );
+    <div className="mt-2 text-gray-800">{text}</div>
+    <audio id={`audioPlayer-${name.name}`} />
+  </div>
+);
 }
 
 export default ProfileCard;
