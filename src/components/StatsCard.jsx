@@ -38,6 +38,17 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
     }
   };
 
+  const handlePlay = async () => {
+    if (!name.completed)
+      return toast.error('Participant has not completed the task');
+    try {
+      const audioPlayer = document.getElementById(`audioPlayer-${name.name}`);
+      audioPlayer.play();
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
+  }
+
   const handleDownload = async () => {
     if (!name.completed)
       return toast.error('Participant has not completed the task');
