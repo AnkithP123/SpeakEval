@@ -26,8 +26,8 @@ function JoinRoom() {
 
     return (
         <div className="flex-grow flex items-center justify-center mt-[12%]">
-            <div className="w-[400px] h-[400px] bg-white rounded-lg shadow-lg flex flex-col items-center p-8">
-                <h2 className="text-3xl font-bold mb-8">Join Room</h2>
+            <div className="w-[400px] h-[300px] bg-white rounded-lg shadow-lg flex flex-col items-center p-8">
+                <h2 className="text-3xl font-bold mb-8">Grade Room</h2>
                 <div className="w-full mb-8">
                     <label className="block text-lg font-semibold mb-2" htmlFor="roomCode">Room Code</label>
                     <input
