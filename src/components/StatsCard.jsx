@@ -103,13 +103,12 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
             <FaPlay />
           </button>
         )}
-
-        <br/>
         
-        <div>{text}</div>
       </div>
       <audio id={`audioPlayer-${name.name}`} />
+      <div>{text}</div>
     </div>
+    
   );
 }
 
