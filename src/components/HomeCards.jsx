@@ -43,7 +43,7 @@ function HomeCards() {
               className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
               style={{'transition': 'background-color 0.3s'}}
             >
-              Enter
+              Grade
             </Link>
           </Card>
         </div>
