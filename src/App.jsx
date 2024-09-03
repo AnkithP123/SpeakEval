@@ -6,6 +6,7 @@ import JoinRoom from './pages/JoinRoom'
 import Room from './pages/Room'
 import CreateRoom from './pages/CreateRoom'
 import TeacherPortalRoom from './pages/TeacherPortalRoom'
+import TeacherPortalRouter from './pages/TeacherPortalRouter'
 import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider} from 'react-router-dom'
 
 
