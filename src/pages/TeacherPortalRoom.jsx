@@ -31,11 +31,14 @@ function TeacherPortalRoom() {
 
         const activeParticipants = data.members;
 
-        for (let i = 0; i < activeParticipants.length; i++) {
-            if (!obj.members.find((member) => member.name === activeParticipants[i])) {
-                obj.members.push({ name: activeParticipants[i], completed: false });
+        activeParticipants.forEach((participant) => {
+            if (!obj.members.find((member) => member.name === participant)) {
+                obj.members.push({
+                    name: participant,
+                    completed: false
+                });
             }
-        }
+        });
 
         console.log(obj);
         setParticipants(obj);
