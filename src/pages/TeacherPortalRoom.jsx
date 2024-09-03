@@ -10,25 +10,33 @@ function TeacherPortalRoom() {
 
   const fetchParticipants = async () => {
     try {
-        const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
         const responsev2 = await fetch(`https://backend-8zsz.onrender.com/checkcompleted?code=${roomCode}`);
-        const data = await response.json();
         const data2 = await responsev2.json();
         let obj = {members:[]};
-        if(data2.error || data.error){  
+        if(data2.error){  
             toast.error('Room not found');
             return navigate('/');
         }
-        for(let name of data.members){
-            obj.members.push({name});
+
+        const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
+
+        const data = await response.json();
+        
+        obj.members = data.members.map((member) => {
+            return {
+                name: member,
+                completed: data2.members.includes(member)
+            };
+        });
+
+        const activeParticipants = data.participants;
+
+        for (let i = 0; i < activeParticipants.length; i++) {
+            if (!obj.members.find((member) => member.name === activeParticipants[i])) {
+                obj.members.push({ name: activeParticipants[i], completed: false });
+            }
         }
-        //check if people complted and add a complrted tag
-        for(let i = 0; i < data2.completedPartipants.length; i++){
-            const name = obj.members.findIndex(name => name.name === data2.completedPartipants[i]);
-            console.log(name + " " + data2.completedPartipants[i]);    
-            if(name === -1) continue;
-            obj.members[name].completed = true
-        }
+
         console.log(obj);
         setParticipants(obj);
     } catch (error) {
@@ -67,7 +75,7 @@ function TeacherPortalRoom() {
 
       <div className="flex items-center justify-center w-screen py-[20px]">
         <span className="text-6xl font-bold">
-          Room Code: {roomCode}
+          Grading Room: {roomCode}
         </span>
       </div>
 
