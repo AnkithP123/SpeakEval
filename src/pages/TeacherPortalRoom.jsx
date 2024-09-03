@@ -22,10 +22,10 @@ function TeacherPortalRoom() {
 
         const data = await response.json();
         
-        obj.members = data.members.map((member) => {
+        obj.members = data2.members.map((member) => {
             return {
                 name: member,
-                completed: data2.members.includes(member)
+                completed: true
             };
         });
 
