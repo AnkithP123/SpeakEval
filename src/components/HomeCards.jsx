@@ -46,6 +46,19 @@ function HomeCards() {
               Grade
             </Link>
           </Card>
+          <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+            <h2 className="text-2xl font-bold">Configure Exams</h2>
+            <p className="mt-4 mb-8 text-lg text-gray-800">
+              Create rubrics and question banks.
+            </p>
+            <Link
+              to="/"
+              className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
+              style={{'transition': 'background-color 0.3s'}}
+            >
+              Configure
+            </Link>
+          </Card>
         </div>
       </div>
     </section>
