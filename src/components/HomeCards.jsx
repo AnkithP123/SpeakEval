@@ -6,8 +6,8 @@ function HomeCards() {
   return (
     <section className="py-8">
       <div className="container-xl lg:container m-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-lg">
-        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-lg justify-center">
+          <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
             <h2 className="text-2xl font-bold">Create Room</h2>
             <p className="mt-4 mb-8 text-lg text-gray-800">
               For Teacher Use. Create a room for your students.
