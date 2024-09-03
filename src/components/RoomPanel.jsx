@@ -36,7 +36,10 @@ function RoomPanel({ roomCode }) {
     }
     console.log('Start button clicked');
     toast.success('Room started');
-    return navigate(`/teacher-portal/${roomCode}`);
+    // replace the text that says Room Code: with a button to proceed to grading
+
+    document.querySelector('.text-6xl').innerHTML = `<a href="/teacher-portal/${roomCode}" class="text-6xl font-bold">Proceed to Grading</a>`;
+
   };
 
   return (
