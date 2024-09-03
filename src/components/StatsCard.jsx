@@ -106,7 +106,7 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
         
       </div>
       <audio id={`audioPlayer-${name.name}`} />
-      <div>{text}</div>
+      <div className="mt-2">{text}</div>
     </div>
     
   );
