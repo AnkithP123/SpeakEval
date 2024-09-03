@@ -34,15 +34,6 @@ function TeacherPortalRouter({ initialUserId = '' }) {
             if (parsedData.code === 200) {
                 console.log(parsedData);
                 setLoggedIn(true);
-                let time = Date.now();
-                time = time.toString().slice(-6);
-                res = await fetch(`https://backend-8zsz.onrender.com/create_room?code=${time}`);
-                parsedData = await res.json();
-                if(parsedData.code === 400){
-                    toast.error("Unable to generate room code"); 
-                    return navigate('/create-room');
-                }
-                setRoomCode(time);
             }
         } catch (err) {
             console.error("Error Loading Data", err);
