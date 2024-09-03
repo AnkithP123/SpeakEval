@@ -33,6 +33,19 @@ function HomeCards() {
               Join
             </Link>
           </Card>
+          <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+            <h2 className="text-2xl font-bold">Grading</h2>
+            <p className="mt-4 mb-8 text-lg text-gray-800">
+              For Teacher Use. Grade your students' submissions
+            </p>
+            <Link
+              to="/teacher-portal"
+              className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
+              style={{'transition': 'background-color 0.6s'}}
+            >
+              Enter
+            </Link>
+          </Card>
         </div>
       </div>
     </section>
