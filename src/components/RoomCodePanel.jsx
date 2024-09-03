@@ -10,13 +10,7 @@ function JoinRoom() {
         // Function to handle the Grade action
         if (roomCode) {
             console.log('Grading room with code:', roomCode);
-            let res = await fetch(`https://backend-8zsz.onrender.com/grade_room?code=${roomCode}`);
-            let parsedData = await res.json();
-            if (parsedData.error) {
-                toast.error(parsedData.message);
-                return navigate('/join-room');
-            }
-            navigate('/teacher-portal/code');
+            navigate('/teacher-portal/' + roomCode);
             // Add your grade logic here
         } else {
             console.log('Please fill out the room code field.');
