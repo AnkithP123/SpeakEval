@@ -29,7 +29,7 @@ function TeacherPortalRoom() {
             };
         });
 
-        const activeParticipants = data.participants;
+        const activeParticipants = data.members;
 
         for (let i = 0; i < activeParticipants.length; i++) {
             if (!obj.members.find((member) => member.name === activeParticipants[i])) {
