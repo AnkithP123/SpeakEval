@@ -38,17 +38,6 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
     }
   };
 
-  const handlePlay = async () => {
-    if (!name.completed)
-      return toast.error('Participant has not completed the task');
-    try {
-      const audioPlayer = document.getElementById(`audioPlayer-${name.name}`);
-      audioPlayer.play();
-    } catch (error) {
-      console.error('Error playing audio:', error);
-    }
-  }
-
   const handleDownload = async () => {
     if (!name.completed)
       return toast.error('Participant has not completed the task');
@@ -78,6 +67,17 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
     }
   };
 
+  const handlePlay = async () => {
+    if (!name.completed)
+      return toast.error('Participant has not completed the task');
+    try {
+      const audioPlayer = document.getElementById(`audioPlayer-${name.name}`);
+      audioPlayer.play();
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
+  }
+
   const convertOpusToWav = async (opusBlob) => {
     return opusBlob;
   };
@@ -86,9 +86,8 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
     <div className="relative flex items-center px-5 h-[45px] rounded-lg bg-gray-200 m-2">
       <span className="mr-[8px] text-[23px]">{"" + name.name}</span>
       <div className="flex gap-[8px]">
-        {completed && (
+        {(
           <>
-            <div>{text}</div>
             <button
               className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
               onClick={handleDownload}
@@ -97,7 +96,7 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
             </button>
           </>
         )}
-        {!completed && (
+        {(
           <button
             className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
             onClick={handlePlay}
@@ -105,6 +104,7 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
             <FaPlay />
           </button>
         )}
+        <div>{text}</div>
       </div>
       <audio id={`audioPlayer-${name.name}`} />
     </div>
