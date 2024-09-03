@@ -40,6 +40,8 @@ function TeacherPortalRoom() {
             }
         });
 
+        console.log('members', data2.members);
+
         console.log(obj);
         setParticipants(obj);
     } catch (error) {
