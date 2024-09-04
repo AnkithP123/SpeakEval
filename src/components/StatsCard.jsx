@@ -43,13 +43,18 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
       const data = await response.json();
       if (data.error) return toast.error(data.error);
 
-      const audioData = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
-      const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audioPlayer = document.getElementById(`audioPlayer-${name.name}`);
-      audioPlayer.src = audioUrl;
+        const audioData = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
+        const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
+        const wavBlob = await convertOpusToWav(audioBlob);
+        const downloadUrl = URL.createObjectURL(wavBlob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `${name.name}.wav`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-  } catch (error) {
+    } catch (error) {
       console.error('Error downloading audio:', error);
     }
   };
