@@ -74,29 +74,29 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
     return opusBlob;
   };
 
-return (
-  <div className="relative flex flex-col items-start px-5 h-auto rounded-lg bg-gray-200 m-2">
-    <div className="flex items-center w-full">
-      <span className="mr-[8px] text-[23px]">{name.name}</span>
-      <div className="flex gap-[8px]">
-        <button
-          className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
-          onClick={handleDownload}
-        >
-          <FaDownload />
-        </button>
-        <button
-          className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
-          onClick={handlePlay}
-        >
-          <FaPlay />
-        </button>
+  return (
+    <div className={`relative flex flex-col items-start px-5 h-auto max-w-[300px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
+      <div className="flex items-center w-full">
+        <span className="mr-[8px] text-[23px] truncate">{name.name}</span>
+        <div className="flex gap-[8px] ml-auto">
+          <button
+            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
+            onClick={handleDownload}
+          >
+            <FaDownload />
+          </button>
+          <button
+            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
+            onClick={handlePlay}
+          >
+            <FaPlay />
+          </button>
+        </div>
       </div>
+      <div className="mt-2 text-gray-800 break-words">{text}</div>
+      <audio id={`audioPlayer-${name.name}`} />
     </div>
-    <div className="mt-2 text-gray-800">{text}</div>
-    <audio id={`audioPlayer-${name.name}`} />
-  </div>
-);
+  );
 }
 
 export default ProfileCard;
