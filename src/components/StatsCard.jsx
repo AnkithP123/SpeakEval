@@ -49,7 +49,7 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
         const downloadUrl = URL.createObjectURL(wavBlob);
         const link = document.createElement('a');
         link.href = downloadUrl;
-        link.download = `${name.name}.wav`;
+        link.download = `${name.name}.webm`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
