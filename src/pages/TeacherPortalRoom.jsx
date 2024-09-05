@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 function TeacherPortalRoom({ roomCode }) {
   const [participants, setParticipants] = useState({members:[]});
   const navigate = useNavigate();
+  roomCode = roomCode || useParams().roomCode;
 
   const fetchParticipants = async () => {
     try {
@@ -13,7 +14,7 @@ function TeacherPortalRoom({ roomCode }) {
         const data2 = await responsev2.json();
         let obj = {members:[]};
         if(data2.error){  
-            toast.error('Room not found');
+            toast.error(data2.error);
             return navigate('/');
         }
 

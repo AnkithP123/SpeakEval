@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import RoomPanel from '../components/RoomPanel';
 import { useNavigate } from 'react-router-dom';
+import Card from '../components/Card';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
 
 function CreateRoom({ initialUserId = '' }) {
@@ -9,13 +10,19 @@ function CreateRoom({ initialUserId = '' }) {
     const [loggedIn, setLoggedIn] = useState(false);
     const [roomCode, setRoomCode] = useState('');
     const [shake, setShake] = useState(false); // State to trigger shake effect
+    const [configId, setConfigId] = useState(''); // State to store the config ID
+    const [isConfigEntered, setIsConfigEntered] = useState(false); // Track if config ID has been entered
     const navigate = useNavigate();
 
     const handleInputChange = async (e) => {
         const input = e.target.value;
         if (input.length <= 7) {
-            await setUserId(input.toUpperCase());
+            setUserId(input.toUpperCase());
         }
+    };
+
+    const handleConfigChange = (e) => {
+        setConfigId(e.target.value);
     };
 
     const checkUserId = async (userId) => {
@@ -34,15 +41,8 @@ function CreateRoom({ initialUserId = '' }) {
             if (parsedData.code === 200) {
                 console.log(parsedData);
                 setLoggedIn(true);
-                let time = Date.now();
-                time = time.toString().slice(-6);
-                res = await fetch(`https://backend-8zsz.onrender.com/create_room?code=${time}`);
-                parsedData = await res.json();
-                if(parsedData.code === 400){
-                    toast.error("Unable to generate room code"); 
-                    return navigate('/create-room');
-                }
-                setRoomCode(time);
+                // Move to the config page
+                setIsConfigEntered(false);
             }
         } catch (err) {
             console.error("Error Loading Data", err);
@@ -56,6 +56,24 @@ function CreateRoom({ initialUserId = '' }) {
 
     const handleGoClick = () => {
         checkUserId(userId);
+    };
+
+    const handleConfigSubmit = async () => {
+        let time = Date.now();
+        time = time.toString().slice(-6);
+        try {
+            const res = await fetch(`https://backend-8zsz.onrender.com/create_room?code=${time}&pin=${userId}&config=${configId}`);
+            const parsedData = await res.json();
+            if (parsedData.code === 400) {
+                toast.error("Unable to generate room code"); 
+                return navigate('/create-room');
+            }
+            setRoomCode(time);
+            setIsConfigEntered(true);
+        } catch (err) {
+            console.error("Error Creating Room", err);
+            toast.error("Error Creating Room");
+        }
     };
 
     const containerStyle = {
@@ -101,6 +119,33 @@ function CreateRoom({ initialUserId = '' }) {
         borderRadius: '5px',
     };
 
+    const configPageStyle = {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+    };
+
+    const configInputStyle = {
+        width: '300px',
+        padding: '10px',
+        border: '1px solid black',
+        borderRadius: '5px',
+        marginBottom: '10px',
+        fontSize: '16px',
+    };
+
+    const configButtonStyle = {
+        backgroundColor: 'black',
+        border: 'none',
+        color: 'white',
+        padding: '10px 20px',
+        borderRadius: '5px',
+        fontSize: '16px',
+        cursor: 'pointer',
+    };
+
     return (
         !loggedIn ? 
         <div style={containerStyle} className={shake ? 'shake' : ''}>
@@ -113,7 +158,18 @@ function CreateRoom({ initialUserId = '' }) {
                 placeholder="Enter Teacher Pin"
             />
             <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-        </div> : <RoomPanel roomCode={roomCode}  />
+        </div> : !isConfigEntered ? 
+        <div style={containerStyle}>
+            <input
+                type="text"
+                value={configId}
+                onChange={handleConfigChange}
+                style={inputStyle}
+                placeholder="Enter Config ID"
+            />
+            <button onClick={handleConfigSubmit} style={buttonStyle}>Create Room</button>
+        </div>
+        :<RoomPanel roomCode={roomCode} userId={userId} />
     );
 }
 

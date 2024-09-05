@@ -135,7 +135,11 @@ const Configure = () => {
 
             console.log(questions.length);
 
-            const res = await fetch(`https://backend-8zsz.onrender.com/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${JSON.stringify(categories)}`, {
+            const categoriesString = categories.map((category) => {
+                return `${category.name}: ${category.descriptions[0]}, ${category.descriptions[1]}, ${category.descriptions[2]}, ${category.descriptions[3]}, ${category.descriptions[4]}`;
+            }).join(';');
+
+            const res = await fetch(`https://backend-8zsz.onrender.com/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}`, {
                 method: 'POST',
                 body: formData,
             });
