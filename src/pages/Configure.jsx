@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import RoomCodePanel from '../components/RoomCodePanel.jsx';
+import RoomPanel from '../components/RoomPanel';
 import { useNavigate } from 'react-router-dom';
+import Card from '../components/Card';
+import { Link } from 'react-router-dom';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
-import GradingPanel from './TeacherPortalRoom.jsx';
 
-function TeacherPortalRouter({ initialUserId = '' }) {
+function Configure({ initialUserId = '' }) {
     const [userId, setUserId] = useState(initialUserId);
     const [loggedIn, setLoggedIn] = useState(false);
     const [roomCode, setRoomCode] = useState('');
@@ -35,6 +36,15 @@ function TeacherPortalRouter({ initialUserId = '' }) {
             if (parsedData.code === 200) {
                 console.log(parsedData);
                 setLoggedIn(true);
+                let time = Date.now();
+                time = time.toString().slice(-6);
+                res = await fetch(`https://backend-8zsz.onrender.com/create_room?code=${time}`);
+                parsedData = await res.json();
+                if(parsedData.code === 400){
+                    toast.error("Unable to generate room code"); 
+                    return navigate('/create-room');
+                }
+                setRoomCode(time);
             }
         } catch (err) {
             console.error("Error Loading Data", err);
@@ -105,8 +115,8 @@ function TeacherPortalRouter({ initialUserId = '' }) {
                 placeholder="Enter Teacher Pin"
             />
             <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-        </div> : <RoomCodePanel grading = {true}/>
+        </div> : <RoomPanel roomCode={roomCode}  />
     );
 }
 
-export default TeacherPortalRouter;
+export default Configure;

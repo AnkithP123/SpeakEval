@@ -1,0 +1,125 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+}
+
+.container {
+    width: 400px;
+    padding: 20px;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.play-button {
+    background-color: #28a745;
+    color: white;
+    padding: 15px;
+    font-size: 24px;
+    border: none;
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    position: relative;
+    transition: background-color 0.3s ease;
+}
+
+.play-button::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid white;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+}
+
+.countdown, .recording-icon, .transcription-result, .justification {
+    font-size: 18px;
+    margin-top: 10px;
+}
+
+.countdown {
+    color: red;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.countdown-error {
+    font-size: 12px;
+}
+
+.recording-icon {
+    background: radial-gradient(circle at bottom, #ff0000 0%, #b20000 70%);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin: 0 auto;
+    position: relative;
+    transition: background 0.3s ease;            
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+
+.recording-icon::before {
+    content: '';
+    background: radial-gradient(circle at bottom, #cc0000 0%, #ba0707 70%);
+    border-radius: 50%;
+    width: 75px;
+    height: 75px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+}
+
+.recording-icon span {
+    z-index: 1;
+    color: white;
+    font-size: 40px;
+}
+
+.play-indicator {
+    font-size: 18px;
+    color: #28a745;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.hidden {
+    display: none;
+}
+
+.disabled-icon {
+    background-color: grey;
+    cursor: default;
+}

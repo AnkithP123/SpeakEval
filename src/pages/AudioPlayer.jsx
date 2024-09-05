@@ -40,6 +40,7 @@ const AudioPlayer = () => {
     };
 
     const handlePlayButtonClick = () => {
+        console.log('hi');
         if (playDisabled) {
             setTranscriptionResult('Please allow microphone access to proceed.');
             return;
@@ -239,15 +240,15 @@ const AudioPlayer = () => {
     };
 
     return (
-        <div class="container">
-        <h2>Oral Exam Assistant</h2>
-        <button id="playButton" class="play-button"></button>
-        <div id="playIndicator" class="play-indicator hidden">Playing...</div>
-        <div id="countdown" class="countdown hidden"></div>
-        <div id="recordingIcon" class="recording-icon hidden"><span></span></div>
-        <div id="transcriptionResult" class="transcription-result hidden"></div>
-        <div id="justification" class="justification hidden"></div>
-    </div>
+        <div className="container">
+            <h2>Oral Exam Assistant</h2>
+            <button id="playButton" className="play-button" onClick={handlePlayButtonClick}></button>
+            <div id="playIndicator" className="play-indicator hidden">Playing...</div>
+            <div id="countdown" className="countdown hidden" onClick={handleCountdownClick}></div>
+            <div id="recordingIcon" className="recording-icon hidden" onClick={handleRecordingIconClick}><span></span></div>
+            <div id="transcriptionResult" className="transcription-result hidden"></div>
+            <div id="justification" className="justification hidden"></div>
+        </div>
     );
 };
 
