@@ -3,10 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import ProfileCard from '../components/StatsCard';
 import { toast } from 'react-toastify';
 
-function TeacherPortalRoom() {
+function TeacherPortalRoom({ roomCode }) {
   const [participants, setParticipants] = useState({members:[]});
   const navigate = useNavigate();
-    const { roomCode } = useParams();
 
   const fetchParticipants = async () => {
     try {
