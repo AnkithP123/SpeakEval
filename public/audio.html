@@ -201,33 +201,62 @@
         })
         .catch(error => console.error('Error accessing microphone:', error));
 
+        async function makeResponse() {
+            const params = new URLSearchParams(window.location.search);
 
-        const audio = new Audio('https://cdn.discordapp.com/attachments/1015856567830192168/1280598645988917258/question3.m4a?ex=66d9fb6d&is=66d8a9ed&hm=9732435845a91c4f944e8dd33d4b10dadc56849975c5ec113fb31ee43c98f33d&');
+            const code = params.get('code');
+            const participant = params.get('participant');
 
-        countdown.addEventListener('click', () => {
-            if (playDisabled) {
-                media = navigator.mediaDevices.getUserMedia({ audio: true });
-                media.then(() => {
-                    playDisabled = false;
-                    countdown.classList.add('hidden');
-                    countdown.classList.remove('countdown-error');
+            const response = await fetch(`https://backend-8zsz.onrender.com/receiveaudio?code=${code}&participant=${participant}`);
+
+            if (!response.ok) {
+                throw new Error('Failed to get audio');
+            }
+
+            const data = await response.json();
+
+
+            console.log('Response:', data);
+
+            const audioData = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
+            const blob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
+            const audioUrl = URL.createObjectURL(blob);
+
+
+            const audio = new Audio(audioUrl);
+
+            console.log("Audio: " + audio);
+
+            return audio;
+
+        }
+
+        makeResponse().then(audio => {
+            countdown.addEventListener('click', () => {
+                if (playDisabled) {
+                    media = navigator.mediaDevices.getUserMedia({ audio: true });
+                    media.then(() => {
+                        playDisabled = false;
+                        countdown.classList.add('hidden');
+                        countdown.classList.remove('countdown-error');
+                    });
+                }
+            });
+        
+            playButton.addEventListener('click', () => {
+                if (playDisabled) {
+                    countdown.classList.add('countdown-error');
+                    countdown.textContent = "Please allow microphone access to proceed. Click on this message to re-request access.";
+                    countdown.classList.remove('hidden');
+        
+                    return;
+                }
+                audio.play();
+                playIndicator.classList.remove('hidden');
+                audio.addEventListener('ended', () => {
+                    playIndicator.classList.add('hidden');
+                    startCountdown(5);
                 });
-            }
-        });
-
-        playButton.addEventListener('click', () => {
-            if (playDisabled) {
-                countdown.classList.add('countdown-error');
-                countdown.textContent = "Please allow microphone access to proceed. Click on this message to re-request access.";
-                countdown.classList.remove('hidden');
-
-                return;
-            }
-            audio.play();
-            playIndicator.classList.remove('hidden');
-            audio.addEventListener('ended', () => {
-                playIndicator.classList.add('hidden');
-                startCountdown(5);
             });
         });
 
@@ -306,6 +335,7 @@
                 transcriptionResult.textContent = 'No participant name provided. Please provide a participant name in the URL.';
                 return;
             }
+            
 
             const response = await fetch(`https://backend-8zsz.onrender.com/upload?code=${code}&participant=${participant}`, {
                 method: 'POST',
