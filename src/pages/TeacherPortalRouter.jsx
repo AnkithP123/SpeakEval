@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import RoomCodePanel from '../components/RoomCodePanel.jsx';
+import RoomCodePanel from '../components/RoomCodePanel';
 import { useNavigate } from 'react-router-dom';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
-import GradingPanel from './TeacherPortalRoom.jsx';
 
 function TeacherPortalRouter({ initialUserId = '' }) {
     const [userId, setUserId] = useState(initialUserId);
@@ -105,7 +104,7 @@ function TeacherPortalRouter({ initialUserId = '' }) {
                 placeholder="Enter Teacher Pin"
             />
             <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-        </div> : <RoomCodePanel grading = {true}/>
+        </div> : <RoomCodePanel />
     );
 }
 
