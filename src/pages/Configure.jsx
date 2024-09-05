@@ -14,6 +14,7 @@ const Configure = () => {
     const [categories, setCategories] = useState([{ name: '', descriptions: Array(5).fill('') }]); // State to store categories and their descriptions
     const navigate = useNavigate();
     const mediaRecorderRef = useRef(null);
+    const [id, setId] = useState('');
 
     const handleInputChange = async (e) => {
         const input = e.target.value;
@@ -119,6 +120,39 @@ const Configure = () => {
     const handleDeleteCategory = (index) => {
         setCategories((prevCategories) => prevCategories.filter((_, i) => i !== index));
     };
+
+    const handleRegisterConfig = async () => {
+        try {
+            const formData = new FormData();
+            for (let i = 0; i < questions.length; i++) {
+                // get audio blob
+                const res = await fetch(questions[i]);
+                const blob = await res.blob();
+                formData.append(`question${i}`, blob, `question${i}.webm`);
+            }
+
+            console.log(JSON.stringify(questions));
+
+            console.log(questions.length);
+
+            const res = await fetch(`https://backend-8zsz.onrender.com/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${JSON.stringify(categories)}`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (res.ok) {
+                toast.success("Configuration registered successfully");
+            } else {
+                toast.error("Failed to register configuration");
+            }
+        } catch (err) {
+            console.error("Error registering configuration", err);
+            toast.error("Error registering configuration");
+        }
+    };
+
+
+
 
     const containerStyle = {
         position: 'relative',
@@ -286,6 +320,23 @@ const Configure = () => {
         </div>
                             <button onClick={handleAddCategory} style={buttonStyle}>Add Category</button>
                         </Card>
+                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+    <h2 className="text-2xl font-bold mb-4 text-center">Register Configuration</h2>
+    <div className="flex justify-center">
+        <input
+            type="text"
+            value={id}
+            onChange={(e) => setId(e.target.value)}
+            style={rubricCellStyle}
+            maxLength={15}
+            placeholder="Enter ID"
+        />
+        <button onClick={handleRegisterConfig} style={buttonStyle}>
+            Register
+        </button>
+    </div>
+</Card>
+
                     </div>
                 </div>
             ) : (
