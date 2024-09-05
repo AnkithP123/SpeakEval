@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import ProfileCard from './ProfileCard';
 import { toast } from 'react-toastify';
 
-function RoomPanel({ roomCode }) {
+function RoomPanel({ roomCode, userId }) {
   const [participants, setParticipants] = useState([]);
   const navigate = useNavigate();
 
   const fetchParticipants = async () => {
     try {
-      const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
+      const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}&pin=${userId}`);
       const data = await response.json();
       if(data.error) {
         return;
@@ -31,7 +31,7 @@ function RoomPanel({ roomCode }) {
 
   const handleStart = async() => {
     // Logic for starting the event or room
-    const response = await fetch(`https://backend-8zsz.onrender.com/start_room?code=${roomCode}`);
+    const response = await fetch(`https://backend-8zsz.onrender.com/start_room?code=${roomCode}&pin=${userId}`);
     const data = await response.json();
     console.log(data);
     if(data.code === 404){
@@ -70,7 +70,7 @@ function RoomPanel({ roomCode }) {
 
       <div className="flex flex-wrap justify-center">
         {participants.map((participant, index) => (
-          <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} />
+          <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} userId={userId} />
         ))}
       </div>
     </div>

@@ -6,6 +6,8 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
   const [completed, setCompleted] = useState(false);
   const [text, setText] = useState('');
 
+  const [rubric, setRubric] = useState('');
+
   useEffect(() => {
     if (name.completed) {
       setCompleted(true);
@@ -74,6 +76,24 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
     return opusBlob;
   };
 
+  const readRubric = async () => {
+    try {
+      const response = await fetch(
+        `https://backend-8zsz.onrender.com/receiveaudio?code=${code}`
+      );
+      const data = await response.json();
+      
+      setRubric(data.rubric);
+
+
+      console.log(rubric)
+    } catch (error) {
+      console.error('Error loading rubric:', error);
+    }
+  }
+
+  readRubric();
+
   return (
     <div className={`relative flex flex-col items-start px-5 h-auto max-w-[300px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
       <div className="flex items-center w-full">
@@ -94,6 +114,14 @@ function ProfileCard({ name, code, onParticipantRemoved }) {
         </div>
       </div>
       <div className="mt-2 text-gray-800 break-words">{text}</div>
+      <div className="mt-2 text-gray-800 break-words">
+        {rubric.split(';').map((element, index) => (
+          <div key={index} className="flex items-center">
+            <span className="mr-2">{element.split(':')[0]}</span>
+            <input type="text" className="border border-gray-300 px-2 py-1 rounded w-20" placeholder="Points" style={{ marginLeft: 'auto' }} />
+          </div>
+        ))}
+      </div>
       <audio id={`audioPlayer-${name.name}`} />
     </div>
   );
