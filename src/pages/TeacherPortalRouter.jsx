@@ -104,7 +104,7 @@ function TeacherPortalRouter({ initialUserId = '' }) {
                 placeholder="Enter Teacher Pin"
             />
             <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-        </div> : <RoomCodePanel />
+        </div> : <RoomCodePanel/>
     );
 }
 
