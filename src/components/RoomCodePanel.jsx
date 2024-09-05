@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import GradingPanel from '../pages/TeacherPortalRoom.jsx';
 
 function JoinRoom() {
     const [roomCode, setRoomCode] = useState('');
     const navigate = useNavigate();
+    const [grading, setGrading] = useState(false);
 
     const handleGrade = async () => {
         // Function to handle the Grade action
         if (roomCode) {
             console.log('Grading room with code:', roomCode);
-            navigate('/teacher-portal/' + roomCode);
+            setGrading(true);
             // Add your grade logic here
         } else {
             console.log('Please fill out the room code field.');
@@ -25,6 +27,7 @@ function JoinRoom() {
     };
 
     return (
+        (grading && roomCode)? (
         <div className="flex-grow flex items-center justify-center mt-[12%]">
             <div className="w-[400px] h-[300px] bg-white rounded-lg shadow-lg flex flex-col items-center p-8">
                 <h2 className="text-3xl font-bold mb-8">Grade Room</h2>
@@ -47,7 +50,8 @@ function JoinRoom() {
                     Grade
                 </button>
             </div>
-        </div>
+        </div>)
+        : <GradingPanel roomCode={roomCode} />
     );
 }
 

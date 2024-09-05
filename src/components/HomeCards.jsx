@@ -52,7 +52,7 @@ function HomeCards() {
               For teacher use. Create rubrics and question banks.
             </p>
             <Link
-              to="/"
+              to="/configure"
               className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
               style={{'transition': 'background-color 0.3s'}}
             >

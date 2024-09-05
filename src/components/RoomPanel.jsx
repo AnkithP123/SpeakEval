@@ -11,8 +11,7 @@ function RoomPanel({ roomCode }) {
     try {
       const response = await fetch(`https://backend-8zsz.onrender.com/checkjoined?code=${roomCode}`);
       const data = await response.json();
-      if(data.error){
-        toast.error(data.error);
+      if(data.error) {
         return;
       }
       console.log(data);
