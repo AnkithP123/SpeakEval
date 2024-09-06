@@ -169,9 +169,9 @@ function ProfileCard({ name, code }) {
         {text}
       </div>
       <div className="mt-2 text-gray-800 break-words">
-        {rubric.split(';').map((element, index) => (
+        {rubric.split('|;;|').map((element, index) => (
           <div key={index} className="flex items-center">
-            <span className="mr-2">{element.split(':')[0]}</span>
+            <span className="mr-2">{element.split('|:::|')[0]}</span>
             <input type="text" className="border border-gray-300 px-2 py-1 rounded w-20" placeholder="Points" style={{ marginLeft: 'auto' }} />
           </div>
         ))}
