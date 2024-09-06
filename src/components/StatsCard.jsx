@@ -111,6 +111,8 @@ function ProfileCard({ name, code }) {
   }
 
   const handlePlayQuestion = async () => {
+    if (!name.completed)
+      return toast.error('Participant has not completed the task');
     try {
       const questionBase64 = await fetchQuestion();
       if (questionBase64) {
