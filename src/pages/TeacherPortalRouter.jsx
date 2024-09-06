@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import RoomCodePanel from '../components/RoomCodePanel';
 import { useNavigate } from 'react-router-dom';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
+import Card from '../components/Card';
 
 function TeacherPortalRouter({ initialUserId = '' }) {
     const [userId, setUserId] = useState(initialUserId);
     const [loggedIn, setLoggedIn] = useState(false);
     const [roomCode, setRoomCode] = useState('');
     const [shake, setShake] = useState(false); // State to trigger shake effect
+    const [rooms, setRooms] = useState([]); // State to store the rooms
     const navigate = useNavigate();
 
     const handleInputChange = async (e) => {
@@ -44,6 +46,23 @@ function TeacherPortalRouter({ initialUserId = '' }) {
         }
         console.log(parsedData);
     };
+
+    const fetchRooms = async () => {
+        try {
+            const res = await fetch(`https://backend-8zsz.onrender.com/getrooms?pin=${userId}`);
+            const data = await res.json();
+            setRooms(data);
+        } catch (err) {
+            console.error("Error Fetching Rooms", err);
+            toast.error("Error Fetching Rooms");
+        }
+    };
+
+    useEffect(() => {
+        if (loggedIn) {
+            fetchRooms();
+        }
+    }, [loggedIn]);
 
     const handleGoClick = () => {
         checkUserId(userId);
@@ -92,6 +111,14 @@ function TeacherPortalRouter({ initialUserId = '' }) {
         borderRadius: '5px',
     };
 
+    const configList = {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+    };
+
     return (
         !loggedIn ? 
         <div style={containerStyle} className={shake ? 'shake' : ''}>
@@ -104,8 +131,16 @@ function TeacherPortalRouter({ initialUserId = '' }) {
                 placeholder="Enter Teacher Pin"
             />
             <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-        </div> : <RoomCodePanel/>
+        </div> : <div>
+        
+
+        
+
+            <RoomCodePanel rooms={rooms}/>
+        </div>        
+
     );
+
 }
 
 export default TeacherPortalRouter;

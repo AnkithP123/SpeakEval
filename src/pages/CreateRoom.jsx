@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import RoomPanel from '../components/RoomPanel';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +12,27 @@ function CreateRoom({ initialUserId = '' }) {
     const [shake, setShake] = useState(false); // State to trigger shake effect
     const [configId, setConfigId] = useState(''); // State to store the config ID
     const [isConfigEntered, setIsConfigEntered] = useState(false); // Track if config ID has been entered
+    const [configs, setConfigs] = useState([]); // State to store the configs
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchConfigs = async () => {
+            console.log("Fetching Configs");
+            try {
+                const res = await fetch(`https://backend-8zsz.onrender.com/getconfigs?pin=${userId}`);
+                const parsedData = await res.json();
+                setConfigs(parsedData);
+                console.log(configs)
+            } catch (err) {
+                console.error("Error Loading Configs", err);
+                toast.error("Error Loading Configs");
+            }
+        };
+
+        if (loggedIn) {
+            fetchConfigs();
+        }
+    }, [loggedIn, userId]);
 
     const handleInputChange = async (e) => {
         const input = e.target.value;
@@ -146,6 +166,15 @@ function CreateRoom({ initialUserId = '' }) {
         cursor: 'pointer',
     };
 
+    const configList = {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: '20px',
+        color: 'black',
+    };
+
     return (
         !loggedIn ? 
         <div style={containerStyle} className={shake ? 'shake' : ''}>
@@ -168,6 +197,19 @@ function CreateRoom({ initialUserId = '' }) {
                 placeholder="Enter Config ID"
             />
             <button onClick={handleConfigSubmit} style={buttonStyle}>Create Room</button>
+            <div style={configList}>
+            <div>
+                <p>Your configurations:</p>
+            </div>
+            <div style = {configList}>
+                {configs.map((config) => (
+                    config.name ?
+                (
+                    <h2 className="text-2xl font-bold">{config.name}</h2>
+                ) : null
+                ))}
+            </div>
+            </div>
         </div>
         :<RoomPanel roomCode={roomCode} userId={userId} />
     );
