@@ -18,7 +18,7 @@ function App() {
       <Route path="/" element={<MainLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/create-room" element={<CreateRoom />} />
-        <Route path="/join-room" element={<JoinRoom />} />
+        <Route path="/join-room" element={<JoinRoom rooms={[]}/>} />
         <Route path="/room/:roomCode" element={<Room />} />
         <Route path="/teacher-portal" element={<TeacherPortalRouter />} />
         <Route path="/teacher-portal/:roomCode" element={<TeacherPortalRoom />} />
