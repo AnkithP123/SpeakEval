@@ -187,6 +187,8 @@
 
         let media;
 
+        let questionIndex;
+
         const playButton = document.getElementById('playButton');
         const countdown = document.getElementById('countdown');
         const recordingIcon = document.getElementById('recordingIcon');
@@ -226,6 +228,8 @@
             const audio = new Audio(audioUrl);
 
             console.log("Audio: " + audio);
+
+            questionIndex = data.questionIndex;
 
             return audio;
 
@@ -337,7 +341,7 @@
             }
             
 
-            const response = await fetch(`https://backend-8zsz.onrender.com/upload?code=${code}&participant=${participant}`, {
+            const response = await fetch(`https://backend-8zsz.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
                 method: 'POST',
                 body: formData
             });
