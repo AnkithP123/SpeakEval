@@ -85,7 +85,7 @@ function CreateRoom({ initialUserId = '' }) {
             const res = await fetch(`https://backend-8zsz.onrender.com/create_room?code=${time}&pin=${userId}&config=${configId}`);
             const parsedData = await res.json();
             if (parsedData.code === 400) {
-                toast.error("Unable to generate room code"); 
+                toast.error(parsedData.message); 
                 return navigate('/create-room');
             }
             setRoomCode(time);
@@ -202,11 +202,11 @@ function CreateRoom({ initialUserId = '' }) {
                 <p>Your configurations:</p>
             </div>
             <div style = {configList}>
-                {configs.map((config) => (
+                {configs.length === 0 ? <p className='text-2xl font-bold'>No configurations found. Go to the configurations page to make one.</p> : configs.map((config) => (
                     config.name ?
-                (
-                    <h2 className="text-2xl font-bold">{config.name}</h2>
-                ) : null
+                    (
+                        <h2 className="text-2xl font-bold">{config.name}</h2>
+                    ) : null
                 ))}
             </div>
             </div>
