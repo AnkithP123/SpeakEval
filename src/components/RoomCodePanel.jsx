@@ -49,7 +49,7 @@ function JoinRoom({ rooms }) {
                     >
                         Grade
                     </button>
-                    <h2 className="text-2xl font-bold mt-8">Available Rooms</h2>
+                    <h2 className="text-xl font-bold mt-8">Rooms, Newest to Oldest</h2>
                     {rooms ? rooms.map((room) => (
                         <h2>{room}</h2>
                     )) : null}
