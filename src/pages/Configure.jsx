@@ -325,21 +325,21 @@ const Configure = () => {
                             <button onClick={handleAddCategory} style={buttonStyle}>Add Category</button>
                         </Card>
                         <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-    <h2 className="text-2xl font-bold mb-4 text-center">Register Configuration</h2>
-    <div className="flex justify-center">
-        <input
-            type="text"
-            value={id}
-            onChange={(e) => setId(e.target.value)}
-            style={rubricCellStyle}
-            maxLength={15}
-            placeholder="Enter ID"
-        />
-        <button onClick={handleRegisterConfig} style={buttonStyle}>
-            Register
-        </button>
-    </div>
-</Card>
+                            <h2 className="text-2xl font-bold mb-4 text-center">Register Configuration</h2>
+                            <div className="flex justify-center">
+                                <input
+                                    type="text"
+                                    value={id}
+                                    onChange={(e) => setId(e.target.value)}
+                                    style={rubricCellStyle}
+                                    maxLength={15}
+                                    placeholder="Enter ID"
+                                />
+                                <button onClick={handleRegisterConfig} style={buttonStyle}>
+                                    Register
+                                </button>
+                            </div>
+                        </Card>
 
                     </div>
                 </div>
