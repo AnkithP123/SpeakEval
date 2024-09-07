@@ -315,7 +315,7 @@ const Configure = () => {
                             value={category.descriptions[point - 1]}
                             onChange={(e) => handleCategoryDescriptionChange(index, point - 1, e)}
                             style={rubricCellStyle}
-                            maxLength={50}
+                            maxLength={500}
                             placeholder={`Description ${point}`}
                         />
                     ))}
