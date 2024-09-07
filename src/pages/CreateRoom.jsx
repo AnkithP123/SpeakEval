@@ -80,7 +80,7 @@ function CreateRoom({ initialUserId = '' }) {
 
     const handleConfigSubmit = async () => {
         let time = Date.now();
-        time = time.toString().slice(-6);
+        time = time.toString().slice(-8);
         try {
             const res = await fetch(`https://backend-8zsz.onrender.com/create_room?code=${time}&pin=${userId}&config=${configId}`);
             const parsedData = await res.json();
