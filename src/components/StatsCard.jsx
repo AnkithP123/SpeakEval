@@ -8,8 +8,9 @@ function ProfileCard({ name, code }) {
   const [rubric, setRubric] = useState('');
   const [index, setIndex] = useState('');
   const [questionAudioUrl, setQuestionAudioUrl] = useState('');
-  const [grades, setGrades] = useState({}); // State for storing grades
-  const [totalScore, setTotalScore] = useState(0); // State for total score
+  const [grades, setGrades] = useState({});
+  const [totalScore, setTotalScore] = useState(0);
+  const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
 
   useEffect(() => {
     if (name.completed) {
@@ -30,14 +31,13 @@ function ProfileCard({ name, code }) {
       const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      // Set the URL for the answer audio player
       const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name.name}`);
       if (answerAudioPlayer) {
         answerAudioPlayer.src = audioUrl;
       }
 
       setText('Transcription: ' + data.text);
-      setIndex(data.index); // Update the index state variable
+      setIndex(data.index);
     } catch (error) {
       console.error('Error loading audio:', error);
     }
@@ -83,7 +83,7 @@ function ProfileCard({ name, code }) {
   }
 
   const convertOpusToWav = async (opusBlob) => {
-    return opusBlob; // This is a placeholder. Implement actual conversion if needed.
+    return opusBlob;
   };
 
   const readRubric = async () => {
@@ -106,7 +106,7 @@ function ProfileCard({ name, code }) {
       const data = await response.json();
       if (data.error) return toast.error(data.error);
 
-      return data.audio; // Ensure the returned data matches the expected format
+      return data.audio;
     } catch (error) {
       console.error('Error loading question audio:', error);
     }
@@ -122,7 +122,6 @@ function ProfileCard({ name, code }) {
         const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
         const audioUrl = URL.createObjectURL(audioBlob);
 
-        // Set the URL for the question audio player
         const questionAudioPlayer = document.getElementById(`questionAudioPlayer-${name.name}`);
         if (questionAudioPlayer) {
           questionAudioPlayer.src = audioUrl;
@@ -144,9 +143,8 @@ function ProfileCard({ name, code }) {
       const data = await response.json();
       
       const grades = data.grades;
-      setGrades(data.grades); // Store grades in state
+      setGrades(data.grades);
 
-      // Calculate total score
       let total = 0;
       Object.values(grades).forEach((grade) => {
         total += parseFloat(grade);
@@ -161,6 +159,32 @@ function ProfileCard({ name, code }) {
   useEffect(() => {
     readRubric();
   }, []);
+
+  const handleGradeChange = (index, value) => {
+    setGrades({ ...grades, [index]: value });
+
+    let total = 0;
+    Object.values({ ...grades, [index]: value }).forEach((grade) => {
+      total += parseFloat(grade);
+    });
+    setTotalScore(total);
+  };
+
+  const handleAiButtonClick = () => {
+
+    if (!name.completed)
+      return toast.error('Participant has not completed the task');
+
+    if (aiButtonDisabled) return;
+    
+    // Disable the AI button for 5 seconds
+    setAiButtonDisabled(true);
+    setTimeout(() => {
+      setAiButtonDisabled(false);
+    }, 5000);
+
+    handleGetGrade();
+  };
 
   return (
     <div className={`relative flex flex-col items-start px-5 h-auto max-w-[300px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
@@ -180,11 +204,12 @@ function ProfileCard({ name, code }) {
             <FaPlay />
           </button>
           <button
-          className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
-          onClick={handleGetGrade}
-        >
-          <FaRobot />
-        </button>
+            className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
+            onClick={handleAiButtonClick}
+            disabled={aiButtonDisabled}
+          >
+            <FaRobot />
+          </button>
         </div>
       </div>
       <div>
@@ -199,25 +224,21 @@ function ProfileCard({ name, code }) {
         {text}
       </div>
       <div className="mt-2 text-gray-800 break-words">
-          {rubric.split('|;;|').map((element, index) => {
-            const [rubricItem, rubricKey] = element.split('|:::|');
-            return (
-              <div key={index} className="flex items-center">
+        {rubric.split('|;;|').map((element, index) => {
+          const [rubricItem, rubricKey] = element.split('|:::|');
+          return (
+            <div key={index} className="flex items-center">
               <span className="mr-2">{rubricItem}</span>
-              <input 
-                type="text" 
-                className="border border-gray-300 px-2 py-1 rounded w-20" 
-                placeholder="Points" 
-                value={grades[rubricKey] || ''} // Use grades from state
-                onChange={(e) => setGrades({ ...grades, [rubricKey]: e.target.value })}
+              <input
+                type="text"
+                className="border border-gray-300 px-2 py-1 rounded w-20"
+                placeholder="Points"
+                value={grades[index] || ''}
+                onChange={(e) => handleGradeChange(index, e.target.value)}
               />
-              <span>{` `}</span> {/* Add a space here */}
-              { grades[index] != undefined ?
-                <span>{`AI: ${grades[index]}`}</span> : null
-              }
-              </div>
-            );
-          })}
+            </div>
+          );
+        })}
       </div>
       <div className="mt-2 text-gray-800">
         Total Score: {totalScore}
