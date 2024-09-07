@@ -12,6 +12,8 @@ const Configure = () => {
     const [questions, setQuestions] = useState([]); // State to store recorded questions
     const [recording, setRecording] = useState(false); // State to track recording status
     const [categories, setCategories] = useState([{ name: '', descriptions: Array(5).fill('') }]); // State to store categories and their descriptions
+    const [maxTime, setMaxTime] = useState(''); // State to store the max time limit
+    const [selectedLanguage, setSelectedLanguage] = useState(''); // State to store the selected language
     const navigate = useNavigate();
     const mediaRecorderRef = useRef(null);
     const [id, setId] = useState('');
@@ -115,7 +117,14 @@ const Configure = () => {
             return updatedCategories;
         });
     };
-    
+
+    const handleMaxTimeChange = (e) => {
+        setMaxTime(e.target.value);
+    };
+
+    const handleLanguageChange = (e) => {
+        setSelectedLanguage(e.target.value);
+    };
 
     const handleDeleteCategory = (index) => {
         setCategories((prevCategories) => prevCategories.filter((_, i) => i !== index));
@@ -136,10 +145,10 @@ const Configure = () => {
             console.log(questions.length);
 
             const categoriesString = categories.map((category) => {
-                return `${category.name}: ${category.descriptions[0]}, ${category.descriptions[1]}, ${category.descriptions[2]}, ${category.descriptions[3]}, ${category.descriptions[4]}`;
-            }).join(';');
+                return `${category.name}|:::| ${category.descriptions[0]}|,,| ${category.descriptions[1]}|,,| ${category.descriptions[2]}|,,| ${category.descriptions[3]}|,,| ${category.descriptions[4]}`;
+            }).join('|;;|');
 
-            const res = await fetch(`https://backend-8zsz.onrender.com/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}`, {
+            const res = await fetch(`https://backend-8zsz.onrender.com/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}&limit=${maxTime}&language=${selectedLanguage}`, {
                 method: 'POST',
                 body: formData,
             });
@@ -154,9 +163,6 @@ const Configure = () => {
             toast.error("Error registering configuration");
         }
     };
-
-
-
 
     const containerStyle = {
         position: 'relative',
@@ -258,6 +264,19 @@ const Configure = () => {
         border: '1px solid #E6F3FF',
     };
 
+    const dropdownStyle = {
+        width: '100%',
+        padding: '10px',
+        border: 'none',
+        color: 'black',
+        fontFamily: 'inherit',
+        fontSize: 'inherit',
+        textAlign: 'center',
+        outline: 'none',
+        letterSpacing: '2px',
+        marginTop: '10px',
+    };
+
     return (
         <div>
             {loggedIn ? (
@@ -286,60 +305,87 @@ const Configure = () => {
                         <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
                             <h2 className="text-2xl font-bold mb-4 text-center">Create Rubrics</h2>
                             <div style={rubricContainerStyle}>
-            <div style={rubricHeaderStyle}>Category</div>
-            {[5, 4, 3, 2, 1].map((point) => (
-                <div key={point} style={rubricCellStyle}>{point}</div>
-            ))}
-            {categories.map((category, index) => (
-                <React.Fragment key={index}>
-                    <div style={rubricCellStyle}>
-                    <span
-                            style={deleteButtonStyle}
-                            onClick={() => handleDeleteCategory(index)}
-                        >
-                            &#x2715;
-                        </span>
-                        <input
-                            type="text"
-                            value={category.name}
-                            onChange={(e) => handleCategoryNameChange(index, e)}
-                            maxLength={50}
-                            placeholder="Category Name"
-                        />
-                        
-                    </div>
-                    {[5, 4, 3, 2, 1].map((point) => (
-                        <input
-                            key={point}
-                            type="text"
-                            value={category.descriptions[point - 1]}
-                            onChange={(e) => handleCategoryDescriptionChange(index, point - 1, e)}
-                            style={rubricCellStyle}
-                            maxLength={50}
-                            placeholder={`Description ${point}`}
-                        />
-                    ))}
-                </React.Fragment>
-            ))}
-        </div>
+                                <div style={rubricHeaderStyle}>Category</div>
+                                {[5, 4, 3, 2, 1].map((point) => (
+                                    <div key={point} style={rubricCellStyle}>{point}</div>
+                                ))}
+                                {categories.map((category, index) => (
+                                    <React.Fragment key={index}>
+                                        <div style={rubricCellStyle}>
+                                            <span
+                                                style={deleteButtonStyle}
+                                                onClick={() => handleDeleteCategory(index)}
+                                            >
+                                                &#x2715;
+                                            </span>
+                                            <input
+                                                type="text"
+                                                value={category.name}
+                                                onChange={(e) => handleCategoryNameChange(index, e)}
+                                                maxLength={50}
+                                                placeholder="Category Name"
+                                            />
+
+                                        </div>
+                                        {[5, 4, 3, 2, 1].map((point) => (
+                                            <input
+                                                key={point}
+                                                type="text"
+                                                value={category.descriptions[point - 1]}
+                                                onChange={(e) => handleCategoryDescriptionChange(index, point - 1, e)}
+                                                style={rubricCellStyle}
+                                                maxLength={500}
+                                                placeholder={`Description ${point}`}
+                                            />
+                                        ))}
+                                    </React.Fragment>
+                                ))}
+                            </div>
                             <button onClick={handleAddCategory} style={buttonStyle}>Add Category</button>
                         </Card>
                         <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-    <h2 className="text-2xl font-bold mb-4 text-center">Register Configuration</h2>
-    <div className="flex justify-center">
-        <input
-            type="text"
-            value={id}
-            onChange={(e) => setId(e.target.value)}
-            style={rubricCellStyle}
-            maxLength={15}
-            placeholder="Enter ID"
-        />
-        <button onClick={handleRegisterConfig} style={buttonStyle}>
-            Register
-        </button>
-    </div>
-</Card>
+                            <h2 className="text-2xl font-bold mb-4 text-center">Additional Settings</h2>
+                            <div className="flex justify-center">
+                                <input
+                                    type="text"
+                                    value={maxTime}
+                                    onChange={handleMaxTimeChange}
+                                    style={{ ...rubricCellStyle, width: '20%' }}
+                                    maxLength={20}
+                                    placeholder="Answer Time Limit, in seconds"
+                                />
+                            </div>
+                            <div className="flex justify-center ">
+                                <select
+                                    value={selectedLanguage}
+                                    onChange={handleLanguageChange}
+                                    style={{ ...dropdownStyle, width: '20%' }}
+                                >
+                                    <option value="">Select Language</option>
+                                    <option value="English">English</option>
+                                    <option value="Spanish">Spanish</option>
+                                    <option value="French">French</option>
+                                    <option value="Chinese">Chinese</option>
+                                    <option value="Japanese">Japanese</option>
+                                </select>
+                            </div>
+                        </Card>
+                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+                            <h2 className="text-2xl font-bold mb-4 text-center">Register Configuration</h2>
+                            <div className="flex justify-center">
+                                <input
+                                    type="text"
+                                    value={id}
+                                    onChange={(e) => setId(e.target.value)}
+                                    style={rubricCellStyle}
+                                    maxLength={15}
+                                    placeholder="Enter ID"
+                                />
+                                <button onClick={handleRegisterConfig} style={buttonStyle}>
+                                    Register
+                                </button>
+                            </div>
+                        </Card>
 
                     </div>
                 </div>
