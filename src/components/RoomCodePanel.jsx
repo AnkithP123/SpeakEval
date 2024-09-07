@@ -38,7 +38,7 @@ function JoinRoom({ rooms }) {
                             type="text"
                             value={roomCode}
                             onChange={handleRoomCodeChange}
-                            maxLength="6"
+                            maxLength="8"
                             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                             placeholder="Enter room code"
                         />
