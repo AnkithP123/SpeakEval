@@ -172,10 +172,12 @@ function ProfileCard({ name, code }) {
 
   const handleAiButtonClick = () => {
 
+    console.log('CLICKED');
+
     if (!name.completed)
       return toast.error('Participant has not completed the task');
 
-    if (aiButtonDisabled) return;
+    if (aiButtonDisabled) return toast.error('AI grading for each member goes on cooldown for 5 seconds after each use.');
     
     // Disable the AI button for 5 seconds
     setAiButtonDisabled(true);
@@ -206,7 +208,6 @@ function ProfileCard({ name, code }) {
           <button
             className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
             onClick={handleAiButtonClick}
-            disabled={aiButtonDisabled}
           >
             <FaRobot />
           </button>
