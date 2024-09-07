@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FaDownload, FaPlay } from 'react-icons/fa';
+import { FaDownload, FaPlay, FaRobot } from 'react-icons/fa';
 
 function ProfileCard({ name, code }) {
   const [completed, setCompleted] = useState(false);
@@ -8,6 +8,8 @@ function ProfileCard({ name, code }) {
   const [rubric, setRubric] = useState('');
   const [index, setIndex] = useState('');
   const [questionAudioUrl, setQuestionAudioUrl] = useState('');
+  const [grades, setGrades] = useState({}); // State for storing grades
+  const [totalScore, setTotalScore] = useState(0); // State for total score
 
   useEffect(() => {
     if (name.completed) {
@@ -134,6 +136,28 @@ function ProfileCard({ name, code }) {
     }
   }
 
+  const handleGetGrade = async () => {
+    try {
+      const response = await fetch(
+        `https://backend-8zsz.onrender.com/getgrade?transcription=${text}&rubric=${rubric}&code=${code}&index=${index}`
+      );
+      const data = await response.json();
+      
+      const grades = data.grades;
+      setGrades(data.grades); // Store grades in state
+
+      // Calculate total score
+      let total = 0;
+      Object.values(grades).forEach((grade) => {
+        total += parseFloat(grade);
+      });
+      setTotalScore(total);
+
+    } catch (error) {
+      console.error('Error getting grade:', error);
+    }
+  }
+
   useEffect(() => {
     readRubric();
   }, []);
@@ -155,6 +179,12 @@ function ProfileCard({ name, code }) {
           >
             <FaPlay />
           </button>
+          <button
+          className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
+          onClick={handleGetGrade}
+        >
+          <FaRobot />
+        </button>
         </div>
       </div>
       <div>
@@ -169,12 +199,28 @@ function ProfileCard({ name, code }) {
         {text}
       </div>
       <div className="mt-2 text-gray-800 break-words">
-        {rubric.split('|;;|').map((element, index) => (
-          <div key={index} className="flex items-center">
-            <span className="mr-2">{element.split('|:::|')[0]}</span>
-            <input type="text" className="border border-gray-300 px-2 py-1 rounded w-20" placeholder="Points" style={{ marginLeft: 'auto' }} />
-          </div>
-        ))}
+          {rubric.split('|;;|').map((element, index) => {
+            const [rubricItem, rubricKey] = element.split('|:::|');
+            return (
+              <div key={index} className="flex items-center">
+              <span className="mr-2">{rubricItem}</span>
+              <input 
+                type="text" 
+                className="border border-gray-300 px-2 py-1 rounded w-20" 
+                placeholder="Points" 
+                value={grades[rubricKey] || ''} // Use grades from state
+                onChange={(e) => setGrades({ ...grades, [rubricKey]: e.target.value })}
+              />
+              <span>{` `}</span> {/* Add a space here */}
+              { grades[index] != undefined ?
+                <span>{`AI: ${grades[index]}`}</span> : null
+              }
+              </div>
+            );
+          })}
+      </div>
+      <div className="mt-2 text-gray-800">
+        Total Score: {totalScore}
       </div>
       <audio id={`answerAudioPlayer-${name.name}`} />
       <audio id={`questionAudioPlayer-${name.name}`} />
