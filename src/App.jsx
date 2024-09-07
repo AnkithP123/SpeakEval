@@ -21,7 +21,6 @@ function App() {
         <Route path="/join-room" element={<JoinRoom rooms={[]}/>} />
         <Route path="/room/:roomCode" element={<Room />} />
         <Route path="/teacher-portal" element={<TeacherPortalRouter />} />
-        <Route path="/teacher-portal/:roomCode" element={<TeacherPortalRoom />} />
         <Route path="/configure" element={<Configure />} />
         <Route path="*" element={<Maintainence />} />
       </Route>
