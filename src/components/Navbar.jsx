@@ -11,7 +11,7 @@ function Navbar() {
             {/* <!-- Logo --> */}
             <NavLink className="flex flex-shrink-0 items-center mr-4" to="/">
               <img
-                className="h-[70px] w-[70px]"
+                className="h-[70px] w-[70px] ml-[-30px]"
                 src='public/logo.png'
                 alt="Oral Examiner"
               />
