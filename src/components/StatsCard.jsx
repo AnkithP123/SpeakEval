@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FaDownload, FaPlay, FaStop, FaRobot } from 'react-icons/fa';
+import { FaDownload, FaPlay, FaPause, FaRobot } from 'react-icons/fa';
 
 function ProfileCard({ name, code }) {
   const [completed, setCompleted] = useState(false);
@@ -213,7 +213,7 @@ function ProfileCard({ name, code }) {
           className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
           onClick={handlePlay}
         >
-          {isPlaying ? <FaStop /> : <FaPlay />} {/* Render stop button if audio is playing */}
+          {isPlaying ? <FaPause /> : <FaPlay />} {/* Render stop button if audio is playing */}
         </button>
         <button
           className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
