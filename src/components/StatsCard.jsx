@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FaDownload, FaPlay, FaRobot } from 'react-icons/fa';
+import { FaDownload, FaPlay, FaStop, FaRobot } from 'react-icons/fa';
 
 function ProfileCard({ name, code }) {
   const [completed, setCompleted] = useState(false);
@@ -11,6 +11,7 @@ function ProfileCard({ name, code }) {
   const [grades, setGrades] = useState({});
   const [totalScore, setTotalScore] = useState(0);
   const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false); // New state variable for audio playback
 
   useEffect(() => {
     if (name.completed) {
@@ -75,13 +76,22 @@ function ProfileCard({ name, code }) {
     try {
       const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name.name}`);
       if (answerAudioPlayer) {
-        answerAudioPlayer.play();
+        if (isPlaying) {
+          answerAudioPlayer.pause(); // Pause the audio
+          setIsPlaying(false); // Update the playback status
+        } else {
+          answerAudioPlayer.play(); // Play the audio
+          setIsPlaying(true); // Update the playback status
+          answerAudioPlayer.addEventListener('ended', () => {
+            setIsPlaying(false); // Reset the state when the audio finishes
+          });  
+        }
       }
     } catch (error) {
       console.error('Error playing answer audio:', error);
     }
   }
-
+  
   const convertOpusToWav = async (opusBlob) => {
     return opusBlob;
   };
@@ -189,30 +199,30 @@ function ProfileCard({ name, code }) {
   };
 
   return (
-    <div className={`relative flex flex-col items-start px-5 h-auto max-w-[300px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
-      <div className="flex items-center w-full">
-        <span className="mr-[8px] text-[23px] truncate">{name.name}</span>
-        <div className="flex gap-[8px] ml-auto">
-          <button
-            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
-            onClick={handleDownload}
-          >
-            <FaDownload />
-          </button>
-          <button
-            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
-            onClick={handlePlay}
-          >
-            <FaPlay />
-          </button>
-          <button
-            className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
-            onClick={handleAiButtonClick}
-          >
-            <FaRobot />
-          </button>
-        </div>
+    <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
+    <div className="flex items-center w-full">
+      <span className="mr-[8px] text-[23px] truncate">{name.name}</span>
+      <div className="flex gap-[8px] ml-auto">
+        <button
+          className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
+          onClick={handleDownload}
+        >
+          <FaDownload />
+        </button>
+        <button
+          className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
+          onClick={handlePlay}
+        >
+          {isPlaying ? <FaStop /> : <FaPlay />} {/* Render stop button if audio is playing */}
+        </button>
+        <button
+          className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
+          onClick={handleAiButtonClick}
+        >
+          <FaRobot />
+        </button>
       </div>
+    </div>
       <div>
         <button
           className="p-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600"
