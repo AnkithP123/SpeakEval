@@ -12,7 +12,7 @@ function Navbar() {
             <NavLink className="flex flex-shrink-0 items-center mr-4" to="/">
               <img
                 className="h-[70px] w-[70px]"
-                src='https://github.com/Dev-Zenos/Logos/blob/main/OELogo.png?raw=true'
+                src='public/logo.png'
                 alt="Oral Examiner"
               />
               <span className="hidden md:block text-[#2c3033] text-[50px] font-bold ml-[-10px]"
