@@ -15,7 +15,7 @@ function Navbar() {
                 src='public/logo.png'
                 alt="Oral Examiner"
               />
-              <span className="hidden md:block text-[#2c3033] text-[50px] font-bold ml-[-10px]"
+              <span className="hidden md:block text-[#1b2932] text-[50px] font-bold ml-[-10px]"
                 style={{fontFamily: "Montserrat"}}
               >
                 peakEval
