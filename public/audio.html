@@ -428,7 +428,8 @@
                         break;
                     case 6:
                         transcriptionResult.classList.remove('hidden');
-                        if (transcriptionResult === '') transcriptionResult.textContent = 'Reaching time limit. Please finish your response in the next 5 seconds. ';
+                        if ((!transcriptionResult || !transcriptionResult.textContent || transcriptionResult.textContent == '') || (!(transcriptionResult.textContent == 'Processing...') && !(transcriptionResult.textContent == 'Uploaded to server successfully.')))
+                        transcriptionResult.textContent = 'Reaching time limit. Please finish your response in the next 5 seconds. ';
                         break;
                     default:
                         window.location.href = 'join-room';
