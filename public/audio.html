@@ -331,7 +331,7 @@
             async function handleRecordingStop() {
                 recordingIcon.classList.add('hidden');
                 transcriptionResult.classList.remove('hidden');
-                if (transcriptionResult.textContent == '') transcriptionResult.textContent = 'Processing...';
+                if (transcriptionResult.textContent !== 'You reached the time limit and your audio was stopped and uploaded automatically. ') transcriptionResult.textContent = 'Processing...';
                 await sendAudio();
                 //await gradeAnswer(); // Proceed with transcription and grading
             }
