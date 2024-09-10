@@ -13,7 +13,7 @@ function Navbar() {
               <img
                 className="h-[70px] w-[70px] ml-[-30px]"
                 src='logo.png'
-                alt="Oral Examiner"
+                alt="SpeakEval Logo"
               />
               <span className="hidden md:block text-[#1b2932] text-[50px] font-bold ml-[-10px]"
                 style={{fontFamily: "Montserrat"}}
