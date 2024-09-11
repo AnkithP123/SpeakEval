@@ -396,7 +396,7 @@ const Configure = () => {
                         value={userId}
                         onChange={handleInputChange}
                         style={inputStyle}
-                        maxLength={7}
+                        maxLength={30}
                         placeholder="Enter Teacher Pin"
                     />
                     <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
