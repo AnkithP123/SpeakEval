@@ -9,8 +9,7 @@ function UserIdDisplay({ initialUserId = '' }) {
 
     const handleInputChange = async(e) => {
         const input = e.target.value;
-        if (input.length <= 7) {
-        }
+        setUserId(input.toUpperCase());
     };
 
     const checkUserId = async(userId) =>{
@@ -86,7 +85,7 @@ function UserIdDisplay({ initialUserId = '' }) {
                 value={userId}
                 onChange={handleInputChange}
                 style={inputStyle}
-                maxLength={7}
+                maxLength={30}
                 placeholder="Enter User ID"
             />
             <button onClick={handleGoClick} style={buttonStyle}>Search</button>
