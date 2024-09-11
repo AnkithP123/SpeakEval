@@ -36,9 +36,7 @@ function CreateRoom({ initialUserId = '' }) {
 
     const handleInputChange = async (e) => {
         const input = e.target.value;
-        if (input.length <= 7) {
-            setUserId(input.toUpperCase());
-        }
+        setUserId(input.toUpperCase());
     };
 
     const handleConfigChange = (e) => {

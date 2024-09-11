@@ -15,9 +15,7 @@ function TeacherPortalRouter({ initialUserId = '' }) {
 
     const handleInputChange = async (e) => {
         const input = e.target.value;
-        if (input.length <= 7) {
-            await setUserId(input.toUpperCase());
-        }
+        await setUserId(input.toUpperCase());
     };
 
     const checkUserId = async (userId) => {
