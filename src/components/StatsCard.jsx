@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { FaDownload, FaPlay, FaPause, FaRobot } from 'react-icons/fa';
 
-function ProfileCard({ name, code }) {
+function ProfileCard({ name, code, onGradeUpdate }) {
   const [completed, setCompleted] = useState(false);
   const [text, setText] = useState('');
   const [rubric, setRubric] = useState('');
@@ -43,6 +43,7 @@ function ProfileCard({ name, code }) {
       console.error('Error loading audio:', error);
     }
   };
+  
 
   const handleDownload = async () => {
     if (!name.completed)
@@ -161,6 +162,10 @@ function ProfileCard({ name, code }) {
       });
       setTotalScore(total);
 
+      onGradeUpdate(name.name, grades, total, rubric.split('|;;|').map((element) => {
+        return element.split('|:::|')[0];
+      }));
+
     } catch (error) {
       console.error('Error getting grade:', error);
     }
@@ -171,13 +176,24 @@ function ProfileCard({ name, code }) {
   }, []);
 
   const handleGradeChange = (index, value) => {
-    setGrades({ ...grades, [index]: value });
+    const updatedGrades = { ...grades, [index]: value };
 
     let total = 0;
-    Object.values({ ...grades, [index]: value }).forEach((grade) => {
+    Object.values(updatedGrades).forEach((grade) => {
       total += parseFloat(grade);
     });
     setTotalScore(total);
+
+    setGrades(updatedGrades);
+    
+    // Pass the grades and total score to the parent component
+    console.log('Updated grades:', updatedGrades);
+    let categories = rubric.split('|;;|').map((element) => {
+      return element.split('|:::|')[0];
+    });
+    
+    onGradeUpdate(name.name, updatedGrades, total, categories);
+
   };
 
   const handleAiButtonClick = () => {
