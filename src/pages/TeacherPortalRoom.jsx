@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ProfileCard from '../components/StatsCard';
 import { toast } from 'react-toastify';
-import { jsPDF } from 'jspdf';
+import { jsPDF } from '/jspdf';
 
 
 function TeacherPortalRoom({ roomCode }) {
