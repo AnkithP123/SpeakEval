@@ -162,9 +162,11 @@ function ProfileCard({ name, code, onGradeUpdate }) {
       });
       setTotalScore(total);
 
-      onGradeUpdate(name.name, grades, total, rubric.split('|;;|').map((element) => {
+      let categories = rubric.split('|;;|').map((element) => {
         return element.split('|:::|')[0];
-      }));
+      });
+
+      onGradeUpdate(name.name, grades, total, categories);
 
     } catch (error) {
       console.error('Error getting grade:', error);
@@ -191,6 +193,8 @@ function ProfileCard({ name, code, onGradeUpdate }) {
     let categories = rubric.split('|;;|').map((element) => {
       return element.split('|:::|')[0];
     });
+
+    console.log('Updated categories:', categories);
     
     onGradeUpdate(name.name, updatedGrades, total, categories);
 
@@ -203,13 +207,13 @@ function ProfileCard({ name, code, onGradeUpdate }) {
     if (!name.completed)
       return toast.error('Participant has not completed the task');
 
-    if (aiButtonDisabled) return toast.error('AI grading for each member goes on cooldown for 5 seconds after each use.');
+    if (aiButtonDisabled) return toast.error('Wait 1 second');
     
     // Disable the AI button for 5 seconds
     setAiButtonDisabled(true);
     setTimeout(() => {
       setAiButtonDisabled(false);
-    }, 5000);
+    }, 1000);
 
     handleGetGrade();
   };
