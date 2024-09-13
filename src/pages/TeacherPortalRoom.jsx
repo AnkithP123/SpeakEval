@@ -44,7 +44,7 @@ function TeacherPortalRoom({ roomCode }) {
       const activeParticipants = data.members;
 
       activeParticipants.forEach((participant) => {
-        if (!obj.members.find((member) => member.name === participant)) {
+        if (!(obj.members.find((member) => member.name === participant) && !participants.members.find((member) => member.name === participant))) {
           obj.members.push({
             name: participant,
             completed: false
@@ -137,7 +137,9 @@ function TeacherPortalRoom({ roomCode }) {
       doc.text('Total Score', 150, yPosition);
 
       // Add table rows for each participant
-      participants.members.forEach((participant, index) => {
+      participants.members.sort(
+        (a, b) => a.name.localeCompare(b.name)
+      ).forEach((participant, index) => {
         yPosition += 10; // Move down to the next line
 
         doc.text(participant.name, 10, yPosition);
@@ -224,10 +226,10 @@ function TeacherPortalRoom({ roomCode }) {
         </div>
         
       </div>
-      <div className="
-      absolute right-4 flex items-center space-x-4">
+      <div className="absolute right-4 flex items-center space-x-4">
         <select
           className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
+          style={{ height: '150%' }} // Increase height by 20%
           value={reportOption}
           onChange={(e) => handleDownloadReport(e.target.value)}
         >
@@ -235,7 +237,7 @@ function TeacherPortalRoom({ roomCode }) {
           <option value="download">Download</option>
           <option value="print">Print</option>
         </select>
-        </div>
+      </div>
 
       <div className="flex items-center justify-center w-screen py-[20px]">
         <span className="text-6xl font-bold">
