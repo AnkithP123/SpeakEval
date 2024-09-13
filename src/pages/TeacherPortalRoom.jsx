@@ -25,6 +25,8 @@ function TeacherPortalRoom({ roomCode }) {
       const data = await response.json();
 
       obj.members = data2.members.map((member) => {
+        console.log('members', participants.members);
+        console.log(participants.members.find((participant) => participant.name === member));
         if (participants.members.find((participant) => participant.name === member)) {
           return participants.members.find((participant) => participant.name === member);
         }
@@ -48,7 +50,8 @@ function TeacherPortalRoom({ roomCode }) {
         }
       });
 
-      setParticipants(obj);
+      participants.members = obj.members;
+      
     } catch (error) {
       console.error('Error fetching participants:', error);
       toast.error('Error fetching participants');
@@ -101,6 +104,11 @@ function TeacherPortalRoom({ roomCode }) {
   // Download or print report based on user choice
   const handleDownloadReport = (reportOption) => {
     const report = createGradesReport();
+    let categories;
+    participants.members.forEach((participant) => {
+      categories = participant.categories;
+      console.log(participant.name + ", " + categories[0]);
+    });
 
     if (reportOption === 'download') {
       // make a pdf instead of printing
@@ -112,10 +120,6 @@ function TeacherPortalRoom({ roomCode }) {
       doc.text('Grading Report', 10, 10);
 
       // Table headings
-      let categories;
-      participants.members.forEach((participant) => {
-        categories = participant.categories;
-      });
 
       let yPosition = 20;
       doc.setFontSize(12);
@@ -143,11 +147,6 @@ function TeacherPortalRoom({ roomCode }) {
 
     } else if (reportOption === 'print') {
       const printWindow = window.open('', '', 'height=600,width=800');
-      let categories;
-      participants.members.forEach((participant) => {
-        categories = participant.categories;
-        console.log(categories);
-      });
       printWindow.document.write(`
         <html>
           <head>
