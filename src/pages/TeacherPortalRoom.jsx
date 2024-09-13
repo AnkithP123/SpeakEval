@@ -25,19 +25,21 @@ function TeacherPortalRoom({ roomCode }) {
       const data = await response.json();
 
       obj.members = data2.members.map((member) => {
-        console.log('members', participants.members);
-        console.log(participants.members.find((participant) => participant.name === member));
+        console.log('Member:', member);
+        console.log('Participants1:', participants.members);
+        console.log('Find:', participants.members.find((participant) => participant.name === member));
         if (participants.members.find((participant) => participant.name === member)) {
-          return participants.members.find((participant) => participant.name === member);
+          return null;
         }
+        console.log('Member:', member);
         return {
           name: member,
           completed: true,
           grades: {},
           totalScore: 0,
-          categories: {}
+          categories: []
         };
-      });
+      }).filter(member => member !== null);
 
       const activeParticipants = data.members;
 
@@ -50,8 +52,23 @@ function TeacherPortalRoom({ roomCode }) {
         }
       });
 
+      participants.members.forEach((participant) => {
+        if (!obj.members.find((member) => member.name === participant.name)) {
+          obj.members.push(participant);
+        }
+      });
+
+      setParticipants(obj);
+
+      console.log(obj);
+
       participants.members = obj.members;
-      
+
+      participants.members.forEach((participant) => {
+        console.log(participant.name);
+      });      
+
+
     } catch (error) {
       console.error('Error fetching participants:', error);
       toast.error('Error fetching participants');
@@ -64,15 +81,6 @@ function TeacherPortalRoom({ roomCode }) {
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
   }, [roomCode]);
-
-  const handleStart = async () => {
-    const response = await fetch(`https://backend-8zsz.onrender.com/start_room?code=${roomCode}`);
-    const data = await response.json();
-    if (data.code === 404) {
-      toast.error('Room not found');
-      return navigate('/');
-    }
-  };
 
   const handleGradeUpdate = (participantName, grades, totalScore, categories) => {
     const updatedParticipants = { ...participants };
@@ -104,13 +112,11 @@ function TeacherPortalRoom({ roomCode }) {
   // Download or print report based on user choice
   const handleDownloadReport = (reportOption) => {
     const report = createGradesReport();
-    let categories;
-    participants.members.forEach((participant) => {
-      categories = participant.categories;
-      console.log(participant.name + ", " + categories[0]);
-    });
+    
 
     if (reportOption === 'download') {
+      let categories = participants.members.length > 0 ? participants.members[0].categories : [];
+      console.log('0', participants.members[0]);
       // make a pdf instead of printing
       const doc = new jsPDF();
 
@@ -119,11 +125,12 @@ function TeacherPortalRoom({ roomCode }) {
       doc.setFontSize(16);
       doc.text('Grading Report', 10, 10);
 
-      // Table headings
+      // Table headings      
 
       let yPosition = 20;
       doc.setFontSize(12);
       doc.text('Name', 10, yPosition);
+      console.log('MyCategories:', categories);
       categories.forEach((category, index) => {
         doc.text(category, 50 + (index * 30), yPosition); // Adjust X position based on index
       });
@@ -146,6 +153,7 @@ function TeacherPortalRoom({ roomCode }) {
       doc.save('grading_report.pdf');
 
     } else if (reportOption === 'print') {
+      let categories = participants.members.length > 0 ? participants.members[0].categories : [];
       const printWindow = window.open('', '', 'height=600,width=800');
       printWindow.document.write(`
         <html>
