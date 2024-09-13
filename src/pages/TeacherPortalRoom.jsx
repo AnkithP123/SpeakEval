@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ProfileCard from '../components/StatsCard';
 import { toast } from 'react-toastify';
-
+import jsPDF from 'jspdf';
 
 function TeacherPortalRoom({ roomCode }) {
   const [participants, setParticipants] = useState({ members: [] });
-  const jsPDF = require('jspdf');
   const [gradesReport, setGradesReport] = useState(''); // For storing the report data
   const [reportOption, setReportOption] = useState(''); // For managing the dropdown selection
   const navigate = useNavigate();
