@@ -380,6 +380,8 @@
 
                 transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
 
+                clearInterval(statusInterval);
+
             }
 
             async function sendStatus() {
