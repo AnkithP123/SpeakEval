@@ -194,7 +194,7 @@ function CreateRoom({ initialUserId = '' }) {
                 onChange={handleConfigChange}
                 style={inputStyle}
                 placeholder="Enter Config ID"
-                onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
+                onKeyUp={(e) => {if (e.key === 'Enter') handleConfigSubmit()}}
             />
             <button onClick={handleConfigSubmit} style={buttonStyle}>Create Room</button>
             <div style={configList}>
