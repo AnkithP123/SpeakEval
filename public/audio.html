@@ -7,6 +7,7 @@
         <style>
             body {
                 display: flex;
+                flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 height: 100vh;
@@ -164,18 +165,23 @@
             }
 
             .timer {
-                font-size: 24px;
-                font-weight: bold;
+                font-size: 50px;
                 color: #000;
                 margin-bottom: 20px;
+                margin-top:20px;
+                position: fixed;
+                top: 10px;
+            }
+
+            .timer.red {
+                color: red;
             }
         </style>
     </head>
     <body>
-
+        <div id="timer" class="timer">xx:xx</div>
         <div class="container">
             <h2>Oral Exam Assistant</h2>
-            <div id="timer" class="timer">xx:xx</div>
             <button id="playButton" class="play-button"></button>
             <div id="playIndicator" class="play-indicator hidden">Playing...</div>
             <div id="countdown" class="countdown hidden"></div>
@@ -338,6 +344,7 @@
                 transcriptionResult.classList.remove('hidden');
                 if (transcriptionResult.textContent !== 'You reached the time limit and your audio was stopped and uploaded automatically. ') transcriptionResult.textContent = 'Processing...';
                 await sendAudio();
+                timer.textContent = 'xx:xx'; // Reset the timer here
             }
 
             async function sendAudio() {
@@ -452,6 +459,11 @@
                 const minutes = Math.floor(time / 60000);
                 const seconds = Math.floor((time % 60000) / 1000);
                 timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (time <= 5000) {
+                    timer.classList.add('red');
+                } else {
+                    timer.classList.remove('red');
+                }
             }
 
             sendStatus();
