@@ -25,13 +25,9 @@ function TeacherPortalRoom({ roomCode }) {
       const data = await response.json();
 
       obj.members = data2.members.map((member) => {
-        console.log('Member:', member);
-        console.log('Participants1:', participants.members);
-        console.log('Find:', participants.members.find((participant) => participant.name === member));
-        if (participants.members.find((participant) => participant.name === member)) {
+        if (participants.members.find((participant) => participant.name === member) && (participants.members.find((participant) => participant.name === member).completed)) {
           return null;
         }
-        console.log('Member:', member);
         return {
           name: member,
           completed: true,
@@ -63,10 +59,6 @@ function TeacherPortalRoom({ roomCode }) {
       console.log(obj);
 
       participants.members = obj.members;
-
-      participants.members.forEach((participant) => {
-        console.log(participant.name);
-      });      
 
 
     } catch (error) {
