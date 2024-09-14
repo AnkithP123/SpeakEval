@@ -9,7 +9,7 @@ function RoomPanel({ roomCode, userId }) {
 
   const fetchParticipants = async () => {
     try {
-      const response = await fetch(`https://backend-p3sy.onrender.com/checkjoined?code=${roomCode}&pin=${userId}`);
+      const response = await fetch(`https://backend-55dm.onrender.com/checkjoined?code=${roomCode}&pin=${userId}`);
       const data = await response.json();
       if(data.error) {
         return;
@@ -31,7 +31,7 @@ function RoomPanel({ roomCode, userId }) {
 
   const handleStart = async() => {
     // Logic for starting the event or room
-    const response = await fetch(`https://backend-p3sy.onrender.com/start_room?code=${roomCode}&pin=${userId}`);
+    const response = await fetch(`https://backend-55dm.onrender.com/start_room?code=${roomCode}&pin=${userId}`);
     const data = await response.json();
     console.log(data);
     if(data.code === 404){
