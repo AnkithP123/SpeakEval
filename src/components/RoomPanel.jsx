@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 
 function RoomPanel({ roomCode, userId }) {
   const [participants, setParticipants] = useState([]);
+  const [completedParticipants, setCompletedParticipants] = useState([]);
   const navigate = useNavigate();
 
   const fetchParticipants = async () => {
@@ -16,6 +17,18 @@ function RoomPanel({ roomCode, userId }) {
       }
       console.log(data);
       setParticipants(data.members);
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+      toast.error('Error fetching participants');
+    }
+    try {
+      const response = await fetch(`https://backend-55dm.onrender.com/checkcompleted?code=${roomCode}&pin=${userId}`);
+      const data = await response.json();
+      if(data.error) {
+        return;
+      }
+      console.log(data);
+      setCompletedParticipants(data.members);
     } catch (error) {
       console.error('Error fetching participants:', error);
       toast.error('Error fetching participants');
@@ -69,8 +82,12 @@ function RoomPanel({ roomCode, userId }) {
       </div>
 
       <div className="flex flex-wrap justify-center">
+        {completedParticipants.map((participant, index) => (
+          <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} userId={userId} completed={true}/>
+        ))}
         {participants.map((participant, index) => (
-          <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} userId={userId} />
+          completedParticipants.includes(participant) ? null :
+          <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} userId={userId} completed={false}/>
         ))}
       </div>
     </div>

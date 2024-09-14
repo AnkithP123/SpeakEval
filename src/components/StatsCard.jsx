@@ -18,6 +18,8 @@ function ProfileCard({ name, code, onGradeUpdate}) {
     if (name.completed) {
       setCompleted(true);
       fetchAudioData();
+    } else {
+      setCompleted(false);
     }
   }, [name.completed]);
 
@@ -156,6 +158,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
       const data = await response.json();
       
       const grades = data.grades;
+      if (!grades || grades === undefined) return toast.error('Error getting grade. This may be due to a high volume of requests. Try again in a few seconds.');
       setGrades(data.grades);
 
       let total = 0;
@@ -245,7 +248,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
         </button>
       </div>
     </div>
-      <div>
+    <div>
         <button
           className="p-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600"
           onClick={handlePlayQuestion}
@@ -253,33 +256,39 @@ function ProfileCard({ name, code, onGradeUpdate}) {
           Play Question
         </button>
       </div>
+      
+      { completed ? 
+      <div>
+        
       <div className="mt-2 text-gray-800 break-words">
         {question}
       </div>
       <br />
-      <div className="mt-2 text-gray-800 break-words">
-        {text}
+        <div className="mt-2 text-gray-800 break-words">
+          {text}
+        </div>
+        <div className="mt-2 text-gray-800 break-words">
+          {rubric.split('|;;|').map((element, index) => {
+            const [rubricItem, rubricKey] = element.split('|:::|');
+            return (
+              <div key={index} className="flex items-center">
+                <span className="mr-2">{rubricItem}</span>
+                <input
+                  type="text"
+                  className="border border-gray-300 px-2 py-1 rounded w-20"
+                  placeholder="Points"
+                  value={grades[index] || ''}
+                  onChange={(e) => handleGradeChange(index, e.target.value)}
+                />
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2 text-gray-800">
+          Total Score: {totalScore}
+        </div>
       </div>
-      <div className="mt-2 text-gray-800 break-words">
-        {rubric.split('|;;|').map((element, index) => {
-          const [rubricItem, rubricKey] = element.split('|:::|');
-          return (
-            <div key={index} className="flex items-center">
-              <span className="mr-2">{rubricItem}</span>
-              <input
-                type="text"
-                className="border border-gray-300 px-2 py-1 rounded w-20"
-                placeholder="Points"
-                value={grades[index] || ''}
-                onChange={(e) => handleGradeChange(index, e.target.value)}
-              />
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-2 text-gray-800">
-        Total Score: {totalScore}
-      </div>
+      : null }
       <audio id={`answerAudioPlayer-${name.name}`} />
       <audio id={`questionAudioPlayer-${name.name}`} />
     </div>
