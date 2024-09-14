@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { FaDownload, FaPlay, FaPause, FaRobot } from 'react-icons/fa';
 
-function ProfileCard({ name, code, onGradeUpdate }) {
+function ProfileCard({ name, code, onGradeUpdate}) {
   const [completed, setCompleted] = useState(false);
   const [text, setText] = useState('');
+  const [question, setQuestion] = useState('');
   const [rubric, setRubric] = useState('');
   const [index, setIndex] = useState('');
   const [questionAudioUrl, setQuestionAudioUrl] = useState('');
@@ -23,7 +24,7 @@ function ProfileCard({ name, code, onGradeUpdate }) {
   const fetchAudioData = async () => {
     try {
       const response = await fetch(
-        `https://backend-8zsz.onrender.com/download?code=${code}&participant=${name.name}`
+        `https://backend-p3sy.onrender.com/download?code=${code}&participant=${name.name}`
       );
       const data = await response.json();
       if (data.error) return toast.error(data.error);
@@ -38,6 +39,7 @@ function ProfileCard({ name, code, onGradeUpdate }) {
       }
 
       setText('Transcription: ' + data.text);
+      setQuestion('Question: ' + data.question);
       setIndex(data.index);
     } catch (error) {
       console.error('Error loading audio:', error);
@@ -50,7 +52,7 @@ function ProfileCard({ name, code, onGradeUpdate }) {
       return toast.error('Participant has not completed the task');
     try {
       const response = await fetch(
-        `https://backend-8zsz.onrender.com/download?code=${code}&participant=${name.name}`
+        `https://backend-p3sy.onrender.com/download?code=${code}&participant=${name.name}`
       );
       const data = await response.json();
       if (data.error) return toast.error(data.error);
@@ -100,7 +102,7 @@ function ProfileCard({ name, code, onGradeUpdate }) {
   const readRubric = async () => {
     try {
       const response = await fetch(
-        `https://backend-8zsz.onrender.com/receiveaudio?code=${code}`
+        `https://backend-p3sy.onrender.com/receiveaudio?code=${code}`
       );
       const data = await response.json();
       setRubric(data.rubric);
@@ -112,7 +114,7 @@ function ProfileCard({ name, code, onGradeUpdate }) {
   const fetchQuestion = async () => {
     try {
       const response = await fetch(
-        `https://backend-8zsz.onrender.com/getquestion?code=${code}&index=${index}`
+        `https://backend-p3sy.onrender.com/getquestion?code=${code}&index=${index}`
       );
       const data = await response.json();
       if (data.error) return toast.error(data.error);
@@ -149,7 +151,7 @@ function ProfileCard({ name, code, onGradeUpdate }) {
   const handleGetGrade = async () => {
     try {
       const response = await fetch(
-        `https://backend-8zsz.onrender.com/getgrade?transcription=${text}&rubric=${rubric}&code=${code}&index=${index}`
+        `https://backend-p3sy.onrender.com/getgrade?transcription=${text}&rubric=${rubric}&code=${code}&index=${index}`
       );
       const data = await response.json();
       
@@ -251,6 +253,10 @@ function ProfileCard({ name, code, onGradeUpdate }) {
           Play Question
         </button>
       </div>
+      <div className="mt-2 text-gray-800 break-words">
+        {question}
+      </div>
+      <br />
       <div className="mt-2 text-gray-800 break-words">
         {text}
       </div>

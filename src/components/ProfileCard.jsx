@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 function ProfileCard({ name, code, onParticipantRemoved, userId }) {
   const handleRemove = async() => {
     try {
-        const response = await fetch(`https://backend-8zsz.onrender.com/kick?code=${code}&participant=${name}&pin=${userId}`);
+        const response = await fetch(`https://backend-p3sy.onrender.com/kick?code=${code}&participant=${name}&pin=${userId}`);
         toast.success('Participant kicked');
         onParticipantRemoved();
       } catch (error) {
