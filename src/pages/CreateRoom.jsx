@@ -19,7 +19,7 @@ function CreateRoom({ initialUserId = '' }) {
         const fetchConfigs = async () => {
             console.log("Fetching Configs");
             try {
-                const res = await fetch(`https://backend-p3sy.onrender.com/getconfigs?pin=${userId}`);
+                const res = await fetch(`https://backend-55dm.onrender.com/getconfigs?pin=${userId}`);
                 const parsedData = await res.json();
                 setConfigs(parsedData);
                 console.log(configs)
@@ -46,7 +46,7 @@ function CreateRoom({ initialUserId = '' }) {
     const checkUserId = async (userId) => {
         let parsedData;
         try {
-            let res = await fetch(`https://backend-p3sy.onrender.com/teacherpin?pin=${userId}`);
+            let res = await fetch(`https://backend-55dm.onrender.com/teacherpin?pin=${userId}`);
             parsedData = await res.json();
 
             if (parsedData.code === 401) {
@@ -80,7 +80,7 @@ function CreateRoom({ initialUserId = '' }) {
         let time = Date.now();
         time = time.toString().slice(-8);
         try {
-            const res = await fetch(`https://backend-p3sy.onrender.com/create_room?code=${time}&pin=${userId}&config=${configId}`);
+            const res = await fetch(`https://backend-55dm.onrender.com/create_room?code=${time}&pin=${userId}&config=${configId}`);
             const parsedData = await res.json();
             if (parsedData.code === 400) {
                 toast.error(parsedData.message); 
