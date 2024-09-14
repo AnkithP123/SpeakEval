@@ -183,6 +183,7 @@ function CreateRoom({ initialUserId = '' }) {
                 style={inputStyle}
                 maxLength={30}
                 placeholder="Enter Teacher Pin"
+                onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
             />
             <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
         </div> : !isConfigEntered ? 
@@ -193,6 +194,7 @@ function CreateRoom({ initialUserId = '' }) {
                 onChange={handleConfigChange}
                 style={inputStyle}
                 placeholder="Enter Config ID"
+                onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
             />
             <button onClick={handleConfigSubmit} style={buttonStyle}>Create Room</button>
             <div style={configList}>

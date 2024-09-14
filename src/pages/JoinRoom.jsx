@@ -51,6 +51,7 @@ function JoinRoom() {
             maxLength="20"
             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
             placeholder="Enter your name"
+            onKeyUp={(e) => { if (e.key === 'Enter') handleJoin(); }}
           />
         </div>
         <div className="w-full mb-8">
@@ -63,6 +64,7 @@ function JoinRoom() {
             maxLength="8"
             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
             placeholder="Enter room code"
+            onKeyUp={(e) => { if (e.key === 'Enter') handleJoin(); }}
           />
         </div>
         <button

@@ -127,6 +127,7 @@ function TeacherPortalRouter({ initialUserId = '' }) {
                 style={inputStyle}
                 maxLength={30}
                 placeholder="Enter Teacher Pin"
+                onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
             />
             <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
         </div> : <div>
