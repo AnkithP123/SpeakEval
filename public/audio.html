@@ -348,6 +348,7 @@
             recordingIcon.addEventListener('click', () => {
                 if (mediaRecorder && mediaRecorder.state === 'recording') {
                     mediaRecorder.stop();
+                    clearInterval(statusInterval);
                     recordingIcon.classList.remove('recording-icon');
                     recordingIcon.classList.add('disabled-icon');
                 }
