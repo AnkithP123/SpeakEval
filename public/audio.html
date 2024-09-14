@@ -223,7 +223,7 @@
                 const code = params.get('code');
                 const participant = params.get('participant');
 
-                const response = await fetch(`https://backend-p3sy.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
+                const response = await fetch(`https://backend-55dm.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
 
                 if (!response.ok) {
                     throw new Error('Failed to get audio');
@@ -319,7 +319,7 @@
                 const params = new URLSearchParams(window.location.search);
                 const code = params.get('code');
                 const participant = params.get('participant');
-                await fetch(`https://backend-p3sy.onrender.com/started_playing_audio?code=${code}&participant=${participant}`);
+                await fetch(`https://backend-55dm.onrender.com/started_playing_audio?code=${code}&participant=${participant}`);
                 countdown.classList.add('hidden');
                 media
                     .then(stream => {
@@ -383,7 +383,7 @@
                 }
                 
 
-                const response = await fetch(`https://backend-p3sy.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
+                const response = await fetch(`https://backend-55dm.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
                     method: 'POST',
                     body: formData
                 });
@@ -427,7 +427,7 @@
                     return;
                 }
 
-                const response = await fetch(`https://backend-p3sy.onrender.com/check_status?code=${code}&participant=${participant}`);
+                const response = await fetch(`https://backend-55dm.onrender.com/check_status?code=${code}&participant=${participant}`);
 
                 if (!response.ok) {
                     throw new Error('Failed to get status');
