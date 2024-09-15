@@ -15,7 +15,7 @@ function HomeCards() {
             <Link
               to="/create-room"
               className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
-              style={{'transition': 'background-color 0.3s'}}
+              style={{'transition': 'background-color 0.3s ease'}}
             >
               Create
             </Link>
@@ -28,7 +28,7 @@ function HomeCards() {
             <Link
               to="/join-room"
               className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
-              style={{'transition': 'background-color 0.3s'}}
+              style={{'transition': 'background-color 0.3s ease'}}
             >
               Join
             </Link>
@@ -41,7 +41,7 @@ function HomeCards() {
             <Link
               to="/teacher-portal"
               className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
-              style={{'transition': 'background-color 0.3s'}}
+              style={{'transition': 'background-color 0.3s ease'}}
             >
               Grade
             </Link>
@@ -54,7 +54,7 @@ function HomeCards() {
             <Link
               to="/configure"
               className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
-              style={{'transition': 'background-color 0.3s'}}
+              style={{'transition': 'background-color 0.3s ease'}}
             >
               Configure
             </Link>

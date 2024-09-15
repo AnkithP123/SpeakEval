@@ -167,7 +167,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
       });
       setTotalScore(total);
 
-      let categories = rubric.split('|;;|').map((element) => {
+      let categories = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
         return element.split('|:::|')[0];
       });
 
@@ -195,7 +195,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
     
     // Pass the grades and total score to the parent component
     console.log('Updated grades:', updatedGrades);
-    let categories = rubric.split('|;;|').map((element) => {
+    let categories = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
       return element.split('|:::|')[0];
     });
 
@@ -268,7 +268,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
           {text}
         </div>
         <div className="mt-2 text-gray-800 break-words">
-          {rubric.split('|;;|').map((element, index) => {
+          {rubric !== '' ? rubric.split('|;;|').map((element, index) => {
             const [rubricItem, rubricKey] = element.split('|:::|');
             return (
               <div key={index} className="flex items-center">
@@ -282,10 +282,12 @@ function ProfileCard({ name, code, onGradeUpdate}) {
                 />
               </div>
             );
-          })}
+          }) : null}
         </div>
         <div className="mt-2 text-gray-800">
-          Total Score: {totalScore}
+          { rubric !== '' ?
+          `Total Score: ${totalScore}` : null
+          }
         </div>
       </div>
       : null }
