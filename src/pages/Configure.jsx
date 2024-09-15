@@ -151,10 +151,12 @@ const Configure = () => {
                 body: formData,
             });
 
-            if (res.ok && !(res.error)) {
+            const response = await res.json();
+
+            if (res.ok && !(response.error)) {
                 toast.success("Configuration registered successfully");
             } else {
-                toast.error("Failed to register configuration" + res.error ? `: ${res.error}` : '');
+                toast.error("Failed to register configuration" + response.error ? `: ${response.error}` : '');
             }
         } catch (err) {
             console.error("Error registering configuration", err);
