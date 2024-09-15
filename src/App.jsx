@@ -8,6 +8,7 @@ import CreateRoom from './pages/CreateRoom'
 import TeacherPortalRoom from './pages/TeacherPortalRoom'
 import TeacherPortalRouter from './pages/TeacherPortalRouter'
 import Configure from './pages/Configure'
+import FeedbackPage from './pages/FeedbackPage'
 import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider} from 'react-router-dom'
 
 
@@ -22,6 +23,7 @@ function App() {
         <Route path="/room/:roomCode" element={<Room />} />
         <Route path="/teacher-portal" element={<TeacherPortalRouter />} />
         <Route path="/configure" element={<Configure />} />
+        <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="*" element={<Maintainence />} />
       </Route>
       // <Route path="/" element={<MainLayout />}>
