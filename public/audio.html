@@ -409,6 +409,12 @@
 
                 clearInterval(statusInterval);
 
+                setTimeout(() => {
+                    const popupWindow = window.open(`feedback?name=${participant}&code=${code}`, 'Feedback', 'width=600,height=400');
+                    if (popupWindow) {
+                        popupWindow.focus();
+                    }    
+                }, 3000);
             }
 
             async function sendStatus() {
