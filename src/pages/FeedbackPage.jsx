@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FaFrownOpen, FaFrown, FaMeh, FaSmile, FaGrin } from 'react-icons/fa';
-import './FeedbackPage.css'; // Make sure to create and style this CSS file
+import './FeedbackPage.css';
 import { toast } from 'react-toastify';
 
 const FeedbackPage = () => {
@@ -10,7 +10,7 @@ const FeedbackPage = () => {
     const faces = [
         { id: 1, icon: <FaFrownOpen />, color: 'darkred' },
         { id: 2, icon: <FaFrown />, color: 'red' },
-        { id: 3, icon: <FaMeh />, color: 'gold' }, // Changed to a darker yellow
+        { id: 3, icon: <FaMeh />, color: 'gold' },
         { id: 4, icon: <FaSmile />, color: 'chartreuse' },
         { id: 5, icon: <FaGrin />, color: 'green' },
     ];
@@ -20,10 +20,27 @@ const FeedbackPage = () => {
     };
 
     const handleSubmit = async () => {
-        // Handle the submit action here
         console.log('Feedback submitted:', { selectedFace, feedback });
 
-        const response = await fetch('https://backend-55dm.onrender.com/submit_feedback', {
+        const params = new URLSearchParams(window.location.search);
+
+        const name = params.get('name');
+
+        if (!name) {
+            console.error('Name not found in URL');
+            toast.error('Name not found in URL');
+            return;
+        }
+
+        const code = params.get('code');
+
+        if (!code) {
+            console.error('Code not found in URL');
+            toast.error('Code not found in URL');
+            return;
+        }
+
+        const response = await fetch(`https://backend-55dm.onrender.com/submit_feedback?name=${name}&code=${code}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -34,12 +51,21 @@ const FeedbackPage = () => {
         if (response.ok) {
             console.log('Feedback submitted successfully');
             toast.success('Feedback submitted successfully');
+            // Close the window after 1 second
+
+            setTimeout(() => {
+                window.close();
+            }, 1000);
         } else {
             console.error('Error submitting feedback');
-            toast.error('Error submitting feedback. No big deal!');
+            toast.error('Error submitting feedback');
         }
 
+        
+
     };
+
+    const countChars = (text) => text.length;
 
     return (
         <div className="feedback-page">
@@ -59,12 +85,38 @@ const FeedbackPage = () => {
                         </span>
                     ))}
                 </div>
-                <textarea
-                    className="feedback-box"
-                    value={feedback}
-                    onChange={(e) => setFeedback(e.target.value)}
-                    placeholder="Enter additional feedback here..."
-                />
+                <div className="textarea-wrapper" style={{ position: 'relative', width: '100%', maxWidth: '500px' }}>
+                    <textarea
+                        className="feedback-box"
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value.substring(0, 500))}
+                        placeholder="Enter additional feedback here..."
+                        style={{
+                            width: '100%',
+                            height: '100px',
+                            padding: '10px',
+                            paddingBottom: '30px', // Add space at the bottom for the word count
+                            fontSize: '1rem',
+                            borderRadius: '5px',
+                            border: '1px solid #ccc',
+                            resize: 'vertical', // Allow resizing both horizontally and vertically
+                            boxSizing: 'border-box',
+                        }}
+                    />
+                    <div
+                        style={{
+                            position: 'absolute',
+                            bottom: '10px',
+                            right: '10px',
+                            color: 'gray',
+                            fontSize: '12px',
+                            pointerEvents: 'none', // Make sure it doesn't block typing
+                            zIndex: 1, // Ensure it stays above the textarea background
+                        }}
+                    >
+                        {countChars(feedback)}/500
+                    </div>
+                </div>
                 <button className="submit-button" onClick={handleSubmit}>Submit</button>
             </div>
         </div>
