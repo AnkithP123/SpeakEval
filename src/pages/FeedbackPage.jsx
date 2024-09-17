@@ -4,8 +4,8 @@ import './FeedbackPage.css';
 import { toast } from 'react-toastify';
 
 const FeedbackPage = () => {
-    const [selectedFace, setSelectedFace] = useState(null);
-    const [feedback, setFeedback] = useState('');
+    let [selectedFace, setSelectedFace] = useState(null);
+    let [feedback, setFeedback] = useState('');
 
     const faces = [
         { id: 1, icon: <FaFrownOpen />, color: 'darkred' },
@@ -40,12 +40,12 @@ const FeedbackPage = () => {
             return;
         }
 
-        const response = await fetch(`https://backend-55dm.onrender.com/submit_feedback?name=${name}&code=${code}`, {
+        const response = await fetch(`https://backend-g5fp.onrender.com/submit_feedback?name=${name}&code=${code}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ selectedFace, feedback }),
+            body: `{"feedback": "${feedback} (Rating: ${selectedFace})"}`,
         });
 
         if (response.ok) {

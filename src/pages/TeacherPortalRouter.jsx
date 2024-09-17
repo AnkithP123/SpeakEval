@@ -21,7 +21,7 @@ function TeacherPortalRouter({ initialUserId = '' }) {
     const checkUserId = async (userId) => {
         let parsedData;
         try {
-            let res = await fetch(`https://backend-55dm.onrender.com/teacherpin?pin=${userId}`);
+            let res = await fetch(`https://backend-g5fp.onrender.com/teacherpin?pin=${userId}`);
             parsedData = await res.json();
 
             if (parsedData.code === 401) {
@@ -47,7 +47,7 @@ function TeacherPortalRouter({ initialUserId = '' }) {
 
     const fetchRooms = async () => {
         try {
-            const res = await fetch(`https://backend-55dm.onrender.com/getrooms?pin=${userId}`);
+            const res = await fetch(`https://backend-g5fp.onrender.com/getrooms?pin=${userId}`);
             const data = await res.json();
             setRooms(data);
         } catch (err) {
