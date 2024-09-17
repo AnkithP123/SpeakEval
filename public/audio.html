@@ -315,11 +315,17 @@
                 }, 1000);
             }
 
+            let startedTime = new Date().getTime();
+
             async function startRecording() {
                 const params = new URLSearchParams(window.location.search);
                 const code = params.get('code');
                 const participant = params.get('participant');
+
                 await fetch(`https://backend-g5fp.onrender.com/started_playing_audio?code=${code}&participant=${participant}`);
+
+                startedTime = new Date().getTime();
+
                 countdown.classList.add('hidden');
                 media
                     .then(stream => {
@@ -451,6 +457,8 @@
                 }, 3000);
             }
 
+            let timerInterval;
+
             async function sendStatus() {
                 const params = new URLSearchParams(window.location.search);
 
@@ -480,8 +488,16 @@
 
                 const responseCode = data.code;
 
-                if (data.time) {
-                    updateTimer(data.time);
+                if (data.limit && !timerInterval) {
+                    const timeLimit = data.limit;
+                    
+                    timerInterval = setInterval(() => {
+                        const currentTime = new Date().getTime();
+                        const elapsedTime = currentTime - startedTime;
+                        const remainingTime = timeLimit - elapsedTime;
+                        updateTimer(remainingTime);
+                    }, 500);
+                    
                 }
 
                 switch (responseCode) {
