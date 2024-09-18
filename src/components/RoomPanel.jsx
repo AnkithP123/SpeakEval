@@ -79,6 +79,9 @@ function RoomPanel({ roomCode, userId }) {
         <span className="text-6xl font-bold">
           Room Code: {roomCode}
         </span>
+        <span className="text-6xl font-bold">
+          www.speakeval.org
+        </span>
       </div>
 
       <div className="flex flex-wrap justify-center">
