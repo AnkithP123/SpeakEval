@@ -77,10 +77,12 @@ function RoomPanel({ roomCode, userId }) {
 
       <div className="flex items-center justify-center w-screen py-[20px]">
         <span className="text-6xl font-bold">
-          Room Code: {roomCode}
+          Room Code: {roomCode}<br />
         </span>
-        <span className="text-6xl font-bold">
-          www.speakeval.org
+      </div>
+      <div className="flex items-center justify-center w-screen py-[20px]">
+        <span className="text-5xl font-bold">
+          speakeval.org<br />
         </span>
       </div>
 
