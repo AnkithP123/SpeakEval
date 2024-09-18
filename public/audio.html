@@ -357,7 +357,7 @@
             async function handleRecordingStop() {
                 recordingIcon.classList.add('hidden');
                 transcriptionResult.classList.remove('hidden');
-                if (transcriptionResult.textContent !== 'You reached the time limit and your audio was stopped and uploaded automatically. ') transcriptionResult.textContent = 'Processing...';
+                if (transcriptionResult.textContent !== 'You reached the time limit and your audio was stopped and uploaded automatically. ') transcriptionResult.textContent = 'Processing... This may take a few minutes depending on how many other students are ahead in the queue.';
                 await sendAudio();
                 timer.textContent = 'xx:xx'; // Reset the timer here
                 timer.classList.remove('red');
@@ -407,7 +407,7 @@
                                 return;
                             }
 
-                            if (transcriptionResult.textContent == 'Processing...')
+                            if (transcriptionResult.textContent == 'Processing... This may take a few minutes depending on how many other students are ahead in the queue.')
                                 transcriptionResult.textContent = '';
 
                             transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
@@ -436,7 +436,7 @@
                     return;
                 }
 
-                if (transcriptionResult.textContent == 'Processing...')
+                if (transcriptionResult.textContent == 'Processing... This may take a few minutes depending on how many other students are ahead in the queue.')
                     transcriptionResult.textContent = '';
 
                 transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
@@ -501,7 +501,7 @@
                         break;
                     case 6:
                         transcriptionResult.classList.remove('hidden');
-                        if ((!transcriptionResult || !transcriptionResult.textContent || transcriptionResult.textContent == '') && (!(transcriptionResult.textContent == 'Processing...') && !(transcriptionResult.textContent.includes('Uploaded to server successfully.'))))
+                        if ((!transcriptionResult || !transcriptionResult.textContent || transcriptionResult.textContent == '') && (!(transcriptionResult.textContent == 'Processing... This may take a few minutes depending on how many other students are ahead in the queue.') && !(transcriptionResult.textContent.includes('Uploaded to server successfully.'))))
                         transcriptionResult.textContent = 'Reaching time limit. Please finish your response in the next 5 seconds. ';
                         break;
                     default:
