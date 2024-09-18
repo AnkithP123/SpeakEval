@@ -40,7 +40,7 @@ function TeacherPortalRoom({ roomCode }) {
       const activeParticipants = data.members;
 
       activeParticipants.forEach((participant) => {
-        if (!(obj.members.find((member) => member.name === participant) && !participants.members.find((member) => member.name === participant))) {
+        if (!obj.members.find((member) => member.name === participant) && !participants.members.find((member) => member.name === participant)) {
           obj.members.push({
             name: participant,
             completed: false
