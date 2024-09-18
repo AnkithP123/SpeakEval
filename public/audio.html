@@ -223,7 +223,7 @@
                 const code = params.get('code');
                 const participant = params.get('participant');
 
-                const response = await fetch(`https://backend-g5fp.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
+                const response = await fetch(`https://backend-4abv.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
 
                 if (!response.ok) {
                     throw new Error('Failed to get audio');
@@ -315,17 +315,11 @@
                 }, 1000);
             }
 
-            let startedTime = new Date().getTime();
-
             async function startRecording() {
                 const params = new URLSearchParams(window.location.search);
                 const code = params.get('code');
                 const participant = params.get('participant');
-
-                await fetch(`https://backend-g5fp.onrender.com/started_playing_audio?code=${code}&participant=${participant}`);
-
-                startedTime = new Date().getTime();
-
+                await fetch(`https://backend-4abv.onrender.com/started_playing_audio?code=${code}&participant=${participant}`);
                 countdown.classList.add('hidden');
                 media
                     .then(stream => {
@@ -390,7 +384,7 @@
                 }
                 
 
-                let response = await fetch(`https://backend-g5fp.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
+                let response = await fetch(`https://backend-4abv.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
                     method: 'POST',
                     body: formData
                 });
@@ -398,7 +392,7 @@
                 if (!response.ok) {
                     transcriptionResult.textContent = 'Failed to upload audio. Retrying until success...';
                     const retryInterval = setInterval(async () => {
-                        let retryResponse = await fetch(`https://backend-g5fp.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
+                        let retryResponse = await fetch(`https://backend-4abv.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
                             method: 'POST',
                             body: formData
                         });
@@ -457,8 +451,6 @@
                 }, 3000);
             }
 
-            let timerInterval;
-
             async function sendStatus() {
                 const params = new URLSearchParams(window.location.search);
 
@@ -476,7 +468,7 @@
                     return;
                 }
 
-                const response = await fetch(`https://backend-g5fp.onrender.com/check_status?code=${code}&participant=${participant}`);
+                const response = await fetch(`https://backend-4abv.onrender.com/check_status?code=${code}&participant=${participant}`);
 
                 if (!response.ok) {
                     throw new Error('Failed to get status');
@@ -488,16 +480,8 @@
 
                 const responseCode = data.code;
 
-                if (data.limit && !timerInterval) {
-                    const timeLimit = data.limit;
-                    
-                    timerInterval = setInterval(() => {
-                        const currentTime = new Date().getTime();
-                        const elapsedTime = currentTime - startedTime;
-                        const remainingTime = timeLimit - elapsedTime;
-                        updateTimer(remainingTime);
-                    }, 500);
-                    
+                if (data.time) {
+                    updateTimer(data.time);
                 }
 
                 switch (responseCode) {
