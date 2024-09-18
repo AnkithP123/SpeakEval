@@ -9,7 +9,7 @@ function Room() {
     const navigate = useNavigate();
 
     const checkStatus = async () => {
-        let res = await fetch(`https://backend-g5fp.onrender.com/check_status?code=${roomCode}&participant=${name}`);
+        let res = await fetch(`https://backend-4abv.onrender.com/check_status?code=${roomCode}&participant=${name}`);
         let parsedData = await res.json();
         if (parsedData.code === 1) {
             return;

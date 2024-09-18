@@ -13,7 +13,7 @@ function TeacherPortalRoom({ roomCode }) {
 
   const fetchParticipants = async () => {
     try {
-      const responsev2 = await fetch(`https://backend-g5fp.onrender.com/checkcompleted?code=${roomCode}`);
+      const responsev2 = await fetch(`https://backend-4abv.onrender.com/checkcompleted?code=${roomCode}`);
       const data2 = await responsev2.json();
       let obj = { members: [] };
       if (data2.error) {
@@ -21,7 +21,7 @@ function TeacherPortalRoom({ roomCode }) {
         return navigate('/');
       }
 
-      const response = await fetch(`https://backend-g5fp.onrender.com/checkjoined?code=${roomCode}`);
+      const response = await fetch(`https://backend-4abv.onrender.com/checkjoined?code=${roomCode}`);
       const data = await response.json();
 
       obj.members = data2.members.map((member) => {

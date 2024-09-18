@@ -40,7 +40,7 @@ const FeedbackPage = () => {
             return;
         }
 
-        const response = await fetch(`https://backend-g5fp.onrender.com/submit_feedback?name=${name}&code=${code}`, {
+        const response = await fetch(`https://backend-4abv.onrender.com/submit_feedback?name=${name}&code=${code}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
