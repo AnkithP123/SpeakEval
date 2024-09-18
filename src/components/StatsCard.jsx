@@ -26,7 +26,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
   const fetchAudioData = async () => {
     try {
       const response = await fetch(
-        `https://backend-g5fp.onrender.com/download?code=${code}&participant=${name.name}`
+        `https://backend-4abv.onrender.com/download?code=${code}&participant=${name.name}`
       );
       const data = await response.json();
       if (data.error) return toast.error(data.error);
@@ -54,7 +54,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
       return toast.error('Participant has not completed the task');
     try {
       const response = await fetch(
-        `https://backend-g5fp.onrender.com/download?code=${code}&participant=${name.name}`
+        `https://backend-4abv.onrender.com/download?code=${code}&participant=${name.name}`
       );
       const data = await response.json();
       if (data.error) return toast.error(data.error);
@@ -104,7 +104,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
   const readRubric = async () => {
     try {
       const response = await fetch(
-        `https://backend-g5fp.onrender.com/receiveaudio?code=${code}`
+        `https://backend-4abv.onrender.com/receiveaudio?code=${code}`
       );
       const data = await response.json();
       setRubric(data.rubric);
@@ -116,7 +116,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
   const fetchQuestion = async () => {
     try {
       const response = await fetch(
-        `https://backend-g5fp.onrender.com/getquestion?code=${code}&index=${index}`
+        `https://backend-4abv.onrender.com/getquestion?code=${code}&index=${index}`
       );
       const data = await response.json();
       if (data.error) return toast.error(data.error);
@@ -153,7 +153,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
   const handleGetGrade = async () => {
     try {
       const response = await fetch(
-        `https://backend-g5fp.onrender.com/getgrade?transcription=${text}&rubric=${rubric}&code=${code}&index=${index}`
+        `https://backend-4abv.onrender.com/getgrade?transcription=${text}&rubric=${rubric}&code=${code}&index=${index}`
       );
       const data = await response.json();
       
