@@ -80,11 +80,11 @@ function RoomPanel({ roomCode, userId }) {
           Room Code: {roomCode}<br />
         </span>
       </div>
-      <div className="flex items-center justify-center w-screen py-[20px]">
+      {/* <div className="flex items-center justify-center w-screen py-[20px]">
         <span className="text-5xl font-bold">
           speakeval.org<br />
         </span>
-      </div>
+      </div> */}
 
       <div className="flex flex-wrap justify-center">
         {completedParticipants.map((participant, index) => (
