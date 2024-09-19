@@ -233,8 +233,7 @@ export default function AudioRecorder({code, participant}) {
     }
 
     const playRecording = async() => {
-        if (!audio)
-            audio = await makeResponse();
+        audio = await makeResponse();
         console.log("Audio: " + audio);
         audio.play();
         setTimeout(() => {
