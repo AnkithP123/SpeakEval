@@ -4,7 +4,7 @@ import { Play, Square, Repeat } from 'lucide-react';
 
 export default function AudioRecorder({code, participant}) {
     const [isRecording, setIsRecording] = useState(false);
-    const [error, setError] = useState("Success: works xx");
+    const [error, setError] = useState(null);
     const [audioURL, setAudioURL] = useState(null);
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
