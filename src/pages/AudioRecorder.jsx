@@ -1,12 +1,48 @@
 import React, { useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Play, Square, Repeat } from 'lucide-react';
 
-export default function AudioRecorder() {
+export default function AudioRecorder({code, participant}) {
     const [isRecording, setIsRecording] = useState(false);
     const [error, setError] = useState(null);
     const [audioURL, setAudioURL] = useState(null);
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
+    let questionIndex;
+
+    const makeResponse = async() =>  {
+        const response = await fetch(`https://backend-4abv.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
+        console.log('Response:', response);
+        if (!response.ok) {
+            return setError('Failed to fetch audio');
+        }
+
+        const receivedData = await response.json();
+
+        console.log('Received data:', receivedData.audios);
+
+        const audios = receivedData.audios;
+
+        let audio;
+
+        for (const data of audios) {
+
+            console.log('Response:', data);
+
+            const audioData = Uint8Array.from(atob(data), c => c.charCodeAt(0));
+            const blob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
+            const audioUrl = URL.createObjectURL(blob);
+
+            audio = new Audio(audioUrl);
+
+            console.log("Audio: " + audio);
+
+            questionIndex = receivedData.questionIndex;
+        }
+
+        return audio;
+
+    }
 
     const getSupportedMimeType = () => {
         const types = ['audio/webm', 'audio/ogg', 'audio/mp4'];
@@ -50,6 +86,10 @@ export default function AudioRecorder() {
         
         mediaRecorder.current.onstop = () => {
             const blob = new Blob(chunks, { type: 'audio/wav' });
+            const formData = new FormData();
+            formData.append('audio', blob, 'audio.wav');
+            Upload(formData);
+            console.log('Blob:', blob);
             const audioUrl = URL.createObjectURL(blob);
             setAudioURL(audioUrl);
             setIsRecording(false);
@@ -67,10 +107,76 @@ export default function AudioRecorder() {
         }
     };
 
-    const playRecording = () => {
-        if (audioRef.current) {
-        audioRef.current.play();
+    const Upload = async(formData) => {
+        let transcriptionResult = {textContent: ""};
+        let response = await fetch(`https://backend-4abv.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            transcriptionResult.textContent = 'Failed to upload audio. Retrying until success...';
+            const retryInterval = setInterval(async () => {
+                let retryResponse = await fetch(`https://backend-4abv.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (retryResponse.ok) {
+                    clearInterval(retryInterval);
+                    const data = await response.json();
+
+                    console.log('Response:', data);
+
+                    if (data.error) {
+                        transcriptionResult.textContent = data.error;
+                        return;
+                    }
+
+                    if (transcriptionResult.textContent == 'Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.')
+                        transcriptionResult.textContent = '';
+
+                    transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
+
+                    clearInterval(statusInterval);
+
+                    setTimeout(() => {
+                        const popupWindow = window.open(`feedback?name=${participant}&code=${code}`, 'Feedback', 'width=600,height=400');
+                        if (popupWindow) {
+                            popupWindow.focus();
+                        }    
+                    }, 3000);
+
+                    return;
+
+                }
+            }, 10000);
         }
+
+        const data = await response.json();
+
+        console.log('Response:', data);
+
+        if (data.error) {
+            transcriptionResult.textContent = data.error;
+            return;
+        }
+
+        if (transcriptionResult.textContent === 'Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.')
+            transcriptionResult.textContent = '';
+
+        if (transcriptionResult.textContent === 'You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.') 
+            transcriptionResult.textContent = '';
+
+        transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
+    }
+
+    const playRecording = async() => {
+        const audio = await makeResponse();
+        console.log("Audio: " + audio);
+        audio.play();
+        setTimeout(() => {
+            startRecording();
+        }, 5000);
     };
 
     const stopRecording = () => {
@@ -91,7 +197,7 @@ export default function AudioRecorder() {
         textAlign: 'center'
         }}>
         <button
-            onClick={isRecording ? stopRecording : startRecording}
+            onClick={isRecording ? stopRecording : playRecording}
             style={{
             width: '128px',
             height: '128px',
@@ -116,29 +222,6 @@ export default function AudioRecorder() {
             }}>
                 Recording... (15s)
             </p>
-        )}
-        {audioURL && (
-            <div style={{ marginTop: '20px' }}>
-            <audio ref={audioRef} src={audioURL} controls />
-            <button
-                onClick={playRecording}
-                style={{
-                marginTop: '10px',
-                padding: '10px 20px',
-                backgroundColor: '#3B82F6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '5px'
-                }}
-            >
-                <Repeat size={20} /> Play Again
-            </button>
-            </div>
         )}
         {error && (
             <div 
