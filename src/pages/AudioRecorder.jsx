@@ -12,10 +12,11 @@ export default function AudioRecorder({code, participant}) {
     const audioRef = useRef(null);
     let questionIndex;
 
-    const statusInterval = setInterval(async () => {
+    async function sendStatus() {
         const response = await fetch(`https://backend-4abv.onrender.com/check_status?code=${code}&participant=${participant}`);
         if (!response.ok) {
             setError('Failed to fetch status');
+            setIsError(true);
             return;
         }
 
@@ -42,7 +43,7 @@ export default function AudioRecorder({code, participant}) {
                 window.location.href = 'join-room';
                 break;
             case 5:
-                if (error == 'Reaching time limit. Please finish your response in the next 5 seconds. ') error = 'You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.';
+                if (error == 'Reaching time limit. Please finish your response in the next 5 seconds. ') {setError('You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.'); setIsError(false)}
                 countdown.classList.add('hidden');
                 stopRecording();
                 break;
@@ -54,16 +55,17 @@ export default function AudioRecorder({code, participant}) {
                 window.location.href = 'join-room';
                 break;
         }
-    }, 1000);
+    }
 
-
-        
+    let statusInterval;
 
     const makeResponse = async() =>  {
         const response = await fetch(`https://backend-4abv.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
         console.log('Response:', response);
         if (!response.ok) {
-            return setError('Failed to fetch audio');
+            setError('Failed to fetch audio');
+            setIsError(true);
+            return;
         }
 
         const receivedData = await response.json();
@@ -93,6 +95,8 @@ export default function AudioRecorder({code, participant}) {
 
     }
 
+    let audio = makeResponse();
+
     const getSupportedMimeType = () => {
         const types = ['audio/webm', 'audio/ogg', 'audio/mp4'];
         for (let type of types) {
@@ -112,6 +116,7 @@ export default function AudioRecorder({code, participant}) {
         } catch (err) {
         console.error('Error requesting microphone permission:', err);
         setError('Microphone access is required. Click here to try again.');
+        setIsError(true);
         return false;
         }
     };
@@ -124,6 +129,7 @@ export default function AudioRecorder({code, participant}) {
         const mimeType = getSupportedMimeType();
         if (!mimeType) {
         setError('Your browser does not support any of the available audio recording formats.');
+        setIsError(true);
         return;
         }
 
@@ -154,11 +160,13 @@ export default function AudioRecorder({code, participant}) {
         } catch (err) {
         console.error('Error starting recording:', err);
         setError('An error occurred while starting the recording. Please try again.');
+        setIsError(true);
         }
     };
 
     const Upload = async(formData) => {
         setError('Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.');
+        setIsError(false);
         let transcriptionResult = {textContent: ""};
         let response = await fetch(`https://backend-4abv.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
             method: 'POST',
@@ -225,7 +233,8 @@ export default function AudioRecorder({code, participant}) {
     }
 
     const playRecording = async() => {
-        const audio = await makeResponse();
+        if (!audio)
+            audio = await makeResponse();
         console.log("Audio: " + audio);
         audio.play();
         setTimeout(() => {
@@ -238,6 +247,8 @@ export default function AudioRecorder({code, participant}) {
             mediaRecorder.current.stop();
         }
     }
+
+    setInterval(sendStatus, 1000);
 
     return (
         <div style={{
