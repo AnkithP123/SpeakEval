@@ -8,6 +8,7 @@ export default function AudioRecorder({code, participant}) {
     const [isError, setIsError] = useState(true);
     const [microphone, setMicrophone] = useState(false);
     const [audioURL, setAudioURL] = useState(null);
+    const [finished, setFinished] = useState(false);
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
     let questionIndex;
@@ -155,7 +156,7 @@ export default function AudioRecorder({code, participant}) {
             const audioUrl = URL.createObjectURL(blob);
             setAudioURL(audioUrl);
             setIsRecording(false);
-            
+            setFinished(true);
         };
 
         mediaRecorder.current.start();
