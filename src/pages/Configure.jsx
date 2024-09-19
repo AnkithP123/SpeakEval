@@ -129,6 +129,18 @@ const Configure = () => {
     };
 
     const handleRegisterConfig = async () => {
+        if (!id) {
+            toast.error("Please enter an ID");
+            return;
+        }
+        if (!userId) {
+            toast.error("Please log in");
+            return;
+        }
+        if (questions.length === 0) {
+            toast.error("Please record at least one question");
+            return;
+        }
         try {
             const formData = new FormData();
             for (let i = 0; i < questions.length; i++) {
