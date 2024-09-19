@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Play, Square, Repeat } from 'lucide-react';
 
-export default function AudioRecorder({code, participant}) {
+export default async function AudioRecorder({code, participant}) {
     const [isRecording, setIsRecording] = useState(false);
     const [error, setError] = useState(null);
     const [isError, setIsError] = useState(true);
