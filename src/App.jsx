@@ -34,7 +34,7 @@ function App() {
         <Route path="/teacher-portal" element={<TeacherPortalRouter />} />
         <Route path="/configure" element={<Configure />} />
         <Route path="/feedback" element={<FeedbackPage />} />
-        <Route path="/test" element={<AudioRecorderRouteWrapper />} />
+        <Route path="/record" element={<AudioRecorderRouteWrapper />} />
         <Route path="*" element={<Maintainence />} />
       </Route>
     )
