@@ -9,6 +9,7 @@ import TeacherPortalRoom from './pages/TeacherPortalRoom'
 import TeacherPortalRouter from './pages/TeacherPortalRouter'
 import Configure from './pages/Configure'
 import FeedbackPage from './pages/FeedbackPage'
+import AudioRecorder from './pages/AudioRecorder'
 import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider} from 'react-router-dom'
 
 
@@ -24,6 +25,7 @@ function App() {
         <Route path="/teacher-portal" element={<TeacherPortalRouter />} />
         <Route path="/configure" element={<Configure />} />
         <Route path="/feedback" element={<FeedbackPage />} />
+        <Route path="/test" element={<AudioRecorder />} />
         <Route path="*" element={<Maintainence />} />
       </Route>
       // <Route path="/" element={<MainLayout />}>
