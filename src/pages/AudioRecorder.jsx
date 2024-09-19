@@ -155,6 +155,7 @@ export default function AudioRecorder({code, participant}) {
             const audioUrl = URL.createObjectURL(blob);
             setAudioURL(audioUrl);
             setIsRecording(false);
+            
         };
 
         mediaRecorder.current.start();
@@ -280,6 +281,7 @@ export default function AudioRecorder({code, participant}) {
                 maxWidth: '600px', // Set a max width for the box
                 textAlign: 'center',
             }}>
+                { finished ? (null) : (
                 <button
                     onClick={isRecording ? stopRecording : playRecording}
                     style={{
@@ -297,6 +299,8 @@ export default function AudioRecorder({code, participant}) {
                 >
                     {isRecording ? <Square size={64} color="white" /> : <Play size={64} color="white" />}
                 </button>
+                )
+                }
                 
                 {isRecording && (
                     <p style={{
