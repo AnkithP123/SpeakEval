@@ -95,7 +95,7 @@ export default function AudioRecorder({code, participant}) {
 
     }
 
-    let audio = makeResponse();
+    let audio = await makeResponse();
 
     const getSupportedMimeType = () => {
         const types = ['audio/webm', 'audio/ogg', 'audio/mp4'];
@@ -233,7 +233,8 @@ export default function AudioRecorder({code, participant}) {
     }
 
     const playRecording = async() => {
-        audio = await makeResponse();
+        if (!audio)
+            audio = await makeResponse();
         console.log("Audio: " + audio);
         audio.play();
         setTimeout(() => {
