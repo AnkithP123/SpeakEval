@@ -4,7 +4,7 @@ import { Play, Square, Repeat } from 'lucide-react';
 
 export default function AudioRecorder({code, participant}) {
     const [isRecording, setIsRecording] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState("Success: works xx");
     const [audioURL, setAudioURL] = useState(null);
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
@@ -190,58 +190,75 @@ export default function AudioRecorder({code, participant}) {
 
     return (
         <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        backgroundColor: '#f3f4f6',
-        padding: '20px',
-        textAlign: 'center'
-        }}>
-        <button
-            onClick={isRecording ? stopRecording : playRecording}
-            style={{
-            width: '128px',
-            height: '128px',
-            borderRadius: '50%',
-            backgroundColor: isRecording ? '#EF4444' : '#10B981',
-            border: 'none',
-            cursor: 'pointer',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'background-color 0.3s',
-            }}
-        >
-            {isRecording ? <Square size={64} color="white"/> : <Play size={64} color="white" />}
-        </button>
-        {isRecording && (     
-            <p style={{
-                marginTop: '16px',
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#374151'
+            transform: 'translateY(-10%)',
+            padding: '20px',
+            minHeight: '100vh',
+        }}>
+            {/* New outer rounded container */}
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'white', // White background for the rounded box
+                padding: '40px', // Increase padding for the inner content
+                borderRadius: '24px', // Larger rounded corners
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', // Add a shadow for better visibility
+                width: '90%', // Adjust width to fit content nicely
+                maxWidth: '600px', // Set a max width for the box
+                textAlign: 'center',
             }}>
-                Recording... (15s)
-            </p>
-        )}
-        {error && (
-            <div 
-            onClick={requestMicrophonePermission}
-            style={{
-                marginTop: '16px',
-                padding: '16px',
-                backgroundColor: '#FEE2E2',
-                borderRadius: '4px',
-                border: '1px solid #F87171',
-                color: '#B91C1C',
-                cursor: 'pointer'
-            }}
-            >
-            <p style={{ margin: 0 }}>{error}</p>
+                <button
+                    onClick={isRecording ? stopRecording : playRecording}
+                    style={{
+                        width: '128px',
+                        height: '128px',
+                        borderRadius: '50%',
+                        backgroundColor: isRecording ? '#EF4444' : '#10B981',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'background-color 0.3s',
+                    }}
+                >
+                    {isRecording ? <Square size={64} color="white" /> : <Play size={64} color="white" />}
+                </button>
+                
+                {isRecording && (
+                    <p style={{
+                        marginTop: '16px',
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#374151',
+                    }}>
+                        Recording... (15s)
+                    </p>
+                )}
+                
+                {error && (
+                    <div 
+                        onClick={requestMicrophonePermission}
+                        style={{
+                            marginTop: '24px', // Increase top margin for spacing
+                            padding: '16px',
+                            backgroundColor: '#FEE2E2',
+                            borderRadius: '12px', // Larger rounded corners for the error box
+                            border: '1px solid #F87171',
+                            color: '#B91C1C',
+                            cursor: 'pointer',
+                            maxWidth: '80%', // Adjust width to fit inside the parent container
+                        }}
+                    >
+                        <p style={{ margin: '5px' }}>{error}</p>
+                    </div>
+                )}
             </div>
-        )}
         </div>
     );
 }
