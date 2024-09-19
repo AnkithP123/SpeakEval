@@ -108,6 +108,7 @@ export default function AudioRecorder({code, participant}) {
     };
 
     const Upload = async(formData) => {
+        setError('Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.');
         let transcriptionResult = {textContent: ""};
         let response = await fetch(`https://backend-4abv.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
             method: 'POST',
@@ -168,6 +169,8 @@ export default function AudioRecorder({code, participant}) {
             transcriptionResult.textContent = '';
 
         transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
+        console.log("Bob: " + transcriptionResult.textContent);
+        setError(transcriptionResult.textContent);
     }
 
     const playRecording = async() => {
