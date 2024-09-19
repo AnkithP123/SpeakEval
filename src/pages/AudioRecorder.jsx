@@ -5,10 +5,59 @@ import { Play, Square, Repeat } from 'lucide-react';
 export default function AudioRecorder({code, participant}) {
     const [isRecording, setIsRecording] = useState(false);
     const [error, setError] = useState(null);
+    const [isError, setIsError] = useState(true);
+    const [microphone, setMicrophone] = useState(false);
     const [audioURL, setAudioURL] = useState(null);
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
     let questionIndex;
+
+    const statusInterval = setInterval(async () => {
+        const response = await fetch(`https://backend-4abv.onrender.com/check_status?code=${code}&participant=${participant}`);
+        if (!response.ok) {
+            setError('Failed to fetch status');
+            return;
+        }
+
+        const data = await response.json();
+
+        console.log('Response:', data);
+
+        const responseCode = data.code;
+
+        if (data.time) {
+            updateTimer(data.time);
+        }
+
+        switch (responseCode) {
+            case 1:
+                window.location.href = 'join-room';
+                break;
+            case 2:
+                window.location.href = 'join-room';
+                break;
+            case 3:
+                break;
+            case 4:
+                window.location.href = 'join-room';
+                break;
+            case 5:
+                if (error == 'Reaching time limit. Please finish your response in the next 5 seconds. ') error = 'You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.';
+                countdown.classList.add('hidden');
+                stopRecording();
+                break;
+            case 6:
+                if ((!(error == 'Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.') && !(error.includes('Uploaded to server successfully.'))))
+                    transcriptionResult.textContent = 'Reaching time limit. Please finish your response in the next 5 seconds. ';
+                break;
+            default:
+                window.location.href = 'join-room';
+                break;
+        }
+    }, 1000);
+
+
+        
 
     const makeResponse = async() =>  {
         const response = await fetch(`https://backend-4abv.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
@@ -57,6 +106,7 @@ export default function AudioRecorder({code, participant}) {
     const requestMicrophonePermission = async () => {
         try {
         await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMicrophone(true);
         setError(null);
         return true;
         } catch (err) {
@@ -159,6 +209,7 @@ export default function AudioRecorder({code, participant}) {
 
         if (data.error) {
             transcriptionResult.textContent = data.error;
+            setError(transcriptionResult.textContent);
             return;
         }
 
@@ -237,23 +288,36 @@ export default function AudioRecorder({code, participant}) {
                         fontWeight: '600',
                         color: '#374151',
                     }}>
-                        Recording... (15s)
+                        Recording...
                     </p>
                 )}
                 
                 {error && (
                     <div 
-                        onClick={requestMicrophonePermission}
-                        style={{
-                            marginTop: '24px', // Increase top margin for spacing
-                            padding: '16px',
-                            backgroundColor: '#FEE2E2',
-                            borderRadius: '12px', // Larger rounded corners for the error box
-                            border: '1px solid #F87171',
-                            color: '#B91C1C',
-                            cursor: 'pointer',
-                            maxWidth: '80%', // Adjust width to fit inside the parent container
-                        }}
+                        onClick={microphone ? (null) : (requestMicrophonePermission)}
+                        style={isError ? (
+                            {
+                                marginTop: '24px', // Increase top margin for spacing
+                                padding: '16px',
+                                backgroundColor: '#FEE2E2',
+                                borderRadius: '12px', // Larger rounded corners for the error box
+                                border: '1px solid #F87171',
+                                color: '#B91C1C',
+                                cursor: 'pointer',
+                                maxWidth: '80%', // Adjust width to fit inside the parent container
+                            }
+                        ) : (
+                            {
+                                marginTop: '24px', // Increase top margin for spacing
+                                padding: '16px',
+                                backgroundColor: '#D1FAE5',
+                                borderRadius: '12px', // Larger rounded corners for the error box
+                                border: '1px solid #34D399',
+                                color: '#065F46',
+                                cursor: 'pointer',
+                                maxWidth: '80%', // Adjust width to fit inside the parent container
+                            }
+                        )}
                     >
                         <p style={{ margin: '5px' }}>{error}</p>
                     </div>
