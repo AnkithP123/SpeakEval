@@ -68,7 +68,6 @@ export default function AudioRecorder({code, participant}) {
 
     const makeResponse = async() =>  {
         const response = await fetch(`https://backend-4abv.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
-        console.log('Response:', response);
         if (!response.ok) {
             setError('Failed to fetch audio');
             setIsError(true);
@@ -106,9 +105,8 @@ export default function AudioRecorder({code, participant}) {
 
     const getAudio = async() => {
         audio = await makeResponse();
+        setStatusInterval(setInterval(sendStatus, 1000));
     }
-
-    getAudio();
 
     const getSupportedMimeType = () => {
         const types = ['audio/webm', 'audio/ogg', 'audio/mp4'];
@@ -248,7 +246,7 @@ export default function AudioRecorder({code, participant}) {
 
     const playRecording = async() => {
         if (!audio)
-            audio = await makeResponse();
+            await getAudio();
         console.log("Audio: " + audio);
         audio.play();
         setPlaying(true);
