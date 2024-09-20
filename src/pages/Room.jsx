@@ -20,7 +20,7 @@ function Room() {
         }
         if (parsedData.code === 3) {
             toast.success("Exam has started");
-            return window.location.href = (`https://speakeval.org/record?code=${roomCode}&participant=${name}`);
+            return window.location.href = (`/record?code=${roomCode}&participant=${name}`);
         }
         if (parsedData.code === 4) {
             toast.error("Room doesn't exist");
