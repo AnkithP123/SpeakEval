@@ -365,7 +365,7 @@ export default function AudioRecorder({code, participant}) {
                         width: '128px',
                         height: '128px',
                         borderRadius: '50%',
-                        backgroundColor: isRecording ? '#EF4444' : '#28a745',
+                        backgroundColor: isRecording ? '#FF0000' : '#28a745',
                         border: 'none',
                         cursor: 'pointer',
                         display: 'flex',
