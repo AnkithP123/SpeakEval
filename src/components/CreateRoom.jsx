@@ -19,7 +19,7 @@ function CreateRoom({ initialUserId = '' }) {
         const fetchConfigs = async () => {
             console.log("Fetching Configs");
             try {
-                const res = await fetch(`https://backend-8zsz.onrender.com/getconfigs?pin=${userId}`);
+                const res = await fetch(`https://backend-4abv.onrender.com/getconfigs?pin=${userId}`);
                 const parsedData = await res.json();
                 setConfigs(parsedData);
                 console.log(configs)
@@ -36,9 +36,7 @@ function CreateRoom({ initialUserId = '' }) {
 
     const handleInputChange = async (e) => {
         const input = e.target.value;
-        if (input.length <= 7) {
-            setUserId(input.toUpperCase());
-        }
+        setUserId(input.toUpperCase());
     };
 
     const handleConfigChange = (e) => {
@@ -48,7 +46,7 @@ function CreateRoom({ initialUserId = '' }) {
     const checkUserId = async (userId) => {
         let parsedData;
         try {
-            let res = await fetch(`https://backend-8zsz.onrender.com/teacherpin?pin=${userId}`);
+            let res = await fetch(`https://backend-4abv.onrender.com/teacherpin?pin=${userId}`);
             parsedData = await res.json();
 
             if (parsedData.code === 401) {
@@ -82,10 +80,21 @@ function CreateRoom({ initialUserId = '' }) {
         let time = Date.now();
         time = time.toString().slice(-8);
         try {
-            const res = await fetch(`https://backend-8zsz.onrender.com/create_room?code=${time}&pin=${userId}&config=${configId}`);
+            const get = await fetch(`https://backend-4abv.onrender.com/verifyconfig?name=${configId}`);
+            const parsedData = await get.json();
+
+            if (parsedData.error) {
+                return toast.error(parsedData.error);
+            }
+        } catch (err) {
+            console.error("Error Verifying Config Existence", err);
+            toast.error("Error Verifying Config Existence");
+        }
+        try {
+            const res = await fetch(`https://backend-4abv.onrender.com/create_room?code=${time}&pin=${userId}&config=${configId}`);
             const parsedData = await res.json();
             if (parsedData.code === 400) {
-                toast.error("Unable to generate room code"); 
+                toast.error(parsedData.message); 
                 return navigate('/create-room');
             }
             setRoomCode(time);
@@ -183,8 +192,9 @@ function CreateRoom({ initialUserId = '' }) {
                 value={userId}
                 onChange={handleInputChange}
                 style={inputStyle}
-                maxLength={7}
+                maxLength={30}
                 placeholder="Enter Teacher Pin"
+                onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
             />
             <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
         </div> : !isConfigEntered ? 
@@ -195,6 +205,7 @@ function CreateRoom({ initialUserId = '' }) {
                 onChange={handleConfigChange}
                 style={inputStyle}
                 placeholder="Enter Config ID"
+                onKeyUp={(e) => {if (e.key === 'Enter') handleConfigSubmit()}}
             />
             <button onClick={handleConfigSubmit} style={buttonStyle}>Create Room</button>
             <div style={configList}>
@@ -202,11 +213,11 @@ function CreateRoom({ initialUserId = '' }) {
                 <p>Your configurations:</p>
             </div>
             <div style = {configList}>
-                {configs.map((config) => (
+                {configs.length === 0 ? <p className='text-2xl font-bold'>No configurations found. Go to the configurations page to make one.</p> : configs.map((config) => (
                     config.name ?
-                (
-                    <h2 className="text-2xl font-bold">{config.name}</h2>
-                ) : null
+                    (
+                        <h2 className="text-2xl font-bold">{config.name}</h2>
+                    ) : null
                 ))}
             </div>
             </div>
