@@ -38,7 +38,7 @@ function Room() {
     return (
         <div className="flex flex-col items-center justify-center text-center p-8" style={{ fontFamily: "Montserrat" }}>
             <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to Room {roomCode}</h1>
-            <p className="text-2xl text-gray-600 mb-8">Hello, {name}! Please wait until your instructor starts this oral examination. Watch this informational video while you wait.</p>
+            <p className="text-2xl text-gray-600 mb-8">Hello, {name}! Please wait until your instructor starts this oral examination. Watch this informational video while you wait. Please note that the layout has been slightly changed from the time of recording. Buttons may appear slightly different, you will see a timer at the top of your screen, and there will be a stop button instead of a pulsing dot.</p>
             <div className="w-full max-w-xl py-[30px]">
                 <div className="aspect-w-16 aspect-h-9">
                     <iframe 
