@@ -3,6 +3,25 @@ import { useSearchParams } from 'react-router-dom';
 import { Play, Square, Repeat } from 'lucide-react';
 import styled, { css, keyframes } from "styled-components";
 
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+
+// https://vitejs.dev/config/
+const viteConfig = defineConfig({
+plugins: [
+react({
+include: /.(jsx|tsx)$/,
+babel: {
+plugins: ['styled-components'],
+babelrc: false,
+configFile: false,
+},
+}),
+],
+});
+
+export { viteConfig };
+
 export default function AudioRecorder({code, participant}) {
     const [isRecording, setIsRecording] = useState(false);
     const [error, setError] = useState(null);
@@ -17,6 +36,8 @@ export default function AudioRecorder({code, participant}) {
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
     let questionIndex;
+
+    
 
     const pulse = keyframes`
         0% {
