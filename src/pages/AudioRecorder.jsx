@@ -270,7 +270,13 @@ const PulseButton = styled.button`
 
                     transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
 
+                    clearInterval(statusInterval.current);
+
                     clearInterval(statusInterval);
+
+                    setDisplayTime('xx:xx');
+
+
 
                     setTimeout(() => {
                         const popupWindow = window.open(`feedback?name=${participant}&code=${code}`, 'Feedback', 'width=600,height=400');
