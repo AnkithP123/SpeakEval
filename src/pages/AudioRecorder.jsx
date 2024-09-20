@@ -12,6 +12,7 @@ export default function AudioRecorder({code, participant}) {
     const [playing, setPlaying] = useState(false);
     const [countdown, setCountdown] = useState(0); // New state for countdown
     const [timer, setTimer] = useState(0); // New state for timer
+    const [statusInterval, setStatusInterval] = useState(null);
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
     let questionIndex;
@@ -51,8 +52,11 @@ export default function AudioRecorder({code, participant}) {
                 stopRecording();
                 break;
             case 6:
-                if ((!(error == 'Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.') && (!error || error === null || !(error.includes('Uploaded to server successfully.')))))
-                    transcriptionResult.textContent = 'Reaching time limit. Please finish your response in the next 5 seconds. ';
+                if ((!(error == 'Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.') && (!error || error === null || !(error.includes('Uploaded to server successfully.'))))) {
+                    setError('Reaching time limit. Please finish your response in the next 5 seconds. ');
+                    
+                    setIsError(true);
+                }
                 break;
             default:
                 window.location.href = 'join-room';
@@ -60,7 +64,8 @@ export default function AudioRecorder({code, participant}) {
         }
     }
 
-    let statusInterval;
+    clearInterval(statusInterval);
+    setStatusInterval(setInterval(sendStatus, 1000));
 
     const makeResponse = async() =>  {
         const response = await fetch(`https://backend-4abv.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
@@ -306,8 +311,6 @@ export default function AudioRecorder({code, participant}) {
 
         return () => clearInterval(interval);
     }, []);
-
-    setInterval(sendStatus, 1000);
 
     return (
         <div style={{
