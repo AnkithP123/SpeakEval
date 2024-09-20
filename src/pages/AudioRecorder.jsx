@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Play, Square, Repeat } from 'lucide-react';
 
@@ -9,6 +9,9 @@ export default function AudioRecorder({code, participant}) {
     const [microphone, setMicrophone] = useState(false);
     const [audioURL, setAudioURL] = useState(null);
     const [finished, setFinished] = useState(false);
+    const [playing, setPlaying] = useState(false);
+    const [countdown, setCountdown] = useState(0); // New state for countdown
+    const [timer, setTimer] = useState(0); // New state for timer
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
     let questionIndex;
@@ -45,7 +48,6 @@ export default function AudioRecorder({code, participant}) {
                 break;
             case 5:
                 if (error == 'Reaching time limit. Please finish your response in the next 5 seconds. ') {setError('You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.'); setIsError(false)}
-                countdown.classList.add('hidden');
                 stopRecording();
                 break;
             case 6:
@@ -96,7 +98,7 @@ export default function AudioRecorder({code, participant}) {
 
     }
 
-    let audio;
+    let audio = null;
 
     const getAudio = async() => {
         audio = await makeResponse();
@@ -129,9 +131,12 @@ export default function AudioRecorder({code, participant}) {
     };
 
     const startRecording = async () => {
+        setIsRecording(true);
         setAudioURL(null);
         const permissionGranted = await requestMicrophonePermission();
         if (!permissionGranted) return;
+
+        await fetch(`https://backend-4abv.onrender.com/started_playing_audio?code=${code}&participant=${participant}`);
 
         const mimeType = getSupportedMimeType();
         if (!mimeType) {
@@ -156,15 +161,11 @@ export default function AudioRecorder({code, participant}) {
             const audioUrl = URL.createObjectURL(blob);
             setAudioURL(audioUrl);
             setIsRecording(false);
-            setFinished(true);
         };
 
         mediaRecorder.current.start();
-        setIsRecording(true);
-        
-        setTimeout(() => {
-            stopRecording();
-        }, 15000);
+
+      
         } catch (err) {
         console.error('Error starting recording:', err);
         setError('An error occurred while starting the recording. Please try again.');
@@ -226,6 +227,7 @@ export default function AudioRecorder({code, participant}) {
         if (data.error) {
             transcriptionResult.textContent = data.error;
             setError(transcriptionResult.textContent);
+            setIsError(true);
             return;
         }
 
@@ -245,16 +247,64 @@ export default function AudioRecorder({code, participant}) {
             audio = await makeResponse();
         console.log("Audio: " + audio);
         audio.play();
-        setTimeout(() => {
-            startRecording();
-        }, 5000);
+        setPlaying(true);
+        audio.onended = () => {
+            setFinished(true);
+            setPlaying(false);
+            // Countdown logic
+            setCountdown(5);
+            const countdownInterval = setInterval(() => {
+                setCountdown(prev => {
+                    if (prev === 1) {
+                        clearInterval(countdownInterval);
+                        setFinished(false);
+                        startRecording();        
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            
+        }
     };
 
     const stopRecording = () => {
+        setFinished(true);
+        setIsRecording(false);
+
+        console.log('MediaRecorder stopped:', mediaRecorder.current.state);
+        
         if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
             mediaRecorder.current.stop();
+
+            console.log('MediaRecorder stopped:', mediaRecorder.current.state);
+            const blob = new Blob(chunks, { type: 'audio/wav' });
+            const formData = new FormData();
+            formData.append('audio', blob, 'audio.wav');
+            Upload(formData);
+            console.log('Blob:', blob);
+            const audioUrl = URL.createObjectURL(blob);
+            setAudioURL(audioUrl);
+            
         }
     }
+
+    const updateTimer = (time) => {
+        setTimer(time);
+    };
+
+    const formatTime = (seconds) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimer(prev => prev > 0 ? prev - 1 : 0);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     setInterval(sendStatus, 1000);
 
@@ -268,6 +318,16 @@ export default function AudioRecorder({code, participant}) {
             padding: '20px',
             minHeight: '100vh',
         }}>
+            {/* Timer display at the top */}
+            <div style={{
+                position: 'absolute',
+                top: '20px',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#374151',
+            }}>
+                {formatTime(timer)}
+            </div>
             {/* New outer rounded container */}
             <div style={{
                 display: 'flex',
@@ -282,6 +342,14 @@ export default function AudioRecorder({code, participant}) {
                 maxWidth: '600px', // Set a max width for the box
                 textAlign: 'center',
             }}>
+                <h1 style={{
+                    fontSize: '32px',
+                    fontWeight: '700',
+                    color: '#374151',
+                    marginBottom: '16px',
+                }}>
+                    Oral Exam Assistant
+                </h1>
                 { finished ? (null) : (
                 <button
                     onClick={isRecording ? stopRecording : playRecording}
@@ -311,6 +379,28 @@ export default function AudioRecorder({code, participant}) {
                         color: '#374151',
                     }}>
                         Recording...
+                    </p>
+                )}
+
+                {playing && (
+                    <p style={{
+                        marginTop: '16px',
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#28a745',
+                    }}>
+                        Playing...
+                    </p>
+                )}
+
+                {countdown > 0 && (
+                    <p style={{
+                        marginTop: '16px',
+                        fontSize: '24px',
+                        fontWeight: 'bold',
+                        color: 'red',
+                    }}>
+                        Recording starts in {countdown}...
                     </p>
                 )}
                 
