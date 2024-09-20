@@ -64,8 +64,7 @@ export default function AudioRecorder({code, participant}) {
         }
     }
 
-    clearInterval(statusInterval);
-    setStatusInterval(setInterval(sendStatus, 1000));
+    if (statusInterval) clearInterval(statusInterval);
 
     const makeResponse = async() =>  {
         const response = await fetch(`https://backend-4abv.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
