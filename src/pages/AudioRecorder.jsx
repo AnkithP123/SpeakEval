@@ -208,6 +208,8 @@ export default function AudioRecorder({code, participant}) {
 
                     if (data.error) {
                         transcriptionResult.textContent = data.error;
+                        setError(transcriptionResult.textContent);
+                        setIsError(true);
                         return;
                     }
 
