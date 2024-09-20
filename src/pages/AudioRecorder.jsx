@@ -349,6 +349,7 @@ export default function AudioRecorder({code, participant}) {
                 width: '90%', // Adjust width to fit content nicely
                 maxWidth: '600px', // Set a max width for the box
                 textAlign: 'center',
+                transform: 'translateY(30%)',
             }}>
                 <h1 style={{
                     fontSize: '32px',
