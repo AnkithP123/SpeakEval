@@ -51,7 +51,7 @@ export default function AudioRecorder({code, participant}) {
                 stopRecording();
                 break;
             case 6:
-                if ((!(error == 'Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.') && !(error.includes('Uploaded to server successfully.'))))
+                if ((!(error == 'Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.') && (!error || error === null || !(error.includes('Uploaded to server successfully.')))))
                     transcriptionResult.textContent = 'Reaching time limit. Please finish your response in the next 5 seconds. ';
                 break;
             default:
@@ -289,7 +289,7 @@ export default function AudioRecorder({code, participant}) {
     }
 
     const updateTimer = (time) => {
-        setTimer(time/1000);
+        setTimer(time);
     };
 
     const formatTime = (time) => {
