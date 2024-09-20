@@ -30,8 +30,10 @@ export default function AudioRecorder({code, participant}) {
     useEffect(() => {
         const interval = setInterval(() => {
             if (timer.current > 0) {
-                timer.current -= 1000;
                 setDisplayTime(formatTime(timer.current));
+            }
+            else {
+                setDisplayTime('xx:xx');
             }
         }, 1000);
 
@@ -345,6 +347,8 @@ const PulseButton = styled.button`
     const updateTimer = (time) => {
         timer.current = time;
         setDisplayTime(formatTime(time));
+        if (time < 0)
+            setDisplayTime('xx:xx');
     };
 
     const formatTime = (time) => {
