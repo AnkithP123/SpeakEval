@@ -104,6 +104,7 @@ export default function AudioRecorder({code, participant}) {
     let audio = null;
 
     const getAudio = async() => {
+        await sendStatus();
         audio = await makeResponse();
         setStatusInterval(setInterval(sendStatus, 1000));
     }
