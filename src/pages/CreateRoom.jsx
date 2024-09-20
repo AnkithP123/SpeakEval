@@ -80,6 +80,17 @@ function CreateRoom({ initialUserId = '' }) {
         let time = Date.now();
         time = time.toString().slice(-8);
         try {
+            const get = await fetch(`https://backend-4abv.onrender.com/verifyconfig?name=${configId}`);
+            const parsedData = await get.json();
+
+            if (parsedData.error) {
+                return toast.error(parsedData.error);
+            }
+        } catch (err) {
+            console.error("Error Verifying Config Existence", err);
+            toast.error("Error Verifying Config Existence");
+        }
+        try {
             const res = await fetch(`https://backend-4abv.onrender.com/create_room?code=${time}&pin=${userId}&config=${configId}`);
             const parsedData = await res.json();
             if (parsedData.code === 400) {
