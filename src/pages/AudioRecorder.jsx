@@ -11,14 +11,32 @@ export default function AudioRecorder({code, participant}) {
     const [audioURL, setAudioURL] = useState(null);
     const [finished, setFinished] = useState(false);
     const [playing, setPlaying] = useState(false);
-    const [countdown, setCountdown] = useState(0); // New state for countdown
-    const [timer, setTimer] = useState(0); // New state for timer
-    const [statusInterval, setStatusInterval] = useState(null);
+    const countdownRef = useRef(0); // Use ref for countdown
+    const [countdownDisplay, setCountdownDisplay] = useState(0); // State for displaying countdown
+    const timer = useRef(0); // New ref for timer
+    const statusInterval = useRef(null);
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
+    const [displayTime, setDisplayTime] = useState('xx:xx'); // State for displaying formatted time
     let questionIndex;
 
+    // set the status interval
     
+    useEffect(() => {
+        statusInterval.current = setInterval(sendStatus, 1000);
+        return () => clearInterval(statusInterval.current);
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (timer.current > 0) {
+                timer.current -= 1000;
+                setDisplayTime(formatTime(timer.current));
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const pulse = keyframes`
         0% {
@@ -33,8 +51,6 @@ export default function AudioRecorder({code, participant}) {
 
     const animation = props => css`
     ${pulse} 1.5s infinite;`;
-
-
 
 const recordStyle = {
     background: 'radial-gradient(circle at bottom, #ff0000 0%, #b20000 70%)',
@@ -57,13 +73,10 @@ const PulseButton = styled.button`
 `;
 
     async function sendStatus() {
-
-
         if (mediaRecorder.current && mediaRecorder.current.state === 'inactive' && !playing && !isRecording) {
-            setTimer(0);
+            timer.current = 0;
             return;
         }
-        
 
         const response = await fetch(`https://backend-4abv.onrender.com/check_status?code=${code}&participant=${participant}`);
         if (!response.ok) {
@@ -148,11 +161,8 @@ const PulseButton = styled.button`
 
     let audio = null;
 
-    let interval = null;
-
     const getAudio = async() => {
         await sendStatus();
-        interval = setInterval(sendStatus, 1000);
         audio = await makeResponse();
     }
 
@@ -308,28 +318,24 @@ const PulseButton = styled.button`
             setFinished(true);
             setPlaying(false);
             // Countdown logic
-            setCountdown(5);
+            countdownRef.current = 5;
+            setCountdownDisplay(countdownRef.current);
             const countdownInterval = setInterval(() => {
-                setCountdown(prev => {
-                    if (prev === 1) {
-                        clearInterval(countdownInterval);
-                        setFinished(false);
-                        startRecording();        
-                    }
-                    return prev - 1;
-                });
+                countdownRef.current -= 1;
+                setCountdownDisplay(countdownRef.current);
+                if (countdownRef.current === 0) {
+                    clearInterval(countdownInterval);
+                    setFinished(false);
+                    startRecording();        
+                }
             }, 1000);
-            
         }
     };
 
     const stopRecording = () => {
-
         console.log('Stopping recording...');
-
         setFinished(true);
         setIsRecording(false);
-
         
         if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
             mediaRecorder.current.stop();            
@@ -337,10 +343,12 @@ const PulseButton = styled.button`
     }
 
     const updateTimer = (time) => {
-        setTimer(time);
+        timer.current = time;
+        setDisplayTime(formatTime(time));
     };
 
     const formatTime = (time) => {
+        console.log('Time:', time);
         if (time === 0)
             return 'xx:xx';
         const minutes = Math.floor(time / 60000);
@@ -348,14 +356,6 @@ const PulseButton = styled.button`
 
         return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setTimer(prev => prev > 0 ? prev - 1 : 0);
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
 
     return (
         <div style={{
@@ -375,9 +375,9 @@ const PulseButton = styled.button`
                 top: '80px',
                 fontSize: '48px',
                 fontWeight: 'bold',
-                color: timer < 5000 && timer !== 0 ? 'red' : '#374151',
+                color: timer.current < 5000 && timer.current !== 0 ? 'red' : '#374151',
             }}>
-                {formatTime(timer)}
+                {displayTime}
             </div>
             {/* New outer rounded container */}
             <div style={{
@@ -446,14 +446,14 @@ const PulseButton = styled.button`
                     </p>
                 )}
 
-                {countdown > 0 && (
+                {countdownDisplay > 0 && (
                     <p style={{
                         marginTop: '16px',
                         fontSize: '24px',
                         fontWeight: 'bold',
                         color: 'red',
                     }}>
-                        Recording starts in {countdown}...
+                        Recording starts in {countdownDisplay}...
                     </p>
                 )}
                 
