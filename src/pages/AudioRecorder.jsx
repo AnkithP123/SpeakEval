@@ -329,10 +329,10 @@ export default function AudioRecorder({code, participant}) {
             {/* Timer display at the top */}
             <div style={{
                 position: 'absolute',
-                top: '20px',
-                fontSize: '24px',
+                top: '40px',
+                fontSize: '48px',
                 fontWeight: 'bold',
-                color: '#374151',
+                color: timer < 5000 && timer !== 0 ? 'red' : '#374151',
             }}>
                 {formatTime(timer)}
             </div>
