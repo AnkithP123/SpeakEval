@@ -329,7 +329,7 @@ export default function AudioRecorder({code, participant}) {
             {/* Timer display at the top */}
             <div style={{
                 position: 'absolute',
-                top: '40px',
+                top: '80px',
                 fontSize: '48px',
                 fontWeight: 'bold',
                 color: timer < 5000 && timer !== 0 ? 'red' : '#374151',
