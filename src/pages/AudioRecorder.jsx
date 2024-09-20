@@ -361,9 +361,11 @@ const PulseButton = styled.button`
         <div style={{
             display: 'flex',
             flexDirection: 'column',
+            height: '100%',
+            backgroundColor: '#bfdbfe',
             alignItems: 'center',
             justifyContent: 'center',
-            transform: 'translateY(-10%)',
+            //transform: 'translateY(-10%)',
             padding: '20px',
             minHeight: '100vh',
         }}>
