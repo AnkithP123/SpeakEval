@@ -18,6 +18,13 @@ export default function AudioRecorder({code, participant}) {
     let questionIndex;
 
     async function sendStatus() {
+
+        if (mediaRecorder.current && mediaRecorder.current.state === 'inactive' && !playing && !isRecording) {
+            setTimer(0);
+            return;
+        }
+        
+
         const response = await fetch(`https://backend-4abv.onrender.com/check_status?code=${code}&participant=${participant}`);
         if (!response.ok) {
             setError('Failed to fetch status');
@@ -64,8 +71,6 @@ export default function AudioRecorder({code, participant}) {
         }
     }
 
-    if (statusInterval) clearInterval(statusInterval);
-
     const makeResponse = async() =>  {
         const response = await fetch(`https://backend-4abv.onrender.com/receiveaudio?code=${code}&participant=${participant}&number=1`);
         if (!response.ok) {
@@ -103,10 +108,12 @@ export default function AudioRecorder({code, participant}) {
 
     let audio = null;
 
+    let interval = null;
+
     const getAudio = async() => {
         await sendStatus();
+        interval = setInterval(sendStatus, 1000);
         audio = await makeResponse();
-        setStatusInterval(setInterval(sendStatus, 1000));
     }
 
     const getSupportedMimeType = () => {
@@ -133,6 +140,8 @@ export default function AudioRecorder({code, participant}) {
         }
     };
 
+    let chunks = [];
+
     const startRecording = async () => {
         setIsRecording(true);
         setAudioURL(null);
@@ -152,7 +161,6 @@ export default function AudioRecorder({code, participant}) {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder.current = new MediaRecorder(stream, { mimeType });
         
-        let chunks = [];
         mediaRecorder.current.ondataavailable = (e) => chunks.push(e.data);
         
         mediaRecorder.current.onstop = () => {
@@ -241,6 +249,8 @@ export default function AudioRecorder({code, participant}) {
             transcriptionResult.textContent = '';
 
         transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
+        setIsError(false);
+
         console.log("Bob: " + transcriptionResult.textContent);
         setError(transcriptionResult.textContent);
     }
@@ -271,23 +281,15 @@ export default function AudioRecorder({code, participant}) {
     };
 
     const stopRecording = () => {
+
+        console.log('Stopping recording...');
+
         setFinished(true);
         setIsRecording(false);
 
-        console.log('MediaRecorder stopped:', mediaRecorder.current.state);
         
         if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
-            mediaRecorder.current.stop();
-
-            console.log('MediaRecorder stopped:', mediaRecorder.current.state);
-            const blob = new Blob(chunks, { type: 'audio/wav' });
-            const formData = new FormData();
-            formData.append('audio', blob, 'audio.wav');
-            Upload(formData);
-            console.log('Blob:', blob);
-            const audioUrl = URL.createObjectURL(blob);
-            setAudioURL(audioUrl);
-            
+            mediaRecorder.current.stop();            
         }
     }
 
@@ -296,6 +298,8 @@ export default function AudioRecorder({code, participant}) {
     };
 
     const formatTime = (time) => {
+        if (time === 0)
+            return 'xx:xx';
         const minutes = Math.floor(time / 60000);
         const seconds = Math.floor((time % 60000) / 1000);
 
