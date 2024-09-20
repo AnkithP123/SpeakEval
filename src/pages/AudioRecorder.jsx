@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Play, Square, Repeat } from 'lucide-react';
+import styled, { css, keyframes } from "styled-components";
 
 export default function AudioRecorder({code, participant}) {
     const [isRecording, setIsRecording] = useState(false);
@@ -17,7 +18,44 @@ export default function AudioRecorder({code, participant}) {
     const audioRef = useRef(null);
     let questionIndex;
 
+    const pulse = keyframes`
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1); 
+        }
+        100% {
+            transform: scale(1);
+        }`;
+
+    const animation = props => css`
+    ${pulse} 1.5s infinite;`;
+
+
+
+const recordStyle = {
+    background: 'radial-gradient(circle at bottom, #ff0000 0%, #b20000 70%)',
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.2)',
+    borderRadius: '50%',
+    width: '80px',
+    height: '80px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    margin: '0 auto',
+    position: 'relative',
+    transition: 'background 0.3s ease',
+    animation: `${animation}`,
+};
+
+const PulseButton = styled.button`
+    animation: ${animation};
+`;
+
     async function sendStatus() {
+
 
         if (mediaRecorder.current && mediaRecorder.current.state === 'inactive' && !playing && !isRecording) {
             setTimer(0);
@@ -263,6 +301,7 @@ export default function AudioRecorder({code, participant}) {
         console.log("Audio: " + audio);
         audio.play();
         setPlaying(true);
+
         audio.onended = () => {
             setFinished(true);
             setPlaying(false);
@@ -360,25 +399,26 @@ export default function AudioRecorder({code, participant}) {
                     Oral Exam Assistant
                 </h1>
                 { finished ? (null) : (
-                <button
+                <PulseButton
                     onClick={isRecording ? stopRecording : playRecording}
-                    style={{
-                        width: '128px',
-                        height: '128px',
+                    style={isRecording ? recordStyle : {
+                        width: '80px',
+                        height: '80px',
                         borderRadius: '50%',
-                        backgroundColor: isRecording ? '#FF0000' : '#28a745',
+                        backgroundColor: '#28a745',
                         border: 'none',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         transition: 'background-color 0.3s',
+                        animation: 'none', // Disable animation when not recording
                     }}
                 >
-                    {isRecording ? <Square size={64} color="white" /> : <Play size={64} color="white" />}
-                </button>
-                )
-                }
+                    {isRecording ? null : <Play size={24} color="white" fill="white"/>}
+                </PulseButton>
+                )}
+                
                 
                 {isRecording && (
                     <p style={{
@@ -393,9 +433,9 @@ export default function AudioRecorder({code, participant}) {
 
                 {playing && (
                     <p style={{
-                        marginTop: '16px',
+                        marginTop: '18px',
                         fontSize: '18px',
-                        fontWeight: '600',
+                        fontWeight: 'bold',
                         color: '#28a745',
                     }}>
                         Playing...
