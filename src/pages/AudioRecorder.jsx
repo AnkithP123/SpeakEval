@@ -52,7 +52,7 @@ export default function AudioRecorder({code, participant}) {
         }`;
 
     const animation = props => css`
-    ${pulse} 1.5s infinite;`;
+    ${pulse} 1.1s infinite;`;
 
 const recordStyle = {
     background: 'radial-gradient(circle at bottom, #ff0000 0%, #b20000 70%)',
@@ -292,7 +292,7 @@ async function convertOggToWav(oggUrl) {
             const blob = new Blob(chunks, { type: 'audio/wav' });
             const formData = new FormData();
             formData.append('audio', blob, 'audio.wav');
-            Upload(formData);
+            upload(formData);
             console.log('Blob:', blob);
             const audioUrl = URL.createObjectURL(blob);
             setAudioURL(audioUrl);
@@ -309,7 +309,7 @@ async function convertOggToWav(oggUrl) {
         }
     };
 
-    const Upload = async(formData) => {
+    const upload = async(formData) => {
         setError('Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.');
         setIsError(false);
         let transcriptionResult = {textContent: ""};
@@ -349,15 +349,6 @@ async function convertOggToWav(oggUrl) {
 
                     setDisplayTime('xx:xx');
 
-
-
-                    setTimeout(() => {
-                        const popupWindow = window.open(`feedback?name=${participant}&code=${code}`, 'Feedback', 'width=600,height=400');
-                        if (popupWindow) {
-                            popupWindow.focus();
-                        }    
-                    }, 3000);
-
                     return;
 
                 }
@@ -367,6 +358,19 @@ async function convertOggToWav(oggUrl) {
         const data = await response.json();
 
         console.log('Response:', data);
+
+        setTimeout(() => {
+            const popupWindow = window.open(`feedback?name=${participant}&code=${code}`, 'Feedback', 'width=600,height=400');
+            if (popupWindow) {
+                alert('Your audio has been uploaded successfully, and you may leave this page without impairing the processing. Please provide any feedback about your experience.');
+                popupWindow.focus();
+            } else {
+                if (confirm('Your audio has been uploaded successfully, and you may leave this page without impairing the processing. Would you like to redirect to another page to provide feedback about your experience?')) {
+                    window.location.href = `feedback?name=${participant}&code=${code}`;
+                }
+                
+            }
+        }, 3000);
 
         if (data.error) {
             transcriptionResult.textContent = data.error;
@@ -434,8 +438,8 @@ async function convertOggToWav(oggUrl) {
         setFinished(true);
         setIsRecording(false);
         
-        if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
-            mediaRecorder.current.stop();            
+        if (mediaRecorder.current) {
+            mediaRecorder.current.stop();
         }
     }
 
