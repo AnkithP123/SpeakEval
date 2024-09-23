@@ -317,8 +317,8 @@ async function convertOggToWav(oggUrl) {
         setTimeout(() => {
             const popupWindow = window.open(`feedback?name=${participant}&code=${code}`, 'Feedback', 'width=600,height=400');
             if (popupWindow) {
-                alert('Your audio upload has started, and you may leave this page without impairing the process. Please provide any feedback about your experience.');
                 popupWindow.focus();
+                alert('Your audio upload has started, and you may leave this page without impairing the process. Please provide any feedback about your experience.');
             } else {
                 if (confirm('Your audio upload has started, and you may leave this page without impairing the process. Would you like to redirect to another page to provide feedback about your experience?')) {
                     window.location.href = `feedback?name=${participant}&code=${code}`;
