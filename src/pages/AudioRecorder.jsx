@@ -313,6 +313,19 @@ async function convertOggToWav(oggUrl) {
         setError('Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.');
         setIsError(false);
         let transcriptionResult = {textContent: ""};
+
+        setTimeout(() => {
+            const popupWindow = window.open(`feedback?name=${participant}&code=${code}`, 'Feedback', 'width=600,height=400');
+            if (popupWindow) {
+                alert('Your audio upload has started, and you may leave this page without impairing the process. Please provide any feedback about your experience.');
+                popupWindow.focus();
+            } else {
+                if (confirm('Your audio upload has started, and you may leave this page without impairing the process. Would you like to redirect to another page to provide feedback about your experience?')) {
+                    window.location.href = `feedback?name=${participant}&code=${code}`;
+                }
+                
+            }
+        }, 3000);
         let response = await fetch(`https://backend-4abv.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
             method: 'POST',
             body: formData
@@ -358,19 +371,6 @@ async function convertOggToWav(oggUrl) {
         const data = await response.json();
 
         console.log('Response:', data);
-
-        setTimeout(() => {
-            const popupWindow = window.open(`feedback?name=${participant}&code=${code}`, 'Feedback', 'width=600,height=400');
-            if (popupWindow) {
-                alert('Your audio has been uploaded successfully, and you may leave this page without impairing the processing. Please provide any feedback about your experience.');
-                popupWindow.focus();
-            } else {
-                if (confirm('Your audio has been uploaded successfully, and you may leave this page without impairing the processing. Would you like to redirect to another page to provide feedback about your experience?')) {
-                    window.location.href = `feedback?name=${participant}&code=${code}`;
-                }
-                
-            }
-        }, 3000);
 
         if (data.error) {
             transcriptionResult.textContent = data.error;
