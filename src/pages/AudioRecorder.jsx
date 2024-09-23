@@ -393,6 +393,8 @@ async function convertOggToWav(oggUrl) {
     }
 
     const playRecording = async() => {
+        const permissionGranted = await requestMicrophonePermission();
+        if (!permissionGranted) return;
         if (!audio) {
             const audio2 = await makeResponse();
             console.log('HEY');
