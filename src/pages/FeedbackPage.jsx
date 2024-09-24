@@ -9,9 +9,9 @@ const FeedbackPage = () => {
 
     const faces = [
         { id: 1, icon: <FaFrownOpen />, color: '#FF0000' },    // Bright Red
-        { id: 2, icon: <FaFrown />, color: '#FF6F61' },        // Brighter Tomato
+        { id: 2, icon: <FaFrown />, color: '#f7453b' },        // Brighter Tomato
         { id: 3, icon: <FaMeh />, color: '#FFD700' },          // Gold
-        { id: 4, icon: <FaSmile />, color: '#66FF66' },        // Softer Green
+        { id: 4, icon: <FaSmile />, color: '#7ff760' },        // Softer Green
         { id: 5, icon: <FaGrin />, color: '#32CD32' },         // Lime Green
     ];
         
@@ -108,7 +108,7 @@ const FeedbackPage = () => {
                     <div
                         style={{
                             position: 'absolute',
-                            bottom: '9px',
+                            bottom: '8.5px',
                             right: '20px',
                             color: 'gray',
                             fontSize: '12px',
