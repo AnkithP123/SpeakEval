@@ -8,11 +8,11 @@ const FeedbackPage = () => {
     let [feedback, setFeedback] = useState('');
 
     const faces = [
-        { id: 1, icon: <FaFrownOpen />, color: '#e30909' },
-        { id: 2, icon: <FaFrown />, color: '#f7453b' },
-        { id: 3, icon: <FaMeh />, color: '#FFD700' },
-        { id: 4, icon: <FaSmile />, color: '#7ff760' },
-        { id: 5, icon: <FaGrin />, color: '#0bdb0b' },
+        { id: 1, icon: <FaFrownOpen />, color: '#c80707' },
+        { id: 2, icon: <FaFrown />, color: '#f23838' },
+        { id: 3, icon: <FaMeh />, color: '#ffd700' }, // gold
+        { id: 4, icon: <FaSmile />, color: '#38f238' },
+        { id: 5, icon: <FaGrin />, color: '#07c807' },
     ];
         
     
@@ -55,7 +55,10 @@ const FeedbackPage = () => {
             // Close the window after 1 second
 
             setTimeout(() => {
-                window.close();
+                // if in a popup window, close the window. Otherwise, if in a normal window in a normal tab, do nothing
+                if (window.opener) {
+                    window.close();
+                }
             }, 1000);
         } else {
             console.error('Error submitting feedback');
