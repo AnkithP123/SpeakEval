@@ -9,10 +9,10 @@ const FeedbackPage = () => {
 
     const faces = [
         { id: 1, icon: <FaFrownOpen />, color: '#c80707' },
-        { id: 2, icon: <FaFrown />, color: '#f23838' },
-        { id: 3, icon: <FaMeh />, color: '#ffd700' }, // gold
-        { id: 4, icon: <FaSmile />, color: '#38f238' },
-        { id: 5, icon: <FaGrin />, color: '#07c807' },
+        { id: 2, icon: <FaFrown />, color: '#f24838' },
+        { id: 3, icon: <FaMeh />, color: '#ffd700' },
+        { id: 4, icon: <FaSmile />, color: '#46f238' },
+        { id: 5, icon: <FaGrin />, color: '#05b505' },
     ];
         
     
