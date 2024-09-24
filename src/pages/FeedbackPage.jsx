@@ -8,11 +8,11 @@ const FeedbackPage = () => {
     let [feedback, setFeedback] = useState('');
 
     const faces = [
-        { id: 1, icon: <FaFrownOpen />, color: '#FF0000' },    // Bright Red
-        { id: 2, icon: <FaFrown />, color: '#f7453b' },        // Brighter Tomato
-        { id: 3, icon: <FaMeh />, color: '#FFD700' },          // Gold
-        { id: 4, icon: <FaSmile />, color: '#7ff760' },        // Softer Green
-        { id: 5, icon: <FaGrin />, color: '#32CD32' },         // Lime Green
+        { id: 1, icon: <FaFrownOpen />, color: '#e30909' },
+        { id: 2, icon: <FaFrown />, color: '#f7453b' },
+        { id: 3, icon: <FaMeh />, color: '#FFD700' },
+        { id: 4, icon: <FaSmile />, color: '#7ff760' },
+        { id: 5, icon: <FaGrin />, color: '#0bdb0b' },
     ];
         
     
