@@ -8,13 +8,14 @@ const FeedbackPage = () => {
     let [feedback, setFeedback] = useState('');
 
     const faces = [
-        { id: 1, icon: <FaFrownOpen />, color: 'darkred' },
-        { id: 2, icon: <FaFrown />, color: 'red' },
-        { id: 3, icon: <FaMeh />, color: 'gold' },
-        { id: 4, icon: <FaSmile />, color: 'chartreuse' },
-        { id: 5, icon: <FaGrin />, color: 'green' },
+        { id: 1, icon: <FaFrownOpen />, color: '#FF0000' },    // Bright Red
+        { id: 2, icon: <FaFrown />, color: '#FF6F61' },        // Brighter Tomato
+        { id: 3, icon: <FaMeh />, color: '#FFD700' },          // Gold
+        { id: 4, icon: <FaSmile />, color: '#66FF66' },        // Softer Green
+        { id: 5, icon: <FaGrin />, color: '#32CD32' },         // Lime Green
     ];
-
+        
+    
     const handleFaceClick = (id) => {
         setSelectedFace(id);
     };
@@ -101,17 +102,21 @@ const FeedbackPage = () => {
                             border: '1px solid #ccc',
                             resize: 'vertical', // Allow resizing both horizontally and vertically
                             boxSizing: 'border-box',
+                            overflowY: 'scroll', // Ensure the scrollbar is always visible
                         }}
                     />
                     <div
                         style={{
                             position: 'absolute',
-                            bottom: '10px',
-                            right: '10px',
+                            bottom: '9px',
+                            right: '20px',
                             color: 'gray',
                             fontSize: '12px',
                             pointerEvents: 'none', // Make sure it doesn't block typing
                             zIndex: 1, // Ensure it stays above the textarea background
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)', // Add opaque background
+                            padding: '2px 5px', // Add some padding
+                            borderRadius: '3px', // Add some border radius
                         }}
                     >
                         {countChars(feedback)}/500
