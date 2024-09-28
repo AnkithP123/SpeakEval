@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 function MainLayout() {
   return (
     <div className='bg-blue-200 min-h-screen flex flex-col'>
+      <Analytics />
       <Navbar />
       <div className='flex-grow'>
         <Outlet />
