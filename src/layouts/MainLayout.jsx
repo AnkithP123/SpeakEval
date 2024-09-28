@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { ToastContainer } from 'react-toastify';
+import { Analytics } from "@vercel/analytics/react"
 import BottomBar from '../components/BottomBar';
 import 'react-toastify/dist/ReactToastify.css';
 
