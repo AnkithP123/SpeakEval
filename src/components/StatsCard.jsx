@@ -51,12 +51,15 @@ function ProfileCard({ name, code, onGradeUpdate}) {
   const handleDownload = async () => {
     if (!name.completed)
       return toast.error('Participant has not completed the task');
-    fetchAudioData();
+    await fetchAudioData();
   };
 
   const handlePlay = async () => {
     if (!name.completed)
       return toast.error('Participant has not completed the task');
+    if (text === '') {
+      await fetchAudioData();
+    }
     try {
       const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name.name}`);
       if (answerAudioPlayer) {
@@ -242,6 +245,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
       <div className="mt-2 text-gray-800 break-words">
         {question}
       </div>
+      {question === '' ? `Press the download button to download this student's audio.` : null}
       <br />
         <div className="mt-2 text-gray-800 break-words">
           {text}
