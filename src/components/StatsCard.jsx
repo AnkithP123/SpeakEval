@@ -17,7 +17,6 @@ function ProfileCard({ name, code, onGradeUpdate}) {
   useEffect(() => {
     if (name.completed) {
       setCompleted(true);
-      fetchAudioData();
     } else {
       setCompleted(false);
     }
@@ -52,27 +51,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
   const handleDownload = async () => {
     if (!name.completed)
       return toast.error('Participant has not completed the task');
-    try {
-      const response = await fetch(
-        `https://backend-4abv.onrender.com/download?code=${code}&participant=${name.name}`
-      );
-      const data = await response.json();
-      if (data.error) return toast.error(data.error);
-
-      const audioData = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
-      const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
-      const wavBlob = await convertOpusToWav(audioBlob);
-      const downloadUrl = URL.createObjectURL(wavBlob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `${name.name}.webm`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-    } catch (error) {
-      console.error('Error downloading audio:', error);
-    }
+    fetchAudioData();
   };
 
   const handlePlay = async () => {
