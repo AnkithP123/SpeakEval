@@ -23,7 +23,7 @@ export default function AudioRecorder({code, participant}) {
     // set the status interval
     
     useEffect(() => {
-        statusInterval.current = setInterval(sendStatus, 1000);
+        statusInterval.current = setInterval(sendStatus, 3000);
         return () => clearInterval(statusInterval.current);
     }, []);
 

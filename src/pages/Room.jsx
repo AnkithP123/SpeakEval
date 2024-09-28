@@ -30,7 +30,7 @@ function Room() {
 
     useEffect(() => {
         checkStatus();
-        const intervalId = setInterval(checkStatus, 1000);
+        const intervalId = setInterval(checkStatus, 3000);
     
         return () => clearInterval(intervalId); // Cleanup interval on component unmount
     }, [roomCode]);
