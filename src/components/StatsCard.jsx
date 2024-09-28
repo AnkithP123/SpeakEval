@@ -251,7 +251,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
           {text}
         </div>
         <div className="mt-2 text-gray-800 break-words">
-          {rubric !== '' ? rubric.split('|;;|').map((element, index) => {
+          {rubric !== '' && text !== '' ? rubric.split('|;;|').map((element, index) => {
             const [rubricItem, rubricKey] = element.split('|:::|');
             return (
               <div key={index} className="flex items-center">
@@ -268,7 +268,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
           }) : null}
         </div>
         <div className="mt-2 text-gray-800">
-          { rubric !== '' ?
+          { rubric !== '' && text !== '' ?
           `Total Score: ${totalScore}` : null
           }
         </div>
