@@ -133,6 +133,11 @@ function ProfileCard({ name, code, onGradeUpdate}) {
   }
 
   const handleGetGrade = async () => {
+    if (!name.completed)
+      return toast.error('Participant has not completed the task');
+    if (text === '') {
+      return toast.error('Participant has not completed the task');
+    }
     try {
       const response = await fetch(
         `https://backend-4abv.onrender.com/getgrade?transcription=${text}&rubric=${rubric}&code=${code}&index=${index}`
@@ -245,7 +250,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
       <div className="mt-2 text-gray-800 break-words">
         {question}
       </div>
-      {question === '' ? `Press the download button to download this student's audio.` : null}
+      {question === '' ? `Press the download button to fetch this student's data.` : null}
       <br />
         <div className="mt-2 text-gray-800 break-words">
           {text}
