@@ -136,7 +136,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
     if (!name.completed)
       return toast.error('Participant has not completed the task');
     if (text === '') {
-      return toast.error('Participant has not completed the task');
+      return toast.error('Press the download button to fetch this student\'s data.');
     }
     try {
       const response = await fetch(
