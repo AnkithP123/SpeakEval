@@ -29,16 +29,21 @@ export default function AudioRecorder({code, participant}) {
 
     useEffect(() => {
         const interval = setInterval(() => {
+            // Only decrement if the current timer is greater than zero
             if (timer.current > 0) {
+                timer.current -= 1000;  // Decrease by 1 second
                 setDisplayTime(formatTime(timer.current));
             }
-            else {
+            // Display default if timer hits zero
+            if (timer.current <= 0) {
                 setDisplayTime('xx:xx');
             }
         }, 1000);
-
+    
         return () => clearInterval(interval);
     }, []);
+    
+    
 
     const pulse = keyframes`
         0% {
