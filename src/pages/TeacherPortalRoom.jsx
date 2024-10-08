@@ -133,7 +133,108 @@ function TeacherPortalRoom({ roomCode }) {
   const handleDownloadReport = (reportOption) => {
     const report = createGradesReport();
     
-    // Download or print logic omitted for brevity
+    if (reportOption === 'download') {
+      let categories = participants.members.length > 0 ? participants.members[0].categories : [];
+      console.log('0', participants.members[0]);
+      // make a pdf instead of printing
+      const doc = new jsPDF();
+
+      // Set the title and format the document
+      doc.setFont('Arial', 'normal');
+      doc.setFontSize(16);
+      doc.text('Grading Report', 10, 10);
+
+      // Table headings      
+
+      let yPosition = 20;
+      doc.setFontSize(12);
+      doc.text('Name', 10, yPosition);
+      console.log('MyCategories:', categories);
+      categories.forEach((category, index) => {
+        doc.text(category, 50 + (index * 30), yPosition); // Adjust X position based on index
+      });
+      doc.text('Total Score', 150, yPosition);
+
+      // Add table rows for each participant
+      participants.members.sort(
+        (a, b) => a.name.localeCompare(b.name)
+      ).forEach((participant, index) => {
+        yPosition += 10; // Move down to the next line
+
+        doc.text(participant.name, 10, yPosition);
+
+        Object.values(participant.grades).forEach((score, scoreIndex) => {
+          doc.text(String(score), 50 + (scoreIndex * 30), yPosition); // Adjust X position based on score index
+        });
+
+        doc.text(String(participant.totalScore), 150, yPosition);
+      });
+
+      // Save the PDF
+      doc.save('grading_report.pdf');
+
+    } else if (reportOption === 'print') {
+      let categories = participants.members.length > 0 ? participants.members[0].categories : [];
+      const printWindow = window.open('', '', 'height=600,width=800');
+      printWindow.document.write(`
+        <html>
+          <head>
+        <title>Grading Report</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+          }
+          th {
+            background-color: #f2f2f2;
+          }
+          tr:nth-child(even) {
+            background-color: #f9f9f9;
+          }
+          tr:hover {
+            background-color: #ddd;
+          }
+        </style>
+          </head>
+          <body>
+        <h2>Grading Report</h2>
+        <table>
+          <thead>
+            <tr>
+          <th>Name</th>
+          ${
+            participants.members.length > 0 ? categories.map(s => `<th>${s}</th>`).join('') : ''
+          }
+          <th>Total Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${participants.members.map(participant => `
+          <tr>
+            <td>${participant.name}</td>
+            ${Object.values(participant.grades).map(score => `<td>${score}</td>`).join('')}
+            <td>${participant.totalScore}</td>
+          </tr>
+            `).join('')}
+          </tbody>
+        </table>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    } else {
+      toast.error('Invalid choice. Please select "download" or "print".');
+    }
   };
 
   return (
