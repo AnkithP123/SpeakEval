@@ -29,7 +29,7 @@ function JoinRoom({ rooms }) {
     return (
         (!grading) ? (
             <div className="flex-grow flex items-center justify-center mt-[12%]">
-                <div className="w-[400px] bg-white rounded-lg shadow-lg flex flex-col items-center p-8">
+                <div className="w-[600px] bg-white rounded-lg shadow-lg flex flex-col items-center p-8">
                     <h2 className="text-3xl font-bold mb-8">Grade Room</h2>
                     <div className="w-full mb-8">
                         <label className="block text-lg font-semibold mb-2" htmlFor="roomCode">Room Code</label>
@@ -52,7 +52,7 @@ function JoinRoom({ rooms }) {
                     </button>
                     <h2 className="text-xl font-bold mt-8">Rooms, Newest to Oldest</h2>
                     {rooms ? rooms.slice().reverse().map((room) => (
-                        <h2>{room}</h2>
+                        <h2>{(room.code + '').padStart(8, '0')}</h2>
                     )) : null}
                 </div>
             </div>

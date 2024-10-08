@@ -8,7 +8,7 @@ function BottomBar() {
                 <div className="flex h-20 items-center justify-center">
                     <div className="flex flex-1 items-center justify-center">
                         <span className="text-white text-base">
-                            Created by Ankith Prabhakar and Nikunj Bafna
+                            Created by Ankith Prabhakar with Nikunj Bafna
                         </span>
                     </div>
                 </div>
