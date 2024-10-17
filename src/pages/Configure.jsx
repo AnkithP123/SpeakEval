@@ -391,7 +391,7 @@ const Configure = () => {
                                     onChange={(e) => setId(e.target.value)}
                                     style={rubricCellStyle}
                                     maxLength={15}
-                                    placeholder="Enter ID"
+                                    placeholder="Enter Config Name"
                                 />
                                 <button onClick={handleRegisterConfig} style={buttonStyle}>
                                     Register
