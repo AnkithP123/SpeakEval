@@ -154,9 +154,11 @@ const Configure = () => {
 
             console.log(questions.length);
 
-            const categoriesString = categories.map((category) => {
+            let categoriesString = categories.map((category) => {
                 return `${category.name}|:::| ${category.descriptions[0]}|,,| ${category.descriptions[1]}|,,| ${category.descriptions[2]}|,,| ${category.descriptions[3]}|,,| ${category.descriptions[4]}`;
             }).join('|;;|');
+
+            categoriesString = categories[0].name;
 
             const res = await fetch(`https://backend-4abv.onrender.com/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}&limit=${maxTime}&language=${selectedLanguage}`, {
                 method: 'POST',
@@ -335,7 +337,7 @@ const Configure = () => {
                                                 type="text"
                                                 value={category.name}
                                                 onChange={(e) => handleCategoryNameChange(index, e)}
-                                                maxLength={50}
+                                                maxLength={50000    }
                                                 placeholder="Category Name"
                                             />
 
