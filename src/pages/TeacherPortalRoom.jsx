@@ -260,12 +260,12 @@ function TeacherPortalRoom({ roomCode }) {
 
       {/* Sorting options with integrated ascending/descending toggle */}
       <div className="absolute right-48 flex items-center space-x-0">
-        <button 
+        {/*<button 
           onClick={toggleSortOrder} 
           className="flex items-center bg-green-500 text-white px-4 py-3 rounded-l-lg shadow-md hover:bg-green-600"
         >
           {(sortOrder === 'asc' ? <FaArrowUp /> : <FaArrowDown />)}
-        </button>
+        </button>*/}
 
         {/* Sort dropdown */}
         {/*<select
