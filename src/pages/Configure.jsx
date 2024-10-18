@@ -291,6 +291,7 @@ const Configure = () => {
 
     return (
         <div>
+            <title hidden>Configure Exams</title>
             {loggedIn ? (
                 <div className="container-xl lg:container m-auto">
                     <div className="grid grid-cols-1 md:grid-cols-1 gap-8 p-8 rounded-lg justify-center">

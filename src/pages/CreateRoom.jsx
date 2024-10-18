@@ -186,7 +186,10 @@ function CreateRoom({ initialUserId = '' }) {
 
     return (
         !loggedIn ? 
+        <div>
+        <title hidden>Create Room</title>
         <div style={containerStyle} className={shake ? 'shake' : ''}>
+            <title hidden>Join Room</title>
             <input
                 type="password"
                 value={userId}
@@ -197,7 +200,9 @@ function CreateRoom({ initialUserId = '' }) {
                 onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
             />
             <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-        </div> : !isConfigEntered ? 
+        </div></div> : !isConfigEntered ? 
+        <div>
+        <title hidden>Create Room</title>
         <div style={containerStyle}>
             <input
                 type="text"
@@ -221,6 +226,7 @@ function CreateRoom({ initialUserId = '' }) {
                 ))}
             </div>
             </div>
+        </div>
         </div>
         :<RoomPanel roomCode={roomCode} userId={userId} />
     );

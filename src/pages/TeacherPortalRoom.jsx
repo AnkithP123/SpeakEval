@@ -268,7 +268,7 @@ function TeacherPortalRoom({ roomCode }) {
         </button>
 
         {/* Sort dropdown */}
-        <select
+        {/*<select
           className="bg-green-500 text-white px-4 py-2 rounded-r-lg shadow-md hover:bg-green-600"
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
@@ -280,7 +280,7 @@ function TeacherPortalRoom({ roomCode }) {
               Sort by {category}
             </option>
           ))}
-        </select>
+        </select>*/}
       </div>
 
       <div className="flex items-center justify-center w-screen py-[50px]">
