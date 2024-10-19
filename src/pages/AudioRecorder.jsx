@@ -24,7 +24,7 @@ export default function AudioRecorder({code, participant}) {
     
     useEffect(() => {
         statusInterval.current = setInterval(sendStatus, 1000);
-        //return () => clearInterval(statusInterval.current);
+        return () => clearInterval(statusInterval.current);
     }, []);
 
     useEffect(() => {
@@ -141,6 +141,7 @@ async function convertOggToWav(oggUrl) {
     async function sendStatus() {
         if (mediaRecorder.current && mediaRecorder.current.state === 'inactive' && !playing && !isRecording) {
             timer.current = 0;
+            setDisplayTime('xx:xx');
             return;
         }
 
