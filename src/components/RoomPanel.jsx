@@ -82,7 +82,7 @@ function RoomPanel({ roomCode, userId }) {
       </div>
       <div className="absolute right-4 flex items-center space-x-4">
         <button
-          onClick={roomStarted ? () => handleRestart : handleStart}
+          onClick={roomStarted ? handleRestart : handleStart}
           className="bg-red-500 text-white rounded-lg p-3 shadow-md hover:bg-red-600"
         >
           {roomStarted ? 'Restart Room' : 'Start Room'}
