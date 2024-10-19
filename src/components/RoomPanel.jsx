@@ -61,6 +61,7 @@ function RoomPanel({ roomCode, userId }) {
   };
 
   const handleRestart = async () => {
+    console.log("Old: " + roomCode);
     const response = await fetch(`https://backend-4abv.onrender.com/restart_room?code=${roomCode}&pin=${userId}`);
     const data = await response.json();
     if(data.error){
@@ -68,8 +69,9 @@ function RoomPanel({ roomCode, userId }) {
       return navigate('/');
     }
     toast.success('Room restarted');
-    setRoomStarted(false);
     roomCode = data.newRoomCode;
+    console.log("New: " + roomCode);
+    setRoomStarted(false);
   }
 
   return (
