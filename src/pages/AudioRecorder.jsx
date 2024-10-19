@@ -151,14 +151,19 @@ async function convertOggToWav(oggUrl) {
 
         console.log('Response:', data);
 
+        
+
+        const responseCode = data.code;
+
+        if (responseCode === 7) {
+            window.location.href = `record?code=${data.newRoomCode}&participant=${participant}`;
+        }
+
         if (mediaRecorder.current && mediaRecorder.current.state === 'inactive' && !playing && !isRecording) {
             timer.current = 0;
             setDisplayTime('xx:xx');
             return;
         }
-
-        const responseCode = data.code;
-
         if (data.time) {
             updateTimer(data.time);
         }
@@ -185,9 +190,6 @@ async function convertOggToWav(oggUrl) {
                     
                     setIsError(true);
                 }
-                break;
-            case 7:
-                window.location.href = `https://www.speakeval.org/record?code=${data.newRoomCode}&participant=${participant}`;
                 break;
             default:
                 window.location.href = 'join-room';
@@ -336,10 +338,6 @@ async function convertOggToWav(oggUrl) {
                 
             }
         }, 3000);
-
-        sendStatus();
-
-        statusInterval.current = setInterval(sendStatus, 1000);
 
         let response = await fetch(`https://backend-4abv.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
             method: 'POST',
