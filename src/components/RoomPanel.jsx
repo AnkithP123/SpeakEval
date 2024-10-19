@@ -68,6 +68,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
       toast.error(data.error);
       return navigate('/');
     }
+    setCompletedParticipants([]);
     toast.success('Room restarted');
     setRoomCodes(data.newRoomCode);
     roomCode = data.newRoomCode;
