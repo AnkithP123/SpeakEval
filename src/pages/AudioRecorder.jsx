@@ -304,7 +304,6 @@ export default function AudioRecorder({code, participant}) {
             const audioUrl = URL.createObjectURL(blob);
             setAudioURL(audioUrl);
             setIsRecording(false);
-            reset();
 
         };
 
@@ -413,6 +412,11 @@ export default function AudioRecorder({code, participant}) {
 
         console.log("Bob: " + transcriptionResult.textContent);
         setError(transcriptionResult.textContent);
+
+        //wait for 5 seconds
+        setTimeout(() => {
+            reset();
+        }, 5000);
         
     }
 
@@ -422,6 +426,7 @@ export default function AudioRecorder({code, participant}) {
         if (!audio) {
             let audio2 = await makeResponse();
             while(questionIndexArray.includes(questionIndex)) {
+                toast.error(questionIndex);
                 audio2 = await makeResponse();
             }
             questionIndexArray.push(questionIndex);
