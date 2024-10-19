@@ -11,6 +11,7 @@ export default function AudioRecorder({code, participant}) {
     const [audioURL, setAudioURL] = useState(null);
     const [finished, setFinished] = useState(false);
     const [playing, setPlaying] = useState(false);
+    const [questionIndexArray, setQuestionIndexArray] = useState([]);
     const countdownRef = useRef(0); // Use ref for countdown
     const [countdownDisplay, setCountdownDisplay] = useState(0); // State for displaying countdown
     const timer = useRef(0); // New ref for timer
@@ -303,6 +304,8 @@ export default function AudioRecorder({code, participant}) {
             const audioUrl = URL.createObjectURL(blob);
             setAudioURL(audioUrl);
             setIsRecording(false);
+            reset();
+
         };
 
         mediaRecorder.current.start();
@@ -316,7 +319,6 @@ export default function AudioRecorder({code, participant}) {
     };
 
     const reset =  () => {
-        console.log('Resedtting...');
         setIsRecording(false);
         setError(null);
         setIsError(true);
@@ -410,16 +412,19 @@ export default function AudioRecorder({code, participant}) {
         setIsError(false);
 
         console.log("Bob: " + transcriptionResult.textContent);
-        console.log('Errosr:', error);
-        reset();
         setError(transcriptionResult.textContent);
+        
     }
 
     const playRecording = async() => {
         const permissionGranted = await requestMicrophonePermission();
         if (!permissionGranted) return;
         if (!audio) {
-            const audio2 = await makeResponse();
+            let audio2 = await makeResponse();
+            while(questionIndexArray.includes(questionIndex)) {
+                audio2 = await makeResponse();
+            }
+            questionIndexArray.push(questionIndex);
             console.log('HEY');
 
             const url = audio2.src;
