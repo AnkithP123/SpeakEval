@@ -426,7 +426,7 @@ export default function AudioRecorder({code, participant}) {
         if (!audio) {
             let audio2 = await makeResponse();
             while(questionIndexArray.includes(questionIndex)) {
-                toast.error(questionIndex);
+                alert(questionIndex);
                 audio2 = await makeResponse();
             }
             questionIndexArray.push(questionIndex);
