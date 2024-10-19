@@ -185,7 +185,7 @@ async function convertOggToWav(oggUrl) {
                 }
                 break;
             case 7:
-                window.location.href = `https://www.speakeval.org/record?code=${responseCode.newRoomCode}&participant=${participant}`;
+                window.location.href = `https://www.speakeval.org/record?code=${data.newRoomCode}&participant=${participant}`;
                 break;
             default:
                 window.location.href = 'join-room';
