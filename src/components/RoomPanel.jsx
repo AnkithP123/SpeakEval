@@ -71,7 +71,7 @@ function RoomPanel({ roomCode, userId }) {
     toast.success('Room restarted');
     roomCode = data.newRoomCode;
     console.log("New: " + roomCode);
-    setRoomStarted(false);
+    setRoomStarted(true);
   }
 
   return (
