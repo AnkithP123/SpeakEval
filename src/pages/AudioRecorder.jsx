@@ -191,6 +191,8 @@ async function convertOggToWav(oggUrl) {
                     setIsError(true);
                 }
                 break;
+            case 7:
+                break;
             default:
                 window.location.href = 'join-room';
                 break;
