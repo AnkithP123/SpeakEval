@@ -334,6 +334,11 @@ async function convertOggToWav(oggUrl) {
                 
             }
         }, 3000);
+
+        sendStatus();
+
+        statusInterval.current = setInterval(sendStatus, 1000);
+
         let response = await fetch(`https://backend-4abv.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
             method: 'POST',
             body: formData
