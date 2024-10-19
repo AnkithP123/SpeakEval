@@ -160,7 +160,7 @@ async function convertOggToWav(oggUrl) {
         if (data.time) {
             updateTimer(data.time);
         }
-
+        console.log('Response code:', responseCode);
         switch (responseCode) {
             case 1:
                 window.location.href = 'join-room';
