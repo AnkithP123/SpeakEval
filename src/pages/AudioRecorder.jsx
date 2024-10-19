@@ -184,6 +184,9 @@ async function convertOggToWav(oggUrl) {
                     setIsError(true);
                 }
                 break;
+            case 7:
+                window.location.href = `https://www.speakeval.org/record?code=${responseCode.roomCode}&participant=${participant}`;
+                break;
             default:
                 window.location.href = 'join-room';
                 break;
@@ -361,9 +364,6 @@ async function convertOggToWav(oggUrl) {
 
                     transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
 
-                    clearInterval(statusInterval.current);
-
-                    clearInterval(statusInterval);
 
                     setDisplayTime('xx:xx');
 
