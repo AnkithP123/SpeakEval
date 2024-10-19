@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ProfileCard from './ProfileCard';
 import { toast } from 'react-toastify';
 
-function RoomPanel({ roomCode, userId, setRoomCode }) {
+function RoomPanel({ roomCode, userId, setRoomCodes }) {
   const [participants, setParticipants] = useState([]);
   const [roomStarted, setRoomStarted] = useState(false);
   const [completedParticipants, setCompletedParticipants] = useState([]);
@@ -69,8 +69,8 @@ function RoomPanel({ roomCode, userId, setRoomCode }) {
       return navigate('/');
     }
     toast.success('Room restarted');
+    setRoomCodes(data.newRoomCode);
     roomCode = data.newRoomCode;
-    setRoomCode(data.newRoomCode);
     console.log("New: " + roomCode);
     setRoomStarted(true);
   }
