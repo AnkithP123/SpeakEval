@@ -20,6 +20,7 @@ export default function AudioRecorder({code, participant}) {
     const [displayTime, setDisplayTime] = useState('xx:xx'); // State for displaying formatted time
     let questionIndex;
 
+
     // set the status interval
     
     useEffect(() => {
@@ -59,84 +60,84 @@ export default function AudioRecorder({code, participant}) {
     const animation = props => css`
     ${pulse} 1.1s infinite;`;
 
-const recordStyle = {
-    background: 'radial-gradient(circle at bottom, #ff0000 0%, #b20000 70%)',
-    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.2)',
-    borderRadius: '50%',
-    width: '80px',
-    height: '80px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    margin: '0 auto',
-    position: 'relative',
-    transition: 'background 0.3s ease',
-    animation: `${animation}`,
-};
+    const recordStyle = {
+        background: 'radial-gradient(circle at bottom, #ff0000 0%, #b20000 70%)',
+        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.2)',
+        borderRadius: '50%',
+        width: '80px',
+        height: '80px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        margin: '0 auto',
+        position: 'relative',
+        transition: 'background 0.3s ease',
+        animation: `${animation}`,
+    };
 
-const PulseButton = styled.button`
-    animation: ${animation};
-`;
+    const PulseButton = styled.button`
+        animation: ${animation};
+    `;
 
-async function convertOggToWav(oggUrl) {
-    const response = await fetch(oggUrl);
-    const arrayBuffer = await response.arrayBuffer();
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    async function convertOggToWav(oggUrl) {
+        const response = await fetch(oggUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-    const numberOfChannels = audioBuffer.numberOfChannels;
-    const length = audioBuffer.length * numberOfChannels * 2 + 44;
-    const buffer = new ArrayBuffer(length);
-    const view = new DataView(buffer);
+        const numberOfChannels = audioBuffer.numberOfChannels;
+        const length = audioBuffer.length * numberOfChannels * 2 + 44;
+        const buffer = new ArrayBuffer(length);
+        const view = new DataView(buffer);
 
-    function writeString(view, offset, string) {
-        for (let i = 0; i < string.length; i++) {
-            view.setUint8(offset + i, string.charCodeAt(i));
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
         }
-    }
 
-    let offset = 0;
+        let offset = 0;
 
-    // RIFF identifier
-    writeString(view, offset, 'RIFF'); offset += 4;
-    // file length minus RIFF identifier length and file description length
-    view.setUint32(offset, 36 + audioBuffer.length * numberOfChannels * 2, true); offset += 4;
-    // RIFF type
-    writeString(view, offset, 'WAVE'); offset += 4;
-    // format chunk identifier
-    writeString(view, offset, 'fmt '); offset += 4;
-    // format chunk length
-    view.setUint32(offset, 16, true); offset += 4;
-    // sample format (raw)
-    view.setUint16(offset, 1, true); offset += 2;
-    // channel count
-    view.setUint16(offset, numberOfChannels, true); offset += 2;
-    // sample rate
-    view.setUint32(offset, audioBuffer.sampleRate, true); offset += 4;
-    // byte rate (sample rate * block align)
-    view.setUint32(offset, audioBuffer.sampleRate * numberOfChannels * 2, true); offset += 4;
-    // block align (channel count * bytes per sample)
-    view.setUint16(offset, numberOfChannels * 2, true); offset += 2;
-    // bits per sample
-    view.setUint16(offset, 16, true); offset += 2;
-    // data chunk identifier
-    writeString(view, offset, 'data'); offset += 4;
-    // data chunk length
-    view.setUint32(offset, audioBuffer.length * numberOfChannels * 2, true); offset += 4;
+        // RIFF identifier
+        writeString(view, offset, 'RIFF'); offset += 4;
+        // file length minus RIFF identifier length and file description length
+        view.setUint32(offset, 36 + audioBuffer.length * numberOfChannels * 2, true); offset += 4;
+        // RIFF type
+        writeString(view, offset, 'WAVE'); offset += 4;
+        // format chunk identifier
+        writeString(view, offset, 'fmt '); offset += 4;
+        // format chunk length
+        view.setUint32(offset, 16, true); offset += 4;
+        // sample format (raw)
+        view.setUint16(offset, 1, true); offset += 2;
+        // channel count
+        view.setUint16(offset, numberOfChannels, true); offset += 2;
+        // sample rate
+        view.setUint32(offset, audioBuffer.sampleRate, true); offset += 4;
+        // byte rate (sample rate * block align)
+        view.setUint32(offset, audioBuffer.sampleRate * numberOfChannels * 2, true); offset += 4;
+        // block align (channel count * bytes per sample)
+        view.setUint16(offset, numberOfChannels * 2, true); offset += 2;
+        // bits per sample
+        view.setUint16(offset, 16, true); offset += 2;
+        // data chunk identifier
+        writeString(view, offset, 'data'); offset += 4;
+        // data chunk length
+        view.setUint32(offset, audioBuffer.length * numberOfChannels * 2, true); offset += 4;
 
-    // write interleaved data
-    for (let i = 0; i < audioBuffer.length; i++) {
-        for (let channel = 0; channel < numberOfChannels; channel++) {
-            const sample = audioBuffer.getChannelData(channel)[i];
-            const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-            view.setInt16(offset, intSample, true);
-            offset += 2;
+        // write interleaved data
+        for (let i = 0; i < audioBuffer.length; i++) {
+            for (let channel = 0; channel < numberOfChannels; channel++) {
+                const sample = audioBuffer.getChannelData(channel)[i];
+                const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                view.setInt16(offset, intSample, true);
+                offset += 2;
+            }
         }
-    }
 
-    return new Blob([buffer], { type: 'audio/wav' });
-}
+        return new Blob([buffer], { type: 'audio/wav' });
+    }
 
     async function sendStatus() {
         if (mediaRecorder.current && mediaRecorder.current.state === 'inactive' && !playing && !isRecording) {
@@ -314,6 +315,21 @@ async function convertOggToWav(oggUrl) {
         }
     };
 
+    const reset =  () => {
+        console.log('Resedtting...');
+        setIsRecording(false);
+        setError(null);
+        setIsError(true);
+        setMicrophone(false);
+        setAudioURL(null);
+        setFinished(false);
+        setPlaying(false);
+        setCountdownDisplay(0);
+        setDisplayTime('xx:xx');
+        timer.current = 0;
+        console.log('Resetting...');
+    }
+
     const upload = async(formData) => {
         setError('Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.');
         setIsError(false);
@@ -394,6 +410,8 @@ async function convertOggToWav(oggUrl) {
         setIsError(false);
 
         console.log("Bob: " + transcriptionResult.textContent);
+        console.log('Errosr:', error);
+        reset();
         setError(transcriptionResult.textContent);
     }
 
