@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 
 function RoomPanel({ roomCode, userId }) {
   const [participants, setParticipants] = useState([]);
+  const [roomStarted, setRoomStarted] = useState(false);
   const [completedParticipants, setCompletedParticipants] = useState([]);
   const navigate = useNavigate();
 
@@ -55,8 +56,13 @@ function RoomPanel({ roomCode, userId }) {
     toast.success('Room started');
     
     document.querySelector('.text-6xl').innerHTML = `<a href="/teacher-portal" class="text-6xl font-bold">Click to go to grading page</a>`;
+    setRoomStarted(true);
 
   };
+
+  const handleRestart = async () => {
+    const response = await fetch(`https://backend-4abv.onrender.com/restart_room?code=${roomCode}&pin=${userId}`);
+  }
 
   return (
     <div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
@@ -68,10 +74,10 @@ function RoomPanel({ roomCode, userId }) {
       </div>
       <div className="absolute right-4 flex items-center space-x-4">
         <button
-          onClick={handleStart}
+          onClick={roomStarted ? () => handleRestart : handleStart}
           className="bg-red-500 text-white rounded-lg p-3 shadow-md hover:bg-red-600"
         >
-          Start
+          {roomStarted ? 'Restart Room' : 'Start Room'}
         </button>
       </div>
 
