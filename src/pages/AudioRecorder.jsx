@@ -142,7 +142,6 @@ async function convertOggToWav(oggUrl) {
         if (mediaRecorder.current && mediaRecorder.current.state === 'inactive' && !playing && !isRecording) {
             timer.current = 0;
             setDisplayTime('xx:xx');
-            return;
         }
 
         const response = await fetch(`https://backend-4abv.onrender.com/check_status?code=${code}&participant=${participant}`);
