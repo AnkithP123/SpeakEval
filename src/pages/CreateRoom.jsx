@@ -228,7 +228,7 @@ function CreateRoom({ initialUserId = '' }) {
             </div>
         </div>
         </div>
-        :<RoomPanel roomCode={roomCode} userId={userId} />
+        :<RoomPanel roomCode={roomCode} userId={userId} setRoomCode={setRoomCode} />
     );
 }
 
