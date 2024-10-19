@@ -154,6 +154,7 @@ async function convertOggToWav(oggUrl) {
         if (mediaRecorder.current && mediaRecorder.current.state === 'inactive' && !playing && !isRecording) {
             timer.current = 0;
             setDisplayTime('xx:xx');
+            return;
         }
 
         const responseCode = data.code;
