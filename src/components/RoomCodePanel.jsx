@@ -38,7 +38,7 @@ function JoinRoom({ rooms }) {
                             type="text"
                             value={roomCode}
                             onChange={handleRoomCodeChange}
-                            maxLength="8"
+                            maxLength="11"
                             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                             placeholder="Enter room code"
                             onKeyUp={(e) => { if (e.key === 'Enter') handleGrade(); }}
@@ -52,7 +52,7 @@ function JoinRoom({ rooms }) {
                     </button>
                     <h2 className="text-xl font-bold mt-8">Rooms, Newest to Oldest</h2>
                     {rooms ? rooms.slice().reverse().map((room) => (
-                        <h2>{(room.code + '').length < 8 ? (room.code + '').padStart(8, '0') : room.code}</h2>
+                        <h2>{room.code < 11 ? ((room.code + '').length < 8 ? (room.code + '').padStart(8, '0') : room.code) : (room.code + '').padStart(11, '0')}</h2>
                     )) : null}
                 </div>
             </div>
