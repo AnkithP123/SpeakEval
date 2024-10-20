@@ -342,7 +342,7 @@ async function convertOggToWav(oggUrl) {
             cuteAlert({
                 type: "question",
                 title: "Feedback",
-                description: "Would you mind rating your experience with the oral exam assistant very quickly?",
+                description: "Could you rate your experience with the oral exam assistant very quickly?",
                 primaryButtonText: "Sure!",
                 secondaryButtonText: "No",
                 showCloseButton: true,
