@@ -52,7 +52,7 @@ function JoinRoom({ rooms }) {
                     </button>
                     <h2 className="text-xl font-bold mt-8">Rooms, Newest to Oldest</h2>
                     {rooms ? rooms.slice().reverse().map((room) => (
-                        <h2>{room.code < 11 ? ((room.code + '').length < 8 ? (room.code + '').padStart(8, '0') : room.code) : (room.code + '').padStart(11, '0')}</h2>
+                        <h2>{room.code}</h2>
                     )) : null}
                 </div>
             </div>
