@@ -78,7 +78,7 @@ function CreateRoom({ initialUserId = '' }) {
 
     const handleConfigSubmit = async () => {
         let time = Date.now();
-        time = time.toString().slice(-8);
+        time = (Math.floor(Math.random()*5) + 1) + time.toString().slice(-7);
         try {
             const get = await fetch(`https://backend-4abv.onrender.com/verifyconfig?name=${configId}`);
             const parsedData = await get.json();
