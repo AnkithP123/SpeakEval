@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Play, Square, Repeat } from 'lucide-react';
 import styled, { css, keyframes } from "styled-components";
+import { cuteAlert } from 'cute-alert';
 
 export default function AudioRecorder({code, participant}) {
     const [isRecording, setIsRecording] = useState(false);
@@ -329,15 +330,29 @@ async function convertOggToWav(oggUrl) {
         let transcriptionResult = {textContent: ""};
 
         setTimeout(() => {
-            const popupWindow = window.open(`feedback?name=${participant}&code=${code}`, 'Feedback', 'width=600,height=400');
-            if (popupWindow) {
-                popupWindow.focus();
-            } else {
-                if (confirm('Your audio upload has started, and you may leave this page without impairing the process. Would you like to redirect to another page to provide feedback about your experience?')) {
-                    window.location.href = `feedback?name=${participant}&code=${code}`;
-                }
+            // const popupWindow = window.open(`feedback?name=${participant}&code=${code}`, 'Feedback', 'width=600,height=400');
+            // if (popupWindow) {
+            //     popupWindow.focus();
+            // } else {
+            //     if (confirm('Your audio upload has started, and you may leave this page without impairing the process. Would you like to redirect to another page to provide feedback about your experience?')) {
+            //         window.location.href = `feedback?name=${participant}&code=${code}`;
+            //     }
                 
-            }
+            // }
+            cuteAlert({
+                type: "question",
+                title: "Feedback",
+                description: "Would you mind rating your experience with the oral exam assistant very quickly?",
+                primaryButtonText: "Sure!",
+                secondaryButtonText: "No",
+                showCloseButton: true,
+                closeOnOutsideClick: true,
+            }).then(async (event) => {
+                if (event === "primaryButtonClicked") {
+                    // open in new tab
+                    window.open(`feedback?name=${participant}&code=${code}`, '_blank', 'noopener,noreferrer');
+                }
+            });
         }, 3000);
 
         let response = await fetch(`https://backend-4abv.onrender.com/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
