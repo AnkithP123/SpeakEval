@@ -71,7 +71,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
     }
     );
     cuteAlert({
-      type: "question",
+      type: everyoneCompleted ? "question" : "error",
       title: "Are you sure?",
       description: "Are you sure you want to administer another question?" + (everyoneCompleted ? "" : "\nNot everyone has finished with the current question."),
       primaryButtonText: "Confirm",
