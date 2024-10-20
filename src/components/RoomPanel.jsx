@@ -69,6 +69,11 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
       return navigate('/');
     }
     setCompletedParticipants([]);
+    // in 1 second, do the same
+    setTimeout(() => {
+      setCompletedParticipants([]);
+    }, 1000);
+    
     toast.success('Room restarted');
     setRoomCodes(data.newRoomCode);
     roomCode = data.newRoomCode;
