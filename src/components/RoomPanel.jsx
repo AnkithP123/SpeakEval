@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileCard from './ProfileCard';
 import { toast } from 'react-toastify';
+import { cuteAlert } from 'cute-alert';
 
 function RoomPanel({ roomCode, userId, setRoomCodes }) {
   const [participants, setParticipants] = useState([]);
@@ -62,23 +63,42 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
 
   const handleRestart = async () => {
     console.log("Old: " + roomCode);
-    const response = await fetch(`https://backend-4abv.onrender.com/restart_room?code=${roomCode}&pin=${userId}`);
-    const data = await response.json();
-    if(data.error){
-      toast.error(data.error);
-      return navigate('/');
+    let everyoneCompleted = true;
+    participants.forEach((participant) => {
+      if(!completedParticipants.includes(participant)){
+        everyoneCompleted = false;
+      }
     }
-    setCompletedParticipants([]);
-    // in 1 second, do the same
-    setTimeout(() => {
-      setCompletedParticipants([]);
-    }, 1000);
+    );
+    cuteAlert({
+      type: "question",
+      title: "Are you sure?",
+      description: "Are you sure you want to administer another question?" + (everyoneCompleted ? "" : "\nNot everyone has finished with the current question."),
+      primaryButtonText: "Confirm",
+      secondaryButtonText: "Cancel",
+      showCloseButton: true,
+      closeOnOutsideClick: true,
+    }).then(async (event) => {
+      if (event === "primaryButtonClicked") {
+        const response = await fetch(`https://backend-4abv.onrender.com/restart_room?code=${roomCode}&pin=${userId}`);
+        const data = await response.json();
+        if(data.error){
+          toast.error(data.error);
+          return navigate('/');
+        }
+        setCompletedParticipants([]);
+        // in 1 second, do the same
+        setTimeout(() => {
+          setCompletedParticipants([]);
+        }, 1000);
     
-    toast.success('Room restarted');
-    setRoomCodes(data.newRoomCode);
-    roomCode = data.newRoomCode;
-    console.log("New: " + roomCode);
-    setRoomStarted(true);
+        toast.success('Room restarted');
+        setRoomCodes(data.newRoomCode);
+        roomCode = data.newRoomCode;
+        console.log("New: " + roomCode);
+        setRoomStarted(true);    
+      }
+    });
   }
 
   return (
@@ -94,7 +114,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
           onClick={roomStarted ? handleRestart : handleStart}
           className="bg-red-500 text-white rounded-lg p-3 shadow-md hover:bg-red-600"
         >
-          {roomStarted ? 'Restart Room' : 'Start Room'}
+          {roomStarted ? 'New Question' : 'Start Room'}
         </button>
       </div>
 
