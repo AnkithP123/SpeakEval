@@ -68,8 +68,10 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
       if(!completedParticipants.includes(participant)){
         everyoneCompleted = false;
       }
-    }
-    );
+    });
+
+    document.documentElement.style.setProperty('--cute-alert-max-width', document.documentElement.style.getPropertyValue('--cute-alert-min-width') || '20%');
+    
     cuteAlert({
       type: everyoneCompleted ? "question" : "error",
       title: "Are you sure?",
