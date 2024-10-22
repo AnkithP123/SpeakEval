@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Play, Square, Repeat } from 'lucide-react';
 import styled, { css, keyframes } from "styled-components";
 import { cuteAlert } from 'cute-alert';
+import * as Tone from 'tone';
 
 export default function AudioRecorder({code, participant}) {
     const [isRecording, setIsRecording] = useState(false);
@@ -79,6 +80,16 @@ const recordStyle = {
 const PulseButton = styled.button`
     animation: ${animation};
 `;
+
+const playBeep = () => {
+    const synth = new Tone.Synth().toDestination();
+    synth.triggerAttackRelease("C5", "8n"); // A short beep sound
+};
+
+const playRecordingStarted = () => {
+    const synth = new Tone.Synth().toDestination();
+    synth.triggerAttackRelease("C6", "4n"); // A different tone for recording started
+};
 
 async function convertOggToWav(oggUrl) {
     const response = await fetch(oggUrl);
@@ -209,6 +220,8 @@ async function convertOggToWav(oggUrl) {
         }
 
         const receivedData = await response.json();
+
+        console.log(receivedData);
 
         console.log('Received data:', receivedData.audios);
 
@@ -449,6 +462,7 @@ async function convertOggToWav(oggUrl) {
             // Countdown logic
             countdownRef.current = 5;
             setCountdownDisplay(countdownRef.current);
+            playBeep();
             const countdownInterval = setInterval(() => {
                 countdownRef.current -= 1;
                 setCountdownDisplay(countdownRef.current);
@@ -456,6 +470,13 @@ async function convertOggToWav(oggUrl) {
                     clearInterval(countdownInterval);
                     setFinished(false);
                     startRecording();        
+                }
+                // Play beep sound during countdown
+
+                if (countdownRef.current === 0) {
+                    playRecordingStarted();
+                } else {
+                    playBeep();
                 }
             }, 1000);
         }
