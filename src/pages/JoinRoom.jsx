@@ -61,7 +61,7 @@ function JoinRoom() {
             type="text"
             value={roomCode}
             onChange={handleRoomCodeChange}
-            maxLength="8"
+            maxLength="11"
             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
             placeholder="Enter room code"
             onKeyUp={(e) => { if (e.key === 'Enter') handleJoin(); }}
