@@ -10,6 +10,7 @@ import TeacherPortalRouter from './pages/TeacherPortalRouter';
 import Configure from './pages/Configure';
 import FeedbackPage from './pages/FeedbackPage';
 import AudioRecorder from './pages/AudioRecorder';
+import Upgrade from './pages/Upgrade';
 import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider, useLocation } from 'react-router-dom';
 
 // Custom component to handle /test route with query parameters
@@ -35,6 +36,7 @@ function App() {
           <Route path="/teacher-portal" element={<TeacherPortalRouter />} />
           <Route path="/configure" element={<Configure />} />
           <Route path="/feedback" element={<FeedbackPage />} />
+          <Route path="/upgrade" element={<Upgrade />} />
           <Route path="*" element={<Maintainence />} />
         </Route>
         <Route path="/record" element={<AudioRecorderRouteWrapper />} />
