@@ -23,6 +23,15 @@ function JoinRoom({ rooms }) {
         }
     };
 
+    const goToRoom = (e) => {
+        //change the cursor to a pointer and change the color of the text
+        console.log('Going to room with code:', e);
+        setRoomCode(e);
+        setGrading(true);
+
+
+    }
+
     return (
         (!grading) ? (
             <div className="flex-grow flex items-center justify-center mt-[12%]">
@@ -50,7 +59,16 @@ function JoinRoom({ rooms }) {
                     <h2 className="text-[18px] font-bold mt-8">Rooms, Newest to Oldest (Scrollable)</h2>
                     <div className="max-h-40 w-full overflow-y-auto">
                         {rooms ? rooms.slice().reverse().map((room) => (
-                            <h2 key={room.code} className="text-center py-2 border-b">{room.code}</h2>
+                            <h2 key={room.code} className="text-center border-[1px]" 
+                            onMouseEnter={(e) => {
+                                e.target.style.cursor = 'pointer';
+                                e.target.style.color = 'blue';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.color = 'initial';
+                            }}
+                            onClick={() => goToRoom(room.code)}
+                            >{room.code}</h2>
                         )) : null}
                     </div>
                 </div>
