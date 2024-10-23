@@ -5,15 +5,12 @@ import GradingPanel from '../pages/TeacherPortalRoom.jsx';
 
 function JoinRoom({ rooms }) {
     const [roomCode, setRoomCode] = useState('');
-    const navigate = useNavigate();
     const [grading, setGrading] = useState(false);
 
     const handleGrade = async () => {
-        // Function to handle the Grade action
         if (roomCode) {
             console.log('Grading room with code:', roomCode);
             setGrading(true);
-            // Add your grade logic here
         } else {
             console.log('Please fill out the room code field.');
             toast.error('Please fill out the room code field.');
@@ -50,10 +47,12 @@ function JoinRoom({ rooms }) {
                     >
                         Grade
                     </button>
-                    <h2 className="text-xl font-bold mt-8">Rooms, Newest to Oldest</h2>
-                    {rooms ? rooms.slice().reverse().map((room) => (
-                        <h2>{room.code}</h2>
-                    )) : null}
+                    <h2 className="text-[18px] font-bold mt-8">Rooms, Newest to Oldest (Scrollable)</h2>
+                    <div className="max-h-40 w-full overflow-y-auto">
+                        {rooms ? rooms.slice().reverse().map((room) => (
+                            <h2 key={room.code} className="text-center py-2 border-b">{room.code}</h2>
+                        )) : null}
+                    </div>
                 </div>
             </div>
         ) : <GradingPanel roomCode={roomCode} />
