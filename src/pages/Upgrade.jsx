@@ -2,10 +2,10 @@ import React from 'react'
 import UpgradePanel from '../components/UpgradePanel'
 
 function Upgrade() {
-    //return upgrade bannel with blue background
     return (
-        <div className="flex justify-center items-center h-screen bg-blue-400">
+        <div className="flex justify-center items-center h-screen" style={{ transform: 'translateY(-25px)' }}>
             <UpgradePanel />
+            <UpgradePanel basicCard={false} />
         </div>
     )
 }
