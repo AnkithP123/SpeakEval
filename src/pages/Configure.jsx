@@ -75,7 +75,7 @@ const Configure = () => {
     };
 
     const handleToggleRecording = () => {
-        if (questions.length >= 0) {
+        if (questions.length >= 30) {
             setShowUpgrade(true);
             setTimeout(() => {
             const message = document.createElement('div');
@@ -425,7 +425,7 @@ const generateSparklePositions = () => {
 return (
     <div>
         <style>{styles}</style>
-        {showUpgrade && <Upgrade onClose={() => setShowUpgrade(false)} />}
+        {showUpgrade && <Upgrade onClose={() => setShowUpgrade(false)} doc={document} />}
         {showAutofillUpgrade && <Upgrade onClose={() => setShowAutofillUpgrade(false)} />}
         <title hidden>Configure Exams</title>
         {loggedIn ? (

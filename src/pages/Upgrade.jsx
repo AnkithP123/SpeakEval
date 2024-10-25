@@ -4,7 +4,7 @@ import { FaTimes } from 'react-icons/fa'; // Close icon
 import UpgradePanel from '../components/UpgradePanel';
 import TeacherPin from './TeacherPin'; // Page for teacher pin entry
 
-function Upgrade({ onClose }) {
+function Upgrade({ onClose, doc }) {
   const [showPinPage, setShowPinPage] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [show, setShow] = useState(true);
@@ -22,9 +22,13 @@ function Upgrade({ onClose }) {
     };
 
     document.addEventListener('keydown', handleKeyDown);
+    if (doc)
+      doc.addEventListener('keydown', handleKeyDown);
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      if (doc)
+        doc.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
