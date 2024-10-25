@@ -14,6 +14,18 @@ function Upgrade({ onClose }) {
 
   useEffect(() => {
     setTimeout(() => setInitialRender(false), 100); // Start the animation after the component mounts
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleSubscribe = (subscriptionDetails) => {
@@ -29,8 +41,10 @@ function Upgrade({ onClose }) {
 
   const handleClose = () => {
     setClosing(true); // Trigger closing animation
-    setTimeout(() => {setShow(false);     onClose();} // Call the onClose function passed as prop
-    , 300); // Wait for animation to complete before hiding
+    setTimeout(() => {
+      setShow(false);
+      onClose(); // Call the onClose function passed as prop
+    }, 300); // Wait for animation to complete before hiding
   };
 
   return (
