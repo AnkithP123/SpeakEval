@@ -4,6 +4,7 @@ import { useStripe, useElements, CardElement, Elements } from '@stripe/react-str
 import { loadStripe } from '@stripe/stripe-js';
 import { FaEnvelope } from 'react-icons/fa';    
 import { toast } from 'react-toastify';
+import { cuteAlert } from 'cute-alert';
 
 const stripePromise = loadStripe('pk_test_51QCpfHGxVnRgHRhaU2TgiigH5ewsnLfrzD7lrsNqYajRwibsFhJdSfu5xvNsPDQfj0UMxltdhnt9i54GngVp1q6900QGJZqNGP');
 
@@ -69,10 +70,22 @@ const CardPaymentPanel = () => {
                 if (result.error) {
                     console.error(result.error);
                     toast.error('Error processing payment: ' + result.error);
+                    cuteAlert({
+                        type: 'error',
+                        title: 'An error occurred',
+                        description: result.error,
+                        primaryButtonText: 'OK'
+                    });
                     return;
                 }
                 navigate('/');
                 toast.success('Payment Successful');
+                cuteAlert({
+                    type: 'success',
+                    title: 'Payment Successful',
+                    description: 'You have successfully subscribed to ' + subscriptionData.tier + '. ' + result.message,
+                    primaryButtonText: 'OK'
+                });
             } catch (err) {
                 console.error('Error processing payment:', err);
             } finally {

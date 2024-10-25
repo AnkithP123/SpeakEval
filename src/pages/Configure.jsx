@@ -1,8 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
 import Card from '../components/Card';
+import Upgrade from './Upgrade';
+import { FaMagic } from 'react-icons/fa';
 
 const Configure = () => {
     const [userId, setUserId] = useState('');
@@ -17,6 +19,23 @@ const Configure = () => {
     const navigate = useNavigate();
     const mediaRecorderRef = useRef(null);
     const [id, setId] = useState('');
+    const [showUpgrade, setShowUpgrade] = useState(false);
+    const [showAutofillUpgrade, setShowAutofillUpgrade] = useState(false); // New state for autofill upgrade panel
+    const [sparklePositions, setSparklePositions] = useState([]);
+
+    useEffect(() => {
+        setSparklePositions(generateSparklePositions());
+      }, []); // Add dependencies if you want it to update on specific state or prop changes    
+
+      useEffect(() => {
+        // Define interval to update sparkle positions every second
+        const intervalId = setInterval(() => {
+          setSparklePositions(generateSparklePositions());
+        }, 1720);
+    
+        // Cleanup the interval on component unmount
+        return () => clearInterval(intervalId);
+      }, []);
 
     const handleInputChange = async (e) => {
         const input = e.target.value;
@@ -56,6 +75,36 @@ const Configure = () => {
     };
 
     const handleToggleRecording = () => {
+        if (questions.length >= 0) {
+            setShowUpgrade(true);
+            setTimeout(() => {
+            const message = document.createElement('div');
+            message.textContent = "You have reached the maximum number of questions. Please upgrade to record more.";
+            message.style.position = 'fixed';
+            message.style.top = '50%';
+            message.style.left = '50%';
+            message.style.transform = 'translate(-50%, -50%)';
+            message.style.backgroundColor = 'black';
+            message.style.color = 'white';
+            message.style.padding = '20px';
+            message.style.borderRadius = '10px';
+            message.style.zIndex = '1000';
+            message.style.opacity = '0';
+            message.style.transition = 'opacity 0.05s ease-in, opacity 0.2s ease-out';
+            document.body.appendChild(message);
+
+            setTimeout(() => {
+                message.style.opacity = '1';
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    setTimeout(() => {
+                        document.body.removeChild(message);
+                    }, 1000);
+                }, 1000);
+            }, 10);
+        }, 200);
+            return;
+        }
         if (navigator.mediaDevices.getUserMedia) {
             if (recording) {
                 // Stop recording
@@ -176,6 +225,10 @@ const Configure = () => {
         }
     };
 
+    const handleAutofillClick = () => {
+        setShowAutofillUpgrade(true);
+    };
+
     const containerStyle = {
         position: 'relative',
         padding: '10px 20px',
@@ -289,135 +342,265 @@ const Configure = () => {
         marginTop: '10px',
     };
 
-    return (
-        <div>
-            <title hidden>Configure Exams</title>
-            {loggedIn ? (
-                <div className="container-xl lg:container m-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-1 gap-8 p-8 rounded-lg justify-center">
-                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                            <h2 className="text-2xl font-bold mb-4 text-center">Record Questions</h2>
-                            <div className="flex justify-center">
-                                <button onClick={handleToggleRecording} style={buttonStyle}>
-                                    {recording ? "Stop" : "Record Question"}
-                                </button>
-                            </div>
-                            {recording && <p className="text-red-500 mt-4 text-center">Recording...</p>}
-                            {questions.map((question, index) => (
-                                <div key={index} style={chipStyle}>
-                                    <audio controls src={question} />
-                                    <span
-                                        style={deleteButtonStyle}
-                                        onClick={() => handleDeleteQuestion(index)}
-                                    >
-                                        &#x2715;
-                                    </span>
-                                </div>
-                            ))}
-                        </Card>
-                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                            <h2 className="text-2xl font-bold mb-4 text-center">Create Rubrics</h2>
-                            <div style={rubricContainerStyle}>
-                                <div style={rubricHeaderStyle}>Category</div>
-                                {[5, 4, 3, 2, 1].map((point) => (
-                                    <div key={point} style={rubricCellStyle}>{point}</div>
-                                ))}
-                                {categories.map((category, index) => (
-                                    <React.Fragment key={index}>
-                                        <div style={rubricCellStyle}>
-                                            <span
-                                                style={deleteButtonStyle}
-                                                onClick={() => handleDeleteCategory(index)}
-                                            >
-                                                &#x2715;
-                                            </span>
-                                            <input
-                                                type="text"
-                                                value={category.name}
-                                                onChange={(e) => handleCategoryNameChange(index, e)}
-                                                maxLength={50}
-                                                placeholder="Category Name"
-                                            />
-
-                                        </div>
-                                        {[5, 4, 3, 2, 1].map((point) => (
-                                            <input
-                                                key={point}
-                                                type="text"
-                                                value={category.descriptions[point - 1]}
-                                                onChange={(e) => handleCategoryDescriptionChange(index, point - 1, e)}
-                                                style={rubricCellStyle}
-                                                maxLength={500}
-                                                placeholder={`Description ${point}`}
-                                            />
-                                        ))}
-                                    </React.Fragment>
-                                ))}
-                            </div>
-                            <button onClick={handleAddCategory} style={buttonStyle}>Add Category</button>
-                        </Card>
-                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                            <h2 className="text-2xl font-bold mb-4 text-center">Additional Settings</h2>
-                            <div className="flex justify-center">
-                                <input
-                                    type="text"
-                                    value={maxTime}
-                                    onChange={handleMaxTimeChange}
-                                    style={{ ...rubricCellStyle, width: '20%' }}
-                                    maxLength={20}
-                                    placeholder="Answer Time Limit, in seconds"
-                                />
-                            </div>
-                            <div className="flex justify-center ">
-                                <select
-                                    value={selectedLanguage}
-                                    onChange={handleLanguageChange}
-                                    style={{ ...dropdownStyle, width: '20%' }}
-                                >
-                                    <option value="">Select Language</option>
-                                    <option value="English">English</option>
-                                    <option value="Spanish">Spanish</option>
-                                    <option value="French">French</option>
-                                    <option value="Chinese">Chinese</option>
-                                    <option value="Japanese">Japanese</option>
-                                </select>
-                            </div>
-                        </Card>
-                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                            <h2 className="text-2xl font-bold mb-4 text-center">Register Configuration</h2>
-                            <div className="flex justify-center">
-                                <input
-                                    type="text"
-                                    value={id}
-                                    onChange={(e) => setId(e.target.value)}
-                                    style={rubricCellStyle}
-                                    maxLength={15}
-                                    placeholder="Enter Config Name"
-                                />
-                                <button onClick={handleRegisterConfig} style={buttonStyle}>
-                                    Register
-                                </button>
-                            </div>
-                        </Card>
-
-                    </div>
-                </div>
-            ) : (
-                <div style={containerStyle} className={shake ? 'shake' : ''}>
-                    <input
-                        type="password"
-                        value={userId}
-                        onChange={handleInputChange}
-                        style={inputStyle}
-                        maxLength={30}
-                        placeholder="Enter Teacher Pin"
-                        onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
-                    />
-                    <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-                </div>
-            )}
-        </div>
-    );
+    const premiumButtonStyle = {
+        background: 'linear-gradient(75deg, #CFA944, #F5ED88, #EBC764)', 
+        color: '#FFFFFF',
+        padding: '10px 20px',
+        borderRadius: '25px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        transition: 'transform 0.2s, background-color 0.2s',
+        fontSize: '1rem',
+        fontWeight: 'bold',
+        boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
+        position: 'relative',
+        overflow: 'hidden', 
+    };
+      
+      const fancyButtonIconStyle = {
+        marginRight: '8px',
+      };
+      
+      // CSS keyframes and styles
+const styles = `
+@keyframes sparkle {
+  0% { transform: scale(0); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.7; }
+  100% { transform: scale(0); opacity: 0; }
 }
 
+@keyframes gleam {
+  0% { transform: translateX(-200%); }
+  100% { transform: translateX(3072%); }
+}
+
+.sparkle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle, #FFFFFF 50%, transparent 50%);
+  clip-path: polygon(
+    50% 0%, 
+    61% 35%, 
+    98% 35%, 
+    68% 57%, 
+    79% 91%, 
+    50% 70%, 
+    21% 91%, 
+    32% 57%, 
+    2% 35%, 
+    39% 35%
+  );
+  animation: sparkle 1.5s infinite;
+  pointer-events: none;
+}
+
+.gleam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  animation: gleam 4s infinite;
+  pointer-events: none;
+  filter: blur(1px);
+}
+`;
+
+const generateSparklePositions = () => {
+    const positions = [];
+    for (let i = 0; i < 3; i++) {
+    positions.push({
+      top: `${Math.random() * 100}%`, // Randomized top position
+      left: `${Math.random() * 100}%`, // Randomized left position
+      animationDelay: `${Math.random() * 1.5}s`, // Random delay
+    });
+    }
+    return positions;
+  };
+
+return (
+    <div>
+        <style>{styles}</style>
+        {showUpgrade && <Upgrade onClose={() => setShowUpgrade(false)} />}
+        {showAutofillUpgrade && <Upgrade onClose={() => setShowAutofillUpgrade(false)} />}
+        <title hidden>Configure Exams</title>
+        {loggedIn ? (
+            <div className="container-xl lg:container m-auto">
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-8 p-8 rounded-lg justify-center">
+                    <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+                    <div className="flex justify-center items-center mb-4 relative">
+                            <div className="w-[10%]"></div> {/* Spacer to balance the button on the right */}
+                            <h2 className="text-2xl font-bold text-center flex-grow">
+                                    Record Questions
+                            </h2>
+                            <button
+                                    onClick={handleAutofillClick}
+                                    style={premiumButtonStyle}
+                                    className="absolute right-0"
+                            >
+                                    <FaMagic style={fancyButtonIconStyle} />
+                                    Autofill
+                                    <div className="gleam"></div>
+                                    {sparklePositions.map((style, index) => (
+                                    <div key={index} className="sparkle" style={style}></div>
+                                    ))}
+                            </button>
+                            </div>
+
+                        <div className="flex justify-center">
+                            <button onClick={handleToggleRecording} style={buttonStyle}>
+                                {recording ? 'Stop' : 'Record Question'}
+                            </button>
+                        </div>
+                        {recording && (
+                            <p className="text-red-500 mt-4 text-center">Recording...</p>
+                        )}
+                        {questions.map((question, index) => (
+                            <div key={index} style={chipStyle}>
+                                <audio controls src={question} />
+                                <span
+                                    style={deleteButtonStyle}
+                                    onClick={() => handleDeleteQuestion(index)}
+                                >
+                                    &#x2715;
+                                </span>
+                            </div>
+                        ))}
+                    </Card>
+                    <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+                    <div className="flex justify-center items-center mb-4 relative">
+                            <div className="w-[10%]"></div> {/* Spacer to balance the button */}
+                            <h2 className="text-2xl font-bold text-center flex-grow">
+                                    Create Rubric
+                            </h2>
+                            <button
+                                    onClick={handleAutofillClick}
+                                    style={premiumButtonStyle}
+                                    className="absolute right-0"
+                            >
+                                    <FaMagic style={fancyButtonIconStyle} />
+                                    Autofill
+                                    <div className="gleam"></div>
+                                    {sparklePositions.map((style, index) => (
+                                    <div key={index} className="sparkle" style={style}></div>
+                                    ))}
+                            </button>
+                    </div>
+
+                        <div style={rubricContainerStyle}>
+                            <div style={rubricHeaderStyle}>Category</div>
+                            {[5, 4, 3, 2, 1].map((point) => (
+                                <div key={point} style={rubricCellStyle}>
+                                    {point}
+                                </div>
+                            ))}
+                            {categories.map((category, index) => (
+                                <React.Fragment key={index}>
+                                    <div style={rubricCellStyle}>
+                                        <span
+                                            style={deleteButtonStyle}
+                                            onClick={() => handleDeleteCategory(index)}
+                                        >
+                                            &#x2715;
+                                        </span>
+                                        <input
+                                            type="text"
+                                            value={category.name}
+                                            onChange={(e) => handleCategoryNameChange(index, e)}
+                                            maxLength={50}
+                                            placeholder="Category Name"
+                                        />
+                                    </div>
+                                    {[5, 4, 3, 2, 1].map((point) => (
+                                        <input
+                                            key={point}
+                                            type="text"
+                                            value={category.descriptions[point - 1]}
+                                            onChange={(e) =>
+                                                handleCategoryDescriptionChange(index, point - 1, e)
+                                            }
+                                            style={rubricCellStyle}
+                                            maxLength={500}
+                                            placeholder={`Description ${point}`}
+                                        />
+                                    ))}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                        <button onClick={handleAddCategory} style={buttonStyle}>
+                            Add Category
+                        </button>
+                    </Card>
+                    <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+                        <h2 className="text-2xl font-bold mb-4 text-center">
+                            Additional Settings
+                        </h2>
+                        <div className="flex justify-center">
+                            <input
+                                type="text"
+                                value={maxTime}
+                                onChange={handleMaxTimeChange}
+                                style={{ ...rubricCellStyle, width: '20%' }}
+                                maxLength={20}
+                                placeholder="Answer Time Limit, in seconds"
+                            />
+                        </div>
+                        <div className="flex justify-center">
+                            <select
+                                value={selectedLanguage}
+                                onChange={handleLanguageChange}
+                                style={{ ...dropdownStyle, width: '20%' }}
+                            >
+                                <option value="">Select Language</option>
+                                <option value="English">English</option>
+                                <option value="Spanish">Spanish</option>
+                                <option value="French">French</option>
+                                <option value="Chinese">Chinese</option>
+                                <option value="Japanese">Japanese</option>
+                            </select>
+                        </div>
+                    </Card>
+                    <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+                        <h2 className="text-2xl font-bold mb-4 text-center">
+                            Register Configuration
+                        </h2>
+                        <div className="flex justify-center">
+                            <input
+                                type="text"
+                                value={id}
+                                onChange={(e) => setId(e.target.value)}
+                                style={rubricCellStyle}
+                                maxLength={15}
+                                placeholder="Enter Config Name"
+                            />
+                            <button onClick={handleRegisterConfig} style={buttonStyle}>
+                                Register
+                            </button>
+                        </div>
+                    </Card>
+                </div>
+            </div>
+        ) : (
+            <div style={containerStyle} className={shake ? 'shake' : ''}>
+                <input
+                    type="password"
+                    value={userId}
+                    onChange={handleInputChange}
+                    style={inputStyle}
+                    maxLength={30}
+                    placeholder="Enter Teacher Pin"
+                    onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
+                />
+                <button onClick={handleGoClick} style={buttonStyle}>
+                    Log In
+                </button>
+            </div>
+        )}
+    </div>
+);
+};
 export default Configure;

@@ -104,9 +104,11 @@ function UpgradePanelContent({ basicCard = true, onSubscribe }) {
                 <li>ꕥ {basicCard ? "Basic → Pro Grading AI" : "Basic → Pro Max Grading AI"}</li>
                 <li>ꕥ {basicCard ? "Better Transcriptions!" : "Advanced Transcriptions!"}</li>
                 <li>✔ {basicCard ? "No Transcription Queue" : "No Transcription Queue"}</li>
-                <li>{basicCard ? "✘ Grading Limit – 6 per minute" : "✔ No Grading Limit"}</li>
+                <li>{basicCard ? "✘ Grading Limit (6 → 30 per minute)" : "✔ No Grading Limit"}</li>
                 <li>{basicCard ? "✔ Rubric Fill From Other Exams" : "✔ Rubric Fill From Other Exams"}</li>
-                <li>{basicCard ? "✘ No Question Fill" : "✔ Question Fill From Other Exams"}</li>
+                <li>{basicCard ? "✔ Question Fill From Other Exams" : "✔ Question Fill From Other Exams"}</li>
+                <li>{basicCard ? "✘ No Fill From AI" : "✔ Question And Rubric Fill From AI"}</li>
+
             </ul>
             <div className="flex justify-between w-full mb-6">
                 <button
