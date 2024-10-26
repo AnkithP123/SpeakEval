@@ -47,49 +47,97 @@ const CardPaymentPanel = () => {
         } else {
             console.log('[PaymentMethod]', paymentMethod);
 
+            if (subscriptionData.planType === 'subscribe') {
             // Send the payment method, subscription data, teacherPin, and email to your backend
-            try {
-                const response = await fetch('https://backend-4abv.onrender.com/create-session2', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        paymentMethodId: paymentMethod.id,
-                        subscriptionData,
-                        teacherPin,
-                        email,
-                    }),
-                });
+                try {
+                    const response = await fetch('https://backend-4abv.onrender.com/create-session2', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            paymentMethodId: paymentMethod.id,
+                            subscriptionData,
+                            teacherPin,
+                            email,
+                        }),
+                    });
 
-                const result = await response.json();
-                
-                console.log(result);
+                    const result = await response.json();
+                    
+                    console.log(result);
 
-                // Redirect to success page if payment is successful
-                if (result.error) {
-                    console.error(result.error);
-                    toast.error('Error processing payment: ' + result.error);
+                    // Redirect to success page if payment is successful
+                    if (result.error) {
+                        console.error(result.error);
+                        toast.error('Error processing payment: ' + result.error);
+                        cuteAlert({
+                            type: 'error',
+                            title: 'An error occurred',
+                            description: result.error,
+                            primaryButtonText: 'OK'
+                        });
+                        return;
+                    }
+                    navigate('/');
+                    toast.success('Payment Successful');
                     cuteAlert({
-                        type: 'error',
-                        title: 'An error occurred',
-                        description: result.error,
+                        type: 'success',
+                        title: 'Payment Successful',
+                        description: 'You have successfully subscribed to ' + subscriptionData.tier + '. ' + result.message,
                         primaryButtonText: 'OK'
                     });
-                    return;
+                } catch (err) {
+                    console.error('Error processing payment:', err);
+                } finally {
+                    setLoading(false); // Stop loading after processing
                 }
-                navigate('/');
-                toast.success('Payment Successful');
-                cuteAlert({
-                    type: 'success',
-                    title: 'Payment Successful',
-                    description: 'You have successfully subscribed to ' + subscriptionData.tier + '. ' + result.message,
-                    primaryButtonText: 'OK'
-                });
-            } catch (err) {
-                console.error('Error processing payment:', err);
-            } finally {
-                setLoading(false); // Stop loading after processing
+            } else {
+                // Send the payment method, subscription data, and email to your backend
+                try {
+                    const response = await fetch('https://backend-4abv.onrender.com/create-session2', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            paymentMethodId: paymentMethod.id,
+                            subscriptionData,
+                            teacherPin,
+                            email,
+                        }),
+                        
+                    });
+
+                    const result = await response.json();
+                    
+                    console.log(result);
+
+                    // Redirect to success page if payment is successful
+                    if (result.error) {
+                        console.error(result.error);
+                        toast.error('Error processing payment: ' + result.error);
+                        cuteAlert({
+                            type: 'error',
+                            title: 'An error occurred',
+                            description: result.error,
+                            primaryButtonText: 'OK'
+                        });
+                        return;
+                    }
+                    navigate('/');
+                    toast.success('Payment Successful');
+                    cuteAlert({
+                        type: 'success',
+                        title: 'Payment Successful',
+                        description: 'You have successfully purchased ' + subscriptionData.tier + '. ' + result.message,
+                        primaryButtonText: 'OK'
+                    });
+                } catch (err) {
+                    console.error('Error processing payment:', err);
+                } finally {
+                    setLoading(false); // Stop loading after processing
+                }
             }
         }
     };

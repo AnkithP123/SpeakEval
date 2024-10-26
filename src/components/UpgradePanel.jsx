@@ -32,28 +32,7 @@ function UpgradePanelContent({ basicCard = true, onSubscribe }) {
         }
 
         try {
-            const response = await fetch('https://backend-4abv.onrender.com/create-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    tier: tier,
-                    price: price,
-                    months: planType === 'buy' ? months : 1,
-                    subscriptionType: planType === 'subscribe' ? subscriptionType : null
-                })
-            });
-
-            const { id } = await response.json();
-
-            const result = await stripe.redirectToCheckout({
-                sessionId: id
-            });
-
-            if (result.error) {
-                console.error(result.error);
-            }
+            onSubscribe({ tier, months, subscriptionType, planType });
         } catch (error) {
             console.error('Error during checkout:', error);
         }
