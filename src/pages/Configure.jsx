@@ -22,15 +22,17 @@ const Configure = () => {
     const [showUpgrade, setShowUpgrade] = useState(false);
     const [showAutofillUpgrade, setShowAutofillUpgrade] = useState(false); // New state for autofill upgrade panel
     const [sparklePositions, setSparklePositions] = useState([]);
+    const [button1Hover, setButton1Hover] = useState(false);
+    const [button2Hover, setButton2Hover] = useState(false);
 
     useEffect(() => {
-        setSparklePositions(generateSparklePositions());
+        setSparklePositions(generateSparklePositions(3));
       }, []); // Add dependencies if you want it to update on specific state or prop changes    
 
       useEffect(() => {
         // Define interval to update sparkle positions every second
         const intervalId = setInterval(() => {
-          setSparklePositions(generateSparklePositions());
+          setSparklePositions(generateSparklePositions(3));
         }, 1720);
     
         // Cleanup the interval on component unmount
@@ -241,8 +243,13 @@ const Configure = () => {
         maxWidth: '300px',
         margin: '20px auto',
         textAlign: 'center',
+        transition: 'background-color 0.2s, filter 0.2s',
+        filter: 'brightness(1)',
+        ':hover': {
+            filter: 'brightness(0.9)',
+        },
     };
-
+    
     const inputStyle = {
         width: 'calc(100% - 50px)', // Reduced width to accommodate the button
         padding: '10px',
@@ -256,7 +263,7 @@ const Configure = () => {
         letterSpacing: '2px',
         marginRight: '10px', // Add some space between input and button
     };
-
+    
     const buttonStyle = {
         backgroundColor: 'black', // Green background
         border: 'none',
@@ -270,8 +277,13 @@ const Configure = () => {
         margin: '4px 2px',
         cursor: 'pointer',
         borderRadius: '5px',
+        transition: 'transform 0.3s, box-shadow 0.3s',
+        ':hover': {
+            transform: 'scale(2)',
+            boxShadow: '0 0 20px rgba(235, 192, 80, 0.8)',
+        },
     };
-
+    
     const cardStyle = {
         backgroundColor: 'white',
         padding: '20px',
@@ -281,7 +293,7 @@ const Configure = () => {
         margin: '20px auto',
         textAlign: 'center',
     };
-
+    
     const chipStyle = {
         display: 'inline-flex',
         alignItems: 'center',
@@ -292,21 +304,20 @@ const Configure = () => {
         borderRadius: '16px',
         margin: '4px',
     };
-
+    
     const deleteButtonStyle = {
         marginRight: '8px',
         cursor: 'pointer',
         color: 'red',
-
     };
-
+    
     const rubricContainerStyle = {
         display: 'grid',
         gridTemplateColumns: 'auto repeat(5, 1fr)',
         gap: '8px',
         marginTop: '16px',
     };
-
+    
     const rubricHeaderStyle = {
         display: 'flex',
         alignItems: 'center',
@@ -317,7 +328,7 @@ const Configure = () => {
         borderRadius: '16px',
         fontWeight: 'bold',
     };
-
+    
     const rubricCellStyle = {
         display: 'flex',
         alignItems: 'center',
@@ -328,7 +339,7 @@ const Configure = () => {
         borderRadius: '16px',
         border: '1px solid #E6F3FF',
     };
-
+    
     const dropdownStyle = {
         width: '100%',
         padding: '10px',
@@ -341,9 +352,9 @@ const Configure = () => {
         letterSpacing: '2px',
         marginTop: '10px',
     };
-
+    
     const premiumButtonStyle = {
-        background: 'linear-gradient(75deg, #CFA944, #F5ED88, #EBC764)', 
+        background: 'linear-gradient(75deg, #EBC050, #F5ED88, #EBC764)',
         color: '#FFFFFF',
         padding: '10px 20px',
         borderRadius: '25px',
@@ -351,76 +362,90 @@ const Configure = () => {
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
-        transition: 'transform 0.2s, background-color 0.2s',
+        transition: 'transform 0.2s, background-color 0.2s, box-shadow 0.3s',
         fontSize: '1rem',
         fontWeight: 'bold',
         boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
         position: 'relative',
-        overflow: 'hidden', 
+        overflow: 'hidden',
+        backgroundSize: '200% 100%',
+        animation: 'gradientShift 5s ease infinite',
+        ':hover': {
+            transform: 'scale(1.05)',
+            boxShadow: '0 0 20px rgba(235, 192, 80, 0.8)',
+        },
     };
-      
-      const fancyButtonIconStyle = {
+    
+    const fancyButtonIconStyle = {
         marginRight: '8px',
-      };
-      
-      // CSS keyframes and styles
-const styles = `
-@keyframes sparkle {
-  0% { transform: scale(0); opacity: 1; }
-  50% { transform: scale(1.5); opacity: 0.7; }
-  100% { transform: scale(0); opacity: 0; }
-}
-
-@keyframes gleam {
-  0% { transform: translateX(-200%); }
-  100% { transform: translateX(3072%); }
-}
-
-.sparkle {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  background: radial-gradient(circle, #FFFFFF 50%, transparent 50%);
-  clip-path: polygon(
-    50% 0%, 
-    61% 35%, 
-    98% 35%, 
-    68% 57%, 
-    79% 91%, 
-    50% 70%, 
-    21% 91%, 
-    32% 57%, 
-    2% 35%, 
-    39% 35%
-  );
-  animation: sparkle 1.5s infinite;
-  pointer-events: none;
-}
-
-.gleam {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 8px;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.7);
-  animation: gleam 4s infinite;
-  pointer-events: none;
-  filter: blur(1px);
-}
-`;
-
-const generateSparklePositions = () => {
-    const positions = [];
-    for (let i = 0; i < 3; i++) {
-    positions.push({
-      top: `${Math.random() * 100}%`, // Randomized top position
-      left: `${Math.random() * 100}%`, // Randomized left position
-      animationDelay: `${Math.random() * 1.5}s`, // Random delay
-    });
+    };
+    
+    // CSS keyframes and styles
+    const styles = `
+    @keyframes sparkle {
+      0% { transform: scale(0); opacity: 1; }
+      50% { transform: scale(1.5); opacity: 0.7; }
+      100% { transform: scale(0); opacity: 0; }
     }
-    return positions;
-  };
+    
+    @keyframes gleam {
+      0% { transform: translateX(-100%); }
+      80% { transform: translateX(2860%); }
+      100% { transform: translateX(2860%); }
+    }
+    
+    @keyframes gradientShift {
+        0% { background-position: 200% 50%; }
+        80% { background-position: 0% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    .sparkle {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: radial-gradient(circle, #FFFFFF 50%, transparent 50%);
+      clip-path: polygon(
+        50% 0%, 
+        61% 35%, 
+        98% 35%, 
+        68% 57%, 
+        79% 91%, 
+        50% 70%, 
+        21% 91%, 
+        32% 57%, 
+        2% 35%, 
+        39% 35%
+      );
+      animation: sparkle 1.5s infinite;
+      pointer-events: none;
+    }
+    
+    .gleam {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 8px;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.7);
+      animation: gleam 5s ease infinite;
+      pointer-events: none;
+      filter: blur(1px);
+    }
+    `;
+    
+    const generateSparklePositions = (length) => {
+        const positions = [];
+        for (let i = 0; i < length; i++) {
+            positions.push({
+                top: `${Math.random() * 100}%`, // Randomized top position
+                left: `${Math.random() * 100}%`, // Randomized left position
+                animationDelay: `${Math.random() * 1.5}s`, // Random delay
+            });
+        }
+        return positions;
+    };
+    
 
 return (
     <div>
@@ -439,13 +464,23 @@ return (
                             </h2>
                             <button
                                     onClick={handleAutofillClick}
-                                    style={premiumButtonStyle}
-                                    className="absolute right-0"
+                                    style={{
+                                        ...premiumButtonStyle,
+                                        background: button1Hover ? '#F0C63C' : premiumButtonStyle.background, // Brighter gold
+                                        boxShadow: button1Hover
+                                          ? '0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.8), 0 0 90px rgba(255, 215, 0, 0.6)'
+                                          : premiumButtonStyle.boxShadow,
+                                        transform: button1Hover ? 'scale(1.1)' : premiumButtonStyle.transform, // Slightly larger scale
+                                        transition: 'transform 0.3s, box-shadow 0.3s'
+                                      }}                                    className="absolute right-0"
+
+                                    onMouseEnter={() => {setButton1Hover(true)}}
+                                    onMouseLeave={() => {setButton1Hover(false)}}
                             >
                                     <FaMagic style={fancyButtonIconStyle} />
                                     Autofill
-                                    <div className="gleam"></div>
-                                    {sparklePositions.map((style, index) => (
+                                    <div className={"gleam"}></div>
+                                    {(button1Hover ? generateSparklePositions(15) : sparklePositions).map((style, index) => (
                                     <div key={index} className="sparkle" style={style}></div>
                                     ))}
                             </button>
@@ -479,13 +514,23 @@ return (
                             </h2>
                             <button
                                     onClick={handleAutofillClick}
-                                    style={premiumButtonStyle}
-                                    className="absolute right-0"
+                                    style={{
+                                        ...premiumButtonStyle,
+                                        background: button2Hover ? '#F0C63C' : premiumButtonStyle.background, // Brighter gold
+                                        boxShadow: button2Hover
+                                          ? '0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.8), 0 0 90px rgba(255, 215, 0, 0.6)'
+                                          : premiumButtonStyle.boxShadow,
+                                        transform: button2Hover ? 'scale(1.1)' : premiumButtonStyle.transform, // Slightly larger scale
+                                        transition: 'transform 0.3s, box-shadow 0.3s'
+                                      }}
+                                                                          className="absolute right-0"
+                                    onMouseEnter={() => {setButton2Hover(true)}}
+                                    onMouseLeave={() => {setButton2Hover(false)}}
                             >
                                     <FaMagic style={fancyButtonIconStyle} />
                                     Autofill
-                                    <div className="gleam"></div>
-                                    {sparklePositions.map((style, index) => (
+                                    <div className={"gleam"}></div>
+                                    {(button2Hover ? generateSparklePositions(15) : sparklePositions).map((style, index) => (
                                     <div key={index} className="sparkle" style={style}></div>
                                     ))}
                             </button>
