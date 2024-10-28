@@ -20,7 +20,7 @@ export default function AudioRecorder({code, participant}) {
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
     const [displayTime, setDisplayTime] = useState('xx:xx'); // State for displaying formatted time
-    const [premium, setPremium] = useState(false);
+    let [premium, setPremium] = useState(false);
     let questionIndex;
 
     // set the status interval
@@ -228,9 +228,10 @@ async function convertOggToWav(oggUrl) {
 
         const audios = receivedData.audios;
 
+        console.log(receivedData);
+
         if (receivedData.subscribed) {
-            setPremium(true);
-            console.log('Premium:', premium);
+            premium = true;
         }
 
         let audio;
