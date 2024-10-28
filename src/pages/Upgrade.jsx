@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'; // For navigation
 import { FaTimes } from 'react-icons/fa'; // Close icon
 import UpgradePanel from '../components/UpgradePanel';
 import TeacherPin from './TeacherPin'; // Page for teacher pin entry
+import { cuteAlert } from 'cute-alert';
+import { toast } from 'react-toastify';
 
 function Upgrade({ onClose, doc }) {
   const [showPinPage, setShowPinPage] = useState(false);
@@ -43,6 +45,58 @@ function Upgrade({ onClose, doc }) {
     navigate('/card-payment', { state: { subscriptionData, teacherPin } });
   };
 
+  const sendRequest = async (pin, email) => {
+    setShowPinPage(false); // Show the pin entry page if subscribing
+    try {
+      const response = await fetch('https://backend-4abv.onrender.com/create-session', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+              subscriptionData,
+              teacherPin: pin,
+              email,
+          }),
+          
+      });
+
+      const result = await response.json();
+      
+      console.log(result);
+
+      // Redirect to success page if payment is successful
+      if (result.error) {
+          console.error(result.error);
+          toast.error('Error processing payment: ' + result.error);
+          document.documentElement.style.setProperty('cute-alert-z-index', 10000);
+          document.documentElement.style.setProperty('-cute-alert-z-index', 10000);
+          document.documentElement.style.setProperty('--cute-alert-z-index', 10000);
+          cuteAlert({
+              type: 'error',
+              title: 'An error occurred',
+              description: result.error,
+              primaryButtonText: 'OK',
+          });
+          return;
+      }
+
+      if (result.paymentLinkUrl) {
+        window
+          .open(result.paymentLinkUrl, '_blank', 'noopener,noreferrer');
+      }
+
+    } catch (err) {
+        console.error('Error processing payment:', err);
+        cuteAlert({
+            type: 'error',
+            title: 'An error occurred',
+            description: 'Error processing request',
+            primaryButtonText: 'OK'
+        })
+    }
+  }
+
   const handleClose = () => {
     setClosing(true); // Trigger closing animation
     setTimeout(() => {
@@ -65,7 +119,7 @@ function Upgrade({ onClose, doc }) {
             {showPinPage ? (
               <TeacherPin
                 subscriptionData={subscriptionData}
-                onPinEntered={proceedToCardPage} // Pass the pin to proceedToCardPage
+                onPinEntered={sendRequest} // Pass the pin to proceedToCardPage
               />
             ) : (
               <div className="relative">

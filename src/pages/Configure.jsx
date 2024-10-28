@@ -404,19 +404,9 @@ const Configure = () => {
       position: absolute;
       width: 16px;
       height: 16px;
-      background: radial-gradient(circle, #FFFFFF 50%, transparent 50%);
-      clip-path: polygon(
-        50% 0%, 
-        61% 35%, 
-        98% 35%, 
-        68% 57%, 
-        79% 91%, 
-        50% 70%, 
-        21% 91%, 
-        32% 57%, 
-        2% 35%, 
-        39% 35%
-      );
+      background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.7) 40%, rgba(255, 255, 255, 0) 70%);
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 255, 255, 0.2);
       animation: sparkle 1.5s infinite;
       pointer-events: none;
     }
@@ -438,8 +428,8 @@ const Configure = () => {
         const positions = [];
         for (let i = 0; i < length; i++) {
             positions.push({
-                top: `${Math.random() * 100}%`, // Randomized top position
-                left: `${Math.random() * 100}%`, // Randomized left position
+                top: `${Math.random() * 70 + 10}%`, // Randomized top position
+                left: `${Math.random() * 70 + 10}%`, // Randomized left position
                 animationDelay: `${Math.random() * 1.5}s`, // Random delay
             });
         }

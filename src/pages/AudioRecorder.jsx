@@ -20,6 +20,7 @@ export default function AudioRecorder({code, participant}) {
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
     const [displayTime, setDisplayTime] = useState('xx:xx'); // State for displaying formatted time
+    const [premium, setPremium] = useState(false);
     let questionIndex;
 
     // set the status interval
@@ -193,11 +194,11 @@ async function convertOggToWav(oggUrl) {
                 window.location.href = 'join-room';
                 break;
             case 5:
-                if (error == 'Reaching time limit. Please finish your response in the next 5 seconds. ') {setError('You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.'); setIsError(false)}
+                if (error === 'Reaching time limit. Please finish your response in the next 5 seconds. ') {setError('You reached the time limit and your audio was stopped and uploaded automatically. ' + premium ? 'Your teacher has a premium subscription, so your audio will be proessed faster' : 'It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue. Tell your teacher to upgrade to Premium to bypass the queue.'); setIsError(false)}
                 stopRecording();
                 break;
             case 6:
-                if ((!(error == 'Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.') && (!error || error === null || !(error.includes('Uploaded to server successfully.'))))) {
+                if ((!(error.includes('Processing...')) && (!error || error === null || !(error.includes('Uploaded to server successfully.'))))) {
                     setError('Reaching time limit. Please finish your response in the next 5 seconds. ');
                     
                     setIsError(true);
@@ -226,6 +227,10 @@ async function convertOggToWav(oggUrl) {
         console.log('Received data:', receivedData.audios);
 
         const audios = receivedData.audios;
+
+        if (receivedData.subsribed) {
+            setPremium(true);
+        }
 
         let audio;
 
@@ -338,7 +343,7 @@ async function convertOggToWav(oggUrl) {
     };
 
     const upload = async(formData) => {
-        setError('Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.');
+        setError('Processing... ' + premium ? 'Your teacher has a premium subscription, so your audio will be processed faster' : 'This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue. Tell your teacher to upgrade to Premium to bypass the queue.');
         setIsError(false);
         let transcriptionResult = {textContent: ""};
 

@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 
 function TeacherPin({ subscriptionData, onPinEntered }) {
     const [pin, setPin] = useState('');
+    const [email, setEmail] = useState(''); // State for email
     const [error, setError] = useState('');
     const [shake, setShake] = useState(false); // State to trigger shake effect
 
@@ -12,16 +13,16 @@ function TeacherPin({ subscriptionData, onPinEntered }) {
             let res = await fetch(`https://backend-4abv.onrender.com/teacherpin?pin=${pin}`);
             parsedData = await res.json();
 
-            if (parsedData.code === 401) {
+            if (parsedData.code === 401 || !email || email === '' || !isValidEmail(email)) {
                 console.error(parsedData);
-                toast.error("Incorrect Teacher Pin");
+                toast.error(email && email !== '' && isValidEmail(email) ? "Incorrect Teacher Pin" : ((!email || email === '') ? "Please enter an email" : "Invalid Email"));
                 setShake(true); // Trigger the shake effect
                 setTimeout(() => setShake(false), 500); // Remove shake effect after 500ms
                 return setPin('');
             }
             if (parsedData.code === 200) {
                 console.log(parsedData);
-                onPinEntered(pin);  // Call the function to proceed after pin is entered
+                onPinEntered(pin, email);  // Call the function to proceed after pin and email are entered
             }
         } catch (err) {
             console.error("Error Loading Data", err);
@@ -34,9 +35,17 @@ function TeacherPin({ subscriptionData, onPinEntered }) {
 
     };
 
-    const handleInputChange = async (e) => {
+    const isValidEmail = (email) => {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    };
+
+    const handlePinChange = async (e) => {
         const input = e.target.value;
         await setPin(input.toUpperCase());
+    };
+
+    const handleEmailChange = (e) => {
+        setEmail(e.target.value);
     };
 
     const containerStyle = {
@@ -93,17 +102,24 @@ function TeacherPin({ subscriptionData, onPinEntered }) {
 
     return (
         <div style={containerStyle} className={shake ? 'shake' : ''}>
-        <input
-            type="password"
-            value={pin}
-            onChange={handleInputChange}
-            style={inputStyle}
-            maxLength={30}
-            placeholder="Enter Teacher Pin"
-            onKeyUp={(e) => e.key === 'Enter' && handlePinSubmit()}
-        />
-        <button onClick={handlePinSubmit} style={buttonStyle}>Log In</button>
-    </div>
+            <input
+                type="email"
+                value={email}
+                onChange={handleEmailChange}
+                style={inputStyle}
+                placeholder="Enter Email"
+            />
+            <input
+                type="password"
+                value={pin}
+                onChange={handlePinChange}
+                style={inputStyle}
+                maxLength={30}
+                placeholder="Enter Teacher Pin"
+                onKeyUp={(e) => e.key === 'Enter' && handlePinSubmit()}
+            />
+            <button onClick={handlePinSubmit} style={buttonStyle}>Log In</button>
+        </div>
     );
 }
 

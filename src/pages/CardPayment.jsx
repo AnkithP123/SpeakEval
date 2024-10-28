@@ -50,7 +50,7 @@ const CardPaymentPanel = () => {
             if (subscriptionData.planType === 'subscribe') {
             // Send the payment method, subscription data, teacherPin, and email to your backend
                 try {
-                    const response = await fetch('https://backend-4abv.onrender.com/create-session2', {
+                    const response = await fetch('https://backend-4abv.onrender.com/create-session', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ const CardPaymentPanel = () => {
             } else {
                 // Send the payment method, subscription data, and email to your backend
                 try {
-                    const response = await fetch('https://backend-4abv.onrender.com/create-session2', {
+                    const response = await fetch('https://backend-4abv.onrender.com/create-session', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ const buttonStyle = {
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                                 placeholder="Email"
-                                style={{ width: '100%', padding: '5px', border: 'none', borderRadius: '0', '::placeholder': { color: 'crimson' } }}
+                                style={{ width: '100%', padding: '5px', border: 'none', outline: 'none', borderRadius: '0', '::placeholder': { color: 'crimson' } }}
                             />
                         </div>
                     </div>
