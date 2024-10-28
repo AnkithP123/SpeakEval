@@ -228,7 +228,7 @@ async function convertOggToWav(oggUrl) {
 
         const audios = receivedData.audios;
 
-        if (receivedData.subsribed) {
+        if (receivedData.subscribed) {
             setPremium(true);
         }
 
@@ -343,7 +343,8 @@ async function convertOggToWav(oggUrl) {
     };
 
     const upload = async(formData) => {
-        setError('Processing... ' + premium ? 'Your teacher has a premium subscription, so your audio will be processed faster' : 'This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue. Tell your teacher to upgrade to Premium to bypass the queue.');
+        console.log(premium);
+        setError('Processing... ' + (premium ? 'Your teacher has a premium subscription, so your audio will be processed faster' : 'This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue. Tell your teacher to upgrade to Premium to bypass the queue.'));
         setIsError(false);
         let transcriptionResult = {textContent: ""};
 
