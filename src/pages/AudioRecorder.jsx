@@ -230,6 +230,7 @@ async function convertOggToWav(oggUrl) {
 
         if (receivedData.subscribed) {
             setPremium(true);
+            console.log('Premium:', premium);
         }
 
         let audio;
