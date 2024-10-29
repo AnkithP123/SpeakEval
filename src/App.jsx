@@ -42,7 +42,7 @@ function App() {
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/upgrade" element={<Upgrade set={setGold} setUltimate={setUltimate}/>} />
           <Route path="/card-payment" element={<CardPayment />} />
-          <Route path="/upgraded/:ultimate" element={<Upgraded  set={setGold} setUltimate={setUltimate}/>} />
+          <Route path="/upgraded" element={<Upgraded  set={setGold} setUltimate={setUltimate}/>} />
           <Route path="*" element={<Maintainence />} />
         </Route>
         <Route path="/record" element={<AudioRecorderRouteWrapper />} />

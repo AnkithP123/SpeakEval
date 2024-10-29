@@ -1,23 +1,19 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import './Upgraded.css';
 import HomePage from './HomePage';
 
-const Upgraded = ({ set, setUltimate }) => {
-    const navigate = useNavigate();
-    let { ultimate } = useParams();
+function Upgraded ({ set, setUltimate }) {
 
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+
+    let ultimate = queryParams.get('ultimate') === 'true';
+    
     useEffect(() => {
         set(true);
         setUltimate(ultimate);
-
-        // Delay navigation until after the peel effect
-        const peelTimeout = setTimeout(() => {
-            navigate('/');
-        }, 2500); // Match the animation duration in CSS
-
-        return () => clearTimeout(peelTimeout);
-    }, [navigate, set, setUltimate, ultimate]);
+    }, [set, setUltimate, ultimate]);
 
     return (
         <>
