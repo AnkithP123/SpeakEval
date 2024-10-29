@@ -35,8 +35,8 @@ function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
                 console.log(parsedData);
                 setLoggedIn(true);
             }
-            if (parsedData.subscription && parsedData.subscription !== 'free') {
-                set(true);
+            if (parsedData.subscription) {
+                set(parsedData.subscription !== 'free');
                 setUltimate(parsedData.subscription === 'Ultimate');
             }
         } catch (err) {

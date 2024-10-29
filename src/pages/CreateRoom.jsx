@@ -62,8 +62,8 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
                 // Move to the config page
                 setIsConfigEntered(false);
             }
-            if (parsedData.subscription && parsedData.subscription !== 'free') {
-                set(true);
+            if (parsedData.subscription) {
+                set(parsedData.subscription !== 'free');
                 setUltimate(parsedData.subscription === 'Ultimate');
             }
             
