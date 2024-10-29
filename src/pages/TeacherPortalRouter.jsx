@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
 import Card from '../components/Card';
 
-function TeacherPortalRouter({ initialUserId = '' }) {
+function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
     const [userId, setUserId] = useState(initialUserId);
     const [loggedIn, setLoggedIn] = useState(false);
     const [roomCode, setRoomCode] = useState('');
@@ -34,6 +34,10 @@ function TeacherPortalRouter({ initialUserId = '' }) {
             if (parsedData.code === 200) {
                 console.log(parsedData);
                 setLoggedIn(true);
+            }
+            if (parsedData.subscription && parsedData.subscription !== 'free') {
+                set(true);
+                setUltimate(parsedData.subscription === 'Ultimate');
             }
         } catch (err) {
             console.error("Error Loading Data", err);

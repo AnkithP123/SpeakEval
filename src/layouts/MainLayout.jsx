@@ -5,11 +5,11 @@ import { Analytics } from "@vercel/analytics/react"
 import BottomBar from '../components/BottomBar';
 import 'react-toastify/dist/ReactToastify.css';
 
-function MainLayout() {
+function MainLayout({set, set2}) {
   return (
     <div className='bg-blue-200 min-h-screen flex flex-col'>
       <Analytics />
-      <Navbar />
+      <Navbar setVar={set} setVar2={set2}/>
       <div className='flex-grow'>
         <Outlet />
       </div>

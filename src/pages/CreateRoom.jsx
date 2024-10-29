@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
 
-function CreateRoom({ initialUserId = '' }) {
+function CreateRoom({ initialUserId = '', set, setUltimate }) {
     const [userId, setUserId] = useState(initialUserId);
     const [loggedIn, setLoggedIn] = useState(false);
     const [roomCode, setRoomCode] = useState('');
@@ -62,6 +62,11 @@ function CreateRoom({ initialUserId = '' }) {
                 // Move to the config page
                 setIsConfigEntered(false);
             }
+            if (parsedData.subscription && parsedData.subscription !== 'free') {
+                set(true);
+                setUltimate(parsedData.subscription === 'Ultimate');
+            }
+            
         } catch (err) {
             console.error("Error Loading Data", err);
             toast.error("Error Loading Data");

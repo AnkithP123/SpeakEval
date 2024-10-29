@@ -6,7 +6,7 @@ import Card from '../components/Card';
 import Upgrade from './Upgrade';
 import { FaMagic } from 'react-icons/fa';
 
-const Configure = () => {
+const Configure = ({set, setUltimate}) => {
     const [userId, setUserId] = useState('');
     const [loggedIn, setLoggedIn] = useState(false);
     const [roomCode, setRoomCode] = useState('');
@@ -64,6 +64,11 @@ const Configure = () => {
             if (parsedData.code === 200) {
                 console.log(parsedData);
                 setLoggedIn(true);
+            }
+
+            if (parsedData.subscription && parsedData.subscription !== 'free') {
+                set(true);
+                setUltimate(parsedData.subscription === 'Ultimate');
             }
         } catch (err) {
             console.error("Error Loading Data", err);

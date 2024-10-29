@@ -1,0 +1,111 @@
+.gold-cover {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    z-index: 1000;
+    pointer-events: none; /* Allow click-through if needed */
+}
+
+.gold-square {
+    background: linear-gradient(75deg, #EBC050, #F5ED88, #EBC764);
+    opacity: 1;
+    animation: peelOut 2s forwards;
+}
+
+/* Center-outward fade effect */
+@keyframes peelOut {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+}
+
+/* Center squares with no delay */
+.gold-square:nth-child(55), .gold-square:nth-child(56),
+.gold-square:nth-child(45), .gold-square:nth-child(46) {
+    animation-delay: 0s;
+}
+
+/* First ring around the center */
+.gold-square:nth-child(44), .gold-square:nth-child(54),
+.gold-square:nth-child(57), .gold-square:nth-child(47),
+.gold-square:nth-child(35), .gold-square:nth-child(36),
+.gold-square:nth-child(65), .gold-square:nth-child(66) {
+    animation-delay: 0.1s;
+}
+
+/* Second ring around the center */
+.gold-square:nth-child(34), .gold-square:nth-child(43),
+.gold-square:nth-child(53), .gold-square:nth-child(64),
+.gold-square:nth-child(67), .gold-square:nth-child(58),
+.gold-square:nth-child(48), .gold-square:nth-child(37),
+.gold-square:nth-child(25), .gold-square:nth-child(26),
+.gold-square:nth-child(75), .gold-square:nth-child(76) {
+    animation-delay: 0.2s;
+}
+
+/* Third ring around the center */
+.gold-square:nth-child(24), .gold-square:nth-child(33),
+.gold-square:nth-child(42), .gold-square:nth-child(52),
+.gold-square:nth-child(63), .gold-square:nth-child(74),
+.gold-square:nth-child(77), .gold-square:nth-child(68),
+.gold-square:nth-child(59), .gold-square:nth-child(49),
+.gold-square:nth-child(38), .gold-square:nth-child(27),
+.gold-square:nth-child(15), .gold-square:nth-child(16),
+.gold-square:nth-child(85), .gold-square:nth-child(86) {
+    animation-delay: 0.3s;
+}
+
+/* Fourth ring around the center */
+.gold-square:nth-child(14), .gold-square:nth-child(23),
+.gold-square:nth-child(32), .gold-square:nth-child(41),
+.gold-square:nth-child(51), .gold-square:nth-child(62),
+.gold-square:nth-child(73), .gold-square:nth-child(84),
+.gold-square:nth-child(87), .gold-square:nth-child(78),
+.gold-square:nth-child(69), .gold-square:nth-child(60),
+.gold-square:nth-child(50), .gold-square:nth-child(39),
+.gold-square:nth-child(28), .gold-square:nth-child(17),
+.gold-square:nth-child(5), .gold-square:nth-child(6),
+.gold-square:nth-child(95), .gold-square:nth-child(96) {
+    animation-delay: 0.4s;
+}
+
+/* Fifth ring around the center */
+.gold-square:nth-child(4), .gold-square:nth-child(13),
+.gold-square:nth-child(22), .gold-square:nth-child(31),
+.gold-square:nth-child(40), .gold-square:nth-child(61),
+.gold-square:nth-child(72), .gold-square:nth-child(83),
+.gold-square:nth-child(94), .gold-square:nth-child(97),
+.gold-square:nth-child(88), .gold-square:nth-child(79),
+.gold-square:nth-child(70), .gold-square:nth-child(29),
+.gold-square:nth-child(18), .gold-square:nth-child(7),
+.gold-square:nth-child(89)
+{
+    animation-delay: 0.5s;
+}
+
+/* Outermost squares */
+.gold-square:nth-child(3), .gold-square:nth-child(12),
+.gold-square:nth-child(21), .gold-square:nth-child(30),
+.gold-square:nth-child(71), .gold-square:nth-child(82),
+.gold-square:nth-child(93), .gold-square:nth-child(98),
+.gold-square:nth-child(19), .gold-square:nth-child(8),
+.gold-square:nth-child(1), .gold-square:nth-child(2),
+.gold-square:nth-child(10), .gold-square:nth-child(9),
+.gold-square:nth-child(100), .gold-square:nth-child(99), 
+.gold-square:nth-child(11), .gold-square:nth-child(20),
+.gold-square:nth-child(80), .gold-square:nth-child(81),
+.gold-square:nth-child(91), .gold-square:nth-child(92),
+.gold-square:nth-child(90)
+ {
+    animation-delay: 0.6s;
+}
