@@ -52,7 +52,19 @@ function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
     const fetchRooms = async () => {
         try {
             const res = await fetch(`https://backend-4abv.onrender.com/getrooms?pin=${userId}`);
-            const data = await res.json();
+            let data = await res.json();
+            for (let i = 0; i < data.length; i++) {
+                if (data[i].code)
+                    data[i].code = parseInt(data[i].code.toString().slice(0, -3));
+            }
+
+            // remove data duplicates
+            data = data.filter((room, index, self) =>
+                index === self.findIndex((t) => (
+                    t.code === room.code
+                ))
+            );
+            console.log(data);
             setRooms(data);
         } catch (err) {
             console.error("Error Fetching Rooms", err);

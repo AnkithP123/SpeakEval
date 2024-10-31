@@ -106,14 +106,15 @@ function TeacherPin({ subscriptionData, onPinEntered }) {
                 type="email"
                 value={email}
                 onChange={handleEmailChange}
-                style={inputStyle}
+                style={{ ...inputStyle, backgroundColor: '#f9f9f9' }} // Lighter background color
                 placeholder="Enter Email"
             />
+            <hr style={{ width: '100%', border: '1px solid lightgray', margin: '10px 0' }} /> {/* Lighter border color */}
             <input
                 type="password"
                 value={pin}
                 onChange={handlePinChange}
-                style={inputStyle}
+                style={{ ...inputStyle, backgroundColor: '#f9f9f9' }} // Lighter background color
                 maxLength={30}
                 placeholder="Enter Teacher Pin"
                 onKeyUp={(e) => e.key === 'Enter' && handlePinSubmit()}

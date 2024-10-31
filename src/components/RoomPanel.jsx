@@ -122,7 +122,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
 
       <div className="flex items-center justify-center w-screen py-[20px]">
         <span className="text-6xl font-bold">
-          Room Code: {roomCode}<br />
+          Room Code: {roomCode.toString().slice(0, -3)}<br />
         </span>
       </div>
       {/* <div className="flex items-center justify-center w-screen py-[20px]">

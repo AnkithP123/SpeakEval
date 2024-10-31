@@ -4,10 +4,11 @@ import { toast } from 'react-toastify';
 
 function JoinRoom() {
   const [name, setName] = useState('');
-  const [roomCode, setRoomCode] = useState('');
+  const [code, setRoomCode] = useState('');
   const navigate = useNavigate();
 
   const handleJoin = async() => {
+    const roomCode = parseInt(code.toString() + '001');
     // Function to handle the Join action
     if (name && roomCode) {
       console.log('Joining room with name:', name, 'and room code:', roomCode);
@@ -17,6 +18,7 @@ function JoinRoom() {
         toast.error(parsedData.message);
         return navigate('/join-room');
       }
+      console.log(roomCode);
       navigate(`/room/${roomCode}?name=${name}`);
       // Add your join logic here
     } else {
@@ -59,7 +61,7 @@ function JoinRoom() {
           <input
             id="roomCode"
             type="text"
-            value={roomCode}
+            value={code}
             onChange={handleRoomCodeChange}
             maxLength="11"
             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"

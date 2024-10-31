@@ -22,7 +22,7 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
                 const res = await fetch(`https://backend-4abv.onrender.com/getconfigs?pin=${userId}`);
                 const parsedData = await res.json();
                 setConfigs(parsedData);
-                console.log(configs)
+                console.log(configs);
             } catch (err) {
                 console.error("Error Loading Configs", err);
                 toast.error("Error Loading Configs");
@@ -52,14 +52,12 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
             if (parsedData.code === 401) {
                 console.error(parsedData);
                 toast.error("Incorrect Teacher Pin");
-                setShake(true); // Trigger the shake effect
-                setTimeout(() => setShake(false), 500); // Remove shake effect after 500ms
+                setShake(true);
+                setTimeout(() => setShake(false), 500);
                 return setUserId('');
             }
             if (parsedData.code === 200) {
-                console.log(parsedData);
                 setLoggedIn(true);
-                // Move to the config page
                 setIsConfigEntered(false);
             }
             if (parsedData.subscription) {
@@ -70,11 +68,10 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
         } catch (err) {
             console.error("Error Loading Data", err);
             toast.error("Error Loading Data");
-            setShake(true); // Trigger the shake effect
-            setTimeout(() => setShake(false), 500); // Remove shake effect after 500ms
+            setShake(true);
+            setTimeout(() => setShake(false), 500);
             return setUserId('');
         }
-        console.log(parsedData);
     };
 
     const handleGoClick = () => {
@@ -82,8 +79,11 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
     };
 
     const handleConfigSubmit = async () => {
+        if (configId === '') {
+            return toast.error("Please enter a config name into the box or click one of your saved configs before creating the room!");
+        }
         let time = Date.now();
-        time = (Math.floor(Math.random()*5) + 1) + time.toString().slice(-7) + '001';
+        time = (Math.floor(Math.random() * 5) + 1) + time.toString().slice(-7) + '001';
         try {
             const get = await fetch(`https://backend-4abv.onrender.com/verifyconfig?name=${configId}`);
             const parsedData = await get.json();
@@ -99,7 +99,7 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
             const res = await fetch(`https://backend-4abv.onrender.com/create_room?code=${time}&pin=${userId}&config=${configId}`);
             const parsedData = await res.json();
             if (parsedData.code === 400) {
-                toast.error(parsedData.message); 
+                toast.error(parsedData.message);
                 return navigate('/create-room');
             }
             setRoomCode(time);
@@ -125,7 +125,7 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
     };
 
     const inputStyle = {
-        width: 'calc(100% - 50px)', // Reduced width to accommodate the button
+        width: 'calc(100% - 50px)',
         padding: '10px',
         border: 'none',
         backgroundColor: 'transparent',
@@ -135,22 +135,31 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
         textAlign: 'center',
         outline: 'none',
         letterSpacing: '2px',
-        marginRight: '10px', // Add some space between input and button
+        marginRight: '10px',
     };
 
     const buttonStyle = {
-        backgroundColor: 'black', // Green background
+        backgroundColor: 'black',
         border: 'none',
         color: 'white',
         padding: '5px 10px',
         textAlign: 'center',
-        textDecoration: 'none',
-        display: 'inline-block',
         fontFamily: 'Montserrat',
         fontSize: '16px',
         margin: '4px 2px',
         cursor: 'pointer',
         borderRadius: '5px',
+    };
+
+    const chipStyle = {
+        display: 'inline-block',
+        padding: '5px 10px',
+        margin: '5px',
+        borderRadius: '15px',
+        backgroundColor: '#f0f0f0',
+        color: '#333',
+        fontSize: '14px',
+        cursor: 'pointer',
     };
 
     const configPageStyle = {
@@ -170,70 +179,53 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
         fontSize: '16px',
     };
 
-    const configButtonStyle = {
-        backgroundColor: 'black',
-        border: 'none',
-        color: 'white',
-        padding: '10px 20px',
-        borderRadius: '5px',
-        fontSize: '16px',
-        cursor: 'pointer',
-    };
-
-    const configList = {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: '20px',
-        color: 'black',
-    };
-
     return (
         !loggedIn ? 
         <div>
-        <title hidden>Create Room</title>
-        <div style={containerStyle} className={shake ? 'shake' : ''}>
-            <title hidden>Join Room</title>
-            <input
-                type="password"
-                value={userId}
-                onChange={handleInputChange}
-                style={inputStyle}
-                maxLength={30}
-                placeholder="Enter Teacher Pin"
-                onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
-            />
-            <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-        </div></div> : !isConfigEntered ? 
+            <title hidden>Create Room</title>
+            <div style={containerStyle} className={shake ? 'shake' : ''}>
+                <title hidden>Join Room</title>
+                <input
+                    type="password"
+                    value={userId}
+                    onChange={handleInputChange}
+                    style={inputStyle}
+                    maxLength={30}
+                    placeholder="Enter Teacher Pin"
+                    onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
+                />
+                <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
+            </div>
+        </div> : 
+        !isConfigEntered ? 
         <div>
-        <title hidden>Create Room</title>
-        <div style={containerStyle}>
-            <input
-                type="text"
-                value={configId}
-                onChange={handleConfigChange}
-                style={inputStyle}
-                placeholder="Enter Config Name"
-                onKeyUp={(e) => {if (e.key === 'Enter') handleConfigSubmit()}}
-            />
-            <button onClick={handleConfigSubmit} style={buttonStyle}>Create Room</button>
-            <div style={configList}>
-            <div>
-                <p>Your configurations:</p>
-            </div>
-            <div style = {configList}>
-                {configs.length === 0 ? <p className='text-2xl font-bold'>No configurations found. Go to the configurations page to make one.</p> : configs.map((config) => (
-                    config.name ?
-                    (
-                        <h2 className="text-2xl font-bold">{config.name}</h2>
-                    ) : null
-                ))}
-            </div>
+            <title hidden>Create Room</title>
+            <div style={containerStyle}>
+                <div>
+                    {configs.map((config) => (
+                        config.name ? (
+                            <div
+                                key={config.name}
+                                style={chipStyle}
+                                onClick={() => setConfigId(config.name)}
+                            >
+                                {config.name}
+                            </div>
+                        ) : null
+                    ))}
+                </div>
+                <input
+                    type="text"
+                    value={configId}
+                    onChange={handleConfigChange}
+                    style={inputStyle}
+                    placeholder="Enter Config Name"
+                    onKeyUp={(e) => {if (e.key === 'Enter') handleConfigSubmit()}}
+                />
+                <button onClick={handleConfigSubmit} style={buttonStyle}>Create Room</button>
             </div>
         </div>
-        </div>
-        :<RoomPanel roomCode={roomCode} userId={userId} setRoomCodes={setRoomCode} />
+        : <RoomPanel roomCode={roomCode} userId={userId} setRoomCodes={setRoomCode} />
     );
 }
 

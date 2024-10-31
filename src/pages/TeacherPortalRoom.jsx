@@ -5,14 +5,16 @@ import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
 import { FaArrowUp, FaArrowDown } from 'react-icons/fa'; // Import arrow icons
 
-function TeacherPortalRoom({ roomCode }) {
+function TeacherPortalRoom({ initialRoomCode }) {
+  const [roomCode, setRoomCode] = useState(initialRoomCode || useParams().roomCode); // Track the room code as state
   const [participants, setParticipants] = useState({ members: [] });
   const [gradesReport, setGradesReport] = useState(''); // For storing the report data
   const [reportOption, setReportOption] = useState(''); // For managing the dropdown selection
   const [sortOption, setSortOption] = useState('name'); // New state for sorting options
   const [sortOrder, setSortOrder] = useState('asc'); // New state for sorting order (ascending/descending)
+  const [showByPerson, setShowByPerson] = useState(false); // New state for 'Show by person' toggle
+  const [allQuestions, setAllQuestions] = useState([]); // State to store all questions
   const navigate = useNavigate();
-  roomCode = roomCode || useParams().roomCode;
 
   const fetchParticipants = async () => {
     try {
@@ -58,23 +60,37 @@ function TeacherPortalRoom({ roomCode }) {
       });
 
       setParticipants(obj);
-
-      console.log(obj);
-
-      participants.members = obj.members;
-
     } catch (error) {
       console.error('Error fetching participants:', error);
       toast.error('Error fetching participants');
     }
   };
 
+  const fetchAllQuestions = async () => {
+    let questions = [];
+    let currentRoomCode = roomCode;
+    while (currentRoomCode) {
+      questions.push(currentRoomCode);
+      const { next } = await fetchNextPrevious(currentRoomCode);
+      currentRoomCode = next;
+    }
+    setAllQuestions(questions);
+  };
+
   useEffect(() => {
     fetchParticipants();
+    fetchAllQuestions();
     const intervalId = setInterval(fetchParticipants, 1000);
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, [roomCode]);
+  }, [roomCode]); // Fetch participants when roomCode changes
+
+  const handleNavigateQuestion = (direction) => {
+    const newRoomCode = direction === 'next' ? nextRoomCode : previousRoomCode;
+    if (newRoomCode) {
+      navigate(`/teacher/portal/${newRoomCode}`);
+    }
+  };
 
   const handleGradeUpdate = (participantName, grades, totalScore, categories) => {
     const updatedParticipants = { ...participants };
@@ -83,7 +99,6 @@ function TeacherPortalRoom({ roomCode }) {
     participant.totalScore = totalScore;
     participant.categories = categories;
     setParticipants(updatedParticipants);
-    console.log(categories);
   };
 
   // Sorting logic based on selected option and order
@@ -237,14 +252,89 @@ function TeacherPortalRoom({ roomCode }) {
     }
   };
 
+  // Check if there is a previous question
+  const hasPreviousQuestion = () => {
+    return previousRoomCode !== null;
+  };
+
+  // Check if there is a next question
+  const hasNextQuestion = () => {
+    return nextRoomCode !== null;
+  };
+
+  const fetchNextPrevious = async (code) => {
+    try {
+      const response = await fetch(`https://backend-4abv.onrender.com/get_next_previous?code=${code}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching next/previous question:", error);
+      toast.error("Could not fetch next or previous question.");
+      return {};
+    }
+  };
+
+  // Move to the next question by updating the room code
+  const handleNextQuestion = async () => {
+    if (showByPerson) return;
+    const { next } = await fetchNextPrevious(roomCode);
+    if (showByPerson) {
+      setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
+    }
+    if (next != null) {
+      setRoomCode(next);
+      setParticipants({ members: [] }); // Reset participants when changing room code
+    } else {
+      toast.warn("No next question available.");
+    }
+    if (showByPerson) {
+      setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
+      console.log('HI');
+    }
+  };
+
+  // Move to the previous question by updating the room code
+  const handlePreviousQuestion = async () => {
+    if (showByPerson) return;
+    const { previous } = await fetchNextPrevious(roomCode);
+    if (previous != null) {
+      setRoomCode(previous);
+      setParticipants({ members: [] }); // Reset participants when changing room code
+    } else {
+      toast.warn("No previous question available.");
+    }
+    if (showByPerson) {
+      setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
+    }
+  };
+
   return (
     <div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
+      {/* Participant count display */}
       <div className="absolute left-4 flex items-center space-x-4">
         <div className="bg-white text-black rounded-lg p-3 shadow-md">
           Participants: {participants.members.length}
         </div>
+        <button
+          onClick={() => {
+            setShowByPerson(!showByPerson);
+            if (!showByPerson) setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
+
+            setTimeout(() => {
+              if (roomCode.toString().slice(-3) !== '001') {
+                setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
+              }
+            }, 5000);
+            
+          }}
+          className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600"
+        >
+          {showByPerson ? 'Show by Question' : 'Show by Person'}
+        </button>
       </div>
 
+  
+      {/* Grade report dropdown */}
       <div className="absolute right-4 flex items-center space-x-4">
         <select
           className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
@@ -257,42 +347,102 @@ function TeacherPortalRoom({ roomCode }) {
           <option value="print">Print</option>
         </select>
       </div>
-
-      {/* Sorting options with integrated ascending/descending toggle */}
-      <div className="absolute right-48 flex items-center space-x-0">
-        {/*<button 
-          onClick={toggleSortOrder} 
-          className="flex items-center bg-green-500 text-white px-4 py-3 rounded-l-lg shadow-md hover:bg-green-600"
-        >
-          {(sortOrder === 'asc' ? <FaArrowUp /> : <FaArrowDown />)}
-        </button>*/}
-
-        {/* Sort dropdown */}
-        {/*<select
-          className="bg-green-500 text-white px-4 py-2 rounded-r-lg shadow-md hover:bg-green-600"
+  
+      {/* Sorting options */}
+      {/*<div className="absolute right-48 flex items-center space-x-0">
+        <select
+          className="bg-gray-200 text-black px-4 py-2 rounded-lg shadow-md"
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
         >
           <option value="name">Sort by Name</option>
           <option value="totalScore">Sort by Total Score</option>
-          {participants.members.length > 0 && participants.members[0].categories.map((category, index) => (
+          {participants.members[0]?.categories?.map((category, index) => (
             <option key={index} value={`category-${index}`}>
               Sort by {category}
             </option>
           ))}
-        </select>*/}
-      </div>
-
+        </select>
+        <button
+          onClick={toggleSortOrder}
+          className="ml-2 bg-gray-200 text-black px-2 py-2 rounded-lg shadow-md hover:bg-gray-300"
+        >
+          {sortOrder === 'asc' ? <FaArrowUp /> : <FaArrowDown />}
+        </button>
+      </div>*/}
+  
+      {/* Room code display */}
       <div className="flex items-center justify-center w-screen py-[50px]">
         <span className="text-6xl font-bold">
-          Grading Room: {roomCode}
+          Grading: {roomCode.toString().slice(0, -3)} (Question #{roomCode.toString().slice(-3)})
         </span>
       </div>
-
-      <div className="flex flex-wrap justify-center">
-        {sortParticipants().map((participant, index) => (
-          <ProfileCard key={index} name={participant} code={roomCode} onGradeUpdate={handleGradeUpdate} />
-        ))}
+      
+      {/* Navigation buttons */}
+        <div className="flex space-x-4">
+          <button
+            onClick={handlePreviousQuestion}
+            className={`px-4 py-2 rounded-lg shadow-md ${showByPerson ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'}`}
+            disabled={showByPerson}
+          >
+            Previous Question
+          </button>
+          <button
+            onClick={handleNextQuestion}
+            className={`px-4 py-2 rounded-lg shadow-md ${showByPerson ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'}`}
+            disabled={showByPerson}
+          >
+            Next Question
+          </button>
+        </div>
+        
+        {/* Toggle 'Show by person' */}
+      
+  
+      {/* Profile cards for participants */}
+      <div className="flex flex-wrap justify-center mt-8">
+        {showByPerson ? (
+          <div>
+          <table className="min-w-full bg-white border border-gray-300">
+              {/* <thead>
+                <tr>
+                  <th className="py-2 px-4 border-b border-gray-300">Name</th>
+                  {allQuestions.map((question, index) => (
+                    <th key={index} className="py-2 px-4 border-b border-gray-300">Question {index + 1}</th>
+                  ))}
+                </tr>
+              </thead> */}
+              <tbody>
+                {participants.members.map((participant, index) => (
+          <div className="overflow-x-auto max-w-full lg:max-w-[800px] mx-auto">
+                  <tr key={index} className="overflow-x-auto">
+                    <td className="py-2 px-4 border-b border-gray-300">{participant.name}</td>
+                    {allQuestions.map((question, qIndex) => (
+                      <td key={qIndex} className="py-2 px-4 border-b border-gray-300">
+                        <ProfileCard
+                          name={participant}
+                          code={question}
+                          onGradeUpdate={handleGradeUpdate}
+                          customName={'Question ' + (qIndex + 1)}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                  </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          sortParticipants().map((participant, index) => (
+            <ProfileCard 
+              key={index} 
+              name={participant} 
+              code={roomCode}
+              onGradeUpdate={handleGradeUpdate} 
+            />
+          ))
+        )}
       </div>
     </div>
   );

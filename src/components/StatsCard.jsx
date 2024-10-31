@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { FaDownload, FaPlay, FaPause, FaRobot } from 'react-icons/fa';
 
-function ProfileCard({ name, code, onGradeUpdate}) {
+function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const [completed, setCompleted] = useState(false);
   const [text, setText] = useState('');
   const [question, setQuestion] = useState('');
@@ -213,7 +213,7 @@ function ProfileCard({ name, code, onGradeUpdate}) {
   return (
     <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
     <div className="flex items-center w-full">
-      <span className="mr-[8px] text-[23px] truncate">{name.name}</span>
+      <span className="mr-[8px] text-[23px] truncate">{customName || name.name}</span>
       <div className="flex gap-[8px] ml-auto">
         <button
           className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
