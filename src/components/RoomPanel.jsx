@@ -145,7 +145,8 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
       {showDisplayNameInput && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div ref={displayNameInputRef} className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-center">Set Display Name</h2>
+            <h2 className="text-xl font-bold mb-4 text-center">Rename this exam, for easy grading</h2>
+            <h3 className="text-lg font-normal mb-4 text-center">Choose a descriptive and unique name</h3>
             <input
               type="text"
               value={displayName}
@@ -155,17 +156,18 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
             />
             <div className="flex justify-center space-x-4">
               <button
-                onClick={() => setShowDisplayNameInput(false)}
-                className="bg-gray-500 text-white rounded-lg p-2 shadow-md hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
                 onClick={handleDisplayNameSubmit}
                 className="bg-green-500 text-white rounded-lg p-2 shadow-md hover:bg-green-600"
               >
                 Submit
               </button>
+              <button
+                onClick={() => setShowDisplayNameInput(false)}
+                className="bg-gray-500 text-white rounded-lg p-2 shadow-md hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              
             </div>
           </div>
         </div>
