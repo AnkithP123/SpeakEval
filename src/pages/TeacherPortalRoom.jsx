@@ -400,18 +400,10 @@ function TeacherPortalRoom({ initialRoomCode }) {
       
   
       {/* Profile cards for participants */}
-      <div className="flex flex-wrap justify-center mt-8">
+      <div className="flex flex-wrap justify-center mt-8 mb-8">
         {showByPerson ? (
           <div>
           <table className="min-w-full bg-white border border-gray-300">
-              {/* <thead>
-                <tr>
-                  <th className="py-2 px-4 border-b border-gray-300">Name</th>
-                  {allQuestions.map((question, index) => (
-                    <th key={index} className="py-2 px-4 border-b border-gray-300">Question {index + 1}</th>
-                  ))}
-                </tr>
-              </thead> */}
               <tbody>
                 {participants.members.map((participant, index) => (
           <div className="overflow-x-auto max-w-full lg:max-w-[800px] mx-auto">

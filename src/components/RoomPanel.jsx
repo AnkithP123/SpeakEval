@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileCard from './ProfileCard';
 import { toast } from 'react-toastify';
@@ -8,7 +8,10 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
   const [participants, setParticipants] = useState([]);
   const [roomStarted, setRoomStarted] = useState(false);
   const [completedParticipants, setCompletedParticipants] = useState([]);
+  const [displayName, setDisplayName] = useState('');
+  const [showDisplayNameInput, setShowDisplayNameInput] = useState(false);
   const navigate = useNavigate();
+  const displayNameInputRef = useRef(null);
 
   const fetchParticipants = async () => {
     try {
@@ -43,6 +46,24 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
   }, [roomCode]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (displayNameInputRef.current && !displayNameInputRef.current.contains(event.target)) {
+        setShowDisplayNameInput(false);
+      }
+    };
+
+    if (showDisplayNameInput) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDisplayNameInput]);
 
   const handleStart = async() => {
     // Logic for starting the event or room
@@ -103,33 +124,73 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
     });
   }
 
+  const handleDisplayNameSubmit = async () => {
+    try {
+      const response = await fetch(`https://backend-4abv.onrender.com/add_display?code=${roomCode}&pin=${userId}&display=${displayName}`);
+      const data = await response.json();
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.success('Display name set successfully');
+        setShowDisplayNameInput(false);
+      }
+    } catch (error) {
+      console.error('Error setting display name:', error);
+      toast.error('Error setting display name');
+    }
+  };
+
   return (
-    <div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
+    <div>
+      {showDisplayNameInput && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div ref={displayNameInputRef} className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-center">Set Display Name</h2>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="border p-2 rounded w-full mb-4"
+              placeholder="Enter display name"
+            />
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => setShowDisplayNameInput(false)}
+                className="bg-gray-500 text-white rounded-lg p-2 shadow-md hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDisplayNameSubmit}
+                className="bg-green-500 text-white rounded-lg p-2 shadow-md hover:bg-green-600"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
       {/* Participant Count Box and Start Button */}
-      <div className="absolute left-4 flex items-center space-x-4">
+      {showDisplayNameInput ? null : <div className="absolute left-4 flex items-center space-x-4">
         <div className="bg-white text-black rounded-lg p-3 shadow-md">
           Participants: {participants.length}
         </div>
-      </div>
-      <div className="absolute right-4 flex items-center space-x-4">
+      </div>}
+      {showDisplayNameInput ? null : <div className="absolute right-4 flex items-center space-x-4">
         <button
           onClick={roomStarted ? handleRestart : handleStart}
           className="bg-red-500 text-white rounded-lg p-3 shadow-md hover:bg-red-600"
         >
-          {roomStarted ? 'New Question' : 'Start Room'}
+          {(roomStarted ? 'New Question' : 'Start Room')}
         </button>
-      </div>
+      </div>}
 
       <div className="flex items-center justify-center w-screen py-[20px]">
         <span className="text-6xl font-bold">
           Room Code: {roomCode.toString().slice(0, -3)}<br />
         </span>
       </div>
-      {/* <div className="flex items-center justify-center w-screen py-[20px]">
-        <span className="text-5xl font-bold">
-          speakeval.org<br />
-        </span>
-      </div> */}
 
       <div className="flex flex-wrap justify-center">
         {completedParticipants.map((participant, index) => (
@@ -140,7 +201,19 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
           <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} userId={userId} completed={false}/>
         ))}
       </div>
+
+      
+      
     </div>
+    {showDisplayNameInput ? null : <div className="absolute bottom-28 right-4">
+      <button
+        onClick={() => setShowDisplayNameInput(true)}
+        className="bg-blue-500 text-white rounded-lg p-3 shadow-md hover:bg-blue-600"
+      >
+        Set Display Name
+      </button>
+    </div>}
+  </div>
   );
 }
 

@@ -202,7 +202,8 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
             <title hidden>Create Room</title>
             <div style={containerStyle}>
                 <div>
-                    {configs.map((config) => (
+                    {configs.length > 0 ? 
+                    configs.map((config) => (
                         config.name ? (
                             <div
                                 key={config.name}
@@ -212,7 +213,10 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
                                 {config.name}
                             </div>
                         ) : null
-                    ))}
+                    )) : 
+                    <><p className='text-2xl font-bold' style={{ color: 'black' }}>No configurations found. Go to the configurations page to make one.</p>
+                    <hr style={{ width: '100%', border: '1px solid lightgray', margin: '10px 0' }} /></>
+                    }
                 </div>
                 <input
                     type="text"

@@ -71,7 +71,7 @@ function JoinRoom({ rooms }) {
                                         onMouseLeave={() => setHoveredRoom(null)}
                                         onClick={() => goToRoom(room.code)}
                                     >
-                                        <span className="text-gray-800 font-semibold text-sm">{room.code}</span>
+                                        <span className="text-gray-800 font-semibold text-sm">{room.display || room.code}</span>
                                         <span className="text-gray-500 text-xs ml-2">{formatRelativeTime(room.created)}</span>
                                         
                                         {/* Tooltip for Full Timestamp */}

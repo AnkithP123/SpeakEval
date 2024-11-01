@@ -360,10 +360,11 @@ async function convertOggToWav(oggUrl) {
             //     }
                 
             // }
+            document.documentElement.style.setProperty('--cute-alert-max-width', document.documentElement.style.getPropertyValue('--cute-alert-min-width') || '20%');
             cuteAlert({
                 type: "question",
                 title: "Feedback",
-                description: "Could you rate your experience with the oral exam assistant very quickly? This would open in a new tab, but you should wait before your teacher finishes giving questions before you provide feedback.",
+                description: "Could you quickly rate your experience with the oral exam assistant? This would open in a new tab, but wait until the exam is over.",
                 primaryButtonText: "Sure!",
                 secondaryButtonText: "No",
                 showCloseButton: true,

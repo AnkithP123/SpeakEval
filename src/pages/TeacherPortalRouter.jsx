@@ -59,11 +59,16 @@ function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
             }
 
             // remove data duplicates
-            data = data.filter((room, index, self) =>
-                index === self.findIndex((t) => (
-                    t.code === room.code
-                ))
-            );
+            data = data.filter((room, index, self) => {
+                const firstIndex = self.findIndex((t) => t.code === room.code);
+                if (firstIndex === index) {
+                    return true;
+                }
+                if (room.display) {
+                    self[firstIndex] = room;
+                }
+                return false;
+            });
             console.log(data);
             setRooms(data);
         } catch (err) {
