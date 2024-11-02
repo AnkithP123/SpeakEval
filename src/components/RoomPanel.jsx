@@ -131,7 +131,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
       if (data.error) {
         toast.error(data.error);
       } else {
-        toast.success('Display name set successfully');
+        toast.success(data.message ? data.message : 'Display name was set');
         setShowDisplayNameInput(false);
       }
     } catch (error) {
