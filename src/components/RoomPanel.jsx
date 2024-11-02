@@ -195,13 +195,17 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
       </div>
 
       <div className="flex flex-wrap justify-center">
-        {completedParticipants.map((participant, index) => (
-          <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} userId={userId} completed={true}/>
-        ))}
-        {participants.map((participant, index) => (
-          completedParticipants.includes(participant) ? null :
-          <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} userId={userId} completed={false}/>
-        ))}
+        {showDisplayNameInput ? null : (
+          <>
+            {completedParticipants.map((participant, index) => (
+              <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} userId={userId} completed={true}/>
+            ))}
+            {participants.map((participant, index) => (
+              completedParticipants.includes(participant) ? null :
+              <ProfileCard key={index} name={""+participant} code={roomCode} onParticipantRemoved={fetchParticipants} userId={userId} completed={false}/>
+            ))}
+          </>
+        )}
       </div>
 
       
