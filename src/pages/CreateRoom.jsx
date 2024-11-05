@@ -19,7 +19,7 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
         const fetchConfigs = async () => {
             console.log("Fetching Configs");
             try {
-                const res = await fetch(`https://backend-4abv.onrender.com/getconfigs?pin=${userId}`);
+                const res = await fetch(`https://server.speakeval.org/getconfigs?pin=${userId}`);
                 const parsedData = await res.json();
                 setConfigs(parsedData);
                 console.log(configs);
@@ -46,7 +46,7 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
     const checkUserId = async (userId) => {
         let parsedData;
         try {
-            let res = await fetch(`https://backend-4abv.onrender.com/teacherpin?pin=${userId}`);
+            let res = await fetch(`https://server.speakeval.org/teacherpin?pin=${userId}`);
             parsedData = await res.json();
 
             if (parsedData.code === 401) {
@@ -85,7 +85,7 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
         let time = Date.now();
         time = (Math.floor(Math.random() * 5) + 1) + time.toString().slice(-7) + '001';
         try {
-            const get = await fetch(`https://backend-4abv.onrender.com/verifyconfig?name=${configId}`);
+            const get = await fetch(`https://server.speakeval.org/verifyconfig?name=${configId}`);
             const parsedData = await get.json();
 
             if (parsedData.error) {
@@ -96,7 +96,7 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
             toast.error("Error Verifying Config Existence");
         }
         try {
-            const res = await fetch(`https://backend-4abv.onrender.com/create_room?code=${time}&pin=${userId}&config=${configId}`);
+            const res = await fetch(`https://server.speakeval.org/create_room?code=${time}&pin=${userId}&config=${configId}`);
             const parsedData = await res.json();
             if (parsedData.code === 400) {
                 toast.error(parsedData.message);

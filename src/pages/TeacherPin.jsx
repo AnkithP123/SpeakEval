@@ -10,7 +10,7 @@ function TeacherPin({ subscriptionData, onPinEntered }) {
     const handlePinSubmit = async () => {
         let parsedData;
         try {
-            let res = await fetch(`https://backend-4abv.onrender.com/teacherpin?pin=${pin}`);
+            let res = await fetch(`https://server.speakeval.org/teacherpin?pin=${pin}`);
             parsedData = await res.json();
 
             if (parsedData.code === 401 || !email || email === '' || !isValidEmail(email)) {

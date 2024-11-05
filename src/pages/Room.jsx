@@ -15,7 +15,7 @@ function Room() {
     const audioChunksRef = useRef([]);
 
     const checkStatus = async () => {
-        let res = await fetch(`https://backend-4abv.onrender.com/check_status?code=${roomCode}&participant=${name}`);
+        let res = await fetch(`https://server.speakeval.org/check_status?code=${roomCode}&participant=${name}`);
         let parsedData = await res.json();
         if (parsedData.code === 1) {
             return;
@@ -65,7 +65,7 @@ function Room() {
     };
 
     const fetchTestAudio = async () => {
-        let res = await fetch('https://backend-4abv.onrender.com/get_test_audio');
+        let res = await fetch('https://server.speakeval.org/get_test_audio');
         let parsedData = await res.json();
         const audioBase64 = parsedData.audio;
         const audioBlob = new Blob([Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))], { type: 'audio/wav' });

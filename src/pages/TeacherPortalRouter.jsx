@@ -21,7 +21,7 @@ function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
     const checkUserId = async (userId) => {
         let parsedData;
         try {
-            let res = await fetch(`https://backend-4abv.onrender.com/teacherpin?pin=${userId}`);
+            let res = await fetch(`https://server.speakeval.org/teacherpin?pin=${userId}`);
             parsedData = await res.json();
 
             if (parsedData.code === 401) {
@@ -51,7 +51,7 @@ function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
 
     const fetchRooms = async () => {
         try {
-            const res = await fetch(`https://backend-4abv.onrender.com/getrooms?pin=${userId}`);
+            const res = await fetch(`https://server.speakeval.org/getrooms?pin=${userId}`);
             let data = await res.json();
             for (let i = 0; i < data.length; i++) {
                 if (data[i].code)

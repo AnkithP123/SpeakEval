@@ -18,7 +18,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
 
   const fetchParticipants = async () => {
     try {
-      const responsev2 = await fetch(`https://backend-4abv.onrender.com/checkcompleted?code=${roomCode}`);
+      const responsev2 = await fetch(`https://server.speakeval.org/checkcompleted?code=${roomCode}`);
       const data2 = await responsev2.json();
       let obj = { members: [] };
       if (data2.error) {
@@ -26,7 +26,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
         return navigate('/');
       }
 
-      const response = await fetch(`https://backend-4abv.onrender.com/checkjoined?code=${roomCode}`);
+      const response = await fetch(`https://server.speakeval.org/checkjoined?code=${roomCode}`);
       const data = await response.json();
 
       obj.members = data2.members.map((member) => {
@@ -264,7 +264,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
 
   const fetchNextPrevious = async (code) => {
     try {
-      const response = await fetch(`https://backend-4abv.onrender.com/get_next_previous?code=${code}`);
+      const response = await fetch(`https://server.speakeval.org/get_next_previous?code=${code}`);
       const data = await response.json();
       return data;
     } catch (error) {

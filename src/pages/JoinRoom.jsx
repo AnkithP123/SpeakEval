@@ -12,7 +12,7 @@ function JoinRoom() {
     // Function to handle the Join action
     if (name && roomCode) {
       console.log('Joining room with name:', name, 'and room code:', roomCode);
-      let res = await fetch(`https://backend-4abv.onrender.com/join_room?code=${roomCode}&participant=${name}`);
+      let res = await fetch(`https://server.speakeval.org/join_room?code=${roomCode}&participant=${name}`);
       let parsedData = await res.json();
       if (parsedData.error) {
         toast.error(parsedData.message);
