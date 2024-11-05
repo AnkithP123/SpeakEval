@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 function ProfileCard({ name, code, onParticipantRemoved, userId, completed }) {
   const handleRemove = async() => {
     try {
-        const response = await fetch(`https://server.speakeval.org/kick?code=${code}&participant=${name}&pin=${userId}`);
+        const response = await fetch(`https://www.server.speakeval.org/kick?code=${code}&participant=${name}&pin=${userId}`);
         toast.success('Participant kicked');
         onParticipantRemoved();
       } catch (error) {

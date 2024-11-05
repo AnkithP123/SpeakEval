@@ -50,7 +50,7 @@ const CardPaymentPanel = () => {
             if (subscriptionData.planType === 'subscribe') {
             // Send the payment method, subscription data, teacherPin, and email to your backend
                 try {
-                    const response = await fetch('https://server.speakeval.org/create-session', {
+                    const response = await fetch('https://www.server.speakeval.org/create-session', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ const CardPaymentPanel = () => {
             } else {
                 // Send the payment method, subscription data, and email to your backend
                 try {
-                    const response = await fetch('https://server.speakeval.org/create-session', {
+                    const response = await fetch('https://www.server.speakeval.org/create-session', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

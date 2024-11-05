@@ -48,7 +48,7 @@ function Upgrade({ onClose, doc }) {
   const sendRequest = async (pin, email) => {
     setShowPinPage(false); // Show the pin entry page if subscribing
     try {
-      const response = await fetch('https://server.speakeval.org/create-session', {
+      const response = await fetch('https://www.server.speakeval.org/create-session', {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',

@@ -41,7 +41,7 @@ const FeedbackPage = () => {
             return;
         }
 
-        const response = await fetch(`https://server.speakeval.org/submit_feedback?name=${name}&code=${code}`, {
+        const response = await fetch(`https://www.server.speakeval.org/submit_feedback?name=${name}&code=${code}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

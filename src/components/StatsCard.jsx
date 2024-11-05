@@ -25,7 +25,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const fetchAudioData = async () => {
     try {
       const response = await fetch(
-        `https://server.speakeval.org/download?code=${code}&participant=${name.name}`
+        `https://www.server.speakeval.org/download?code=${code}&participant=${name.name}`
       );
       const data = await response.json();
       if (data.error) return toast.error(data.error);
@@ -86,7 +86,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const readRubric = async () => {
     try {
       const response = await fetch(
-        `https://server.speakeval.org/receiveaudio?code=${code}`
+        `https://www.server.speakeval.org/receiveaudio?code=${code}`
       );
       const data = await response.json();
       setRubric(data.rubric);
@@ -98,7 +98,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const fetchQuestion = async () => {
     try {
       const response = await fetch(
-        `https://server.speakeval.org/getquestion?code=${code}&index=${index}`
+        `https://www.server.speakeval.org/getquestion?code=${code}&index=${index}`
       );
       const data = await response.json();
       if (data.error) return toast.error(data.error);
@@ -140,7 +140,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
     }
     try {
       const response = await fetch(
-        `https://server.speakeval.org/getgrade?transcription=${text}&rubric=${rubric}&code=${code}&index=${index}`
+        `https://www.server.speakeval.org/getgrade?transcription=${text}&rubric=${rubric}&code=${code}&index=${index}`
       );
       const data = await response.json();
       

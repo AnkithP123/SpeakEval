@@ -51,7 +51,7 @@ const Configure = ({set, setUltimate}) => {
     const checkUserId = async (userId) => {
         let parsedData;
         try {
-            let res = await fetch(`https://server.speakeval.org/teacherpin?pin=${userId}`);
+            let res = await fetch(`https://www.server.speakeval.org/teacherpin?pin=${userId}`);
             parsedData = await res.json();
 
             if (parsedData.code === 401) {
@@ -214,7 +214,7 @@ const Configure = ({set, setUltimate}) => {
                 return `${category.name}|:::| ${category.descriptions[0]}|,,| ${category.descriptions[1]}|,,| ${category.descriptions[2]}|,,| ${category.descriptions[3]}|,,| ${category.descriptions[4]}`;
             }).join('|;;|');
 
-            const res = await fetch(`https://server.speakeval.org/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}&limit=${maxTime}&language=${selectedLanguage}`, {
+            const res = await fetch(`https://www.server.speakeval.org/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}&limit=${maxTime}&language=${selectedLanguage}`, {
                 method: 'POST',
                 body: formData,
             });

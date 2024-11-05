@@ -153,7 +153,7 @@ async function convertOggToWav(oggUrl) {
 
     async function sendStatus() {
 
-        const response = await fetch(`https://server.speakeval.org/check_status?code=${code}&participant=${participant}`);
+        const response = await fetch(`https://www.server.speakeval.org/check_status?code=${code}&participant=${participant}`);
         if (!response.ok) {
             setError('Failed to fetch status');
             setIsError(true);
@@ -213,7 +213,7 @@ async function convertOggToWav(oggUrl) {
     }
 
     const makeResponse = async() =>  {
-        const response = await fetch(`https://server.speakeval.org/receiveaudio?code=${code}&participant=${participant}&number=1`);
+        const response = await fetch(`https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${participant}&number=1`);
         if (!response.ok) {
             setError('Failed to fetch audio');
             setIsError(true);
@@ -308,7 +308,7 @@ async function convertOggToWav(oggUrl) {
         const permissionGranted = await requestMicrophonePermission();
         if (!permissionGranted) return;
 
-        await fetch(`https://server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`);
+        await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`);
 
         const mimeType = getSupportedMimeType();
         if (!mimeType) {
@@ -377,7 +377,7 @@ async function convertOggToWav(oggUrl) {
             });
         }, 3000);
 
-        let response = await fetch(`https://server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
+        let response = await fetch(`https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
             method: 'POST',
             body: formData
         });
@@ -385,7 +385,7 @@ async function convertOggToWav(oggUrl) {
         if (!response.ok) {
             transcriptionResult.textContent = 'Failed to upload audio. Retrying until success...';
             const retryInterval = setInterval(async () => {
-                let retryResponse = await fetch(`https://server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
+                let retryResponse = await fetch(`https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
                     method: 'POST',
                     body: formData
                 });

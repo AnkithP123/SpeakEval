@@ -15,7 +15,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
 
   const fetchParticipants = async () => {
     try {
-      const response = await fetch(`https://server.speakeval.org/checkjoined?code=${roomCode}&pin=${userId}`);
+      const response = await fetch(`https://www.server.speakeval.org/checkjoined?code=${roomCode}&pin=${userId}`);
       const data = await response.json();
       if(data.error) {
         return;
@@ -27,7 +27,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
       toast.error('Error fetching participants');
     }
     try {
-      const response = await fetch(`https://server.speakeval.org/checkcompleted?code=${roomCode}&pin=${userId}`);
+      const response = await fetch(`https://www.server.speakeval.org/checkcompleted?code=${roomCode}&pin=${userId}`);
       const data = await response.json();
       if(data.error) {
         return;
@@ -67,7 +67,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
 
   const handleStart = async() => {
     // Logic for starting the event or room
-    const response = await fetch(`https://server.speakeval.org/start_room?code=${roomCode}&pin=${userId}`);
+    const response = await fetch(`https://www.server.speakeval.org/start_room?code=${roomCode}&pin=${userId}`);
     const data = await response.json();
     console.log(data);
     if(data.code === 404){
@@ -103,7 +103,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
       closeOnOutsideClick: true,
     }).then(async (event) => {
       if (event === "primaryButtonClicked") {
-        const response = await fetch(`https://server.speakeval.org/restart_room?code=${roomCode}&pin=${userId}`);
+        const response = await fetch(`https://www.server.speakeval.org/restart_room?code=${roomCode}&pin=${userId}`);
         const data = await response.json();
         if(data.error){
           toast.error(data.error);
@@ -126,7 +126,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
 
   const handleDisplayNameSubmit = async () => {
     try {
-      const response = await fetch(`https://server.speakeval.org/add_display?code=${roomCode}&pin=${userId}&display=${displayName}`);
+      const response = await fetch(`https://www.server.speakeval.org/add_display?code=${roomCode}&pin=${userId}&display=${displayName}`);
       const data = await response.json();
       if (data.error) {
         toast.error(data.error);
