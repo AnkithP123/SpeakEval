@@ -1,4 +1,5 @@
-https://speakeval.org/join-room
-https://speakeval.org/create-room
-https://speakeval.org/teacher-portal
-https://speakeval.org/configure
+https://www.speakeval.org/join-room
+https://www.speakeval.org/create-room
+https://www.speakeval.org/teacher-portal
+https://www.speakeval.org/configure
+https://www.speakeval.org/
