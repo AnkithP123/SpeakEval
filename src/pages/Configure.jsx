@@ -186,7 +186,7 @@ const Configure = ({set, setUltimate}) => {
 
     const handleRegisterConfig = async () => {
         if (!id) {
-            toast.error("Please enter an ID");
+            toast.error("Please enter a name for the set");
             return;
         }
         if (!userId) {
@@ -615,7 +615,7 @@ return (
                                 onChange={(e) => setId(e.target.value)}
                                 style={rubricCellStyle}
                                 maxLength={15}
-                                placeholder="Enter Config Name"
+                                placeholder="Enter Name for Set"
                             />
                             <button onClick={handleRegisterConfig} style={buttonStyle}>
                                 Register

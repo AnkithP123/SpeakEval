@@ -223,7 +223,7 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
                     value={configId}
                     onChange={handleConfigChange}
                     style={inputStyle}
-                    placeholder="Enter Config Name"
+                    placeholder="Enter Name of Set"
                     onKeyUp={(e) => {if (e.key === 'Enter') handleConfigSubmit()}}
                 />
                 <button onClick={handleConfigSubmit} style={buttonStyle}>Create Room</button>
