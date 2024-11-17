@@ -268,6 +268,12 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
                   value={grades[index] || ''}
                   onChange={(e) => handleGradeChange(index, e.target.value)}
                 />
+                <div className="relative group">
+                  <span className="ml-2 cursor-pointer">i</span>
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    {rubricKey}
+                  </div>
+                </div>
               </div>
             );
           }) : null}
