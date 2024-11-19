@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FaDownload, FaPlay, FaPause, FaRobot } from 'react-icons/fa';
+import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle } from 'react-icons/fa';
 
 function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const [completed, setCompleted] = useState(false);
@@ -10,6 +10,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const [index, setIndex] = useState('');
   const [questionAudioUrl, setQuestionAudioUrl] = useState('');
   const [grades, setGrades] = useState({});
+  const [justifications, setJustifications] = useState({});
   const [totalScore, setTotalScore] = useState(0);
   const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false); // New state variable for audio playback
@@ -34,7 +35,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
       const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name.name}`);
+      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name.name}-${code}`);
       if (answerAudioPlayer) {
         answerAudioPlayer.src = audioUrl;
       }
@@ -61,7 +62,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
       await fetchAudioData();
     }
     try {
-      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name.name}`);
+      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name.name}-${code}`);
       if (answerAudioPlayer) {
         if (isPlaying) {
           answerAudioPlayer.pause(); // Pause the audio
@@ -148,6 +149,10 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
       if (!grades || grades === undefined) return toast.error('Error getting grade. This may be due to a high volume of requests. Try again in a few seconds.');
       setGrades(data.grades);
 
+      const justifications = data.justifications;
+      if (!justifications || justifications === undefined) return toast.error('Error getting justifications. This may be due to a high volume of requests. Try again in a few seconds.');
+      setJustifications(data.justifications);
+
       let total = 0;
       Object.values(grades).forEach((grade) => {
         total += parseFloat(grade);
@@ -158,7 +163,12 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
         return element.split('|:::|')[0];
       });
 
-      onGradeUpdate(name.name, grades, total, categories);
+      let descriptions = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
+        return element.split('|:::|')[1].replace('|,,,|', '\n\n');
+      });
+
+
+      onGradeUpdate(name.name, grades, total, categories, descriptions);
 
     } catch (error) {
       console.error('Error getting grade:', error);
@@ -183,12 +193,16 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
     // Pass the grades and total score to the parent component
     console.log('Updated grades:', updatedGrades);
     let categories = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
-      return element.split('|:::|')[0];
+      return element.split('|:::|')[1].replace('|,,,|', '\n\n');
+    });
+
+    let descriptions = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
+      return element.split('|:::|')[1].split('|,,,|').join('\n\n');
     });
 
     console.log('Updated categories:', categories);
     
-    onGradeUpdate(name.name, updatedGrades, total, categories);
+    onGradeUpdate(name.name, updatedGrades, total, categories, descriptions);
 
   };
 
@@ -259,21 +273,21 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
           {rubric !== '' && text !== '' ? rubric.split('|;;|').map((element, index) => {
             const [rubricItem, rubricKey] = element.split('|:::|');
             return (
-              <div key={index} className="flex items-center">
-                <span className="mr-2">{rubricItem}</span>
-                <input
-                  type="text"
-                  className="border border-gray-300 px-2 py-1 rounded w-20"
-                  placeholder="Points"
-                  value={grades[index] || ''}
-                  onChange={(e) => handleGradeChange(index, e.target.value)}
-                />
-                <div className="relative group">
-                  <span className="ml-2 cursor-pointer">i</span>
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                    {rubricKey}
-                  </div>
-                </div>
+              <div key={index} className="flex items-center relative z-10">
+              <span className="mr-2">{rubricItem}</span>
+              <input
+              type="text"
+              className="border border-gray-300 px-2 py-1 rounded w-20"
+              placeholder="Points"
+              value={grades[index] || ''}
+              onChange={(e) => handleGradeChange(index, e.target.value)}
+              />
+              <div className="relative group flex items-center">
+              <FaInfoCircle className="ml-2 text-blue-500" />
+              <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-20">
+              {justifications[index] ? justifications[index] : 'Press the AI button to receive an automated grade and view the reason here.'}
+              </div>
+              </div>
               </div>
             );
           }) : null}
@@ -285,8 +299,8 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
         </div>
       </div>
       : null }
-      <audio id={`answerAudioPlayer-${name.name}`} />
-      <audio id={`questionAudioPlayer-${name.name}`} />
+      <audio id={`answerAudioPlayer-${name.name}-${code}`} />
+      <audio id={`questionAudioPlayer-${name.name}-${code}`} />
     </div>
   );
 }

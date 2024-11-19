@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Card from '../components/Card';
+import { cuteAlert } from 'cute-alert';
 
 function Room() {
     const [searchParams] = useSearchParams();
@@ -37,6 +38,15 @@ function Room() {
     useEffect(() => {
         checkStatus();
         const intervalId = setInterval(checkStatus, 3000);
+
+        document.documentElement.style.setProperty('--cute-alert-max-width', '40%');
+
+        cuteAlert({
+            type: "info",
+            title: "Welcome to SpeakEval",
+            description: "You're currently in a waiting room. Please wait until your instructor starts the oral examination. It is VERY IMPORTANT that you follow the directions on this screen, and that you watch the video, then scroll down and test your audio devices. Make sure your teacher does not start the exam until you have completed this. Good luck!",
+            primaryButtonText: "Got it"
+        })
     
         return () => clearInterval(intervalId); // Cleanup interval on component unmount
     }, [roomCode]);
@@ -76,7 +86,7 @@ function Room() {
     return (
         <div className="flex flex-col items-center justify-center text-center p-8" style={{ fontFamily: "Montserrat" }}>
             <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to Room {roomCode.toString().slice(0, -3)}</h1>
-            <p className="text-2xl text-gray-600 mb-8">Hello, {name}! Please wait until your instructor starts this oral examination. Watch this informational video while you wait. Please note that the layout has been slightly changed from the time of recording, and a countdown timer has been added at the top. Remember to use the test console at the bottom to make sure you can record and fetch audio from the server.</p>
+            <p className="text-2xl text-gray-600 mb-8">Hello, {name}! Please wait until your instructor starts this oral examination. Watch this informational video while you wait. Please note that the layout has been slightly changed from the time of recording, and a countdown timer has been added at the top. Remember to use the audio testing console at the bottom to make sure you can record and fetch audio from the server.</p>
             <div className="w-full max-w-xl py-[30px]">
                 <div className="aspect-w-16 aspect-h-9">
                     <video 
@@ -105,7 +115,7 @@ function Room() {
                         </div>
                         {audioURL && (
                             <div className="mb-4">
-                                <p className="text-lg text-gray-600 mb-2">Play back your recorded audio, to make sure your mic works:</p>
+                                <p className="text-lg text-gray-600 mb-2">Play back your recorded audio below, to make sure your mic works:</p>
                                 <div className="flex justify-center">
                                     <audio className="w-100%" controls src={audioURL}>
                                         Your browser does not support the audio element.
@@ -129,7 +139,7 @@ function Room() {
                         </div>
                         {testAudioURL && (
                             <div>
-                                <p className="text-lg text-gray-600 mb-2">Play the test audio and make sure it plays and that you can hear it:</p>
+                                <p className="text-lg text-gray-600 mb-2">Play the test audio below, and make sure you can play it and hear it:</p>
                                 <div className="flex justify-center">
                                     <audio className="w-100%" controls src={testAudioURL}>
                                         Your browser does not support the audio element.
@@ -139,6 +149,12 @@ function Room() {
                         )}
                     </div>
                 </Card>
+                
+            </div>
+            <div>
+                <p>
+                    <strong>Important:</strong> Please make sure you can record and play back audio on your device. If you can't, please check your device settings and permissions, and try again. If you still can't, please contact your instructor. Do not let your instructor start the exam until you can record and play back audio successfully. You may need to switch devices.
+                </p>
             </div>
         </div>
     );

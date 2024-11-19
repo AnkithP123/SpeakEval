@@ -14,6 +14,10 @@ function TeacherPortalRoom({ initialRoomCode }) {
   const [sortOrder, setSortOrder] = useState('asc'); // New state for sorting order (ascending/descending)
   const [showByPerson, setShowByPerson] = useState(false); // New state for 'Show by person' toggle
   const [allQuestions, setAllQuestions] = useState([]); // State to store all questions
+  const [showRubricModal, setShowRubricModal] = useState(false); // New state for rubric modal visibility
+  const [rubricContent, setRubricContent] = useState(null); // New state for rubric content
+  const [categories, setCategories] = useState([]); // New state for categories
+  const [descriptions, setDescriptions] = useState([]); // New state for descriptions
   const navigate = useNavigate();
 
   const fetchParticipants = async () => {
@@ -92,12 +96,25 @@ function TeacherPortalRoom({ initialRoomCode }) {
     }
   };
 
-  const handleGradeUpdate = (participantName, grades, totalScore, categories) => {
+  const toggleRubricModal = (rubric) => {
+    setRubricContent(rubric);
+    setShowRubricModal(!showRubricModal);
+  };
+
+  const handleGradeUpdate = (participantName, grades, totalScore, categories, descriptions) => {
     const updatedParticipants = { ...participants };
     const participant = updatedParticipants.members.find((member) => member.name === participantName);
     participant.grades = grades;
     participant.totalScore = totalScore;
     participant.categories = categories;
+    participant.descriptions = descriptions;
+
+    setCategories(categories);
+    setDescriptions(descriptions);
+
+    console.log(categories);
+    console.log(descriptions);
+
     setParticipants(updatedParticipants);
   };
 
@@ -319,20 +336,18 @@ function TeacherPortalRoom({ initialRoomCode }) {
           onClick={() => {
             setShowByPerson(!showByPerson);
             if (!showByPerson) setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
-
+  
             setTimeout(() => {
               if (roomCode.toString().slice(-3) !== '001') {
                 setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
               }
             }, 5000);
-            
           }}
           className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600"
         >
           {showByPerson ? 'Show by Question' : 'Show by Person'}
         </button>
       </div>
-
   
       {/* Grade report dropdown */}
       <div className="absolute right-4 flex items-center space-x-4">
@@ -348,28 +363,52 @@ function TeacherPortalRoom({ initialRoomCode }) {
         </select>
       </div>
   
-      {/* Sorting options */}
-      {/*<div className="absolute right-48 flex items-center space-x-0">
-        <select
-          className="bg-gray-200 text-black px-4 py-2 rounded-lg shadow-md"
-          value={sortOption}
-          onChange={(e) => setSortOption(e.target.value)}
-        >
-          <option value="name">Sort by Name</option>
-          <option value="totalScore">Sort by Total Score</option>
-          {participants.members[0]?.categories?.map((category, index) => (
-            <option key={index} value={`category-${index}`}>
-              Sort by {category}
-            </option>
-          ))}
-        </select>
+      {/* Rubric popup button */}
+      {/*<div className="absolute right-20 flex items-center space-x-4">
         <button
-          onClick={toggleSortOrder}
-          className="ml-2 bg-gray-200 text-black px-2 py-2 rounded-lg shadow-md hover:bg-gray-300"
+          onClick={() => setShowRubricModal(true)}
+          className="bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-600"
         >
-          {sortOrder === 'asc' ? <FaArrowUp /> : <FaArrowDown />}
+          Show Rubric
         </button>
       </div>*/}
+  
+      {/* Rubric modal */}
+      {showRubricModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 shadow-lg w-[90%] max-w-3xl">
+            <h2 className="text-2xl font-bold mb-4">Rubric</h2>
+            {participants.members.length > 0 && participants.members[0].categories?.length > 0 ? (
+              <table className="min-w-full bg-white border border-gray-300">
+                <thead>
+                  <tr>
+                    <th className="py-2 px-4 border-b border-gray-300">Category</th>
+                    <th className="py-2 px-4 border-b border-gray-300">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map((category, index) => (
+                    <tr key={index}>
+                      <td className="py-2 px-4 border-b border-gray-300">{category}</td>
+                      <td className="py-2 px-4 border-b border-gray-300">
+                        {descriptions[index] || 'No description available'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p>No rubric available.</p>
+            )}
+            <button
+              onClick={() => setShowRubricModal(false)}
+              className="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
   
       {/* Room code display */}
       <div className="flex items-center justify-center w-screen py-[50px]">
@@ -377,37 +416,37 @@ function TeacherPortalRoom({ initialRoomCode }) {
           Grading: {roomCode.toString().slice(0, -3)} (Question #{roomCode.toString().slice(-3)})
         </span>
       </div>
-      
+  
       {/* Navigation buttons */}
-        <div className="flex space-x-4">
-          <button
-            onClick={handlePreviousQuestion}
-            className={`px-4 py-2 rounded-lg shadow-md ${showByPerson ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'}`}
-            disabled={showByPerson}
-          >
-            Previous Question
-          </button>
-          <button
-            onClick={handleNextQuestion}
-            className={`px-4 py-2 rounded-lg shadow-md ${showByPerson ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'}`}
-            disabled={showByPerson}
-          >
-            Next Question
-          </button>
-        </div>
-        
-        {/* Toggle 'Show by person' */}
-      
+      <div className="flex space-x-4">
+        <button
+          onClick={handlePreviousQuestion}
+          className={`px-4 py-2 rounded-lg shadow-md ${
+            showByPerson ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'
+          }`}
+          disabled={showByPerson}
+        >
+          Previous Question
+        </button>
+        <button
+          onClick={handleNextQuestion}
+          className={`px-4 py-2 rounded-lg shadow-md ${
+            showByPerson ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'
+          }`}
+          disabled={showByPerson}
+        >
+          Next Question
+        </button>
+      </div>
   
       {/* Profile cards for participants */}
       <div className="flex flex-wrap justify-center mt-8 mb-8">
         {showByPerson ? (
           <div>
-          <table className="min-w-full bg-white border border-gray-300">
+            <table className="min-w-full bg-white border border-gray-300">
               <tbody>
                 {participants.members.map((participant, index) => (
-          <div className="overflow-x-auto max-w-full lg:max-w-[800px] mx-auto">
-                  <tr key={index} className="overflow-x-auto">
+                  <tr key={index}>
                     <td className="py-2 px-4 border-b border-gray-300">{participant.name}</td>
                     {allQuestions.map((question, qIndex) => (
                       <td key={qIndex} className="py-2 px-4 border-b border-gray-300">
@@ -420,24 +459,22 @@ function TeacherPortalRoom({ initialRoomCode }) {
                       </td>
                     ))}
                   </tr>
-                  </div>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
           sortParticipants().map((participant, index) => (
-            <ProfileCard 
-              key={index} 
-              name={participant} 
+            <ProfileCard
+              key={index}
+              name={participant}
               code={roomCode}
-              onGradeUpdate={handleGradeUpdate} 
+              onGradeUpdate={handleGradeUpdate}
             />
           ))
         )}
       </div>
     </div>
   );
-}
-
+}  
 export default TeacherPortalRoom;
