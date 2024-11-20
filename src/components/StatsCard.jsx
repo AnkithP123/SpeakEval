@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle } from 'react-icons/fa';
+import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard } from 'react-icons/fa';
 
 function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const [completed, setCompleted] = useState(false);
@@ -224,6 +224,29 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
     handleGetGrade();
   };
 
+  const handleCopyComments = () => {
+    if (!name.completed)
+      return toast.error('Participant has not completed the task');
+    if (rubric === '' || text === '') {
+      return toast.error('Press the download button to fetch this student\'s data.');
+    }
+
+    let comments = 'AI Grade based on the rubric set by the teacher:\n\n';
+    rubric.split('|;;|').forEach((element, index) => {
+      const [rubricItem] = element.split('|:::|');
+      comments += `${rubricItem}: ${justifications[index] || 'No justification provided'}\n\n`;
+    });
+
+    comments += `\n\nThis is NOT your final grade, as there WILL be manual review by the teacher, and AI may make mistakes initially.\n\n`;
+
+    navigator.clipboard.writeText(comments).then(() => {
+      toast.success('Comments copied to clipboard');
+    }).catch((error) => {
+      console.error('Error copying comments:', error);
+      toast.error('Failed to copy comments');
+    });
+  };
+
   return (
     <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
     <div className="flex items-center w-full">
@@ -297,6 +320,12 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
           `Total Score: ${totalScore}` : null
           }
         </div>
+        <button
+          className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 mt-2"
+          onClick={handleCopyComments}
+        >
+          <FaClipboard className="mr-2" /> Copy AI Comments
+        </button>
       </div>
       : null }
       <audio id={`answerAudioPlayer-${name.name}-${code}`} />

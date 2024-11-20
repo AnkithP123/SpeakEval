@@ -17,7 +17,14 @@ function TeacherPortalRoom({ initialRoomCode }) {
   const [showRubricModal, setShowRubricModal] = useState(false); // New state for rubric modal visibility
   const [rubricContent, setRubricContent] = useState(null); // New state for rubric content
   const [categories, setCategories] = useState([]); // New state for categories
-  const [descriptions, setDescriptions] = useState([]); // New state for descriptions
+  const [descriptions, setDescriptions] = useState(() => {
+    const savedDescriptions = localStorage.getItem('descriptions');
+    return savedDescriptions ? JSON.parse(savedDescriptions) : [];
+  }); // New state for descriptions
+
+  useEffect(() => {
+    localStorage.setItem('descriptions', JSON.stringify(descriptions));
+  }, [descriptions]);
   const navigate = useNavigate();
 
   const fetchParticipants = async () => {
@@ -110,7 +117,9 @@ function TeacherPortalRoom({ initialRoomCode }) {
     participant.descriptions = descriptions;
 
     setCategories(categories);
-    setDescriptions(descriptions);
+
+    if (descriptions.length == 0)
+      setDescriptions(descriptions);
 
     console.log(categories);
     console.log(descriptions);
