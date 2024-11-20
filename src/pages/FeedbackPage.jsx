@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 const FeedbackPage = () => {
     let [selectedFace, setSelectedFace] = useState(null);
     let [feedback, setFeedback] = useState('');
+    let [submitted, setSubmitted] = useState(false);
 
     const faces = [
         { id: 1, icon: <FaFrownOpen />, color: '#c80707' },
@@ -14,8 +15,7 @@ const FeedbackPage = () => {
         { id: 4, icon: <FaSmile />, color: '#46f238' },
         { id: 5, icon: <FaGrin />, color: '#05b505' },
     ];
-        
-    
+
     const handleFaceClick = (id) => {
         setSelectedFace(id);
     };
@@ -52,24 +52,23 @@ const FeedbackPage = () => {
         if (response.ok) {
             console.log('Feedback submitted successfully');
             toast.success('Feedback submitted successfully');
-            // Close the window after 1 second
-
-            setTimeout(() => {
-                // if in a popup window, close the window. Otherwise, if in a normal window in a normal tab, do nothing
-                if (window.opener) {
-                    window.close();
-                }
-            }, 1000);
+            setSubmitted(true);
         } else {
             console.error('Error submitting feedback');
             toast.error('Error submitting feedback');
         }
-
-        
-
     };
 
     const countChars = (text) => text.length;
+
+    if (submitted) {
+        return (
+            <div className="feedback-page">
+                <h1 className="page-heading" style={{ fontSize: '2.5em', fontWeight: 'bold' }}>Thank You!</h1>
+                <p>Your feedback has been submitted successfully.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="feedback-page">

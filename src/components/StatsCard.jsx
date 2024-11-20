@@ -8,7 +8,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const [question, setQuestion] = useState('');
   const [rubric, setRubric] = useState('');
   const [index, setIndex] = useState('');
-  const [questionAudioUrl, setQuestionAudioUrl] = useState('');
+  const [questionBase64, setQuestionBase64] = useState(undefined);
   const [grades, setGrades] = useState({});
   const [justifications, setJustifications] = useState({});
   const [totalScore, setTotalScore] = useState(0);
@@ -91,6 +91,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
       );
       const data = await response.json();
       setRubric(data.rubric);
+      setQuestionBase64(data.audios[0]);
     } catch (error) {
       console.error('Error loading rubric:', error);
     }
@@ -114,13 +115,12 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
     if (!name.completed)
       return toast.error('Participant has not completed the task');
     try {
-      const questionBase64 = await fetchQuestion();
       if (questionBase64) {
         const audioData = Uint8Array.from(atob(questionBase64), c => c.charCodeAt(0));
         const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
         const audioUrl = URL.createObjectURL(audioBlob);
 
-        const questionAudioPlayer = document.getElementById(`questionAudioPlayer-${name.name}`);
+        const questionAudioPlayer = document.getElementById(`questionAudioPlayer-${name.name}-${code}`);
         if (questionAudioPlayer) {
           questionAudioPlayer.src = audioUrl;
           questionAudioPlayer.play();
@@ -234,7 +234,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
     let comments = 'AI Grade based on the rubric set by the teacher:\n\n';
     rubric.split('|;;|').forEach((element, index) => {
       const [rubricItem] = element.split('|:::|');
-      comments += `${rubricItem}: ${justifications[index] || 'No justification provided'}\n\n`;
+      comments += `${rubricItem}: ${justifications[index] || 'AI was not used in the grading process, and there is no description to give'}\n\n`;
     });
 
     comments += `\n\nThis is NOT your final grade, as there WILL be manual review by the teacher, and AI may make mistakes initially.\n\n`;
@@ -249,30 +249,30 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
 
   return (
     <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
-    <div className="flex items-center w-full">
-      <span className="mr-[8px] text-[23px] truncate">{customName || name.name}</span>
-      <div className="flex gap-[8px] ml-auto">
-        <button
-          className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
-          onClick={handleDownload}
-        >
-          <FaDownload />
-        </button>
-        <button
-          className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
-          onClick={handlePlay}
-        >
-          {isPlaying ? <FaPause /> : <FaPlay />} {/* Render stop button if audio is playing */}
-        </button>
-        <button
-          className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
-          onClick={handleAiButtonClick}
-        >
-          <FaRobot />
-        </button>
+      <div className="flex items-center w-full">
+        <span className="mr-[8px] text-[23px] truncate">{customName || name.name}</span>
+        <div className="flex gap-[8px] ml-auto">
+          <button
+            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
+            onClick={handleDownload}
+          >
+            <FaDownload />
+          </button>
+          <button
+            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
+            onClick={handlePlay}
+          >
+            {isPlaying ? <FaPause /> : <FaPlay />} {/* Render stop button if audio is playing */}
+          </button>
+          <button
+            className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
+            onClick={handleAiButtonClick}
+          >
+            <FaRobot />
+          </button>
+        </div>
       </div>
-    </div>
-    <div>
+      <div>
         <button
           className="p-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600"
           onClick={handlePlayQuestion}
@@ -320,12 +320,14 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
           `Total Score: ${totalScore}` : null
           }
         </div>
-        <button
-          className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 mt-2"
-          onClick={handleCopyComments}
-        >
-          <FaClipboard className="mr-2" /> Copy AI Comments
-        </button>
+        {rubric !== '' && text !== '' ? <div className="flex justify-center mt-2 mb-2">
+          <button
+            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex items-center justify-center"
+            onClick={handleCopyComments}
+          >
+            <FaClipboard className="mr-2" /> Copy AI Comments
+          </button>
+        </div> : null}
       </div>
       : null }
       <audio id={`answerAudioPlayer-${name.name}-${code}`} />
