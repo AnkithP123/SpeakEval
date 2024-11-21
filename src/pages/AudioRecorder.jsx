@@ -456,6 +456,9 @@ async function convertOggToWav(oggUrl) {
             audio = new Audio(audioUrl);
     
         }
+
+        if (playing)
+            return;
         audio.play().then(() => {
             console.log('Playing...');
         }).catch((err) => {
