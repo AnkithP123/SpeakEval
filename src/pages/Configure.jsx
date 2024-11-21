@@ -5,8 +5,11 @@ import './CreateRoom.css'; // Import the CSS file where the shake animation is d
 import Card from '../components/Card';
 import Upgrade from './Upgrade';
 import { FaMagic } from 'react-icons/fa';
+import { cuteAlert } from 'cute-alert';
 
 const Configure = ({set, setUltimate}) => {
+    const [popupVisible, setPopupVisible] = useState(false);
+    const [selectedConfig, setSelectedConfig] = useState(null);
     const [userId, setUserId] = useState('');
     const [loggedIn, setLoggedIn] = useState(false);
     const [roomCode, setRoomCode] = useState('');
@@ -24,20 +27,21 @@ const Configure = ({set, setUltimate}) => {
     const [sparklePositions, setSparklePositions] = useState([]);
     const [button1Hover, setButton1Hover] = useState(false);
     const [button2Hover, setButton2Hover] = useState(false);
+    const [subscribed, setSubscribed] = useState(false);
 
     useEffect(() => {
         setSparklePositions(generateSparklePositions(3));
       }, []); // Add dependencies if you want it to update on specific state or prop changes    
 
-      useEffect(() => {
-        // Define interval to update sparkle positions every second
-        const intervalId = setInterval(() => {
-          setSparklePositions(generateSparklePositions(3));
-        }, 1720);
-    
-        // Cleanup the interval on component unmount
-        return () => clearInterval(intervalId);
-      }, []);
+    useEffect(() => {
+    // Define interval to update sparkle positions every second
+    const intervalId = setInterval(() => {
+        setSparklePositions(generateSparklePositions(3));
+    }, 1720);
+
+    // Cleanup the interval on component unmount
+    return () => clearInterval(intervalId);
+    }, []);
 
     const handleInputChange = async (e) => {
         const input = e.target.value;
@@ -69,6 +73,19 @@ const Configure = ({set, setUltimate}) => {
             if (parsedData.subscription) {
                 set(parsedData.subscription !== 'free');
                 setUltimate(parsedData.subscription === 'Ultimate');
+
+                if (parsedData.subscription !== 'free') {
+                    setSubscribed(true);
+                }
+            }
+
+            if (userId === 'CHICHARON123!') {
+                cuteAlert({
+                    type: "info",
+                    title: "Rubric Transferring",
+                    description: "¡Hola, Sra. Abarca! Press the autofill button next to the rubric and select Exam 1 to transfer the rubric to this exam.",
+                    primaryButtonText: "Got it!"
+                });
             }
         } catch (err) {
             console.error("Error Loading Data", err);
@@ -82,7 +99,7 @@ const Configure = ({set, setUltimate}) => {
     };
 
     const handleToggleRecording = () => {
-        if (questions.length >= 30) {
+        if (questions.length >= 60 && !subscribed) {
             setShowUpgrade(true);
             setTimeout(() => {
             const message = document.createElement('div');
@@ -235,6 +252,38 @@ const Configure = ({set, setUltimate}) => {
     const handleAutofillClick = () => {
         setShowAutofillUpgrade(true);
     };
+
+    const handleRubricAutofillClick = async () => {
+        if (subscribed) {
+            try {
+                setPopupVisible(true); // Show popup
+                const configs = await fetch(`https://www.server.speakeval.org/getconfigs?pin=${userId}`);
+                const configsList = await configs.json();
+                // Set the fetched config list to state to use in rendering
+                setSelectedConfig(configsList);
+            } catch (error) {
+                console.error("Failed to fetch configs:", error);
+                toast.error("Failed to fetch configurations");
+            }
+        } else {
+            handleAutofillClick();
+        }
+    };   
+    
+    const handleConfigClick = (config) => {
+        // convert the rubric, which is currently a string using the separators, back into an array of objects
+
+        const categories = config.rubric.split('|;;|').map((category) => {
+            const [name, descriptionsString] = category.split('|:::|');
+            const descriptions = descriptionsString.split('|,,|');
+            return { name, descriptions };
+        });
+
+        setCategories(categories);
+        setMaxTime(config.limit);
+
+        setPopupVisible(false); // Hide the popup
+    }
 
     const containerStyle = {
         position: 'relative',
@@ -427,6 +476,74 @@ const Configure = ({set, setUltimate}) => {
       pointer-events: none;
       filter: blur(1px);
     }
+
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      color: black;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 1000;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+      max-width: 500px;
+      width: 90%;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .popup h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      text-align: center;
+      color: #333;
+    }
+
+    .popup ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 20px 0;
+    }
+
+    .popup li {
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #E6F3FF;
+      margin-bottom: 10px;
+      transition: background-color 0.2s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .popup li:hover {
+      background-color: #F0C63C;
+      transform: scale(1.02);
+    }
+
+    .popup button {
+      background-color: #333;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.2s;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .popup button:hover {
+      background-color: #555;
+      transform: scale(1.05);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
     `;
     
     const generateSparklePositions = (length) => {
@@ -442,205 +559,232 @@ const Configure = ({set, setUltimate}) => {
     };
     
 
-return (
-    <div>
-        <style>{styles}</style>
-        {showUpgrade && <Upgrade onClose={() => setShowUpgrade(false)} doc={document} />}
-        {showAutofillUpgrade && <Upgrade onClose={() => setShowAutofillUpgrade(false)} />}
-        <title hidden>Configure Exams</title>
-        {loggedIn ? (
-            <div className="container-xl lg:container m-auto">
-                <div className="grid grid-cols-1 md:grid-cols-1 gap-8 p-8 rounded-lg justify-center">
-                    <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                    <div className="flex justify-center items-center mb-4 relative">
-                            <div className="w-[10%]"></div> {/* Spacer to balance the button on the right */}
-                            <h2 className="text-2xl font-bold text-center flex-grow">
+    return (
+        <div>
+            <style>{styles}</style>
+            {showUpgrade && <Upgrade onClose={() => setShowUpgrade(false)} doc={document} />}
+            {showAutofillUpgrade && <Upgrade onClose={() => setShowAutofillUpgrade(false)} />}
+            <title hidden>Configure Exams</title>
+    
+            {loggedIn ? (
+                <div className="container-xl lg:container m-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-1 gap-8 p-8 rounded-lg justify-center">
+                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+                            <div className="flex justify-center items-center mb-4 relative">
+                                <div className="w-[10%]"></div> {/* Spacer to balance the button on the right */}
+                                <h2 className="text-2xl font-bold text-center flex-grow">
                                     Record Questions
-                            </h2>
-                            <button
+                                </h2>
+                                <button
                                     onClick={handleAutofillClick}
                                     style={{
                                         ...premiumButtonStyle,
-                                        background: button1Hover ? '#F0C63C' : premiumButtonStyle.background, // Brighter gold
+                                        background: button1Hover ? '#F0C63C' : premiumButtonStyle.background,
                                         boxShadow: button1Hover
-                                          ? '0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.8), 0 0 90px rgba(255, 215, 0, 0.6)'
-                                          : premiumButtonStyle.boxShadow,
-                                        transform: button1Hover ? 'scale(1.1)' : premiumButtonStyle.transform, // Slightly larger scale
+                                            ? '0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.8), 0 0 90px rgba(255, 215, 0, 0.6)'
+                                            : premiumButtonStyle.boxShadow,
+                                        transform: button1Hover ? 'scale(1.1)' : premiumButtonStyle.transform,
                                         transition: 'transform 0.3s, box-shadow 0.3s'
-                                      }}                                    className="absolute right-0"
-
-                                    onMouseEnter={() => {setButton1Hover(true)}}
-                                    onMouseLeave={() => {setButton1Hover(false)}}
-                            >
+                                    }}
+                                    className="absolute right-0"
+                                    onMouseEnter={() => { setButton1Hover(true) }}
+                                    onMouseLeave={() => { setButton1Hover(false) }}
+                                >
                                     <FaMagic style={fancyButtonIconStyle} />
                                     Autofill
                                     <div className={"gleam"}></div>
                                     {(button1Hover ? generateSparklePositions(15) : sparklePositions).map((style, index) => (
-                                    <div key={index} className="sparkle" style={style}></div>
+                                        <div key={index} className="sparkle" style={style}></div>
                                     ))}
-                            </button>
+                                </button>
                             </div>
-
-                        <div className="flex justify-center">
-                            <button onClick={handleToggleRecording} style={buttonStyle}>
-                                {recording ? 'Stop' : 'Record Question'}
-                            </button>
-                        </div>
-                        {recording && (
-                            <p className="text-red-500 mt-4 text-center">Recording...</p>
-                        )}
-                        {questions.map((question, index) => (
-                            <div key={index} style={chipStyle}>
-                                <audio controls src={question} />
-                                <span
-                                    style={deleteButtonStyle}
-                                    onClick={() => handleDeleteQuestion(index)}
-                                >
-                                    &#x2715;
-                                </span>
+    
+                            <div className="flex justify-center">
+                                <button onClick={handleToggleRecording} style={buttonStyle}>
+                                    {recording ? 'Stop' : 'Record Question'}
+                                </button>
                             </div>
-                        ))}
-                    </Card>
-                    <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                    <div className="flex justify-center items-center mb-4 relative">
-                            <div className="w-[10%]"></div> {/* Spacer to balance the button */}
-                            <h2 className="text-2xl font-bold text-center flex-grow">
+                            {recording && (
+                                <p className="text-red-500 mt-4 text-center">Recording...</p>
+                            )}
+                            {questions.map((question, index) => (
+                                <div key={index} style={chipStyle}>
+                                    <audio controls src={question} />
+                                    <span
+                                        style={deleteButtonStyle}
+                                        onClick={() => handleDeleteQuestion(index)}
+                                    >
+                                        &#x2715;
+                                    </span>
+                                </div>
+                            ))}
+                        </Card>
+                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+                            <div className="flex justify-center items-center mb-4 relative">
+                                <div className="w-[10%]"></div> {/* Spacer to balance the button */}
+                                <h2 className="text-2xl font-bold text-center flex-grow">
                                     Create Rubric
-                            </h2>
-                            <button
-                                    onClick={handleAutofillClick}
+                                </h2>
+                                <button
+                                    onClick={handleRubricAutofillClick}
                                     style={{
                                         ...premiumButtonStyle,
-                                        background: button2Hover ? '#F0C63C' : premiumButtonStyle.background, // Brighter gold
+                                        background: button2Hover ? '#F0C63C' : premiumButtonStyle.background,
                                         boxShadow: button2Hover
-                                          ? '0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.8), 0 0 90px rgba(255, 215, 0, 0.6)'
-                                          : premiumButtonStyle.boxShadow,
-                                        transform: button2Hover ? 'scale(1.1)' : premiumButtonStyle.transform, // Slightly larger scale
+                                            ? '0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.8), 0 0 90px rgba(255, 215, 0, 0.6)'
+                                            : premiumButtonStyle.boxShadow,
+                                        transform: button2Hover ? 'scale(1.1)' : premiumButtonStyle.transform,
                                         transition: 'transform 0.3s, box-shadow 0.3s'
-                                      }}
-                                                                          className="absolute right-0"
-                                    onMouseEnter={() => {setButton2Hover(true)}}
-                                    onMouseLeave={() => {setButton2Hover(false)}}
-                            >
+                                    }}
+                                    className="absolute right-0"
+                                    onMouseEnter={() => { setButton2Hover(true) }}
+                                    onMouseLeave={() => { setButton2Hover(false) }}
+                                >
                                     <FaMagic style={fancyButtonIconStyle} />
                                     Autofill
                                     <div className={"gleam"}></div>
                                     {(button2Hover ? generateSparklePositions(15) : sparklePositions).map((style, index) => (
-                                    <div key={index} className="sparkle" style={style}></div>
+                                        <div key={index} className="sparkle" style={style}></div>
                                     ))}
-                            </button>
-                    </div>
-
-                        <div style={rubricContainerStyle}>
-                            <div style={rubricHeaderStyle}>Category</div>
-                            {[5, 4, 3, 2, 1].map((point) => (
-                                <div key={point} style={rubricCellStyle}>
-                                    {point}
-                                </div>
-                            ))}
-                            {categories.map((category, index) => (
-                                <React.Fragment key={index}>
-                                    <div style={rubricCellStyle}>
-                                        <span
-                                            style={deleteButtonStyle}
-                                            onClick={() => handleDeleteCategory(index)}
-                                        >
-                                            &#x2715;
-                                        </span>
-                                        <input
-                                            type="text"
-                                            value={category.name}
-                                            onChange={(e) => handleCategoryNameChange(index, e)}
-                                            maxLength={50}
-                                            placeholder="Category Name"
-                                        />
+                                </button>
+                            </div>
+    
+                            <div style={rubricContainerStyle}>
+                                <div style={rubricHeaderStyle}>Category</div>
+                                {[5, 4, 3, 2, 1].map((point) => (
+                                    <div key={point} style={rubricCellStyle}>
+                                        {point}
                                     </div>
-                                    {[5, 4, 3, 2, 1].map((point) => (
-                                        <input
-                                            key={point}
-                                            type="text"
-                                            value={category.descriptions[point - 1]}
-                                            onChange={(e) =>
-                                                handleCategoryDescriptionChange(index, point - 1, e)
-                                            }
-                                            style={rubricCellStyle}
-                                            maxLength={500}
-                                            placeholder={`Description ${point}`}
-                                        />
-                                    ))}
-                                </React.Fragment>
-                            ))}
-                        </div>
-                        <button onClick={handleAddCategory} style={buttonStyle}>
-                            Add Category
-                        </button>
-                    </Card>
-                    <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                        <h2 className="text-2xl font-bold mb-4 text-center">
-                            Additional Settings
-                        </h2>
-                        <div className="flex justify-center">
-                            <input
-                                type="text"
-                                value={maxTime}
-                                onChange={handleMaxTimeChange}
-                                style={{ ...rubricCellStyle, width: '20%' }}
-                                maxLength={20}
-                                placeholder="Answer Time Limit, in seconds"
-                            />
-                        </div>
-                        <div className="flex justify-center">
-                            <select
-                                value={selectedLanguage}
-                                onChange={handleLanguageChange}
-                                style={{ ...dropdownStyle, width: '20%' }}
-                            >
-                                <option value="">Select Language</option>
-                                <option value="English">English</option>
-                                <option value="Spanish">Spanish</option>
-                                <option value="French">French</option>
-                                <option value="Chinese">Chinese</option>
-                                <option value="Japanese">Japanese</option>
-                            </select>
-                        </div>
-                    </Card>
-                    <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                        <h2 className="text-2xl font-bold mb-4 text-center">
-                            Register Configuration
-                        </h2>
-                        <div className="flex justify-center">
-                            <input
-                                type="text"
-                                value={id}
-                                onChange={(e) => setId(e.target.value)}
-                                style={rubricCellStyle}
-                                maxLength={15}
-                                placeholder="Enter Name for Set"
-                            />
-                            <button onClick={handleRegisterConfig} style={buttonStyle}>
-                                Register
+                                ))}
+                                {categories.map((category, index) => (
+                                    <React.Fragment key={index}>
+                                        <div style={rubricCellStyle}>
+                                            <span
+                                                style={deleteButtonStyle}
+                                                onClick={() => handleDeleteCategory(index)}
+                                            >
+                                                &#x2715;
+                                            </span>
+                                            <input
+                                                type="text"
+                                                value={category.name}
+                                                onChange={(e) => handleCategoryNameChange(index, e)}
+                                                maxLength={50}
+                                                placeholder="Category Name"
+                                            />
+                                        </div>
+                                        {[5, 4, 3, 2, 1].map((point) => (
+                                            <input
+                                                key={point}
+                                                type="text"
+                                                value={category.descriptions[point - 1]}
+                                                onChange={(e) =>
+                                                    handleCategoryDescriptionChange(index, point - 1, e)
+                                                }
+                                                style={rubricCellStyle}
+                                                maxLength={500}
+                                                placeholder={`Description ${point}`}
+                                            />
+                                        ))}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                            <button onClick={handleAddCategory} style={buttonStyle}>
+                                Add Category
                             </button>
-                        </div>
-                    </Card>
+                        </Card>
+                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+                            <h2 className="text-2xl font-bold mb-4 text-center">
+                                Additional Settings
+                            </h2>
+                            <div className="flex justify-center">
+                                <input
+                                    type="text"
+                                    value={maxTime}
+                                    onChange={handleMaxTimeChange}
+                                    style={{ ...rubricCellStyle, width: '20%' }}
+                                    maxLength={20}
+                                    placeholder="Answer Time Limit, in seconds"
+                                />
+                            </div>
+                            <div className="flex justify-center">
+                                <select
+                                    value={selectedLanguage}
+                                    onChange={handleLanguageChange}
+                                    style={{ ...dropdownStyle, width: '20%' }}
+                                >
+                                    <option value="">Select Language</option>
+                                    <option value="English">English</option>
+                                    <option value="Spanish">Spanish</option>
+                                    <option value="French">French</option>
+                                    <option value="Chinese">Chinese</option>
+                                    <option value="Japanese">Japanese</option>
+                                </select>
+                            </div>
+                        </Card>
+                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+                            <h2 className="text-2xl font-bold mb-4 text-center">
+                                Register Configuration
+                            </h2>
+                            <div className="flex justify-center">
+                                <input
+                                    type="text"
+                                    value={id}
+                                    onChange={(e) => setId(e.target.value)}
+                                    style={rubricCellStyle}
+                                    maxLength={15}
+                                    placeholder="Enter Name for Set"
+                                />
+                                <button onClick={handleRegisterConfig} style={buttonStyle}>
+                                    Register
+                                </button>
+                            </div>
+                        </Card>
+                    </div>
                 </div>
-            </div>
-        ) : (
-            <div style={containerStyle} className={shake ? 'shake' : ''}>
-                <input
-                    type="password"
-                    value={userId}
-                    onChange={handleInputChange}
-                    style={inputStyle}
-                    maxLength={30}
-                    placeholder="Enter Teacher Pin"
-                    onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
-                />
-                <button onClick={handleGoClick} style={buttonStyle}>
-                    Log In
-                </button>
-            </div>
-        )}
-    </div>
-);
+            ) : (
+                <div style={containerStyle} className={shake ? 'shake' : ''}>
+                    <input
+                        type="password"
+                        value={userId}
+                        onChange={handleInputChange}
+                        style={inputStyle}
+                        maxLength={30}
+                        placeholder="Enter Teacher Pin"
+                        onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
+                    />
+                    <button onClick={handleGoClick} style={buttonStyle}>
+                        Log In
+                    </button>
+                </div>
+            )}
+    
+            {/* Conditionally render the popup */}
+            {popupVisible && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto shadow-lg">
+                        <h2 className="text-2xl font-bold mb-4 text-center">Select a Configuration</h2>
+                        <ul className="space-y-2">
+                            {selectedConfig && selectedConfig.map((config, index) => (
+                                <li
+                                    key={index}
+                                    className="p-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition"
+                                    onClick={() => handleConfigClick(config)}
+                                >
+                                    {config.name}
+                                </li>
+                            ))}
+                        </ul>
+                        <button
+                            className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg w-full hover:bg-blue-600 transition"
+                            onClick={() => setPopupVisible(false)}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };
 export default Configure;
