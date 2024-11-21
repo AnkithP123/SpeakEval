@@ -46,7 +46,21 @@ export default function AudioRecorder({code, participant}) {
         return () => clearInterval(interval);
     }, []);
     
+    useEffect(async () => {
+        if (!audio) {
+            const audio2 = await makeResponse();
+            console.log('HEY');
+
+            const url = audio2.src;
+
+            const wavBlob = await convertOggToWav(url);
+
+            const audioUrl = URL.createObjectURL(wavBlob);
+
+            audio = new Audio(audioUrl);
     
+        }
+    }, []);
 
     const pulse = keyframes`
         0% {
@@ -306,15 +320,17 @@ async function convertOggToWav(oggUrl) {
         setIsRecording(true);
         setAudioURL(null);
         const permissionGranted = await requestMicrophonePermission();
-        if (!permissionGranted) return;
+        if (!permissionGranted) {
+            setError('Microphone access is required. Click here to try again.');
+        }
 
         await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`);
 
         const mimeType = getSupportedMimeType();
         if (!mimeType) {
-        setError('Your browser does not support any of the available audio recording formats.');
-        setIsError(true);
-        return;
+            setError('Your browser does not support any of the available audio recording formats.');
+            setIsError(true);
+            return;
         }
 
         try {
@@ -442,31 +458,24 @@ async function convertOggToWav(oggUrl) {
 
     const playRecording = async() => {
         const permissionGranted = await requestMicrophonePermission();
-        if (!permissionGranted) return;
-        if (!audio) {
-            const audio2 = await makeResponse();
-            console.log('HEY');
-
-            const url = audio2.src;
-
-            const wavBlob = await convertOggToWav(url);
-
-            const audioUrl = URL.createObjectURL(wavBlob);
-
-            audio = new Audio(audioUrl);
-    
+        if (!permissionGranted) {
+            setError('Microphone access is required. Click here to try again.');
+            return;
         }
 
         if (playing)
             return;
+        
+        setPlaying(true);
+
         audio.play().then(() => {
             console.log('Playing...');
         }).catch((err) => {
             console.error('Error playing audio:', err);
             setError('An error occurred while playing the audio. Please try again.');
             setIsError(true);
+            setPlaying(false);
         });
-        setPlaying(true);
 
         audio.onended = () => {
             setFinished(true);
