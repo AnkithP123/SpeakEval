@@ -87,7 +87,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const readRubric = async () => {
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/receiveaudio?code=${code}`
+        `https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${name.name}`
       );
       const data = await response.json();
       setRubric(data.rubric);
