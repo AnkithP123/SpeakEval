@@ -478,14 +478,14 @@ async function convertOggToWav(oggUrl) {
             const countdownInterval = setInterval(() => {
                 countdownRef.current -= 1;
                 setCountdownDisplay(countdownRef.current);
-                if (countdownRef.current === 0) {
+                if (countdownRef.current <= 0) {
                     clearInterval(countdownInterval);
                     setFinished(false);
                     startRecording();        
                 }
                 // Play beep sound during countdown
 
-                if (countdownRef.current === 0) {
+                if (countdownRef.current <= 0) {
                     playRecordingStarted();
                 } else {
                     playBeep();
