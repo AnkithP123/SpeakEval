@@ -4,6 +4,7 @@ import RoomPanel from '../components/RoomPanel';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
+import { cuteAlert } from 'cute-alert';
 
 function CreateRoom({ initialUserId = '', set, setUltimate }) {
     const [userId, setUserId] = useState(initialUserId);
@@ -14,6 +15,15 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
     const [isConfigEntered, setIsConfigEntered] = useState(false); // Track if config ID has been entered
     const [configs, setConfigs] = useState([]); // State to store the configs
     const navigate = useNavigate();
+
+    useEffect(() => {
+        cuteAlert({
+            type: "error",
+            title: "Importante",
+            description: "Sra. Abarca, por favor responda a mi correo electrónico. Pienso que hay un problema.",
+            primaryButtonText: "OK",
+        });
+    }, []);
 
     useEffect(() => {
         const fetchConfigs = async () => {

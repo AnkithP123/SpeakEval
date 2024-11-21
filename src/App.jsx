@@ -26,7 +26,9 @@ function AudioRecorderRouteWrapper() {
   return <AudioRecorder code={code} participant={participant} />;
 }
 
+
 function App() {
+  
   const [gold, setGold] = React.useState(false);
   const [ultimate, setUltimate] = React.useState(false);
   const route = createBrowserRouter(
