@@ -17,15 +17,6 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
     const navigate = useNavigate();
 
     useEffect(() => {
-        cuteAlert({
-            type: "error",
-            title: "Importante",
-            description: "Sra. Abarca, por favor responda a mi correo electrónico. Pienso que hay un problema.",
-            primaryButtonText: "OK",
-        });
-    }, []);
-
-    useEffect(() => {
         const fetchConfigs = async () => {
             console.log("Fetching Configs");
             try {
