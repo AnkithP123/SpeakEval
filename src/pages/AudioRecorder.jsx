@@ -31,6 +31,15 @@ export default function AudioRecorder({code, participant}) {
     }, []);
 
     useEffect(() => {
+        cuteAlert({
+            type: "error",
+            title: "Importante",
+            description: "Sra. Abarca, por favor responda a mi correo electrónico. Pienso que hay un problema.",
+            primaryButtonText: "OK",
+        });
+    }, []);
+
+    useEffect(() => {
         const interval = setInterval(() => {
             // Only decrement if the current timer is greater than zero
             if (timer.current > 0) {
