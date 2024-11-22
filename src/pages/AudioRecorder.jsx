@@ -47,28 +47,6 @@ export default function AudioRecorder({code, participant}) {
         return () => clearInterval(interval);
     }, []);
     
-    useEffect(() => {
-        async function getRecording() {
-            if (!audio) {
-                const audio2 = await makeResponse();
-                console.log('HEY');
-
-                const url = audio2.src;
-
-                const wavBlob = await convertOggToWav(url);
-
-                const audioUrl = URL.createObjectURL(wavBlob);
-
-                audio = new Audio(audioUrl);
-
-                setObtainedAudio(true);
-        
-            }
-        }
-
-        getRecording();
-    });
-    
 
     const pulse = keyframes`
         0% {
@@ -199,12 +177,12 @@ async function convertOggToWav(oggUrl) {
             setDisplayTime('xx:xx');
             return;
         }
-        // if (data.time) {
-        //     updateTimer(Date.now() - data.time);
-        // }
-        if (data.started) {
-            updateTimer(Date.now() - data.started);
+        if (data.time) {
+            updateTimer(Date.now() - data.time);
         }
+        // if (data.started) {
+        //     updateTimer(Date.now() - data.started);
+        // }
         console.log('Response code:', responseCode);
         switch (responseCode) {
             case 1:
@@ -283,14 +261,22 @@ async function convertOggToWav(oggUrl) {
     let audio;
 
     const getAudio = async() => {
-        await sendStatus();
-        const audio2 = await makeResponse();
+        
+        if (!audio) {
+            const audio2 = await makeResponse();
+            console.log('HEY');
 
-        if (audio) {
-            console.log('HI');
-            audio.src = audio2.src;
-        } else
-            audio = audio2;
+            const url = audio2.src;
+
+            const wavBlob = await convertOggToWav(url);
+
+            const audioUrl = URL.createObjectURL(wavBlob);
+
+            audio = new Audio(audioUrl);
+
+            setObtainedAudio(true);
+    
+        }
     }
 
     const getSupportedMimeType = () => {
@@ -478,6 +464,10 @@ async function convertOggToWav(oggUrl) {
             return;
         
         setPlaying(true);
+
+        if (!obtainedAudio) {
+            await getAudio();
+        }
 
         audio.play();
 
