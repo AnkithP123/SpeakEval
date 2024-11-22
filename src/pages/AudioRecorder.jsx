@@ -47,23 +47,28 @@ export default function AudioRecorder({code, participant}) {
         return () => clearInterval(interval);
     }, []);
     
-    useEffect(async () => {
-        if (!audio) {
-            const audio2 = await makeResponse();
-            console.log('HEY');
+    useEffect(() => {
+        async function getRecording() {
+            if (!audio) {
+                const audio2 = await makeResponse();
+                console.log('HEY');
 
-            const url = audio2.src;
+                const url = audio2.src;
 
-            const wavBlob = await convertOggToWav(url);
+                const wavBlob = await convertOggToWav(url);
 
-            const audioUrl = URL.createObjectURL(wavBlob);
+                const audioUrl = URL.createObjectURL(wavBlob);
 
-            audio = new Audio(audioUrl);
+                audio = new Audio(audioUrl);
 
-            setObtainedAudio(true);
-    
+                setObtainedAudio(true);
+        
+            }
         }
-    }, []);
+
+        getRecording();
+    });
+    
 
     const pulse = keyframes`
         0% {
@@ -586,14 +591,14 @@ async function convertOggToWav(oggUrl) {
                 </h1>
                 { finished ? (null) : (
                 <PulseButton
-                    onClick={obtainedAudio ? (isRecording ? stopRecording : playRecording) : null}
+                    onClick={isRecording ? stopRecording : playRecording}
                     style={isRecording ? recordStyle : {
                         width: '80px',
                         height: '80px',
                         borderRadius: '50%',
                         backgroundColor: obtainedAudio ? '#28a745' : 'gray',
                         border: 'none',
-                        cursor: obtainedAudio ? 'pointer' : 'not-allowed',
+                        cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
