@@ -20,6 +20,7 @@ export default function AudioRecorder({code, participant}) {
     const mediaRecorder = useRef(null);
     const audioRef = useRef(null);
     const [displayTime, setDisplayTime] = useState('xx:xx'); // State for displaying formatted time
+    const [obtainedAudio, setObtainedAudio] = useState(false);
     let [premium, setPremium] = useState(false);
     let questionIndex;
 
@@ -58,6 +59,8 @@ export default function AudioRecorder({code, participant}) {
             const audioUrl = URL.createObjectURL(wavBlob);
 
             audio = new Audio(audioUrl);
+
+            setObtainedAudio(true);
     
         }
     }, []);
@@ -468,6 +471,12 @@ async function convertOggToWav(oggUrl) {
         
         setPlaying(true);
 
+        audio.play();
+
+        audio.pause();
+
+        audio.currentTime = 0;
+
         audio.play().then(() => {
             console.log('Playing...');
         }).catch((err) => {
@@ -577,14 +586,14 @@ async function convertOggToWav(oggUrl) {
                 </h1>
                 { finished ? (null) : (
                 <PulseButton
-                    onClick={isRecording ? stopRecording : playRecording}
+                    onClick={obtainedAudio ? (isRecording ? stopRecording : playRecording) : null}
                     style={isRecording ? recordStyle : {
                         width: '80px',
                         height: '80px',
                         borderRadius: '50%',
-                        backgroundColor: '#28a745',
+                        backgroundColor: obtainedAudio ? '#28a745' : 'gray',
                         border: 'none',
-                        cursor: 'pointer',
+                        cursor: obtainedAudio ? 'pointer' : 'not-allowed',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
