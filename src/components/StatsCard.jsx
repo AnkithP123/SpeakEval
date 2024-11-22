@@ -43,6 +43,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
       setText('Transcription: ' + data.text);
       setQuestion('Question: ' + data.question);
       setIndex(data.index);
+      readRubric();
     } catch (error) {
       console.error('Error loading audio:', error);
     }
@@ -174,10 +175,6 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
       console.error('Error getting grade:', error);
     }
   }
-
-  useEffect(() => {
-    readRubric();
-  }, []);
 
   const handleGradeChange = (index, value) => {
     const updatedGrades = { ...grades, [index]: value };
