@@ -508,7 +508,9 @@ async function convertOggToWav(oggUrl) {
                 }
                 // Play beep sound during countdown
 
-                if (countdownRef.current <= 0) {
+                if (countdownRef.current <= -2) {
+                    // Do nothing
+                } else if (countdownRef.current <= 0) {
                     playRecordingStarted();
                 } else {
                     playBeep();
@@ -591,14 +593,14 @@ async function convertOggToWav(oggUrl) {
                 </h1>
                 { finished ? (null) : (
                 <PulseButton
-                    onClick={isRecording ? stopRecording : playRecording}
+                    onClick={obtainedAudio ? (isRecording ? stopRecording : playRecording) : null}
                     style={isRecording ? recordStyle : {
                         width: '80px',
                         height: '80px',
                         borderRadius: '50%',
                         backgroundColor: obtainedAudio ? '#28a745' : 'gray',
                         border: 'none',
-                        cursor: 'pointer',
+                        cursor: obtainedAudio ? 'pointer' : 'not-allowed',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -630,6 +632,17 @@ async function convertOggToWav(oggUrl) {
                         color: '#28a745',
                     }}>
                         Playing...
+                    </p>
+                )}
+
+                {!obtainedAudio && (
+                    <p style={{
+                        marginTop: '18px',
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        color: 'gray',
+                    }}>
+                        Loading audio...
                     </p>
                 )}
 
