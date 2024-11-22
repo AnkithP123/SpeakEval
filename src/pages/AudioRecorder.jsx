@@ -177,12 +177,12 @@ async function convertOggToWav(oggUrl) {
             setDisplayTime('xx:xx');
             return;
         }
-        if (data.time) {
-            updateTimer(Date.now() - data.time);
-        }
-        // if (data.started) {
-        //     updateTimer(Date.now() - data.started);
+        // if (data.time) {
+        //     updateTimer(data.time);
         // }
+        if (data.started && data.limit) {
+            updateTimer(data.limit - (Date.now() - data.started));
+        }
         console.log('Response code:', responseCode);
         switch (responseCode) {
             case 1:
@@ -586,14 +586,14 @@ async function convertOggToWav(oggUrl) {
                 </h1>
                 { finished ? (null) : (
                 <PulseButton
-                    onClick={obtainedAudio ? (isRecording ? stopRecording : playRecording) : null}
+                    onClick={(isRecording ? stopRecording : playRecording)}
                     style={isRecording ? recordStyle : {
                         width: '80px',
                         height: '80px',
                         borderRadius: '50%',
-                        backgroundColor: obtainedAudio ? '#28a745' : 'gray',
+                        backgroundColor: '#28a745',
                         border: 'none',
-                        cursor: obtainedAudio ? 'pointer' : 'not-allowed',
+                        cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -625,17 +625,6 @@ async function convertOggToWav(oggUrl) {
                         color: '#28a745',
                     }}>
                         Playing...
-                    </p>
-                )}
-
-                {!obtainedAudio && (
-                    <p style={{
-                        marginTop: '18px',
-                        fontSize: '18px',
-                        fontWeight: 'bold',
-                        color: 'gray',
-                    }}>
-                        Loading audio...
                     </p>
                 )}
 
