@@ -27,7 +27,7 @@ export default function AudioRecorder({code, participant}) {
     // set the status interval
     
     useEffect(() => {
-        statusInterval.current = setInterval(sendStatus, 1000);
+        statusInterval.current = setInterval(sendStatus, 3000);
         return () => clearInterval(statusInterval.current);
     }, []);
 
@@ -199,8 +199,11 @@ async function convertOggToWav(oggUrl) {
             setDisplayTime('xx:xx');
             return;
         }
-        if (data.time) {
-            updateTimer(data.time);
+        // if (data.time) {
+        //     updateTimer(Date.now() - data.time);
+        // }
+        if (data.started) {
+            updateTimer(Date.now() - data.started);
         }
         console.log('Response code:', responseCode);
         switch (responseCode) {
