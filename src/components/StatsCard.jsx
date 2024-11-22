@@ -40,10 +40,12 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
         answerAudioPlayer.src = audioUrl;
       }
 
+      readRubric();
+
+      
       setText('Transcription: ' + data.text);
       setQuestion('Question: ' + data.question);
       setIndex(data.index);
-      readRubric();
     } catch (error) {
       console.error('Error loading audio:', error);
     }
