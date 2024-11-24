@@ -31,23 +31,6 @@ export default function AudioRecorder({code, participant}) {
         return () => clearInterval(statusInterval.current);
     }, []);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            // Only decrement if the current timer is greater than zero
-            if (timer.current > 0) {
-                timer.current -= 1000;  // Decrease by 1 second
-                setDisplayTime(formatTime(timer.current));
-            }
-            // Display default if timer hits zero
-            if (timer.current <= 0) {
-                setDisplayTime('xx:xx');
-            }
-        }, 1000);
-    
-        return () => clearInterval(interval);
-    }, []);
-    
-
     const pulse = keyframes`
         0% {
             transform: scale(1);
@@ -313,6 +296,8 @@ async function convertOggToWav(oggUrl) {
         });
       }
 
+    let interval = null;
+
     const startRecording = async () => {
         setIsRecording(true);
         setAudioURL(null);
@@ -322,6 +307,20 @@ async function convertOggToWav(oggUrl) {
         }
 
         await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`);
+
+        interval = setInterval(() => {
+            // Only decrement if the current timer is greater than zero
+            if (timer.current > 0) {
+                timer.current -= 1000;  // Decrease by 1 second
+                setDisplayTime(formatTime(timer.current));
+            }
+            // Display default if timer hits zero
+            if (timer.current <= 0) {
+                setDisplayTime('xx:xx');
+                clearInterval(interval);
+            }
+        }, 1000);
+
 
         const mimeType = getSupportedMimeType();
         if (!mimeType) {
@@ -346,6 +345,8 @@ async function convertOggToWav(oggUrl) {
             setAudioURL(audioUrl);
             setIsRecording(false);
         };
+
+        await sendStatus();
 
         mediaRecorder.current.start();
 
@@ -520,6 +521,8 @@ async function convertOggToWav(oggUrl) {
         if (mediaRecorder.current) {
             mediaRecorder.current.stop();
         }
+
+        clearInterval(interval);
     }
 
     const updateTimer = (time) => {
