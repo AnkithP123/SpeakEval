@@ -7,7 +7,7 @@ import { FaArrowUp, FaArrowDown } from 'react-icons/fa'; // Import arrow icons
 
 function TeacherPortalRoom({ initialRoomCode }) {
   const [roomCode, setRoomCode] = useState(initialRoomCode || useParams().roomCode); // Track the room code as state
-  const [participants, setParticipants] = useState({ members: [] });
+  const [participants, setParticipants] = useState([]);
   const [gradesReport, setGradesReport] = useState(''); // For storing the report data
   const [reportOption, setReportOption] = useState(''); // For managing the dropdown selection
   const [sortOption, setSortOption] = useState('name'); // New state for sorting options
@@ -16,6 +16,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
   const [allQuestions, setAllQuestions] = useState([]); // State to store all questions
   const [showRubricModal, setShowRubricModal] = useState(false); // New state for rubric modal visibility
   const [rubricContent, setRubricContent] = useState(null); // New state for rubric content
+  const [rubric, setRubric] = useState(''); // New state for rubric
   const [categories, setCategories] = useState([]); // New state for categories
   const [descriptions, setDescriptions] = useState(() => {
     const savedDescriptions = localStorage.getItem('descriptions');
@@ -25,9 +26,16 @@ function TeacherPortalRoom({ initialRoomCode }) {
   useEffect(() => {
     localStorage.setItem('descriptions', JSON.stringify(descriptions));
   }, [descriptions]);
+
+  useEffect(() => {
+    fetchParticipants();
+    fetchAllQuestions();
+
+  }, [roomCode]); // Fetch participants when roomCode changes
+
   const navigate = useNavigate();
 
-  const fetchParticipants = async () => {
+  const fetchParticipantsOld = async () => {
     try {
       const responsev2 = await fetch(`https://www.server.speakeval.org/checkcompleted?code=${roomCode}`);
       const data2 = await responsev2.json();
@@ -77,6 +85,18 @@ function TeacherPortalRoom({ initialRoomCode }) {
     }
   };
 
+  const fetchParticipants = async () => {
+    const response = await fetch(`https://www.server.speakeval.org/downloadall?code=${roomCode}`);
+    
+    const data = await response.json();
+
+    setRubric(data.rubric);
+
+    console.log(data.participants);
+
+    setParticipants(data.participants);
+  }
+
   const fetchAllQuestions = async () => {
     let questions = [];
     let currentRoomCode = roomCode;
@@ -87,14 +107,6 @@ function TeacherPortalRoom({ initialRoomCode }) {
     }
     setAllQuestions(questions);
   };
-
-  useEffect(() => {
-    fetchParticipants();
-    fetchAllQuestions();
-    const intervalId = setInterval(fetchParticipants, 1000);
-
-    return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, [roomCode]); // Fetch participants when roomCode changes
 
   const handleNavigateQuestion = (direction) => {
     const newRoomCode = direction === 'next' ? nextRoomCode : previousRoomCode;
@@ -129,7 +141,9 @@ function TeacherPortalRoom({ initialRoomCode }) {
 
   // Sorting logic based on selected option and order
   const sortParticipants = () => {
-    const sortedParticipants = [...participants.members];
+    if (true)
+      return participants;
+    const sortedParticipants = [...participants];
 
     if (sortOption === 'name') {
       sortedParticipants.sort((a, b) => a.name.localeCompare(b.name));
@@ -339,7 +353,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
       {/* Participant count display */}
       <div className="absolute left-4 flex items-center space-x-4">
         <div className="bg-white text-black rounded-lg p-3 shadow-md">
-          Participants: {participants.members.length}
+          Participants: {participants.length}
         </div>
         <button
           onClick={() => {
@@ -387,7 +401,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg w-[90%] max-w-3xl">
             <h2 className="text-2xl font-bold mb-4">Rubric</h2>
-            {participants.members.length > 0 && participants.members[0].categories?.length > 0 ? (
+            {participants.length > 0 && participants[0].categories?.length > 0 ? (
               <table className="min-w-full bg-white border border-gray-300">
                 <thead>
                   <tr>
@@ -454,12 +468,18 @@ function TeacherPortalRoom({ initialRoomCode }) {
           <div>
             <table className="min-w-full bg-white border border-gray-300">
               <tbody>
-                {participants.members.map((participant, index) => (
+                {participants.map((participant, index) => (
                   <tr key={index}>
                     <td className="py-2 px-4 border-b border-gray-300">{participant.name}</td>
                     {allQuestions.map((question, qIndex) => (
                       <td key={qIndex} className="py-2 px-4 border-b border-gray-300">
                         <ProfileCard
+                          text={participant.text}
+                          rubric={rubric}     
+                          audio={participant.audio} 
+                          question={participant.questionText}
+                          questionBase64={participant.question} 
+                          index={participant.index}                             
                           name={participant}
                           code={question}
                           onGradeUpdate={handleGradeUpdate}
@@ -475,8 +495,14 @@ function TeacherPortalRoom({ initialRoomCode }) {
         ) : (
           sortParticipants().map((participant, index) => (
             <ProfileCard
+              text={participant.transcription}
+              rubric={rubric}
+              audio={participant.audio}                
+              question={participant.questionText}
+              questionBase64={participant.question}
+              index={participant.index}
               key={index}
-              name={participant}
+              name={participant.name}
               code={roomCode}
               onGradeUpdate={handleGradeUpdate}
             />

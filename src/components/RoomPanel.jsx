@@ -42,7 +42,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
 
   useEffect(() => {
     fetchParticipants();
-    const intervalId = setInterval(fetchParticipants, 1000);
+    const intervalId = setInterval(fetchParticipants, 3000);
 
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
   }, [roomCode]);

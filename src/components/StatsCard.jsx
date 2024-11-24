@@ -2,13 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard } from 'react-icons/fa';
 
-function ProfileCard({ name, code, onGradeUpdate, customName }) {
+function ProfileCard({ text, rubric, audio, question, index, questionBase64, name, code, onGradeUpdate, customName }) {
   const [completed, setCompleted] = useState(false);
-  const [text, setText] = useState('');
-  const [question, setQuestion] = useState('');
-  const [rubric, setRubric] = useState('');
-  const [index, setIndex] = useState('');
-  const [questionBase64, setQuestionBase64] = useState(undefined);
   const [grades, setGrades] = useState({});
   const [justifications, setJustifications] = useState({});
   const [totalScore, setTotalScore] = useState(0);
@@ -16,17 +11,28 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const [isPlaying, setIsPlaying] = useState(false); // New state variable for audio playback
 
   useEffect(() => {
-    if (name.completed) {
+    if (name) {
       setCompleted(true);
     } else {
       setCompleted(false);
     }
-  }, [name.completed]);
+  }, [name]);
+
+  useEffect(() => {
+    const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
+    const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
+    if (answerAudioPlayer) {
+      answerAudioPlayer.src = audioUrl;
+    }
+  }, [audio]);
 
   const fetchAudioData = async () => {
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/download?code=${code}&participant=${name.name}`
+        `https://www.server.speakeval.org/download?code=${code}&participant=${name}`
       );
       const data = await response.json();
       if (data.error) return toast.error(data.error);
@@ -35,7 +41,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
       const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name.name}-${code}`);
+      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
       if (answerAudioPlayer) {
         answerAudioPlayer.src = audioUrl;
       }
@@ -53,19 +59,19 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   
 
   const handleDownload = async () => {
-    if (!name.completed)
+    if (!name)
       return toast.error('Participant has not completed the task');
-    await fetchAudioData();
+    // await fetchAudioData();
   };
 
   const handlePlay = async () => {
-    if (!name.completed)
+    if (!name)
       return toast.error('Participant has not completed the task');
     if (text === '') {
-      await fetchAudioData();
+      // await fetchAudioData();
     }
     try {
-      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name.name}-${code}`);
+      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
       if (answerAudioPlayer) {
         if (isPlaying) {
           answerAudioPlayer.pause(); // Pause the audio
@@ -90,7 +96,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   const readRubric = async () => {
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${name.name}`
+        `https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${name}`
       );
       const data = await response.json();
       setRubric(data.rubric);
@@ -115,7 +121,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   }
 
   const handlePlayQuestion = async () => {
-    if (!name.completed)
+    if (!name)
       return toast.error('Participant has not completed the task');
     try {
       if (questionBase64) {
@@ -123,7 +129,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
         const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
         const audioUrl = URL.createObjectURL(audioBlob);
 
-        const questionAudioPlayer = document.getElementById(`questionAudioPlayer-${name.name}-${code}`);
+        const questionAudioPlayer = document.getElementById(`questionAudioPlayer-${name}-${code}`);
         if (questionAudioPlayer) {
           questionAudioPlayer.src = audioUrl;
           questionAudioPlayer.play();
@@ -137,7 +143,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   }
 
   const handleGetGrade = async () => {
-    if (!name.completed)
+    if (!name)
       return toast.error('Participant has not completed the task');
     if (text === '') {
       return toast.error('Press the download button to fetch this student\'s data.');
@@ -171,7 +177,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
       });
 
 
-      onGradeUpdate(name.name, grades, total, categories, descriptions);
+      onGradeUpdate(name, grades, total, categories, descriptions);
 
     } catch (error) {
       console.error('Error getting grade:', error);
@@ -201,7 +207,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
 
     console.log('Updated categories:', categories);
     
-    onGradeUpdate(name.name, updatedGrades, total, categories, descriptions);
+    onGradeUpdate(name, updatedGrades, total, categories, descriptions);
 
   };
 
@@ -209,7 +215,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
 
     console.log('CLICKED');
 
-    if (!name.completed)
+    if (!name)
       return toast.error('Participant has not completed the task');
 
     if (aiButtonDisabled) return toast.error('Wait 1 second');
@@ -224,7 +230,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   };
 
   const handleCopyComments = () => {
-    if (!name.completed)
+    if (!name)
       return toast.error('Participant has not completed the task');
     if (rubric === '' || text === '') {
       return toast.error('Press the download button to fetch this student\'s data.');
@@ -249,7 +255,7 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
   return (
     <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
       <div className="flex items-center w-full">
-        <span className="mr-[8px] text-[23px] truncate">{customName || name.name}</span>
+        <span className="mr-[8px] text-[23px] truncate">{customName || name}</span>
         <div className="flex gap-[8px] ml-auto">
           <button
             className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
@@ -286,7 +292,6 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
       <div className="mt-2 text-gray-800 break-words">
         {question}
       </div>
-      {question === '' ? `Press the download button to fetch this student's data.` : null}
       <br />
         <div className="mt-2 text-gray-800 break-words">
           {text}
@@ -329,8 +334,8 @@ function ProfileCard({ name, code, onGradeUpdate, customName }) {
         </div> : null}
       </div>
       : null }
-      <audio id={`answerAudioPlayer-${name.name}-${code}`} />
-      <audio id={`questionAudioPlayer-${name.name}-${code}`} />
+      <audio id={`answerAudioPlayer-${name}-${code}`} />
+      <audio id={`questionAudioPlayer-${name}-${code}`} />
     </div>
   );
 }
