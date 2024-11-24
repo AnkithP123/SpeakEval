@@ -446,6 +446,7 @@ export default function AudioRecorder({ code, participant }) {
     const playAudio = () => {
       if (audioRef.current) {
         console.log(audioRef.current);
+        audioRef.current.currentTime = 0;
         audioRef.current.play();
       } else {
         setTimeout(playAudio, 100); // Retry after 100ms if audioRef.current is not available
