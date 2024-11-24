@@ -492,7 +492,6 @@ export default function AudioRecorder({ code, participant }) {
       backgroundColor: '#bfdbfe',
       alignItems: 'center',
       justifyContent: 'center',
-      transform: 'translateY(-10%)',
       padding: '20px',
       minHeight: '100vh',
     }}>
