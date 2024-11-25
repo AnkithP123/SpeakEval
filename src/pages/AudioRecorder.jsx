@@ -38,7 +38,7 @@ export default function AudioRecorder({ code, participant }) {
     cuteAlert({
         type: "info",
         title: "Welcome to SpeakEval",
-        description: "It's time to record your response. When you're ready, click the play button to download the question and listen to it. After you've listened to the question, it will give you 5 seconds to think and then begin recording. Speak clearly, confidently, and LOUDLY, so that your microphone picks up your audio well. Speak directly into your microphone, or, if you don't have an external microphone, speak directly into your device's microphone. Good luck!",
+        description: "It's time to record your response. When you're ready, click the play button to download the question and listen to it. After you've listened to the question, it will give you at least 5 seconds to think and then begin recording. Speak clearly, confidently, and LOUDLY, so that your microphone picks up your audio well. Speak directly into your microphone, or, if you don't have an external microphone, speak directly into your device's microphone. Good luck!",
         primaryButtonText: "Got it"
     })
   }, []);

@@ -280,7 +280,10 @@ const Configure = ({set, setUltimate}) => {
         });
 
         setCategories(categories);
-        setMaxTime(config.limit);
+
+        setMaxTime(config.timeLimit);
+
+        setSelectedLanguage(config.language);
 
         setPopupVisible(false); // Hide the popup
     }
