@@ -17,6 +17,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
   const [showRubricModal, setShowRubricModal] = useState(false); // New state for rubric modal visibility
   const [rubricContent, setRubricContent] = useState(null); // New state for rubric content
   const [rubric, setRubric] = useState(''); // New state for rubric
+  const [fetched, setFetched] = useState(false); // New state for fetched data
   const [categories, setCategories] = useState([]); // New state for categories
   const [descriptions, setDescriptions] = useState(() => {
     const savedDescriptions = localStorage.getItem('descriptions');
@@ -92,9 +93,29 @@ function TeacherPortalRoom({ initialRoomCode }) {
 
     setRubric(data.rubric);
 
+    console.log('Rubric: ', data.rubric);
+
+    let categories = data.rubric === '' ? [] : data.rubric.split('|;;|').map((element) => {
+      return element.split('|:::|')[0];
+    });
+
+    let descriptions = data.rubric === '' ? [] : data.rubric.split('|;;|').map((element) => {
+      return element.split('|:::|')[1].replace('|,,,|', '\n\n');
+    });
+
+    setCategories(categories);
+
+    setDescriptions(descriptions);
+
+    console.log(categories);
+
+    console.log(descriptions);
+
     console.log(data.participants);
 
     setParticipants(data.participants);
+
+    setFetched(true);
   }
 
   const fetchAllQuestions = async () => {
@@ -121,8 +142,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
   };
 
   const handleGradeUpdate = (participantName, grades, totalScore, categories, descriptions) => {
-    const updatedParticipants = { ...participants };
-    const participant = updatedParticipants.members.find((member) => member.name === participantName);
+    const participant = participants.find((member) => member.name === participantName);
     participant.grades = grades;
     participant.totalScore = totalScore;
     participant.categories = categories;
@@ -130,20 +150,25 @@ function TeacherPortalRoom({ initialRoomCode }) {
 
     setCategories(categories);
 
-    if (descriptions.length == 0)
-      setDescriptions(descriptions);
+    console.log(categories);
+
+    console.log(descriptions);
+
+    setDescriptions(descriptions);
 
     console.log(categories);
     console.log(descriptions);
 
-    setParticipants(updatedParticipants);
   };
 
   // Sorting logic based on selected option and order
   const sortParticipants = () => {
-    if (true)
-      return participants;
+
+    console.log('Part. - ', participants);
+
+
     const sortedParticipants = [...participants];
+
 
     if (sortOption === 'name') {
       sortedParticipants.sort((a, b) => a.name.localeCompare(b.name));
@@ -323,7 +348,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
     }
     if (next != null) {
       setRoomCode(next);
-      setParticipants({ members: [] }); // Reset participants when changing room code
+      setParticipants([]); // Reset participants when changing room code
     } else {
       toast.warn("No next question available.");
     }
@@ -339,7 +364,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
     const { previous } = await fetchNextPrevious(roomCode);
     if (previous != null) {
       setRoomCode(previous);
-      setParticipants({ members: [] }); // Reset participants when changing room code
+      setParticipants([]); // Reset participants when changing room code
     } else {
       toast.warn("No previous question available.");
     }
@@ -351,12 +376,16 @@ function TeacherPortalRoom({ initialRoomCode }) {
   return (
     <div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
       {/* Participant count display */}
-      <div className="absolute left-4 flex items-center space-x-4">
-        <div className="bg-white text-black rounded-lg p-3 shadow-md">
-          Participants: {participants.length}
-        </div>
-        <button
-          onClick={() => {
+        <div className="absolute left-4 flex items-center space-x-4">
+          <div className="bg-white text-black rounded-lg p-3 shadow-md">
+            {fetched ? (
+              <span>Participants: {participants.length}</span>
+            ) : (
+              <span>Loading...</span>
+            )}
+          </div>
+          <button
+            onClick={() => {
             setShowByPerson(!showByPerson);
             if (!showByPerson) setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
   
@@ -399,25 +428,34 @@ function TeacherPortalRoom({ initialRoomCode }) {
       {/* Rubric modal */}
       {showRubricModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg w-[90%] max-w-3xl">
+          <div className="bg-white rounded-lg p-6 shadow-lg w-[90%]">
             <h2 className="text-2xl font-bold mb-4">Rubric</h2>
-            {participants.length > 0 && participants[0].categories?.length > 0 ? (
+            {participants.length > 0 ? (
               <table className="min-w-full bg-white border border-gray-300">
                 <thead>
                   <tr>
                     <th className="py-2 px-4 border-b border-gray-300">Category</th>
-                    <th className="py-2 px-4 border-b border-gray-300">Description</th>
+                    <th className="py-2 px-4 border-b border-gray-300">1</th>
+                    <th className="py-2 px-4 border-b border-gray-300">2</th>
+                    <th className="py-2 px-4 border-b border-gray-300">3</th>
+                    <th className="py-2 px-4 border-b border-gray-300">4</th>
+                    <th className="py-2 px-4 border-b border-gray-300">5</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {categories.map((category, index) => (
-                    <tr key={index}>
-                      <td className="py-2 px-4 border-b border-gray-300">{category}</td>
-                      <td className="py-2 px-4 border-b border-gray-300">
-                        {descriptions[index] || 'No description available'}
-                      </td>
-                    </tr>
-                  ))}
+                  {categories.map((category, index) => {
+                    const descriptionParts = descriptions[index] ? descriptions[index].split('|,,|') : [];
+                    return (
+                      <tr key={index}>
+                        <td className="py-2 px-4 border-b border-gray-300">{category}</td>
+                        {descriptionParts.map((part, partIndex) => (
+                          <td key={partIndex} className="py-2 px-4 border-b border-gray-300">
+                            {part || 'No description available'}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             ) : (
@@ -432,8 +470,6 @@ function TeacherPortalRoom({ initialRoomCode }) {
           </div>
         </div>
       )}
-  
-      {/* Room code display */}
       <div className="flex items-center justify-center w-screen py-[50px]">
         <span className="text-6xl font-bold">
           Grading: {roomCode.toString().slice(0, -3)} (Question #{roomCode.toString().slice(-3)})
