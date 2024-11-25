@@ -22,6 +22,7 @@ export default function AudioRecorder({ code, participant }) {
   const audioRef = useRef(null);
   const [displayTime, setDisplayTime] = useState('xx:xx'); // State for displaying formatted time
   const [obtainedAudio, setObtainedAudio] = useState(false);
+  const [fetching, setFetching] = useState(false);
   let [premium, setPremium] = useState(false);
   let questionIndex;
 
@@ -199,6 +200,7 @@ export default function AudioRecorder({ code, participant }) {
   }
 
   const makeResponse = async () => {
+    setFetching(true);
     const response = await fetch(`https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${participant}&number=1`);
     if (!response.ok) {
       setError('Failed to fetch audio');
@@ -234,6 +236,8 @@ export default function AudioRecorder({ code, participant }) {
         console.log("Audio URL: " + audioUrl);
         questionIndex = receivedData.questionIndex;
     }
+
+    setFetching(false);
 
   }
 
@@ -617,7 +621,7 @@ export default function AudioRecorder({ code, participant }) {
             fontWeight: 'bold',
             color: '#28a745',
           }}>
-            Playing...
+            {fetching ? "Downloading question..." : "Playing..."}
           </p>
         )}
 
