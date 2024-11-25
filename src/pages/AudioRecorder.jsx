@@ -306,16 +306,16 @@ export default function AudioRecorder({ code, participant }) {
     await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`);
 
     interval = setInterval(() => {
-      // Only decrement if the current timer is greater than zero
-      if (timer.current > 0) {
-        timer.current -= 1000;  // Decrease by 1 second
-        setDisplayTime(formatTime(timer.current));
-      }
-      // Display default if timer hits zero
-      if (timer.current <= 0) {
-        setDisplayTime('xx:xx');
-        clearInterval(interval);
-      }
+        // Only decrement if the current timer is greater than zero
+        if (timer.current > 0) {
+            timer.current -= 1000;  // Decrease by 1 second
+            setDisplayTime(formatTime(timer.current));
+        }
+        // Display default if timer hits zero
+        if (timer.current <= 0) {
+            setDisplayTime('xx:xx');
+            clearInterval(interval);
+        }
     }, 1000);
 
     const mimeType = getSupportedMimeType();
@@ -454,11 +454,11 @@ export default function AudioRecorder({ code, participant }) {
     }
 
     // Use ref for controlling audio tag
-    console.log('HI: ', audioRef);
 
 
     const playAudio = () => {
       if (audioRef.current) {
+        console.log('HI: ', audioRef);
         console.log(audioRef.current);
         audioRef.current.currentTime = 0;
         audioRef.current.play();
@@ -573,6 +573,7 @@ export default function AudioRecorder({ code, participant }) {
             alignItems: 'center'
           }}>
             <audio
+              controls={!playing}
               ref={audioRef}
               style={{
                 width: '100%',
@@ -581,29 +582,38 @@ export default function AudioRecorder({ code, participant }) {
                 backgroundColor: '#F8F8F8',
               }}
               onEnded={() => {
-                setFinished(true);
-                setPlaying(false);
-                // Countdown logic
-                countdownRef.current = 5;
-                setCountdownDisplay(countdownRef.current);
-                playBeep();
-                const countdownInterval = setInterval(() => {
-                  countdownRef.current -= 1;
-                  setCountdownDisplay(countdownRef.current);
-                  if (countdownRef.current <= 0) {
-                    clearInterval(countdownInterval);
-                    setFinished(false);
-                    startRecording();
-                  }
-                  // Play beep sound during countdown
-                  if (countdownRef.current <= -2) {
-                    // Do nothing
-                  } else if (countdownRef.current <= 0) {
-                    playRecordingStarted();
-                  } else {
-                    playBeep();
-                  }
-                }, 1000);
+                if (!finished) {
+                    setFinished(true);
+                    setPlaying(false);
+                    // Countdown logic
+                    countdownRef.current = 5;
+                    if (audioRef.current && audioRef.current.currentTime)
+                        countdownRef.current = Math.max(5, Math.ceil(audioRef.current.currentTime + 1));
+                        
+                    setCountdownDisplay(countdownRef.current);
+                    if (!audioRef.current || audioRef.current.paused)
+                        playBeep();
+                    const countdownInterval = setInterval(() => {
+                    countdownRef.current -= 1;
+                    setCountdownDisplay(countdownRef.current);
+                    if (countdownRef.current <= 0) {
+                        clearInterval(countdownInterval);
+                        setFinished(false);
+                        startRecording();
+                    }
+                    // Play beep sound during countdown
+                    if (countdownRef.current <= -2) {
+                        // Do nothing
+                    } else if (countdownRef.current <= 0) {
+                        if (audioRef.current && !audioRef.current.paused)
+                            audioRef.current.pause();
+                        playRecordingStarted();
+                    } else {
+                        if (!audioRef.current || audioRef.current.paused)
+                            playBeep();
+                    }
+                    }, 1000);
+                }
         
               }}
               >
