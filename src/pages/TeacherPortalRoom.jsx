@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ProfileCard from '../components/StatsCard';
 import { toast } from 'react-toastify';
@@ -18,11 +18,15 @@ function TeacherPortalRoom({ initialRoomCode }) {
   const [rubricContent, setRubricContent] = useState(null); // New state for rubric content
   const [rubric, setRubric] = useState(''); // New state for rubric
   const [fetched, setFetched] = useState(false); // New state for fetched data
+  const [showDisplayNameInput, setShowDisplayNameInput] = useState(false);
+  const [displayName, setDisplayName] = useState('');
   const [categories, setCategories] = useState([]); // New state for categories
   const [descriptions, setDescriptions] = useState(() => {
     const savedDescriptions = localStorage.getItem('descriptions');
     return savedDescriptions ? JSON.parse(savedDescriptions) : [];
   }); // New state for descriptions
+  const displayNameInputRef = useRef(null);
+
 
   useEffect(() => {
     localStorage.setItem('descriptions', JSON.stringify(descriptions));
@@ -373,10 +377,60 @@ function TeacherPortalRoom({ initialRoomCode }) {
     }
   };
 
+  const handleDisplayNameSubmit = async () => {
+    try {
+      const response = await fetch(`https://www.server.speakeval.org/add_display?code=${roomCode}&pin=${userId}&display=${displayName}`);
+      const data = await response.json();
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.success(data.message ? data.message : 'Display name was set');
+        setShowDisplayNameInput(false);
+      }
+    } catch (error) {
+      console.error('Error setting display name:', error);
+      toast.error('Error setting display name');
+    }
+  };
+
+
   return (
+    <div>
+      {showDisplayNameInput && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div ref={displayNameInputRef} className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-center">Rename this exam, for easy grading</h2>
+            <h3 className="text-lg font-normal mb-4 text-center">Choose a descriptive and unique name</h3>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="border p-2 rounded w-full mb-4"
+              placeholder="Enter display name"
+            />
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={handleDisplayNameSubmit}
+                className="bg-green-500 text-white rounded-lg p-2 shadow-md hover:bg-green-600"
+              >
+                Submit
+              </button>
+              <button
+                onClick={() => setShowDisplayNameInput(false)}
+                className="bg-gray-500 text-white rounded-lg p-2 shadow-md hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              
+            </div>
+          </div>
+        </div>
+      )}
     <div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
+      
+
       {/* Participant count display */}
-        <div className="absolute left-4 flex items-center space-x-4">
+        {!showDisplayNameInput && <div className="absolute left-4 flex items-center space-x-4">
           <div className="bg-white text-black rounded-lg p-3 shadow-md">
             {fetched ? (
               <span>Participants: {participants.length}</span>
@@ -399,10 +453,10 @@ function TeacherPortalRoom({ initialRoomCode }) {
         >
           {showByPerson ? 'Show by Question' : 'Show by Person'}
         </button>
-      </div>
+      </div>}
   
       {/* Grade report dropdown */}
-      <div className="absolute right-4 flex items-center space-x-4">
+      {!showDisplayNameInput &&<div className="absolute right-4 flex items-center space-x-4">
         <select
           className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
           style={{ height: '150%' }}
@@ -413,17 +467,17 @@ function TeacherPortalRoom({ initialRoomCode }) {
           <option value="download">Download</option>
           <option value="print">Print</option>
         </select>
-      </div>
+      </div>}
   
       {/* Rubric popup button */}
-      <div className="absolute right-20 flex items-center space-x-4 mr-[8%]">
+      {!showDisplayNameInput &&<div className="absolute right-20 flex items-center space-x-4 mr-[8%]">
         <button
           onClick={() => setShowRubricModal(true)}
           className="bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-600"
         >
           Show Rubric
         </button>
-      </div>
+      </div>}
 
       {/* Rubric modal */}
       {showRubricModal && (
@@ -477,7 +531,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
       </div>
   
       {/* Navigation buttons */}
-      <div className="flex space-x-4">
+      {!showDisplayNameInput && <div className="flex space-x-4">
         <button
           onClick={handlePreviousQuestion}
           className={`px-4 py-2 rounded-lg shadow-md ${
@@ -496,10 +550,10 @@ function TeacherPortalRoom({ initialRoomCode }) {
         >
           Next Question
         </button>
-      </div>
+      </div>}
   
       {/* Profile cards for participants */}
-      <div className="flex flex-wrap justify-center mt-8 mb-8">
+      {!showDisplayNameInput &&<div className="flex flex-wrap justify-center mt-8 mb-8">
         {showByPerson ? (
           <div>
             <table className="min-w-full bg-white border border-gray-300">
@@ -544,7 +598,16 @@ function TeacherPortalRoom({ initialRoomCode }) {
             />
           ))
         )}
-      </div>
+      </div>}
+      {showDisplayNameInput ? null : <div className="absolute bottom-28 right-4">
+      <button
+        onClick={() => setShowDisplayNameInput(true)}
+        className="bg-blue-500 text-white rounded-lg p-3 shadow-md hover:bg-blue-600"
+      >
+        Set Display Name
+      </button>
+    </div>}
+    </div>
     </div>
   );
 }  
