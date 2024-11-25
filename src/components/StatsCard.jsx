@@ -19,15 +19,84 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
   }, [name]);
 
   useEffect(() => {
-    const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
-    const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
-    const audioUrl = URL.createObjectURL(audioBlob);
+    const fetchAudio = async () => {
+      const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
+      const audioBlob = await convertOggToWav(new Blob([audioData], { type: 'audio/ogg; codecs=opus' }));
 
-    const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
-    if (answerAudioPlayer) {
-      answerAudioPlayer.src = audioUrl;
-    }
+      try {
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
+        if (answerAudioPlayer) {
+          answerAudioPlayer.src = audioUrl;
+        }
+      } catch (error) {
+        console.log('Error loading audio:', error);
+        console.log(name);
+      }
+    };
+
+    fetchAudio();
   }, [audio]);
+
+  async function convertOggToWav(oggBlob) {
+    const arrayBuffer = await oggBlob.arrayBuffer();
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    const numberOfChannels = audioBuffer.numberOfChannels;
+    const length = audioBuffer.length * numberOfChannels * 2 + 44;
+    const buffer = new ArrayBuffer(length);
+    const view = new DataView(buffer);
+
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    let offset = 0;
+
+    // RIFF identifier
+    writeString(view, offset, 'RIFF'); offset += 4;
+    // file length minus RIFF identifier length and file description length
+    view.setUint32(offset, 36 + audioBuffer.length * numberOfChannels * 2, true); offset += 4;
+    // RIFF type
+    writeString(view, offset, 'WAVE'); offset += 4;
+    // format chunk identifier
+    writeString(view, offset, 'fmt '); offset += 4;
+    // format chunk length
+    view.setUint32(offset, 16, true); offset += 4;
+    // sample format (raw)
+    view.setUint16(offset, 1, true); offset += 2;
+    // channel count
+    view.setUint16(offset, numberOfChannels, true); offset += 2;
+    // sample rate
+    view.setUint32(offset, audioBuffer.sampleRate, true); offset += 4;
+    // byte rate (sample rate * block align)
+    view.setUint32(offset, audioBuffer.sampleRate * numberOfChannels * 2, true); offset += 4;
+    // block align (channel count * bytes per sample)
+    view.setUint16(offset, numberOfChannels * 2, true); offset += 2;
+    // bits per sample
+    view.setUint16(offset, 16, true); offset += 2;
+    // data chunk identifier
+    writeString(view, offset, 'data'); offset += 4;
+    // data chunk length
+    view.setUint32(offset, audioBuffer.length * numberOfChannels * 2, true); offset += 4;
+
+    // write interleaved data
+    for (let i = 0; i < audioBuffer.length; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const sample = audioBuffer.getChannelData(channel)[i];
+        const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, intSample, true);
+        offset += 2;
+      }
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
 
   const fetchAudioData = async () => {
     try {

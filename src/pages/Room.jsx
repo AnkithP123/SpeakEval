@@ -116,6 +116,8 @@ function Room() {
                         {audioURL && (
                             <div className="mb-4">
                                 <p className="text-lg text-gray-600 mb-2">Play back your recorded audio below, to make sure your mic works:</p>
+                                <br />
+                                <p className="text-lg text-gray-600 mb-2">If you are unable to play or hear it, ask for help, and you may need to change some settings or switch devices.</p>
                                 <div className="flex justify-center">
                                     <audio className="w-100%" controls src={audioURL}>
                                         Your browser does not support the audio element.
@@ -140,6 +142,8 @@ function Room() {
                         {testAudioURL && (
                             <div>
                                 <p className="text-lg text-gray-600 mb-2">Play the test audio below, and make sure you can play it and hear it:</p>
+                                <br />
+                                <p className="text-lg text-gray-600 mb-2">If you are unable to play or hear it, ask for help, and you may need to change some settings or switch devices.</p>
                                 <div className="flex justify-center">
                                     <audio className="w-100%" controls src={testAudioURL}>
                                         Your browser does not support the audio element.
