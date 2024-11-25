@@ -12,6 +12,7 @@ export default function AudioRecorder({ code, participant }) {
   const [microphone, setMicrophone] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const [finished, setFinished] = useState(false);
+  const [stopped, setStopped] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [audioBlobURL, setAudioBlobURL] = useState(null);
   const countdownRef = useRef(0); // Use ref for countdown
@@ -196,7 +197,7 @@ export default function AudioRecorder({ code, participant }) {
         stopRecording();
         break;
       case 6:
-        if ((!(error.includes('Processing...')) && (!error || error === null || !(error.includes('Uploaded to server successfully.'))))) {
+        if (!error || (!error.includes('Processing...') && !error.includes('Uploaded to server successfully.'))) {
           setError('Reaching time limit. Please finish your response in the next 5 seconds. ');
           setIsError(true);
         }
@@ -306,16 +307,16 @@ export default function AudioRecorder({ code, participant }) {
     await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`);
 
     interval = setInterval(() => {
-        // Only decrement if the current timer is greater than zero
-        if (timer.current > 0) {
-            timer.current -= 1000;  // Decrease by 1 second
-            setDisplayTime(formatTime(timer.current));
-        }
-        // Display default if timer hits zero
-        if (timer.current <= 0) {
-            setDisplayTime('xx:xx');
-            clearInterval(interval);
-        }
+    // Only decrement if the current timer is greater than zero
+    if (timer.current > 0) {
+        timer.current -= 1000;  // Decrease by 1 second
+        setDisplayTime(formatTime(timer.current));
+    }
+    // Display default if timer hits zero
+    if (timer.current <= 0) {
+        setDisplayTime('xx:xx');
+        clearInterval(interval);
+    }
     }, 1000);
 
     const mimeType = getSupportedMimeType();
@@ -347,7 +348,7 @@ export default function AudioRecorder({ code, participant }) {
       mediaRecorder.current.start();
     } catch (err) {
       console.error('Error starting recording:', err);
-      setError('An error occurred while starting the recording. Please try again.');
+      setError('An error occurred while starting the recording. Please try again. Perhaps reload the page.');
       setIsError(true);
     }
   };
@@ -472,7 +473,7 @@ export default function AudioRecorder({ code, participant }) {
 
   const stopRecording = () => {
     console.log('Stopping recording...');
-    setFinished(true);
+    setStopped(true);
     setIsRecording(false);
 
     if (mediaRecorder.current) {
@@ -498,6 +499,8 @@ export default function AudioRecorder({ code, participant }) {
 
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
+
+  let countdownInterval;
 
   return (
     <div style={{
@@ -543,7 +546,7 @@ export default function AudioRecorder({ code, participant }) {
         }}>
           Oral Exam Assistant
         </h1>
-        {finished ? (null) : (
+        {stopped || countdownRef.current > 0 ? (null) : (
           <PulseButton
             onClick={(isRecording ? stopRecording : playRecording)}
             style={isRecording ? recordStyle : {
@@ -565,7 +568,7 @@ export default function AudioRecorder({ code, participant }) {
         )}
 
         {/* Audio Player */}
-        {audioBlobURL && (
+        {audioBlobURL && !isRecording && (
           <div style={{
             width: '100%',
             marginTop: '20px',
@@ -593,12 +596,12 @@ export default function AudioRecorder({ code, participant }) {
                     setCountdownDisplay(countdownRef.current);
                     if (!audioRef.current || audioRef.current.paused)
                         playBeep();
-                    const countdownInterval = setInterval(() => {
+                    countdownInterval = setInterval(() => {
                     countdownRef.current -= 1;
                     setCountdownDisplay(countdownRef.current);
                     if (countdownRef.current <= 0) {
                         clearInterval(countdownInterval);
-                        setFinished(false);
+                        // setFinished(false);
                         startRecording();
                     }
                     // Play beep sound during countdown
