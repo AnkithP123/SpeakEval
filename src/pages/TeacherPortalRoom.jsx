@@ -117,7 +117,10 @@ function TeacherPortalRoom({ initialRoomCode }) {
 
     console.log(data.participants);
 
-    setParticipants(data.participants);
+    const uniqueParticipants = data.participants.filter((participant, index, self) =>
+      index === self.findIndex((p) => p.name === participant.name)
+    );
+    setParticipants(uniqueParticipants);
 
     setFetched(true);
   }
