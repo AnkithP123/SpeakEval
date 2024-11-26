@@ -467,30 +467,35 @@ function TeacherPortalRoom({ initialRoomCode }) {
           {showByPerson ? 'Show by Question' : 'Show by Person'}
         </button>
       </div>}
-  
-      {/* Grade report dropdown */}
-      {!showDisplayNameInput &&<div className="absolute right-4 flex items-center space-x-4">
-        <select
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
-          style={{ height: '150%' }}
-          value={reportOption}
-          onChange={(e) => handleDownloadReport(e.target.value)}
-        >
-          <option value="">Grade Report</option>
-          <option value="download">Download</option>
-          <option value="print">Print</option>
-        </select>
-      </div>}
-  
-      {/* Rubric popup button */}
-      {!showDisplayNameInput &&<div className="absolute right-20 flex items-center space-x-4 mr-[8%]">
+
+      <div className="absolute right-4 flex items-center space-x-4">
+      <button
+        onClick={() => setShowDisplayNameInput(true)}
+        className="bg-blue-500 text-white px-3 py-2 rounded-lg shadow-md hover:bg-blue-600"
+      >
+        Set Display Name
+      </button>
         <button
           onClick={() => setShowRubricModal(true)}
           className="bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-600"
         >
           Show Rubric
         </button>
-      </div>}
+        <select
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
+            style={{ height: '150%' }}
+            value={reportOption}
+            onChange={(e) => handleDownloadReport(e.target.value)}
+          >
+            <option value="">Grade Report</option>
+            <option value="download">Download</option>
+            <option value="print">Print</option>
+          </select>
+          
+      </div>
+
+
+
 
       {/* Rubric modal */}
       {showRubricModal && (
@@ -612,15 +617,10 @@ function TeacherPortalRoom({ initialRoomCode }) {
           ))
         )}
       </div>}
-      {showDisplayNameInput ? null : <div className="absolute bottom-28 right-4">
-      <button
-        onClick={() => setShowDisplayNameInput(true)}
-        className="bg-blue-500 text-white rounded-lg p-3 shadow-md hover:bg-blue-600"
-      >
-        Set Display Name
-      </button>
-    </div>}
     </div>
+    {showDisplayNameInput ? null : <div className="fixed bottom-28 right-4">
+      
+    </div>}
     </div>
   );
 }  
