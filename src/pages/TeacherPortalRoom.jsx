@@ -20,6 +20,8 @@ function TeacherPortalRoom({ initialRoomCode }) {
   const [fetched, setFetched] = useState(false); // New state for fetched data
   const [showDisplayNameInput, setShowDisplayNameInput] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const [nextRoomCode, setNextRoomCode] = useState(null);
+  const [previousRoomCode, setPreviousRoomCode] = useState(null);
   const [categories, setCategories] = useState([]); // New state for categories
   const [descriptions, setDescriptions] = useState(() => {
     const savedDescriptions = localStorage.getItem('descriptions');
@@ -34,9 +36,12 @@ function TeacherPortalRoom({ initialRoomCode }) {
 
   useEffect(() => {
     fetchParticipants();
-    fetchAllQuestions();
+    if (showByPerson)
+      fetchAllQuestions();
+    else
+      fetchNextPrevious(roomCode);
 
-  }, [roomCode]); // Fetch participants when roomCode changes
+  }, [roomCode, showByPerson]); // Fetch participants when roomCode changes
 
   const navigate = useNavigate();
 
@@ -91,6 +96,8 @@ function TeacherPortalRoom({ initialRoomCode }) {
   };
 
   const fetchParticipants = async () => {
+    setFetched(false);
+
     const response = await fetch(`https://www.server.speakeval.org/downloadall?code=${roomCode}`);
     
     const data = await response.json();
@@ -130,8 +137,8 @@ function TeacherPortalRoom({ initialRoomCode }) {
     let currentRoomCode = roomCode;
     while (currentRoomCode) {
       questions.push(currentRoomCode);
-      const { next } = await fetchNextPrevious(currentRoomCode);
-      currentRoomCode = next;
+      await fetchNextPrevious(currentRoomCode);
+      currentRoomCode = nextRoomCode;
     }
     setAllQuestions(questions);
   };
@@ -338,7 +345,12 @@ function TeacherPortalRoom({ initialRoomCode }) {
     try {
       const response = await fetch(`https://www.server.speakeval.org/get_next_previous?code=${code}`);
       const data = await response.json();
-      return data;
+      if (data.error) {
+        toast.error(data.error);
+        return {};
+      }
+      setNextRoomCode(data.next);
+      setPreviousRoomCode(data.previous);
     } catch (error) {
       console.error("Error fetching next/previous question:", error);
       toast.error("Could not fetch next or previous question.");
@@ -349,12 +361,11 @@ function TeacherPortalRoom({ initialRoomCode }) {
   // Move to the next question by updating the room code
   const handleNextQuestion = async () => {
     if (showByPerson) return;
-    const { next } = await fetchNextPrevious(roomCode);
     if (showByPerson) {
       setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
     }
-    if (next != null) {
-      setRoomCode(next);
+    if (nextRoomCode != null) {
+      setRoomCode(nextRoomCode);
       setParticipants([]); // Reset participants when changing room code
     } else {
       toast.warn("No next question available.");
@@ -368,9 +379,8 @@ function TeacherPortalRoom({ initialRoomCode }) {
   // Move to the previous question by updating the room code
   const handlePreviousQuestion = async () => {
     if (showByPerson) return;
-    const { previous } = await fetchNextPrevious(roomCode);
-    if (previous != null) {
-      setRoomCode(previous);
+    if (previousRoomCode != null) {
+      setRoomCode(previousRoomCode);
       setParticipants([]); // Reset participants when changing room code
     } else {
       toast.warn("No previous question available.");
@@ -538,18 +548,18 @@ function TeacherPortalRoom({ initialRoomCode }) {
         <button
           onClick={handlePreviousQuestion}
           className={`px-4 py-2 rounded-lg shadow-md ${
-            showByPerson ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'
+            showByPerson || !previousRoomCode ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'
           }`}
-          disabled={showByPerson}
+          disabled={showByPerson || !previousRoomCode}
         >
           Previous Question
         </button>
         <button
           onClick={handleNextQuestion}
           className={`px-4 py-2 rounded-lg shadow-md ${
-            showByPerson ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'
+            showByPerson || !nextRoomCode ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'
           }`}
-          disabled={showByPerson}
+          disabled={showByPerson || !nextRoomCode}
         >
           Next Question
         </button>
