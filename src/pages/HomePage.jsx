@@ -4,15 +4,6 @@ import HomeCards from '../components/HomeCards'
 import { cuteAlert } from 'cute-alert'
 
 function HomePage() {
-
-  useEffect(() => {
-    cuteAlert({
-      type: "error",
-      title: "SpeakEval is undergoing heavy maintenance. Some features may not work as expected",
-      description: "We apologize for the inconvenience. Please check back later.",
-      primaryButtonText: "Understood"
-    });
-  });
   return (
     <div style={{fontFamily: "Montserrat"}}>
 
