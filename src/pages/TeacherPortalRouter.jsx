@@ -156,7 +156,7 @@ function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
 
         
 
-            <RoomCodePanel rooms={rooms}/>
+            <RoomCodePanel rooms={rooms} pin={userId}/>
         </div>        
 
     );

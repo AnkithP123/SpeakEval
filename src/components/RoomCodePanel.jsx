@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import GradingPanel from '../pages/TeacherPortalRoom.jsx';
 
-function JoinRoom({ rooms }) {
+function JoinRoom({ rooms, pin }) {
     const [roomCode, setRoomCode] = useState('');
     const [grading, setGrading] = useState(false);
     const [hoveredRoom, setHoveredRoom] = useState(null);
@@ -120,7 +120,7 @@ function JoinRoom({ rooms }) {
                     </button>
                 </div>
             </div>
-        ) : <GradingPanel initialRoomCode={roomCode} />
+        ) : <GradingPanel initialRoomCode={roomCode} pin={pin} />
     );
 }
 

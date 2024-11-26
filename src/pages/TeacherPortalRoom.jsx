@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
 import { FaArrowUp, FaArrowDown } from 'react-icons/fa'; // Import arrow icons
 
-function TeacherPortalRoom({ initialRoomCode }) {
+function TeacherPortalRoom({ initialRoomCode, pin }) {
   const [roomCode, setRoomCode] = useState(initialRoomCode || useParams().roomCode); // Track the room code as state
   const [participants, setParticipants] = useState([]);
   const [gradesReport, setGradesReport] = useState(''); // For storing the report data
@@ -392,7 +392,7 @@ function TeacherPortalRoom({ initialRoomCode }) {
 
   const handleDisplayNameSubmit = async () => {
     try {
-      const response = await fetch(`https://www.server.speakeval.org/add_display?code=${roomCode}&pin=${userId}&display=${displayName}`);
+      const response = await fetch(`https://www.server.speakeval.org/add_display?code=${roomCode}&pin=${pin}&display=${displayName}`);
       const data = await response.json();
       if (data.error) {
         toast.error(data.error);
