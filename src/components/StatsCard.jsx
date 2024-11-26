@@ -21,7 +21,7 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
   useEffect(() => {
     const fetchAudio = async () => {
       const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
-      const audioBlob = await convertOggToWav(new Blob([audioData], { type: 'audio/ogg; codecs=opus' }));
+      let audioBlob = new Blob([audioData], { type: 'audio/wav' });
 
       try {
         const audioUrl = URL.createObjectURL(audioBlob);

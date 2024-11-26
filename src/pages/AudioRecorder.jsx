@@ -239,7 +239,7 @@ export default function AudioRecorder({ code, participant }) {
         // Convert the base64 string to a Uint8Array
         const audioData = Uint8Array.from(atob(data), c => c.charCodeAt(0));
         // Create a Blob from the Uint8Array
-        const audioBlob = await convertOggToWav(new Blob([audioData], { type: 'audio/ogg; codecs=opus' }));
+        const audioBlob = new Blob([audioData], { type: 'audio/wav' });
         // Create a URL for the Blob
         const audioUrl = URL.createObjectURL(audioBlob);
       
