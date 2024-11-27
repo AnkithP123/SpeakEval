@@ -69,6 +69,9 @@ function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
                 }
                 return false;
             });
+
+            data = data.sort((a, b) => a.created - b.created);
+
             console.log(data);
             setRooms(data);
         } catch (err) {
