@@ -8,10 +8,8 @@ import Card from '../components/Card';
 function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
     const [userId, setUserId] = useState(initialUserId);
     const [loggedIn, setLoggedIn] = useState(false);
-    const [roomCode, setRoomCode] = useState('');
     const [shake, setShake] = useState(false); // State to trigger shake effect
     const [rooms, setRooms] = useState([]); // State to store the rooms
-    const navigate = useNavigate();
 
     const handleInputChange = async (e) => {
         const input = e.target.value;
