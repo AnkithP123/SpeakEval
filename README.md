@@ -1,8 +1,10 @@
-# React + Vite
+# SpeakEval
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SpeakEval is a React-based application designed to facilitate oral examinations. It allows (foreign language) teachers to create, manage, and grade oral exams efficiently. The application includes features such as real-time audio recording, automated grading, and customizable exams.
 
-Currently, two official plugins are available:
+## Key Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Create and Join Rooms**: Teachers and students can create and join rooms for oral exams.
+- **Real-time Audio Recording**: Record and upload audio responses in real-time.
+- **Automated Grading**: Utilize AI for automated grading based on predefined rubrics.
+- **Configurable Exams**: Teachers can configure exams with custom rubrics and question banks.
