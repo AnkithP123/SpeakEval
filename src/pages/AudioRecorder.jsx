@@ -567,6 +567,17 @@ export default function AudioRecorder({ code, participant }) {
           </PulseButton>
         )}
 
+        {countdownDisplay > 0 && (
+            <p style={{
+                marginTop: '16px',
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#374151',
+            }}>
+                If you couldn't hear or understand the question, you can use this time to replay it using the audio component below.
+            </p>
+        )}
+
         {/* Audio Player */}
         {audioBlobURL && !isRecording && (
           <div style={{
