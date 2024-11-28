@@ -89,7 +89,7 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
             const get = await fetch(`https://www.server.speakeval.org/verifyconfig?name=${configId}`);
             const parsedData = await get.json();
 
-            if (parsedData.error) {
+            if (!parsedData.valid) {
                 return toast.error(parsedData.error);
             }
         } catch (err) {
