@@ -254,7 +254,13 @@ export default function AudioRecorder({ code, participant }) {
 
   const getAudio = async () => {
     if (!audioBlobURL) {
-      await makeResponse();
+      try {
+        await makeResponse();
+      } catch (err) {
+        console.error('Error fetching audio:', err);
+        setError('An error occurred while fetching the audio. Try reloading the page.');
+        setIsError(true);
+        }
       setObtainedAudio(true);
     }
     
