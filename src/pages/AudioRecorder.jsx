@@ -608,7 +608,7 @@ export default function AudioRecorder({ code, participant }) {
                     // Countdown logic
                     countdownRef.current = 5;
                     if (audioRef.current && audioRef.current.currentTime)
-                        countdownRef.current = Math.max(5, Math.ceil(audioRef.current.currentTime + 1));
+                        countdownRef.current = Math.max(5, Math.ceil(audioRef.current.currentTime + 2));
                         
                     setCountdownDisplay(countdownRef.current);
                     if (!audioRef.current || audioRef.current.paused)
