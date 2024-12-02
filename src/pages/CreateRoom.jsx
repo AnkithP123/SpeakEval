@@ -90,7 +90,7 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
             const parsedData = await get.json();
 
             if (!parsedData.valid) {
-                return toast.error(parsedData.error);
+                return toast.error('The config name you entered is invalid. Please enter a valid config name.');
             }
         } catch (err) {
             console.error("Error Verifying Config Existence", err);
