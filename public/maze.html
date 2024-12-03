@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Renderer</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            margin: 20px auto;
+        }
+        td {
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            position: relative;
+        }
+        .horizontal-wall {
+            border-top: 2px solid black;
+        }
+        .vertical-wall {
+            border-left: 2px solid black;
+        }
+    </style>
+</head>
+<body>
+    <table id="maze-table"></table>
+
+    <script>
+        let maze = [];
+
+        function createMaze() {
+            const size = document.getElementById("maze-size").value;
+            maze = Array.from({ length: size * 2 }, (_, rowIndex) => 
+                Array.from({ length: size }, () => 1)
+            );
+
+            maze.forEach((row, rowIndex) => {
+                row.push(rowIndex % 2);
+            });
+
+            maze.push(Array.from({ length: size }, () => 1));
+
+            renderMaze(maze);
+        }
+
+        function toggleWall(row, col, isHorizontal) {
+            if (isHorizontal) {
+                maze[row][col] = maze[row][col] === 1 ? 0 : 1;
+            } else {
+                maze[row + 1][col] = maze[row + 1][col] === 1 ? 0 : 1;
+            }
+            renderMaze(maze);
+        }
+
+        function renderMaze(mazeData) {
+            const table = document.getElementById("maze-table");
+            table.innerHTML = "";
+
+            for (let rowIndex = 0; rowIndex < mazeData.length; rowIndex += 2) {
+                const tableRow = document.createElement("tr");
+
+                mazeData[rowIndex].forEach((cell, cellIndex) => {
+                    const tableCell = document.createElement("td");
+
+                    if (cell === 1) {
+                        tableCell.classList.add("horizontal-wall");
+                    }
+
+                    if (mazeData[rowIndex + 1] && mazeData[rowIndex + 1][cellIndex] === 1) {
+                        tableCell.classList.add("vertical-wall");
+                    }
+
+                    tableCell.onclick = () => toggleWall(rowIndex, cellIndex, true);
+                    tableCell.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        toggleWall(rowIndex, cellIndex, false);
+                    };
+
+                    tableRow.appendChild(tableCell);
+                });
+
+                table.appendChild(tableRow);
+            }
+        }
+
+        function downloadMaze() {
+            const output = document.getElementById("maze-output");
+            output.value = JSON.stringify(maze);
+            output.style.display = "block";
+        }
+
+        // Render the maze
+        renderMaze(maze);
+    </script>
+    <div style="text-align: center;">
+        <label for="maze-size">Maze Size:</label>
+        <input type="number" id="maze-size" min="5" max="50" value="20">
+        <button onclick="createMaze()">Create Maze</button>
+    </div>
+    <button onclick="downloadMaze()">Download Maze</button>
+    <textarea id="maze-output" rows="10" cols="50" style="display: none;"></textarea>
+</body>
+</html>
