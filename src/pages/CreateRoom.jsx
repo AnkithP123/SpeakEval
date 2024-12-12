@@ -16,6 +16,17 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
     const [configs, setConfigs] = useState([]); // State to store the configs
     const navigate = useNavigate();
 
+    
+  useEffect(() => {
+    cuteAlert({
+      type: "error",
+      title: "SpeakEval is undergoing heavy maintenance. Some features may not work as expected, such as executing exams.",
+      description: "We apologize for the inconvenience. Please check back later.",
+      primaryButtonText: "Understood"
+    });
+  });
+
+
     useEffect(() => {
         const fetchConfigs = async () => {
             console.log("Fetching Configs");
