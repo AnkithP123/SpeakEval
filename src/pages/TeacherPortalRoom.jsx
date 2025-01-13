@@ -102,6 +102,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     
     const data = await response.json();
 
+    if (data.error) {
+      return toast.error(data.error);
+    }
     setRubric(data.rubric);
 
     console.log('Rubric: ', data.rubric);
