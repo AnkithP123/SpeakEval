@@ -5,9 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
 import Card from '../components/Card';
 
-function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
-    const [userId, setUserId] = useState(initialUserId);
-    const [loggedIn, setLoggedIn] = useState(false);
+function TeacherPortalRouter({ initialUserId = '', set, setUltimate, getPin }) {
+    const [userId, setUserId] = useState(getPin());
+    const [loggedIn, setLoggedIn] = useState(userId);
     const [shake, setShake] = useState(false); // State to trigger shake effect
     const [rooms, setRooms] = useState([]); // State to store the rooms
 
@@ -46,6 +46,13 @@ function TeacherPortalRouter({ initialUserId = '', set, setUltimate }) {
         }
         console.log(parsedData);
     };
+
+    useEffect(() => {
+        if (!loggedIn) {
+            navigate('/login?redirect=/teacher-portal'); // Navigate to the login page
+        }
+    }, [loggedIn, navigate]);
+    
 
     const fetchRooms = async () => {
         try {

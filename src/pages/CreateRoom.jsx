@@ -6,9 +6,9 @@ import Card from '../components/Card';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
 import { cuteAlert } from 'cute-alert';
 
-function CreateRoom({ initialUserId = '', set, setUltimate }) {
-    const [userId, setUserId] = useState(initialUserId);
-    const [loggedIn, setLoggedIn] = useState(false);
+function CreateRoom({ initialUserId = '', set, setUltimate, getPin }) {
+    const [userId, setUserId] = useState(getPin());
+    const [loggedIn, setLoggedIn] = useState(userId);
     const [roomCode, setRoomCode] = useState('');
     const [shake, setShake] = useState(false); // State to trigger shake effect
     const [configId, setConfigId] = useState(''); // State to store the config ID
@@ -35,6 +35,13 @@ function CreateRoom({ initialUserId = '', set, setUltimate }) {
             fetchConfigs();
         }
     }, [loggedIn, userId]);
+
+    useEffect(() => {
+        if (!loggedIn) {
+            navigate('/login?redirect=/create-room'); // Navigate to the login page
+        }
+    }, [loggedIn, navigate]);
+    
 
     const handleInputChange = async (e) => {
         const input = e.target.value;

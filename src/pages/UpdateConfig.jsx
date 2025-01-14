@@ -28,7 +28,29 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     const [sparklePositions, setSparklePositions] = useState([]);
     const [button1Hover, setButton1Hover] = useState(false);
     const [button2Hover, setButton2Hover] = useState(false);
+    const [selected, setSelected] = useState(false);
+    const [configs, setConfigs] = useState([]); // State to store the configs
+
     
+    useEffect(() => {
+        const fetchConfigs = async () => {
+            console.log("Fetching Configs");
+            try {
+                const res = await fetch(`https://www.server.speakeval.org/getconfigs?pin=${userId}`);
+                const parsedData = await res.json();
+                setConfigs(parsedData);
+                console.log(configs);
+            } catch (err) {
+                console.error("Error Loading Configs", err);
+                toast.error("Error Loading Configs");
+            }
+        };
+
+        if (loggedIn) {
+            fetchConfigs();
+        }
+    }, [loggedIn, userId]);
+
     useEffect(() => {
         setSparklePositions(generateSparklePositions(3));
       }, []); // Add dependencies if you want it to update on specific state or prop changes    
@@ -54,7 +76,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
 
     useEffect(() => {
         if (!loggedIn) {
-            navigate('/login?redirect=/configure'); // Navigate to the login page
+            navigate('/login?redirect=/update'); // Navigate to the login page
         }
     }, [loggedIn, navigate]);
 
@@ -237,7 +259,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                 return `${category.name}|:::| ${category.descriptions[0]}|,,| ${category.descriptions[1]}|,,| ${category.descriptions[2]}|,,| ${category.descriptions[3]}|,,| ${category.descriptions[4]}`;
             }).join('|;;|');
 
-            const res = await fetch(`https://www.server.speakeval.org/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}&limit=${maxTime}&language=${selectedLanguage}`, {
+            const res = await fetch(`https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}&limit=${maxTime}&language=${selectedLanguage}`, {
                 method: 'POST',
                 body: formData,
             });
@@ -291,7 +313,19 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
 
         setSelectedLanguage(config.language);
 
+        setId(config.name);
+
+        config.questions.map(async (question) => {
+            // question is a base64 string, so we need to convert it back to a blob
+            const blob = await fetch(`data:audio/wav;base64,${question.audio}`).then((res) => res.blob());
+            const url = URL.createObjectURL(blob);
+            setQuestions((prevQuestions) => [...prevQuestions, url]);
+
+        });
+
         setPopupVisible(false); // Hide the popup
+
+        setSelected(true);
     }
 
     const containerStyle = {
@@ -575,7 +609,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
             {showAutofillUpgrade && <Upgrade onClose={() => setShowAutofillUpgrade(false)} />}
             <title hidden>Configure Exams</title>
     
-            {loggedIn ? (
+            {selected ? (
                 <div className="container-xl lg:container m-auto">
                     <div className="grid grid-cols-1 md:grid-cols-1 gap-8 p-8 rounded-lg justify-center">
                         <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
@@ -736,36 +770,38 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                                 Register Configuration
                             </h2>
                             <div className="flex justify-center">
-                                <input
-                                    type="text"
-                                    value={id}
-                                    onChange={(e) => setId(e.target.value)}
-                                    style={rubricCellStyle}
-                                    maxLength={15}
-                                    placeholder="Enter Name for Set"
-                                />
                                 <button onClick={handleRegisterConfig} style={buttonStyle}>
-                                    Register
+                                    Update
                                 </button>
                             </div>
                         </Card>
                     </div>
                 </div>
             ) : (
-                <div style={containerStyle} className={shake ? 'shake' : ''}>
-                    <input
-                        type="password"
-                        value={userId}
-                        onChange={handleInputChange}
-                        style={inputStyle}
-                        maxLength={30}
-                        placeholder="Enter Teacher Pin"
-                        onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
-                    />
-                    <button onClick={handleGoClick} style={buttonStyle}>
-                        Log In
-                    </button>
+                <div>
+                <title hidden>Create Room</title>
+                <div style={containerStyle}>
+                    <div>
+                        {configs.length > 0 ? 
+                        configs.map((config) => (
+                            config.name ? (
+                                <button
+                                    key={config.name}
+                                    style={chipStyle}
+                                    onClick={() => handleConfigClick(config)}
+                                >
+                                    {config.name}
+                                </button>
+                            ) : null
+                        )) : 
+                        <><p className='text-2xl font-bold' style={{ color: 'black' }}>No configurations found. Go to the configurations page to make one.</p>
+                        <hr style={{ width: '100%', border: '1px solid lightgray', margin: '10px 0' }} /></>
+                        }
+                    </div>
+                    {/* <button onClick={handleConfigSubmit} style={buttonStyle}>Create Room</button> */}
                 </div>
+            </div>
+    
             )}
     
             {/* Conditionally render the popup */}
