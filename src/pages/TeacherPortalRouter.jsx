@@ -10,6 +10,7 @@ function TeacherPortalRouter({ initialUserId = '', set, setUltimate, getPin }) {
     const [loggedIn, setLoggedIn] = useState(userId);
     const [shake, setShake] = useState(false); // State to trigger shake effect
     const [rooms, setRooms] = useState([]); // State to store the rooms
+    const navigate = useNavigate();
 
     const handleInputChange = async (e) => {
         const input = e.target.value;
