@@ -4,6 +4,8 @@ import { Play, Square, Repeat } from 'lucide-react';
 import styled, { css, keyframes } from "styled-components";
 import { cuteAlert } from 'cute-alert';
 import * as Tone from 'tone';
+import { useReactMediaRecorder } from "react-media-recorder";
+import { toast } from 'react-toastify';
 
 export default function AudioRecorder({ code, participant }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -20,10 +22,12 @@ export default function AudioRecorder({ code, participant }) {
   const timer = useRef(0); // New ref for timer
   const statusInterval = useRef(null);
   const mediaRecorder = useRef(null);
+  const screenRecorder = useRef(null);
   const audioRef = useRef(null);
   const [displayTime, setDisplayTime] = useState('xx:xx'); // State for displaying formatted time
   const [obtainedAudio, setObtainedAudio] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [waiting, setWaiting] = useState(false);
   let [premium, setPremium] = useState(false);
   let questionIndex;
 
@@ -212,6 +216,7 @@ export default function AudioRecorder({ code, participant }) {
 
   const makeResponse = async () => {
     setFetching(true);
+    console.log('Fetching')
     const response = await fetch(`https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${participant}&number=1`);
     if (!response.ok) {
       setError('Failed to fetch audio');
@@ -276,21 +281,92 @@ export default function AudioRecorder({ code, participant }) {
     return null;
   };
 
+
   const requestMicrophonePermission = async () => {
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream1 = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      let stream;
+
+      if (!screenRecorder.current && false) {
+
+      
+
+
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            mediaSource: "screen",
+            audio: true,
+            cursor: ["motion"],
+            displaySurface: "monitor",
+          },
+        });
+
+        if (stream.getVideoTracks()[0].getSettings().displaySurface !== 'monitor') {
+          console.error('Error requesting microphone permission:', err);
+          setError('Microphone access is required. Click here to try again.');
+          setIsError(true);
+          return { permissionGranted: false };
+    
+        }
+
+  
+        setError('');
+
+        setIsError(false);
+        
+        screenRecorder.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+        screenRecorder.current.ondataavailable = (e) => {
+          chunks2.push(e.data)
+          console.log('Data available:', e.data);
+        };
+
+        screenRecorder.current.onstop = () => {
+          const blob = new Blob(chunks2, { type: 'video/webm' });
+          const videoUrl = URL.createObjectURL(blob);
+          console.log('Blob:', blob);
+          console.log('Video URL:', videoUrl);
+          // download video
+          const a = document.createElement('a');
+          a.href = videoUrl;
+          a.download = 'screen.webm';
+          a.click();
+          toast.info('Save the screen recording that was downloaded if you have had any errors.');
+          const formData = new FormData();
+          formData.append('video', blob, 'screen.webm');
+
+          uploadScreen(formData);
+
+        };
+
+
+        console.log('Screen recording started:', screenRecorder.current.state);
+
+        screenRecorder.current.start();
+
+        setInterval(() => {
+          console.log('Screen recording state:', screenRecorder.current.state);
+        }
+        , 100);
+
+
+
+  }
+
       setMicrophone(true);
       setError(null);
-      return true;
+      return {permissionGranted: true, audio: stream1, video: stream};
     } catch (err) {
       console.error('Error requesting microphone permission:', err);
       setError('Microphone access is required. Click here to try again.');
       setIsError(true);
-      return false;
+      return { permissionGranted: false };
     }
   };
 
   let chunks = [];
+  let chunks2 = [];
 
   function blobToBase64(blob) {
     return new Promise((resolve, _) => {
@@ -305,10 +381,11 @@ export default function AudioRecorder({ code, participant }) {
   const startRecording = async () => {
     setIsRecording(true);
     setAudioURL(null);
-    const permissionGranted = await requestMicrophonePermission();
+    const {permissionGranted, audio, video} = await requestMicrophonePermission();
     if (!permissionGranted) {
       setError('Microphone access is required. Click here to try again.');
     }
+
 
     await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`);
 
@@ -333,7 +410,7 @@ export default function AudioRecorder({ code, participant }) {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = audio;
       mediaRecorder.current = new MediaRecorder(stream, { mimeType });
 
       mediaRecorder.current.ondataavailable = (e) => chunks.push(e.data);
@@ -348,10 +425,13 @@ export default function AudioRecorder({ code, participant }) {
         setAudioURL(audioUrl);
         setIsRecording(false);
       };
+        
 
       await sendStatus();
-
+      
       mediaRecorder.current.start();
+
+
     } catch (err) {
       console.error('Error starting recording:', err);
       setError('An error occurred while starting the recording. Please try again. Perhaps reload the page.');
@@ -444,21 +524,43 @@ export default function AudioRecorder({ code, participant }) {
     setError(transcriptionResult.textContent);
   }
 
+  const uploadScreen = async (formData) => {
+    try {
+      let response = await fetch(`https://www.server.speakeval.org/upload_screen?code=${code}&participant=${participant}&index=${questionIndex}`, {
+        method: 'POST',
+        body: formData
+      });
+    } catch (err) {
+      console.error('Error uploading screen recording:', err);
+      // setError('An error occurred while uploading the screen recording. Please try again.');
+      // setIsError(true);
+    }
+
+  }
+
+
+
   const playRecording = async () => {
-    const permissionGranted = await requestMicrophonePermission();
+
+    setWaiting(true);
+
+    if (playing || waiting)
+      return;
+
+    const {permissionGranted, audio, video} = await requestMicrophonePermission();
     if (!permissionGranted) {
       setError('Microphone access is required. Click here to try again.');
       return;
     }
 
-    if (playing)
-      return;
-
+    setWaiting(false);
     setPlaying(true);
 
     if (!obtainedAudio) {
       await getAudio();
     }
+
+    setWaiting(false);
 
     // Use ref for controlling audio tag
 
@@ -475,6 +577,7 @@ export default function AudioRecorder({ code, participant }) {
     };
     playAudio();
 
+
   };
 
   const stopRecording = () => {
@@ -482,9 +585,15 @@ export default function AudioRecorder({ code, participant }) {
     setStopped(true);
     setIsRecording(false);
 
+    if (screenRecorder.current) {
+      screenRecorder.current.stop();
+    }
+
     if (mediaRecorder.current) {
       mediaRecorder.current.stop();
     }
+
+   
 
     clearInterval(interval);
   }
@@ -593,7 +702,7 @@ export default function AudioRecorder({ code, participant }) {
             alignItems: 'center'
           }}>
             <audio
-              controls={!playing}
+              controls={!playing && (!audioRef.current || audioRef.current.paused)}
               ref={audioRef}
               style={{
                 width: '100%',
@@ -601,14 +710,19 @@ export default function AudioRecorder({ code, participant }) {
                 boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
                 backgroundColor: '#F8F8F8',
               }}
+
+              onPlay={() => {
+                if (!playing) {
+                    countdownRef.current = audioRef.current.duration + 1;
+                }
+              }}
+              
               onEnded={() => {
                 if (!finished) {
                     setFinished(true);
                     setPlaying(false);
                     // Countdown logic
                     countdownRef.current = 5;
-                    if (audioRef.current && audioRef.current.currentTime)
-                        countdownRef.current = Math.max(5, Math.ceil(audioRef.current.currentTime + 2));
                         
                     setCountdownDisplay(countdownRef.current);
                     if (!audioRef.current || audioRef.current.paused)
@@ -633,6 +747,9 @@ export default function AudioRecorder({ code, participant }) {
                             playBeep();
                     }
                     }, 1000);
+                } else {
+                  countdownRef.current = -1;
+                  setCountdownDisplay(-1);
                 }
         
               }}
@@ -654,14 +771,14 @@ export default function AudioRecorder({ code, participant }) {
           </p>
         )}
 
-        {playing && (
+        {(playing || waiting) && (
           <p style={{
             marginTop: '18px',
             fontSize: '18px',
             fontWeight: 'bold',
             color: '#28a745',
           }}>
-            {fetching ? "Downloading question..." : "Playing..."}
+            {(fetching ? "Downloading question..." : (waiting ? "Loading..." : "Playing..."))}
           </p>
         )}
 
@@ -672,13 +789,17 @@ export default function AudioRecorder({ code, participant }) {
             fontWeight: 'bold',
             color: 'red',
           }}>
-            Recording starts in {countdownDisplay}...
+            {!playing && audioRef.current.paused ? `Recording starts in ${countdownDisplay}...` : `Recording starts immediately upon question completion`}
           </p>
         )}
 
         {error && (
           <div
-            onClick={microphone ? (null) : (requestMicrophonePermission)}
+            onClick={microphone ? null : () => {
+              setWaiting(true);
+              requestMicrophonePermission();
+              setWaiting(false);
+            }}
             style={isError ? (
               {
                 marginTop: '24px', // Increase top margin for spacing

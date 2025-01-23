@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard } from 'react-icons/fa';
+import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaVideo } from 'react-icons/fa';
 
 function ProfileCard({ text, rubric, audio, question, index, questionBase64, name, code, onGradeUpdate, customName }) {
   const [completed, setCompleted] = useState(false);
@@ -321,6 +321,24 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
     });
   };
 
+  const handleDownloadScreenRecording = async () => {
+    if (!name)
+      return toast.error('Participant has not completed the task');
+    try {
+      const url = `https://www.server.speakeval.org/download_screen?code=${code}&participant=${name}`;
+      const newTab = window.open(url, '_blank');
+      if (newTab) {
+        newTab.focus();
+        toast.success('Screen recording link opened in a new tab');
+      } else {
+        throw new Error('Failed to open new tab');
+      }
+    } catch (error) {
+      console.error('Error opening screen recording link:', error);
+      toast.error('Failed to open screen recording link');
+    }
+  };
+
   return (
     <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
       <div className="flex items-center w-full">
@@ -343,6 +361,12 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
             onClick={handleAiButtonClick}
           >
             <FaRobot />
+          </button>
+          <button
+            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+            onClick={handleDownloadScreenRecording}
+          >
+            <FaVideo />
           </button>
         </div>
       </div>
