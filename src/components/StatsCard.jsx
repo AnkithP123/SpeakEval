@@ -185,7 +185,11 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
         `https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${name}`
       );
       const data = await response.json();
-      setRubric(data.rubric);
+      let rubric2 = data.rubric;
+      if (rubric2 && rubric2.includes('|^^^|')) {
+        rubric2 = rubric2.split('|^^^|')[1];
+      }
+      setRubric(rubric2);
       setQuestionBase64(data.audios[0]);
     } catch (error) {
       console.error('Error loading rubric:', error);

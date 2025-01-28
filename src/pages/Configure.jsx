@@ -255,14 +255,17 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
 
             console.log(questions.length);
 
-            const rubricString = `${pointValues.join('|,,|')}|###|${categories
+            const rubricString = `${pointValues.join('|,,|')}|^^^|${categories
                 .map((category) => {
                     return `${category.name}|:::|${category.descriptions
                         .map((description) => description || '') // Handle missing descriptions gracefully
                         .join('|,,|')}`;
                 })
                 .join('|;;|')}`;
+
+            console.log(rubricString);
             
+            console.log(`https://www.server.speakeval.org/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${rubricString}&limit=${maxTime}&language=${selectedLanguage}`);
 
             const res = await fetch(`https://www.server.speakeval.org/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${rubricString}&limit=${maxTime}&language=${selectedLanguage}`, {
                 method: 'POST',

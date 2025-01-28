@@ -84,13 +84,19 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         return
       }
 
-      setRubric(data.rubric)
+      let rubric2 = data.rubric;
+
+      if (rubric2 && rubric2.includes('|^^^|')) {
+        rubric2 = rubric2.split('|^^^|')[1];
+      }
+
+      setRubric(rubric2)
 
       // Parse categories and descriptions
-      const [newCategories, newDescriptions] = data.rubric
+      const [newCategories, newDescriptions] = rubric2
         ? [
-            data.rubric.split("|;;|").map((element) => element.split("|:::|")[0]),
-            data.rubric.split("|;;|").map((element) => element.split("|:::|")[1].replace("|,,,|", "\n\n")),
+            rubric2.split("|;;|").map((element) => element.split("|:::|")[0]),
+            rubric2.split("|;;|").map((element) => element.split("|:::|")[1].replace("|,,,|", "\n\n")),
           ]
         : [[], []]
 
