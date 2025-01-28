@@ -217,6 +217,7 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
       if (questionBase64) {
         const audioData = Uint8Array.from(atob(questionBase64), c => c.charCodeAt(0));
         const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
+        const wavBlob = await convertOggToWav(audioBlob);
         const audioUrl = URL.createObjectURL(wavBlob);
 
         const questionAudioPlayer = document.getElementById(`questionAudioPlayer-${name}-${code}`);
