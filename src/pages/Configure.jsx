@@ -743,6 +743,8 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                                                 placeholder={`Description ${pointValues.length - pointIndex}`}
                                             />
                                         ))}
+                                        <div style={{ gridColumn: `span ${Math.max(6, pointValues.length + 1)}` }}></div> {/* Blank line */}
+
                                     </React.Fragment>
                                 ))}
                             </div>
