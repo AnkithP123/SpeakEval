@@ -17,7 +17,8 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     const [shake, setShake] = useState(false); // State to trigger shake effect
     const [questions, setQuestions] = useState([]); // State to store recorded questions
     const [recording, setRecording] = useState(false); // State to track recording status
-    const [categories, setCategories] = useState([{ name: '', descriptions: Array(5).fill('') }]); // State to store categories and their descriptions
+    const [categories, setCategories] = useState([{ name: '', descriptions: Array(4).fill('') }]);
+    const [pointValues, setPointValues] = useState([4, 3, 2, 1]); // Default point values
     const [maxTime, setMaxTime] = useState(''); // State to store the max time limit
     const [selectedLanguage, setSelectedLanguage] = useState(''); // State to store the selected language
     const navigate = useNavigate();
@@ -85,14 +86,6 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                 }
             }
 
-            if (userId === 'CHICHARON123!') {
-                cuteAlert({
-                    type: "info",
-                    title: "Rubric Transferring",
-                    description: "¡Hola, Sra. Abarca! Press the autofill button next to the rubric and select Exam 1 to transfer the rubric to this exam.",
-                    primaryButtonText: "Got it!"
-                });
-            }
         } catch (err) {
             console.error("Error Loading Data", err);
             toast.error("Error Loading Data");
@@ -173,7 +166,11 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     };
 
     const handleAddCategory = () => {
-        setCategories((prevCategories) => [...prevCategories, { name: '', descriptions: Array(5).fill('') }]);
+        setCategories((prevCategories) => [...prevCategories, { name: '', descriptions: Array(pointValues.length).fill('') }]);
+    };
+
+    const handleDeleteCategory = (index) => {
+        setCategories((prevCategories) => prevCategories.filter((_, i) => i !== index));
     };
 
     const handleCategoryNameChange = (index, e) => {
@@ -189,9 +186,38 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
         const { value } = e.target;
         setCategories((prevCategories) => {
             const updatedCategories = [...prevCategories];
-            // Update the specific description for the point within the category
             updatedCategories[categoryIndex].descriptions[pointIndex] = value;
             return updatedCategories;
+        });
+    };
+
+    const handleAddPointValue = () => {
+        const newPoint = pointValues.length > 0 ? Math.max(...pointValues) + 1 : 1;
+        setPointValues((prevPointValues) => [newPoint, ...prevPointValues]);
+        setCategories((prevCategories) =>
+            prevCategories.map((category) => ({
+                ...category,
+                descriptions: ['', ...category.descriptions],
+            }))
+        );
+    };
+
+    const handleDeletePointValue = (index) => {
+        setPointValues((prevPointValues) => prevPointValues.filter((_, i) => i !== index));
+        setCategories((prevCategories) =>
+            prevCategories.map((category) => {
+                const updatedDescriptions = category.descriptions.filter((_, i) => i !== index);
+                return { ...category, descriptions: updatedDescriptions };
+            })
+        );
+    };
+
+    const handlePointValueChange = (index, e) => {
+        const { value } = e.target;
+        setPointValues((prevPointValues) => {
+            const updatedValues = [...prevPointValues];
+            updatedValues[index] = parseFloat(value) || 0;
+            return updatedValues;
         });
     };
 
@@ -201,10 +227,6 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
 
     const handleLanguageChange = (e) => {
         setSelectedLanguage(e.target.value);
-    };
-
-    const handleDeleteCategory = (index) => {
-        setCategories((prevCategories) => prevCategories.filter((_, i) => i !== index));
     };
 
     const handleRegisterConfig = async () => {
@@ -233,11 +255,16 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
 
             console.log(questions.length);
 
-            const categoriesString = categories.map((category) => {
-                return `${category.name}|:::| ${category.descriptions[0]}|,,| ${category.descriptions[1]}|,,| ${category.descriptions[2]}|,,| ${category.descriptions[3]}|,,| ${category.descriptions[4]}`;
-            }).join('|;;|');
+            const rubricString = `${pointValues.join('|,,|')}|###|${categories
+                .map((category) => {
+                    return `${category.name}|:::|${category.descriptions
+                        .map((description) => description || '') // Handle missing descriptions gracefully
+                        .join('|,,|')}`;
+                })
+                .join('|;;|')}`;
+            
 
-            const res = await fetch(`https://www.server.speakeval.org/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}&limit=${maxTime}&language=${selectedLanguage}`, {
+            const res = await fetch(`https://www.server.speakeval.org/registerconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${rubricString}&limit=${maxTime}&language=${selectedLanguage}`, {
                 method: 'POST',
                 body: formData,
             });
@@ -376,7 +403,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     
     const rubricContainerStyle = {
         display: 'grid',
-        gridTemplateColumns: 'auto repeat(5, 1fr)',
+        gridTemplateColumns: `auto repeat(${pointValues.length}, 1fr)`,
         gap: '8px',
         marginTop: '16px',
     };
@@ -393,6 +420,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     };
     
     const rubricCellStyle = {
+        width: '100%',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -656,20 +684,40 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                                         <div key={index} className="sparkle" style={style}></div>
                                     ))}
                                 </button>
-                            </div>
-    
+                            </div>                            
                             <div style={rubricContainerStyle}>
+                                <button
+                                    onClick={handleAddPointValue}
+                                    style={{ width: '100%', gridColumn: `span ${Math.max(6, pointValues.length + 1)}`, ...rubricCellStyle }}
+                                >
+                                    Add Point Value
+                                </button>
                                 <div style={rubricHeaderStyle}>Category</div>
-                                {[5, 4, 3, 2, 1].map((point) => (
-                                    <div key={point} style={rubricCellStyle}>
-                                        {point}
+                                {pointValues.map((value, index) => (
+                                    <div key={index} style={rubricCellStyle}>
+                                        <input
+                                            type="number"
+                                            value={value}
+                                            onChange={(e) => handlePointValueChange(index, e)}
+                                            style={{ width: '100%', textAlign: 'center' }}
+                                            step="0.5"
+                                        />
+                                        <button
+                                            onClick={() => handleDeletePointValue(index)}
+                                            style={{ marginLeft: '8px', cursor: 'pointer', color: 'red' }}
+                                        >
+                                            &#x2715;
+                                        </button>
                                     </div>
                                 ))}
+
+                                <div style={{ gridColumn: `span ${Math.max(6, pointValues.length + 1)}` }}></div> {/* Blank line */}
+                                
                                 {categories.map((category, index) => (
                                     <React.Fragment key={index}>
                                         <div style={rubricCellStyle}>
                                             <span
-                                                style={deleteButtonStyle}
+                                                style={{ marginRight: '8px', cursor: 'pointer', color: 'red' }}
                                                 onClick={() => handleDeleteCategory(index)}
                                             >
                                                 &#x2715;
@@ -678,27 +726,24 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                                                 type="text"
                                                 value={category.name}
                                                 onChange={(e) => handleCategoryNameChange(index, e)}
-                                                maxLength={50}
                                                 placeholder="Category Name"
+                                                style={{ width: 'auto' }}
                                             />
                                         </div>
-                                        {[5, 4, 3, 2, 1].map((point) => (
+                                        {pointValues.map((_, pointIndex) => (
                                             <input
-                                                key={point}
+                                                key={pointIndex}
                                                 type="text"
-                                                value={category.descriptions[point - 1]}
-                                                onChange={(e) =>
-                                                    handleCategoryDescriptionChange(index, point - 1, e)
-                                                }
+                                                value={category.descriptions[pointIndex]}
+                                                onChange={(e) => handleCategoryDescriptionChange(index, pointIndex, e)}
                                                 style={rubricCellStyle}
-                                                maxLength={500}
-                                                placeholder={`Description ${point}`}
+                                                placeholder={`Description ${pointValues.length - pointIndex}`}
                                             />
                                         ))}
                                     </React.Fragment>
                                 ))}
                             </div>
-                            <button onClick={handleAddCategory} style={buttonStyle}>
+                            <button onClick={handleAddCategory} style={{ marginTop: '16px', ...rubricCellStyle }}>
                                 Add Category
                             </button>
                         </Card>

@@ -1,278 +1,260 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import ProfileCard from '../components/StatsCard';
-import { toast } from 'react-toastify';
-import jsPDF from 'jspdf';
-import { FaArrowUp, FaArrowDown } from 'react-icons/fa'; // Import arrow icons
+import React, { useState, useEffect, useRef } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import ProfileCard from "../components/StatsCard"
+import { toast } from "react-toastify"
+import jsPDF from "jspdf"
+import { FaArrowUp, FaArrowDown } from "react-icons/fa" // Import arrow icons
 
 function TeacherPortalRoom({ initialRoomCode, pin }) {
-  const [roomCode, setRoomCode] = useState(initialRoomCode || useParams().roomCode); // Track the room code as state
-  const [participants, setParticipants] = useState([]);
-  const [gradesReport, setGradesReport] = useState(''); // For storing the report data
-  const [reportOption, setReportOption] = useState(''); // For managing the dropdown selection
-  const [sortOption, setSortOption] = useState('name'); // New state for sorting options
-  const [sortOrder, setSortOrder] = useState('asc'); // New state for sorting order (ascending/descending)
-  const [showByPerson, setShowByPerson] = useState(false); // New state for 'Show by person' toggle
-  const [allQuestions, setAllQuestions] = useState([]); // State to store all questions
-  const [showRubricModal, setShowRubricModal] = useState(false); // New state for rubric modal visibility
-  const [rubricContent, setRubricContent] = useState(null); // New state for rubric content
-  const [rubric, setRubric] = useState(''); // New state for rubric
-  const [fetched, setFetched] = useState(false); // New state for fetched data
-  const [showDisplayNameInput, setShowDisplayNameInput] = useState(false);
-  const [displayName, setDisplayName] = useState('');
-  const [nextRoomCode, setNextRoomCode] = useState(null);
-  const [previousRoomCode, setPreviousRoomCode] = useState(null);
-  const [categories, setCategories] = useState([]); // New state for categories
+  const [roomCode, setRoomCode] = useState(initialRoomCode || useParams().roomCode) // Track the room code as state
+  const [participants, setParticipants] = useState([])
+  const [gradesReport, setGradesReport] = useState("") // For storing the report data
+  const [reportOption, setReportOption] = useState("") // For managing the dropdown selection
+  const [sortOption, setSortOption] = useState("name") // New state for sorting options
+  const [sortOrder, setSortOrder] = useState("asc") // New state for sorting order (ascending/descending)
+  const [showByPerson, setShowByPerson] = useState(false) // New state for 'Show by person' toggle
+  const [allQuestions, setAllQuestions] = useState([]) // State to store all questions
+  const [showRubricModal, setShowRubricModal] = useState(false) // New state for rubric modal visibility
+  const [rubricContent, setRubricContent] = useState(null) // New state for rubric content
+  const [rubric, setRubric] = useState("") // New state for rubric
+  const [fetched, setFetched] = useState(false) // New state for fetched data
+  const [showDisplayNameInput, setShowDisplayNameInput] = useState(false)
+  const [displayName, setDisplayName] = useState("")
+  const [nextRoomCode, setNextRoomCode] = useState(null)
+  const [previousRoomCode, setPreviousRoomCode] = useState(null)
+  const [categories, setCategories] = useState([]) // New state for categories
   const [descriptions, setDescriptions] = useState(() => {
-    const savedDescriptions = localStorage.getItem('descriptions');
-    return savedDescriptions ? JSON.parse(savedDescriptions) : [];
-  }); // New state for descriptions
-  const displayNameInputRef = useRef(null);
-
+    const savedDescriptions = localStorage.getItem("descriptions")
+    return savedDescriptions ? JSON.parse(savedDescriptions) : []
+  }) // New state for descriptions
+  const [questionData, setQuestionData] = useState({
+    currentIndex: 1,
+    totalQuestions: 0,
+    questions: [],
+  })
+  const [isLoading, setIsLoading] = useState(false) // New loading state
+  const displayNameInputRef = useRef(null)
 
   useEffect(() => {
-    localStorage.setItem('descriptions', JSON.stringify(descriptions));
-  }, [descriptions]);
+    localStorage.setItem("descriptions", JSON.stringify(descriptions))
+  }, [descriptions])
 
   useEffect(() => {
-    fetchParticipants();
-    if (showByPerson)
-      fetchAllQuestions();
-    else
-      fetchNextPrevious(roomCode);
+    const initializeRoom = async () => {
+      await fetchTotalQuestions()
+      await fetchParticipants()
+    }
+    initializeRoom()
+  }, [roomCode])
 
-  }, [roomCode, showByPerson]); // Fetch participants when roomCode changes
-
-  const navigate = useNavigate();
-
-  const fetchParticipantsOld = async () => {
+  const fetchTotalQuestions = async () => {
     try {
-      const responsev2 = await fetch(`https://www.server.speakeval.org/checkcompleted?code=${roomCode}`);
-      const data2 = await responsev2.json();
-      let obj = { members: [] };
-      if (data2.error) {
-        toast.error(data2.error);
-        return navigate('/');
+      const response = await fetch(`https://www.server.speakeval.org/get_num_questions?code=${roomCode}`)
+      const data = await response.json()
+
+      if (data.error) {
+        toast.error(data.error)
+        return
       }
 
-      const response = await fetch(`https://www.server.speakeval.org/checkjoined?code=${roomCode}`);
-      const data = await response.json();
+      const baseCode = roomCode.toString().slice(0, -3)
+      const questions = Array.from({ length: data.questions }, (_, i) =>
+        Number.parseInt(baseCode + (i + 1).toString().padStart(3, "0")),
+      )
 
-      obj.members = data2.members.map((member) => {
-        if (participants.members.find((participant) => participant.name === member) && (participants.members.find((participant) => participant.name === member).completed)) {
-          return null;
-        }
-        return {
-          name: member,
-          completed: true,
-          grades: {},
-          totalScore: 0,
-          categories: []
-        };
-      }).filter(member => member !== null);
-
-      const activeParticipants = data.members;
-
-      activeParticipants.forEach((participant) => {
-        if (!obj.members.find((member) => member.name === participant) && !participants.members.find((member) => member.name === participant)) {
-          obj.members.push({
-            name: participant,
-            completed: false
-          });
-        }
-      });
-
-      participants.members.forEach((participant) => {
-        if (!obj.members.find((member) => member.name === participant.name)) {
-          obj.members.push(participant);
-        }
-      });
-
-      setParticipants(obj);
+      setQuestionData({
+        currentIndex: Number.parseInt(roomCode.toString().slice(-3)),
+        totalQuestions: data.questions,
+        questions,
+      })
     } catch (error) {
-      console.error('Error fetching participants:', error);
-      toast.error('Error fetching participants');
+      console.error("Error fetching total questions:", error)
+      toast.error("Error fetching question information")
     }
-  };
-
-  const fetchParticipants = async () => {
-    setFetched(false);
-
-    const response = await fetch(`https://www.server.speakeval.org/downloadall?code=${roomCode}`);
-    
-    const data = await response.json();
-
-    if (data.error) {
-      return toast.error(data.error);
-    }
-    setRubric(data.rubric);
-
-    console.log('Rubric: ', data.rubric);
-
-    let categories = data.rubric === '' ? [] : data.rubric.split('|;;|').map((element) => {
-      return element.split('|:::|')[0];
-    });
-
-    let descriptions = data.rubric === '' ? [] : data.rubric.split('|;;|').map((element) => {
-      return element.split('|:::|')[1].replace('|,,,|', '\n\n');
-    });
-
-    setCategories(categories);
-
-    setDescriptions(descriptions);
-
-    console.log(categories);
-
-    console.log(descriptions);
-
-    console.log(data.participants);
-
-    const uniqueParticipants = data.participants.filter((participant, index, self) =>
-      index === self.findIndex((p) => p.name === participant.name)
-    );
-    setParticipants(uniqueParticipants);
-
-    setFetched(true);
   }
 
-  const fetchAllQuestions = async () => {
-    let questions = [];
-    let currentRoomCode = roomCode;
-    while (currentRoomCode) {
-      questions.push(currentRoomCode);
-      await fetchNextPrevious(currentRoomCode);
-      currentRoomCode = nextRoomCode;
-    }
-    setAllQuestions(questions);
-  };
+  const fetchParticipants = async () => {
+    setFetched(false)
+    try {
+      const response = await fetch(`https://www.server.speakeval.org/downloadall?code=${roomCode}`)
+      const data = await response.json()
 
-  const handleNavigateQuestion = (direction) => {
-    const newRoomCode = direction === 'next' ? nextRoomCode : previousRoomCode;
-    if (newRoomCode) {
-      navigate(`/teacher/portal/${newRoomCode}`);
+      if (data.error) {
+        toast.error(data.error)
+        return
+      }
+
+      setRubric(data.rubric)
+
+      // Parse categories and descriptions
+      const [newCategories, newDescriptions] = data.rubric
+        ? [
+            data.rubric.split("|;;|").map((element) => element.split("|:::|")[0]),
+            data.rubric.split("|;;|").map((element) => element.split("|:::|")[1].replace("|,,,|", "\n\n")),
+          ]
+        : [[], []]
+
+      setCategories(newCategories)
+      setDescriptions(newDescriptions)
+
+      // Remove duplicates and sort by name
+      const uniqueParticipants = data.participants
+        .filter((participant, index, self) => index === self.findIndex((p) => p.name === participant.name))
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+      setParticipants(uniqueParticipants)
+      setFetched(true)
+    } catch (error) {
+      console.error("Error fetching participants:", error)
+      toast.error("Error fetching participants")
+      setFetched(true)
     }
-  };
+  }
+
+  const fetchQuestionData = async (questionCode) => {
+    try {
+      const response = await fetch(`https://www.server.speakeval.org/downloadall?code=${questionCode}`)
+      const data = await response.json()
+
+      if (data.error) {
+        toast.error(data.error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error("Error fetching question data:", error)
+      toast.error("Error fetching question data")
+      return null
+    }
+  }
+
+  const handleNavigateQuestion = async (direction) => {
+    if (showByPerson) return
+
+    setIsLoading(true)
+    const currentIndex = questionData.currentIndex
+    const newIndex =
+      direction === "next" ? Math.min(currentIndex + 1, questionData.totalQuestions) : Math.max(currentIndex - 1, 1)
+
+    if (newIndex !== currentIndex) {
+      const baseCode = roomCode.toString().slice(0, -3)
+      const newCode = Number.parseInt(baseCode + newIndex.toString().padStart(3, "0"))
+      setRoomCode(newCode)
+      await fetchParticipants()
+    } else {
+      toast.warn(`No ${direction} question available.`)
+    }
+    setIsLoading(false)
+  }
 
   const toggleRubricModal = (rubric) => {
-    setRubricContent(rubric);
-    setShowRubricModal(!showRubricModal);
-  };
+    setRubricContent(rubric)
+    setShowRubricModal(!showRubricModal)
+  }
 
   const handleGradeUpdate = (participantName, grades, totalScore, categories, descriptions) => {
-    const participant = participants.find((member) => member.name === participantName);
-    participant.grades = grades;
-    participant.totalScore = totalScore;
-    participant.categories = categories;
-    participant.descriptions = descriptions;
+    setParticipants((prevParticipants) => {
+      return prevParticipants.map((participant) => {
+        if (participant.name === participantName) {
+          return {
+            ...participant,
+            grades,
+            totalScore,
+          }
+        }
+        return participant
+      })
+    })
 
-    setCategories(categories);
-
-    console.log(categories);
-
-    console.log(descriptions);
-
-    setDescriptions(descriptions);
-
-    console.log(categories);
-    console.log(descriptions);
-
-  };
+    setCategories(categories)
+    setDescriptions(descriptions)
+  }
 
   // Sorting logic based on selected option and order
   const sortParticipants = () => {
-
-    console.log('Part. - ', participants);
-
-
-    const sortedParticipants = [...participants];
-
-
-    if (sortOption === 'name') {
-      sortedParticipants.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortOption === 'totalScore') {
-      sortedParticipants.sort((a, b) => b.totalScore - a.totalScore);
-    } else if (sortOption.startsWith('category')) {
-      const categoryIndex = parseInt(sortOption.split('-')[1], 10);
-      sortedParticipants.sort((a, b) => (b.grades[categoryIndex] || 0) - (a.grades[categoryIndex] || 0));
-    }
-
-    // Apply sort order (ascending/descending)
-    if (sortOrder === 'desc') {
-      sortedParticipants.reverse();
-    }
-
-    return sortedParticipants;
-  };
+    return [...participants].sort((a, b) => {
+      if (sortOption === "name") {
+        return sortOrder === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
+      }
+      if (sortOption === "totalScore") {
+        return sortOrder === "asc" ? a.totalScore - b.totalScore : b.totalScore - a.totalScore
+      }
+      if (sortOption.startsWith("category")) {
+        const categoryIndex = Number.parseInt(sortOption.split("-")[1], 10)
+        return sortOrder === "asc"
+          ? (a.grades[categoryIndex] || 0) - (b.grades[categoryIndex] || 0)
+          : (b.grades[categoryIndex] || 0) - (a.grades[categoryIndex] || 0)
+      }
+      return 0
+    })
+  }
 
   // Toggle sort order (flip-flop between ascending and descending)
   const toggleSortOrder = () => {
-    setSortOrder((prevOrder) => (prevOrder === 'asc' ? 'desc' : 'asc'));
-  };
+    setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"))
+  }
 
   // Create a report from the grades
   const createGradesReport = () => {
-    console.log(participants.members);
-    let report = 'Grading Report:\n';
-    participants.members.forEach((participant) => {
-      let categories = participant.categories;
-      report += `${participant.name}:\n`;
+    let report = "Grading Report:\n"
+    participants.forEach((participant) => {
+      const categories = participant.categories
+      report += `${participant.name}:\n`
       for (let i = 0; i < categories.length; i++) {
-        report += `\t${categories[i]}: ${participant.grades[i]}\n`;
+        report += `\t${categories[i]}: ${participant.grades[i]}\n`
       }
-      report += `\tTotal Score: ${participant.totalScore}\n\n`;
-    });
+      report += `\tTotal Score: ${participant.totalScore}\n\n`
+    })
 
-    setGradesReport(report);
-    return report;
-  };
+    setGradesReport(report)
+    return report
+  }
 
   // Download or print report based on user choice
   const handleDownloadReport = (reportOption) => {
-    const report = createGradesReport();
-    
-    if (reportOption === 'download') {
-      let categories = participants.members.length > 0 ? participants.members[0].categories : [];
-      console.log('0', participants.members[0]);
+    const report = createGradesReport()
+
+    if (reportOption === "download") {
+      const categories = participants.length > 0 ? participants[0].categories : []
       // make a pdf instead of printing
-      const doc = new jsPDF();
+      const doc = new jsPDF()
 
       // Set the title and format the document
-      doc.setFont('Arial', 'normal');
-      doc.setFontSize(16);
-      doc.text('Grading Report', 10, 10);
+      doc.setFont("Arial", "normal")
+      doc.setFontSize(16)
+      doc.text("Grading Report", 10, 10)
 
-      // Table headings      
+      // Table headings
 
-      let yPosition = 20;
-      doc.setFontSize(12);
-      doc.text('Name', 10, yPosition);
-      console.log('MyCategories:', categories);
+      let yPosition = 20
+      doc.setFontSize(12)
+      doc.text("Name", 10, yPosition)
       categories.forEach((category, index) => {
-        doc.text(category, 50 + (index * 30), yPosition); // Adjust X position based on index
-      });
-      doc.text('Total Score', 150, yPosition);
+        doc.text(category, 50 + index * 30, yPosition) // Adjust X position based on index
+      })
+      doc.text("Total Score", 150, yPosition)
 
       // Add table rows for each participant
-      participants.members.sort(
-        (a, b) => a.name.localeCompare(b.name)
-      ).forEach((participant, index) => {
-        yPosition += 10; // Move down to the next line
+      participants
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((participant, index) => {
+          yPosition += 10 // Move down to the next line
 
-        doc.text(participant.name, 10, yPosition);
+          doc.text(participant.name, 10, yPosition)
 
-        Object.values(participant.grades).forEach((score, scoreIndex) => {
-          doc.text(String(score), 50 + (scoreIndex * 30), yPosition); // Adjust X position based on score index
-        });
+          Object.values(participant.grades).forEach((score, scoreIndex) => {
+            doc.text(String(score), 50 + scoreIndex * 30, yPosition) // Adjust X position based on score index
+          })
 
-        doc.text(String(participant.totalScore), 150, yPosition);
-      });
+          doc.text(String(participant.totalScore), 150, yPosition)
+        })
 
       // Save the PDF
-      doc.save('grading_report.pdf');
-
-    } else if (reportOption === 'print') {
-      let categories = participants.members.length > 0 ? participants.members[0].categories : [];
-      const printWindow = window.open('', '', 'height=600,width=800');
+      doc.save("grading_report.pdf")
+    } else if (reportOption === "print") {
+      const categories = participants.length > 0 ? participants[0].categories : []
+      const printWindow = window.open("", "", "height=600,width=800")
       printWindow.document.write(`
         <html>
           <head>
@@ -308,115 +290,124 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           <thead>
             <tr>
           <th>Name</th>
-          ${
-            participants.members.length > 0 ? categories.map(s => `<th>${s}</th>`).join('') : ''
-          }
+          ${participants.length > 0 ? categories.map((s) => `<th>${s}</th>`).join("") : ""}
           <th>Total Score</th>
             </tr>
           </thead>
           <tbody>
-            ${participants.members.map(participant => `
+            ${participants
+              .map(
+                (participant) => `
           <tr>
             <td>${participant.name}</td>
-            ${Object.values(participant.grades).map(score => `<td>${score}</td>`).join('')}
+            ${Object.values(participant.grades)
+              .map((score) => `<td>${score}</td>`)
+              .join("")}
             <td>${participant.totalScore}</td>
           </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
           </body>
         </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+      `)
+      printWindow.document.close()
+      printWindow.print()
     } else {
-      toast.error('Invalid choice. Please select "download" or "print".');
+      toast.error('Invalid choice. Please select "download" or "print".')
     }
-  };
-
-  // Check if there is a previous question
-  const hasPreviousQuestion = () => {
-    return previousRoomCode !== null;
-  };
-
-  // Check if there is a next question
-  const hasNextQuestion = () => {
-    return nextRoomCode !== null;
-  };
+  }
 
   const fetchNextPrevious = async (code) => {
     try {
-      const response = await fetch(`https://www.server.speakeval.org/get_next_previous?code=${code}`);
-      const data = await response.json();
+      const response = await fetch(`https://www.server.speakeval.org/get_next_previous?code=${code}`)
+      const data = await response.json()
       if (data.error) {
-        toast.error(data.error);
-        return {};
+        toast.error(data.error)
+        return {}
       }
-      setNextRoomCode(data.next);
-      setPreviousRoomCode(data.previous);
+      setNextRoomCode(data.next)
+      setPreviousRoomCode(data.previous)
     } catch (error) {
-      console.error("Error fetching next/previous question:", error);
-      toast.error("Could not fetch next or previous question.");
-      return {};
+      console.error("Error fetching next/previous question:", error)
+      toast.error("Could not fetch next or previous question.")
+      return {}
     }
-  };
+  }
 
-  // Move to the next question by updating the room code
-  const handleNextQuestion = async () => {
-    if (showByPerson) return;
-    if (showByPerson) {
-      setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
-    }
-    if (nextRoomCode != null) {
-      setRoomCode(nextRoomCode);
-      setParticipants([]); // Reset participants when changing room code
-    } else {
-      toast.warn("No next question available.");
-    }
-    if (showByPerson) {
-      setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
-      console.log('HI');
-    }
-  };
+  const handleNextQuestion = () => handleNavigateQuestion("next")
+  const handlePreviousQuestion = () => handleNavigateQuestion("previous")
 
-  // Move to the previous question by updating the room code
-  const handlePreviousQuestion = async () => {
-    if (showByPerson) return;
-    if (previousRoomCode != null) {
-      setRoomCode(previousRoomCode);
-      setParticipants([]); // Reset participants when changing room code
+  const toggleViewMode = async () => {
+    setIsLoading(true)
+    const newShowByPerson = !showByPerson
+    setShowByPerson(newShowByPerson)
+
+    if (newShowByPerson) {
+      const baseCode = roomCode.toString().slice(0, -3)
+      const firstQuestionCode = Number.parseInt(baseCode + "001")
+      setRoomCode(firstQuestionCode)
+
+      // Fetch data for all questions
+      const allData = await Promise.all(
+        questionData.questions.map(async (qCode) => {
+          const data = await fetchQuestionData(qCode)
+          return {
+            code: qCode,
+            participants: data ? data.participants : [],
+          }
+        }),
+      )
+
+      // Organize data by participant
+      const participantMap = new Map()
+      allData.forEach(({ code, participants }) => {
+        participants.forEach((participant) => {
+          if (!participantMap.has(participant.name)) {
+            participantMap.set(participant.name, {
+              name: participant.name,
+              questionData: new Map(),
+            })
+          }
+          participantMap.get(participant.name).questionData.set(code, participant)
+        })
+      })
+
+      setParticipants(Array.from(participantMap.values()))
     } else {
-      toast.warn("No previous question available.");
+      await fetchParticipants()
     }
-    if (showByPerson) {
-      setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
-    }
-  };
+
+    setIsLoading(false)
+  }
 
   const handleDisplayNameSubmit = async () => {
     try {
-      const response = await fetch(`https://www.server.speakeval.org/add_display?code=${roomCode}&pin=${pin}&display=${displayName}`);
-      const data = await response.json();
+      const response = await fetch(
+        `https://www.server.speakeval.org/add_display?code=${roomCode}&pin=${pin}&display=${displayName}`,
+      )
+      const data = await response.json()
       if (data.error) {
-        toast.error(data.error);
+        toast.error(data.error)
       } else {
-        toast.success(data.message ? data.message : 'Display name was set');
-        setShowDisplayNameInput(false);
+        toast.success(data.message ? data.message : "Display name was set")
+        setShowDisplayNameInput(false)
       }
     } catch (error) {
-      console.error('Error setting display name:', error);
-      toast.error('Error setting display name');
+      console.error("Error setting display name:", error)
+      toast.error("Error setting display name")
     }
-  };
-
+  }
 
   return (
     <div>
+      {/* Display name modal */}
       {showDisplayNameInput && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div ref={displayNameInputRef} className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-center">Rename this exam, for easy grading</h2>
-            <h3 className="text-lg font-normal mb-4 text-center">Choose a descriptive and unique name</h3>
+            <h2 className="text-xl font-bold mb-4 text-center">Rename this exam</h2>
             <input
               type="text"
               value={displayName}
@@ -426,7 +417,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             />
             <div className="flex justify-center space-x-4">
               <button
-                onClick={handleDisplayNameSubmit}
+                onClick={async () => {
+                  await handleDisplayNameSubmit()
+                  setShowDisplayNameInput(false)
+                }}
                 className="bg-green-500 text-white rounded-lg p-2 shadow-md hover:bg-green-600"
               >
                 Submit
@@ -437,69 +431,158 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
               >
                 Cancel
               </button>
-              
             </div>
           </div>
         </div>
       )}
-    <div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
-      
 
-      {/* Participant count display */}
-        {!showDisplayNameInput && <div className="absolute left-4 flex items-center space-x-4">
-          <div className="bg-white text-black rounded-lg p-3 shadow-md">
-            {fetched ? (
-              <span>Participants: {participants.length}</span>
-            ) : (
-              <span>Loading...</span>
-            )}
+      <div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
+        {/* Header controls */}
+        <div className="w-full px-4 py-2 flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <div className="bg-white text-black rounded-lg p-3 shadow-md">
+              {fetched ? `Participants: ${participants.length}` : "Loading..."}
+            </div>
+            <button
+              onClick={toggleViewMode}
+              className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600"
+            >
+              {showByPerson ? "Show by Question" : "Show by Person"}
+            </button>
           </div>
-          <button
-            onClick={() => {
-            setShowByPerson(!showByPerson);
-            if (!showByPerson) setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
-  
-            setTimeout(() => {
-              if (roomCode.toString().slice(-3) !== '001') {
-                setRoomCode(parseInt(roomCode.toString().slice(0, -3) + '001'));
-              }
-            }, 5000);
-          }}
-          className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600"
-        >
-          {showByPerson ? 'Show by Question' : 'Show by Person'}
-        </button>
-      </div>}
 
-      <div className="absolute right-4 flex items-center space-x-4">
-      <button
-        onClick={() => setShowDisplayNameInput(true)}
-        className="bg-blue-500 text-white px-3 py-2 rounded-lg shadow-md hover:bg-blue-600"
-      >
-        Set Display Name
-      </button>
-        <button
-          onClick={() => setShowRubricModal(true)}
-          className="bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-600"
-        >
-          Show Rubric
-        </button>
-        <select
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
-            style={{ height: '150%' }}
-            value={reportOption}
-            onChange={(e) => handleDownloadReport(e.target.value)}
-          >
-            <option value="">Grade Report</option>
-            <option value="download">Download</option>
-            <option value="print">Print</option>
-          </select>
-          
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setShowDisplayNameInput(true)}
+              className="bg-blue-500 text-white px-3 py-2 rounded-lg shadow-md hover:bg-blue-600"
+            >
+              Set Display Name
+            </button>
+            <button
+              onClick={() => setShowRubricModal(true)}
+              className="bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-600"
+            >
+              Show Rubric
+            </button>
+            <select
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
+              value={reportOption}
+              onChange={(e) => {
+                setReportOption(e.target.value)
+                handleDownloadReport(e.target.value)
+              }}
+            >
+              <option value="">Grade Report</option>
+              <option value="download">Download</option>
+              <option value="print">Print</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Question navigation */}
+        <div className="w-full text-center py-8">
+          <h1 className="text-4xl font-bold mb-4">
+            Grading: {roomCode.toString().slice(0, -3)} (Question #{questionData.currentIndex})
+          </h1>
+          {!showByPerson && (
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => handleNavigateQuestion("previous")}
+                disabled={questionData.currentIndex === 1}
+                className={`px-4 py-2 rounded-lg shadow-md ${
+                  questionData.currentIndex === 1
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-yellow-500 text-white hover:bg-yellow-600"
+                }`}
+              >
+                Previous Question
+              </button>
+              <button
+                onClick={() => handleNavigateQuestion("next")}
+                disabled={questionData.currentIndex === questionData.totalQuestions}
+                className={`px-4 py-2 rounded-lg shadow-md ${
+                  questionData.currentIndex === questionData.totalQuestions
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-yellow-500 text-white hover:bg-yellow-600"
+                }`}
+              >
+                Next Question
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Profile cards grid */}
+        <div className="w-full px-4">
+          {isLoading ? (
+            <div className="flex justify-center items-center min-h-[200px]">
+              <div className="text-xl font-semibold">Loading...</div>
+            </div>
+          ) : showByPerson ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white border border-gray-300">
+                <thead>
+                  <tr>
+                    <th className="py-2 px-4 border-b border-gray-300">Student</th>
+                    {questionData.questions.map((_, index) => (
+                      <th key={index} className="py-2 px-4 border-b border-gray-300">
+                        Question {index + 1}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortParticipants().map((participant, index) => (
+                    <tr key={index}>
+                      <td className="py-2 px-4 border-b border-gray-300">{participant.name}</td>
+                      {questionData.questions.map((questionCode, qIndex) => {
+                        const questionData = participant.questionData ? participant.questionData.get(questionCode) : null
+                        return (
+                          <td key={qIndex} className={`py-2 px-4 border-b border-gray-300 ${questionData ? "" : "text-center"}`}>
+                            {questionData ? (
+                              <ProfileCard
+                                text={questionData.transcription}
+                                rubric={rubric}
+                                audio={questionData.audio}
+                                question={questionData.questionText}
+                                questionBase64={questionData.question}
+                                index={questionData.index}
+                                name={participant.name}
+                                code={questionCode}
+                                onGradeUpdate={handleGradeUpdate}
+                                customName={`Q${qIndex + 1}`}
+                              />
+                            ) : (
+                              <div className="text-gray-400">No submission</div>
+                            )}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sortParticipants().map((participant, index) => (
+                <ProfileCard
+                  key={index}
+                  text={participant.transcription}
+                  rubric={rubric}
+                  audio={participant.audio}
+                  question={participant.questionText}
+                  questionBase64={participant.question}
+                  index={participant.index}
+                  name={participant.name}
+                  code={roomCode}
+                  onGradeUpdate={handleGradeUpdate}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-
-
-
-
       {/* Rubric modal */}
       {showRubricModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -519,17 +602,17 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 </thead>
                 <tbody>
                   {categories.map((category, index) => {
-                    const descriptionParts = descriptions[index] ? descriptions[index].split('|,,|') : [];
+                    const descriptionParts = descriptions[index] ? descriptions[index].split("|,,|") : []
                     return (
                       <tr key={index}>
                         <td className="py-2 px-4 border-b border-gray-300">{category}</td>
                         {descriptionParts.map((part, partIndex) => (
                           <td key={partIndex} className="py-2 px-4 border-b border-gray-300">
-                            {part || 'No description available'}
+                            {part || "No description available"}
                           </td>
                         ))}
                       </tr>
-                    );
+                    )
                   })}
                 </tbody>
               </table>
@@ -545,86 +628,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           </div>
         </div>
       )}
-      <div className="flex items-center justify-center w-screen py-[50px]">
-        <span className="text-6xl font-bold">
-          Grading: {roomCode.toString().slice(0, -3)} (Question #{roomCode.toString().slice(-3)})
-        </span>
-      </div>
-  
-      {/* Navigation buttons */}
-      {!showDisplayNameInput && <div className="flex space-x-4">
-        <button
-          onClick={handlePreviousQuestion}
-          className={`px-4 py-2 rounded-lg shadow-md ${
-            showByPerson || !previousRoomCode ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'
-          }`}
-          disabled={showByPerson || !previousRoomCode}
-        >
-          Previous Question
-        </button>
-        <button
-          onClick={handleNextQuestion}
-          className={`px-4 py-2 rounded-lg shadow-md ${
-            showByPerson || !nextRoomCode ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600'
-          }`}
-          disabled={showByPerson || !nextRoomCode}
-        >
-          Next Question
-        </button>
-      </div>}
-  
-      {/* Profile cards for participants */}
-      {!showDisplayNameInput &&<div className="flex flex-wrap justify-center mt-8 mb-8">
-        {showByPerson ? (
-          <div>
-            <table className="min-w-full bg-white border border-gray-300">
-              <tbody>
-                {participants.map((participant, index) => (
-                  <tr key={index}>
-                    <td className="py-2 px-4 border-b border-gray-300">{participant.name}</td>
-                    {allQuestions.map((question, qIndex) => (
-                      <td key={qIndex} className="py-2 px-4 border-b border-gray-300">
-                        <ProfileCard
-                          text={participant.text}
-                          rubric={rubric}     
-                          audio={participant.audio} 
-                          question={participant.questionText}
-                          questionBase64={participant.question} 
-                          index={participant.index}                             
-                          name={participant}
-                          code={question}
-                          onGradeUpdate={handleGradeUpdate}
-                          customName={'Question ' + (qIndex + 1)}
-                        />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          sortParticipants().map((participant, index) => (
-            <ProfileCard
-              text={participant.transcription}
-              rubric={rubric}
-              audio={participant.audio}                
-              question={participant.questionText}
-              questionBase64={participant.question}
-              index={participant.index}
-              key={index}
-              name={participant.name}
-              code={roomCode}
-              onGradeUpdate={handleGradeUpdate}
-            />
-          ))
-        )}
-      </div>}
     </div>
-    {showDisplayNameInput ? null : <div className="fixed bottom-28 right-4">
-      
-    </div>}
-    </div>
-  );
-}  
-export default TeacherPortalRoom;
+  )
+}
+export default TeacherPortalRoom
+

@@ -21,10 +21,12 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
   useEffect(() => {
     const fetchAudio = async () => {
       const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
-      let audioBlob = new Blob([audioData], { type: 'audio/wav' });
+      let audioBlob = new Blob([audioData], { type: 'audio/ogg' });
+
+      const wavBlob = await convertOggToWav(audioBlob);
 
       try {
-        const audioUrl = URL.createObjectURL(audioBlob);
+        const audioUrl = URL.createObjectURL(wavBlob);
 
         const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
         if (answerAudioPlayer) {
@@ -97,7 +99,6 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
     return new Blob([buffer], { type: 'audio/wav' });
   }
 
-
   const fetchAudioData = async () => {
     try {
       const response = await fetch(
@@ -108,7 +109,8 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
 
       const audioData = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
       const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const wavBlob = await convertOggToWav(audioBlob);
+      const audioUrl = URL.createObjectURL(wavBlob);
 
       const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
       if (answerAudioPlayer) {
@@ -117,7 +119,6 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
 
       readRubric();
 
-      
       setText('Transcription: ' + data.text);
       setQuestion('Question: ' + data.question);
       setIndex(data.index);
@@ -125,12 +126,28 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
       console.error('Error loading audio:', error);
     }
   };
-  
 
   const handleDownload = async () => {
     if (!name)
       return toast.error('Participant has not completed the task');
-    // await fetchAudioData();
+    // Download the wav file from audio in memory using the function
+    const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
+    const audioBlob = new Blob([audioData], { type: 'audio/ogg' });
+
+    const wavBlob = await convertOggToWav(audioBlob);
+
+    const url = URL.createObjectURL(wavBlob);
+
+    const a = document.createElement('a');
+
+    a.href = url;
+
+    a.download = `${name}-${code}.wav`;
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+    
   };
 
   const handlePlay = async () => {
@@ -157,7 +174,7 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
       console.error('Error playing answer audio:', error);
     }
   }
-  
+
   const convertOpusToWav = async (opusBlob) => {
     return opusBlob;
   };
@@ -196,7 +213,7 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
       if (questionBase64) {
         const audioData = Uint8Array.from(atob(questionBase64), c => c.charCodeAt(0));
         const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
-        const audioUrl = URL.createObjectURL(audioBlob);
+        const audioUrl = URL.createObjectURL(wavBlob);
 
         const questionAudioPlayer = document.getElementById(`questionAudioPlayer-${name}-${code}`);
         if (questionAudioPlayer) {
@@ -362,12 +379,12 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
           >
             <FaRobot />
           </button>
-          <button
+          {/* <button
             className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
             onClick={handleDownloadScreenRecording}
           >
             <FaVideo />
-          </button>
+          </button> */}
         </div>
       </div>
       <div>
