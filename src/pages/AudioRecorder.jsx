@@ -664,7 +664,15 @@ export default function AudioRecorder({ code, participant }) {
         </h1>
         {stopped || countdownRef.current > 0 ? (null) : (
           <PulseButton
-            onClick={(isRecording ? stopRecording : playRecording)}
+            onClick={() => {
+              if (isRecording) {
+                stopRecording();
+                Tone.start();
+              } else {
+                playRecording();
+                Tone.start();
+              }
+            }}
             style={isRecording ? recordStyle : {
               width: '80px',
               height: '80px',
