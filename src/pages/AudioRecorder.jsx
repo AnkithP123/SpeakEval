@@ -566,8 +566,8 @@ export default function AudioRecorder({ code, participant }) {
 
 
     const playAudio = () => {
+      console.log('HI: ', audioRef);
       if (audioRef.current) {
-        console.log('HI: ', audioRef);
         console.log(audioRef.current);
         audioRef.current.currentTime = 0;
         audioRef.current.play();
@@ -704,14 +704,16 @@ export default function AudioRecorder({ code, participant }) {
           }}>
             <audio
               controls={!playing && (!audioRef.current || audioRef.current.paused)}
-              ref={audioRef}
+              ref={(input) => {
+                audioRef.current = input;
+              }}
               style={{
                 width: '100%',
                 borderRadius: '8px',
                 boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
                 backgroundColor: '#F8F8F8',
               }}
-
+              src={audioBlobURL}
               onPlay={() => {
                 if (!playing) {
                     countdownRef.current = audioRef.current.duration + 1;
@@ -755,7 +757,7 @@ export default function AudioRecorder({ code, participant }) {
         
               }}
               >
-              <source src={audioBlobURL} type="audio/wav" />
+              {/* <source src={audioBlobURL} type="audio/wav" /> */}
               Your browser does not support the audio element.
             </audio>
           </div>
