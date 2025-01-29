@@ -17,6 +17,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   const [showRubricModal, setShowRubricModal] = useState(false) // New state for rubric modal visibility
   const [rubricContent, setRubricContent] = useState(null) // New state for rubric content
   const [rubric, setRubric] = useState("") // New state for rubric
+  const [rubric2, setRubric2] = useState("") // New state for rubric2
+  const [pointValues, setPointValues] = useState([1, 2, 3, 4, 5]) // New state for point values
   const [fetched, setFetched] = useState(false) // New state for fetched data
   const [showDisplayNameInput, setShowDisplayNameInput] = useState(false)
   const [displayName, setDisplayName] = useState("")
@@ -87,10 +89,16 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       let rubric2 = data.rubric;
 
       if (rubric2 && rubric2.includes('|^^^|')) {
+        const pointValues = rubric2.split("|^^^|")[0].split("|,,|").map(Number);
+        console.log(pointValues);
+        setPointValues(pointValues);
         rubric2 = rubric2.split('|^^^|')[1];
+      
       }
 
-      setRubric(rubric2)
+      setRubric(data.rubric)
+
+      setRubric2(rubric2)
 
       // Parse categories and descriptions
       const [newCategories, newDescriptions] = rubric2
@@ -155,7 +163,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   }
 
   const toggleRubricModal = (rubric) => {
-    setRubricContent(rubric)
+    setRubricContent(rubric2)
     setShowRubricModal(!showRubricModal)
   }
 
@@ -442,7 +450,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         </div>
       )}
 
-      <div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
+      {!showDisplayNameInput && (<div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
         {/* Header controls */}
         <div className="w-full px-4 py-2 flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -549,6 +557,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                               <ProfileCard
                                 text={questionData.transcription}
                                 rubric={rubric}
+                                rubric2={rubric2}
                                 audio={questionData.audio}
                                 question={questionData.questionText}
                                 questionBase64={questionData.question}
@@ -576,6 +585,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                   key={index}
                   text={participant.transcription}
                   rubric={rubric}
+                  rubric2={rubric2}
                   audio={participant.audio}
                   question={participant.questionText}
                   questionBase64={participant.question}
@@ -588,7 +598,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             </div>
           )}
         </div>
-      </div>
+      </div>)}
       {/* Rubric modal */}
       {showRubricModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -599,11 +609,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 <thead>
                   <tr>
                     <th className="py-2 px-4 border-b border-gray-300">Category</th>
-                    <th className="py-2 px-4 border-b border-gray-300">1</th>
-                    <th className="py-2 px-4 border-b border-gray-300">2</th>
-                    <th className="py-2 px-4 border-b border-gray-300">3</th>
-                    <th className="py-2 px-4 border-b border-gray-300">4</th>
-                    <th className="py-2 px-4 border-b border-gray-300">5</th>
+                    {pointValues.map((value, index) => (
+                      <th key={index} className="py-2 px-4 border-b border-gray-300">{value}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>

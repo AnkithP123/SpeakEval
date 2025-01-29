@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaVideo } from 'react-icons/fa';
 
-function ProfileCard({ text, rubric, audio, question, index, questionBase64, name, code, onGradeUpdate, customName }) {
+function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBase64, name, code, onGradeUpdate, customName }) {
   const [completed, setCompleted] = useState(false);
   const [grades, setGrades] = useState({});
   const [justifications, setJustifications] = useState({});
@@ -189,7 +189,8 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
       if (rubric2 && rubric2.includes('|^^^|')) {
         rubric2 = rubric2.split('|^^^|')[1];
       }
-      setRubric(rubric2);
+      setRubric(data.rubric);
+      setRubric2(rubric2);
       setQuestionBase64(data.audios[0]);
     } catch (error) {
       console.error('Error loading rubric:', error);
@@ -259,11 +260,11 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
       });
       setTotalScore(total);
 
-      let categories = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
+      let categories = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
         return element.split('|:::|')[0];
       });
 
-      let descriptions = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
+      let descriptions = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
         return element.split('|:::|')[1].replace('|,,,|', '\n\n');
       });
 
@@ -412,7 +413,7 @@ function ProfileCard({ text, rubric, audio, question, index, questionBase64, nam
           {text}
         </div>
         <div className="mt-2 text-gray-800 break-words">
-          {rubric !== '' && text !== '' ? rubric.split('|;;|').map((element, index) => {
+          {rubric2 !== '' && text !== '' ? rubric2.split('|;;|').map((element, index) => {
             const [rubricItem, rubricKey] = element.split('|:::|');
             return (
               <div key={index} className="flex items-center relative z-10">
