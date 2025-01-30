@@ -18,8 +18,10 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     }
   }, [name]);
 
+  let fetchAudio;
+
   useEffect(() => {
-    const fetchAudio = async () => {
+    fetchAudio = async () => {
       const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
       let audioBlob = new Blob([audioData], { type: 'audio/ogg' });
 
@@ -158,7 +160,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     }
     try {
       const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
-      if (answerAudioPlayer) {
+      if (answerAudioPlayer && answerAudioPlayer.src) {
         if (isPlaying) {
           answerAudioPlayer.pause(); // Pause the audio
           setIsPlaying(false); // Update the playback status
@@ -169,6 +171,8 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
             setIsPlaying(false); // Reset the state when the audio finishes
           });  
         }
+      } else {
+        fetchAudio();
       }
     } catch (error) {
       console.error('Error playing answer audio:', error);
@@ -329,7 +333,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     }
 
     let comments = 'AI Grade based on the rubric set by the teacher:\n\n';
-    rubric.split('|;;|').forEach((element, index) => {
+    rubric2.split('|;;|').forEach((element, index) => {
       const [rubricItem] = element.split('|:::|');
       comments += `${rubricItem}: ${justifications[index] || 'AI was not used in the grading process, and there is no description to give'}\n\n`;
     });
