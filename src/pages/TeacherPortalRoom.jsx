@@ -76,6 +76,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   }
 
   const fetchParticipants = async () => {
+    setIsLoading(true);
     setFetched(false)
     try {
       const response = await fetch(`https://www.server.speakeval.org/downloadall?code=${roomCode}`)
@@ -108,6 +109,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           ]
         : [[], []]
 
+      console.log('Rubric2:', rubric2)
+
+      console.log('New Categories:', newCategories)
+
       setCategories(newCategories)
       setDescriptions(newDescriptions)
 
@@ -123,6 +128,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       toast.error("Error fetching participants")
       setFetched(true)
     }
+
+    setIsLoading(false)
   }
 
   const fetchQuestionData = async (questionCode) => {
@@ -167,31 +174,76 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     setShowRubricModal(!showRubricModal)
   }
 
-  const handleGradeUpdate = (participantName, grades, totalScore, categories, descriptions) => {
-    setParticipants((prevParticipants) => {
-      return prevParticipants.map((participant) => {
-        if (participant.name === participantName) {
-          return {
-            ...participant,
-            grades,
-            totalScore,
-          }
-        }
-        return participant
-      })
-    })
+  const handleGradeUpdate = (participantName, customName, grades, totalScore, categories, descriptions) => {
+    const baseCode = roomCode.toString().slice(0, -3)
+    const questionCode = customName ? Number.parseInt(baseCode + customName.substring(1).toString().padStart(3, "0")) : roomCode
 
-    setCategories(categories)
-    setDescriptions(descriptions)
+    if (customName) {
+      setParticipants((prevParticipants) => {
+        return prevParticipants.map((participant) => {
+          if (participant.name === participantName) {
+            const updatedQuestionData = new Map(participant.questionData)
+            if (updatedQuestionData.has(questionCode)) {
+              updatedQuestionData.set(questionCode, {
+                ...updatedQuestionData.get(questionCode),
+                grades,
+                totalScore,
+              })
+            }
+            return {
+              ...participant,
+              questionData: updatedQuestionData,
+            }
+          }
+          return participant
+        })
+      })
+    } else {
+      setParticipants((prevParticipants) => {
+        return prevParticipants.map((participant) => {
+          if (participant.name === participantName) {
+            return {
+              ...participant,
+              grades,
+              totalScore,
+            }
+          }
+          return participant
+        })
+      })
+    }
+
+    console.log(participants)
   }
 
   // Sorting logic based on selected option and order
   const sortParticipants = () => {
-    return [...participants].sort((a, b) => {
+    if (sortOption === "none") {
+      return participants;
+    }
+    return participants.sort((a, b) => {
       if (sortOption === "name") {
-        return sortOrder === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
+        return sortOrder === "asc" 
+          ? a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) 
+          : b.name.localeCompare(a.name, undefined, { sensitivity: 'base' });
+      }
+      if (sortOption === "lastName") {
+          const aLastName = (a.name.split(" ").length > 1 ? (a.name.split(" ").slice(-1)[0] || "") : sortOrder === "asc" ? "zzzzzz" : "aaaaaa") + " " + a.name;
+          const bLastName = (b.name.split(" ").length > 1 ? (b.name.split(" ").slice(-1)[0] || "") : sortOrder === "asc" ? "zzzzzz" : "aaaaaa") + " " + b.name;
+          console.log('A:', aLastName)
+          console.log('B:', bLastName)
+
+          if (!aLastName && !bLastName) {
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+          }
+          if (!aLastName) return 1;
+          if (!bLastName) return -1;
+          return sortOrder === "asc" 
+        ? aLastName.localeCompare(bLastName, undefined, { sensitivity: 'base' }) 
+        : bLastName.localeCompare(aLastName, undefined, { sensitivity: 'base' });
       }
       if (sortOption === "totalScore") {
+        console.log('Sorting by total score:', a, b);
         return sortOrder === "asc" ? a.totalScore - b.totalScore : b.totalScore - a.totalScore
       }
       if (sortOption.startsWith("category")) {
@@ -209,130 +261,107 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"))
   }
 
-  // Create a report from the grades
-  const createGradesReport = () => {
-    let report = "Grading Report:\n"
-    participants.forEach((participant) => {
-      const categories = participant.categories
-      report += `${participant.name}:\n`
-      for (let i = 0; i < categories.length; i++) {
-        report += `\t${categories[i]}: ${participant.grades[i]}\n`
-      }
-      report += `\tTotal Score: ${participant.totalScore}\n\n`
-    })
-
-    setGradesReport(report)
-    return report
-  }
-
   // Download or print report based on user choice
-  const handleDownloadReport = (reportOption) => {
-    const report = createGradesReport()
+const handleDownloadReport = (reportOption) => {
+    if (!participants.length) {
+        toast.error("No data available for report generation.");
+        return;
+    }
+
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("Grading Report", 105, 15, null, null, "center");
+    doc.setFontSize(12);
+
+    let yOffset = 25;
+
+    if (showByPerson) {
+      participants.forEach((participant, pIndex) => {
+        doc.setFont("helvetica", "bold");
+        doc.text(`Student: ${participant.name}`, 15, yOffset);
+        yOffset += 6;
+
+        questionData.questions.forEach((questionCode, qIndex) => {
+          const questionDataEntry = participant.questionData
+            ? participant.questionData.get(questionCode)
+            : null;
+
+          if (questionDataEntry) {
+            doc.setFont("helvetica", "normal");
+            const questionText = `Q${qIndex + 1}: ${questionDataEntry.questionText || "No question available"}`;
+            const wrappedQuestionText = doc.splitTextToSize(questionText, 180);
+            doc.text(wrappedQuestionText, 15, yOffset);
+            yOffset += wrappedQuestionText.length * 5;
+
+            const splitText = doc.splitTextToSize(`Transcript: ${questionDataEntry.transcription || "No response available"}`, 180);
+            doc.text(splitText, 15, yOffset);
+            yOffset += splitText.length * 5;
+
+            doc.text(`Score: ${questionDataEntry.totalScore || "N/A"}`, 15, yOffset);
+            yOffset += 5;
+
+            categories.forEach((category, cIndex) => {
+              const score = questionDataEntry.grades?.[cIndex] ?? "N/A";
+              doc.text(`${category}: ${score}`, 20, yOffset);
+              yOffset += 4;
+            });
+
+            yOffset += 6;
+
+            if (yOffset > 270) {
+              doc.addPage();
+              yOffset = 25;
+            }
+          }
+        });
+
+        if (pIndex < participants.length - 1) {
+          yOffset += 25;
+          if (yOffset > 270) {
+            doc.addPage();
+            yOffset = 25;
+          }
+        }
+      });
+    } else {
+        doc.setFont("helvetica", "bold");
+        doc.text(`Question #${questionData.currentIndex}`, 15, yOffset);
+        yOffset += 8;
+
+        participants.forEach((participant, index) => {
+            doc.setFont("helvetica", "bold");
+            doc.text(`Student: ${participant.name}`, 15, yOffset);
+            yOffset += 6;
+
+            doc.setFont("helvetica", "normal");
+            doc.text(`Score: ${participant.totalScore || participant.totalScore == 0 ? participant.totalScore : "N/A"}`, 15, yOffset);
+            yOffset += 5;
+
+            categories.forEach((category, cIndex) => {
+                const score = participant.grades?.[cIndex] ?? "N/A";
+                doc.text(`${category}: ${score}`, 20, yOffset);
+                yOffset += 4;
+            });
+
+            yOffset += 6;
+
+            if (yOffset > 270 && index < participants.length - 1) {
+                doc.addPage();
+                yOffset = 25;
+            }
+        });
+    }
 
     if (reportOption === "download") {
-      const categories = participants.length > 0 ? participants[0].categories : []
-      // make a pdf instead of printing
-      const doc = new jsPDF()
-
-      // Set the title and format the document
-      doc.setFont("Arial", "normal")
-      doc.setFontSize(16)
-      doc.text("Grading Report", 10, 10)
-
-      // Table headings
-
-      let yPosition = 20
-      doc.setFontSize(12)
-      doc.text("Name", 10, yPosition)
-      categories.forEach((category, index) => {
-        doc.text(category, 50 + index * 30, yPosition) // Adjust X position based on index
-      })
-      doc.text("Total Score", 150, yPosition)
-
-      // Add table rows for each participant
-      participants
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .forEach((participant, index) => {
-          yPosition += 10 // Move down to the next line
-
-          doc.text(participant.name, 10, yPosition)
-
-          Object.values(participant.grades).forEach((score, scoreIndex) => {
-            doc.text(String(score), 50 + scoreIndex * 30, yPosition) // Adjust X position based on score index
-          })
-
-          doc.text(String(participant.totalScore), 150, yPosition)
-        })
-
-      // Save the PDF
-      doc.save("grading_report.pdf")
+        doc.save("grading_report.pdf");
     } else if (reportOption === "print") {
-      const categories = participants.length > 0 ? participants[0].categories : []
-      const printWindow = window.open("", "", "height=600,width=800")
-      printWindow.document.write(`
-        <html>
-          <head>
-        <title>Grading Report</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-          th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-          }
-          th {
-            background-color: #f2f2f2;
-          }
-          tr:nth-child(even) {
-            background-color: #f9f9f9;
-          }
-          tr:hover {
-            background-color: #ddd;
-          }
-        </style>
-          </head>
-          <body>
-        <h2>Grading Report</h2>
-        <table>
-          <thead>
-            <tr>
-          <th>Name</th>
-          ${participants.length > 0 ? categories.map((s) => `<th>${s}</th>`).join("") : ""}
-          <th>Total Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${participants
-              .map(
-                (participant) => `
-          <tr>
-            <td>${participant.name}</td>
-            ${Object.values(participant.grades)
-              .map((score) => `<td>${score}</td>`)
-              .join("")}
-            <td>${participant.totalScore}</td>
-          </tr>
-            `,
-              )
-              .join("")}
-          </tbody>
-        </table>
-          </body>
-        </html>
-      `)
-      printWindow.document.close()
-      printWindow.print()
+        doc.autoPrint();
+        window.open(doc.output("bloburl"), "_blank");
     } else {
-      toast.error('Invalid choice. Please select "download" or "print".')
+        toast.error('Invalid choice. Please select "download" or "print".');
     }
-  }
+};
 
   const fetchNextPrevious = async (code) => {
     try {
@@ -390,11 +419,15 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       })
 
       setParticipants(Array.from(participantMap.values()))
+
     } else {
       await fetchParticipants()
     }
 
     setIsLoading(false)
+
+    console.log("participants: ", participants)
+
   }
 
   const handleDisplayNameSubmit = async () => {
@@ -467,6 +500,29 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
           <div className="flex items-center space-x-4">
             <button
+              onClick={toggleSortOrder}
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600"
+            >
+              {sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />}
+            </button>
+            <select
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+            >
+              <option value="none">None</option>
+              <option value="name">Sort by Name</option>
+              <option value="lastName">Sort by Last Name</option>
+
+              {/* <option value="totalScore">Sort by Total Score</option> */}
+              {/* categories.map((category, index) => (
+                <option key={index} value={`category-${index}`}>
+                  Sort by {category}
+                </option>
+              )) */}
+            </select>
+            
+            <button
               onClick={() => setShowDisplayNameInput(true)}
               className="bg-blue-500 text-white px-3 py-2 rounded-lg shadow-md hover:bg-blue-600"
             >
@@ -482,7 +538,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
               className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
               value={reportOption}
               onChange={(e) => {
-                setReportOption(e.target.value)
+                // setReportOption(e.target.value)
                 handleDownloadReport(e.target.value)
               }}
             >

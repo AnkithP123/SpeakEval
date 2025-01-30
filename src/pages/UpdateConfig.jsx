@@ -18,6 +18,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     const [questions, setQuestions] = useState([]); // State to store recorded questions
     const [recording, setRecording] = useState(false); // State to track recording status
     const [categories, setCategories] = useState([{ name: '', descriptions: Array(5).fill('') }]); // State to store categories and their descriptions
+    const [pointValues, setPointValues] = useState([1, 2, 3, 4, 5]); // Default point values
     const [maxTime, setMaxTime] = useState(''); // State to store the max time limit
     const [selectedLanguage, setSelectedLanguage] = useState(''); // State to store the selected language
     const navigate = useNavigate();
@@ -195,7 +196,11 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     };
 
     const handleAddCategory = () => {
-        setCategories((prevCategories) => [...prevCategories, { name: '', descriptions: Array(5).fill('') }]);
+        setCategories((prevCategories) => [...prevCategories, { name: '', descriptions: Array(pointValues.length).fill('') }]);
+    };
+
+    const handleDeleteCategory = (index) => {
+        setCategories((prevCategories) => prevCategories.filter((_, i) => i !== index));
     };
 
     const handleCategoryNameChange = (index, e) => {
@@ -211,9 +216,52 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
         const { value } = e.target;
         setCategories((prevCategories) => {
             const updatedCategories = [...prevCategories];
-            // Update the specific description for the point within the category
             updatedCategories[categoryIndex].descriptions[pointIndex] = value;
             return updatedCategories;
+        });
+    };
+
+    const handleAddPointValue = () => {
+        const newPoint = pointValues.length > 0 ? Math.max(...pointValues) + 1 : 1;
+        setPointValues((prevPointValues) => [newPoint, ...prevPointValues]);
+        setCategories((prevCategories) =>
+            prevCategories.map((category) => ({
+                ...category,
+                descriptions: ['', ...category.descriptions],
+            }))
+        );
+    };
+
+    const handleAddPointValue2 = () => {
+        const newPoint = pointValues.length > 1 
+            ? pointValues[pointValues.length - 1] - (pointValues[pointValues.length - 2] - pointValues[pointValues.length - 1]) 
+            : (pointValues.length === 1 ? pointValues[0] - 1 : 1);
+        setPointValues((prevPointValues) => [...prevPointValues, newPoint]);
+        setCategories((prevCategories) =>
+            prevCategories.map((category) => ({
+                ...category,
+                descriptions: [...category.descriptions, ''],
+            }))
+        );
+    };
+
+
+    const handleDeletePointValue = (index) => {
+        setPointValues((prevPointValues) => prevPointValues.filter((_, i) => i !== index));
+        setCategories((prevCategories) =>
+            prevCategories.map((category) => {
+                const updatedDescriptions = category.descriptions.filter((_, i) => i !== index);
+                return { ...category, descriptions: updatedDescriptions };
+            })
+        );
+    };
+
+    const handlePointValueChange = (index, e) => {
+        const { value } = e.target;
+        setPointValues((prevPointValues) => {
+            const updatedValues = [...prevPointValues];
+            updatedValues[index] = parseFloat(value) || 0;
+            return updatedValues;
         });
     };
 
@@ -223,10 +271,6 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
 
     const handleLanguageChange = (e) => {
         setSelectedLanguage(e.target.value);
-    };
-
-    const handleDeleteCategory = (index) => {
-        setCategories((prevCategories) => prevCategories.filter((_, i) => i !== index));
     };
 
     const handleRegisterConfig = async () => {
@@ -301,7 +345,14 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     const handleConfigClick = (config) => {
         // convert the rubric, which is currently a string using the separators, back into an array of objects
 
-        const categories = config.rubric.split('|;;|').map((category) => {
+        let rubric2 = config.rubric
+
+        if (config.rubric && config.rubric.includes("|^^^|")) {
+            setPointValues(rubric2.split("|^^^|")[0].split('|,,|'))
+            rubric2 = rubric2.split("|^^^|")[1]
+        }
+
+        const categories = rubric2.split('|;;|').map((category) => {
             const [name, descriptionsString] = category.split('|:::|');
             const descriptions = descriptionsString.split('|,,|');
             return { name, descriptions };
@@ -427,6 +478,17 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     };
     
     const rubricCellStyle = {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'white',
+        color: 'black',
+        padding: '8px',
+        borderRadius: '16px',
+        border: '1px solid #E6F3FF',
+    };
+
+    const rubricCellStyle2 = {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -690,20 +752,53 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                                         <div key={index} className="sparkle" style={style}></div>
                                     ))}
                                 </button>
-                            </div>
-    
+                            </div>                            
                             <div style={rubricContainerStyle}>
+                                <div style={{ gridColumn: `span 1` }}></div> {/* Blank line */}
+
+                                <button
+                                    onClick={handleAddPointValue}
+                                    style={rubricCellStyle2}
+                                >
+                                    Add Point Value
+                                </button>
+                                {new Array(Math.max(0, pointValues.length - 2)).fill(null).map((_, index) => (
+                                    <div key={index} style={{ gridColumn: `span 1` }}></div>
+                                ))}
+                                <button
+                                    onClick={handleAddPointValue2}
+                                    style={rubricCellStyle2}
+                                >
+                                    Add Point Value
+                                </button>
+                                <div style={{ gridColumn: `span ${Math.max(6, pointValues.length + 1)}` }}></div> {/* Blank line */}
+
                                 <div style={rubricHeaderStyle}>Category</div>
-                                {[5, 4, 3, 2, 1].map((point) => (
-                                    <div key={point} style={rubricCellStyle}>
-                                        {point}
+                                {pointValues.map((value, index) => (
+                                    <div key={index} style={rubricCellStyle}>
+                                        <input
+                                            type="number"
+                                            value={value}
+                                            onChange={(e) => handlePointValueChange(index, e)}
+                                            style={{ width: '100%', textAlign: 'center' }}
+                                            step="0.5"
+                                        />
+                                        <button
+                                            onClick={() => handleDeletePointValue(index)}
+                                            style={{ marginLeft: '8px', cursor: 'pointer', color: 'red' }}
+                                        >
+                                            &#x2715;
+                                        </button>
                                     </div>
                                 ))}
+
+                                <div style={{ gridColumn: `span ${Math.max(6, pointValues.length + 1)}` }}></div> {/* Blank line */}
+                                
                                 {categories.map((category, index) => (
                                     <React.Fragment key={index}>
                                         <div style={rubricCellStyle}>
                                             <span
-                                                style={deleteButtonStyle}
+                                                style={{ marginRight: '8px', cursor: 'pointer', color: 'red' }}
                                                 onClick={() => handleDeleteCategory(index)}
                                             >
                                                 &#x2715;
@@ -712,27 +807,26 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                                                 type="text"
                                                 value={category.name}
                                                 onChange={(e) => handleCategoryNameChange(index, e)}
-                                                maxLength={50}
                                                 placeholder="Category Name"
+                                                style={{ width: 'auto' }}
                                             />
                                         </div>
-                                        {[5, 4, 3, 2, 1].map((point) => (
+                                        {pointValues.map((_, pointIndex) => (
                                             <input
-                                                key={point}
+                                                key={pointIndex}
                                                 type="text"
-                                                value={category.descriptions[point - 1]}
-                                                onChange={(e) =>
-                                                    handleCategoryDescriptionChange(index, point - 1, e)
-                                                }
+                                                value={category.descriptions[pointIndex]}
+                                                onChange={(e) => handleCategoryDescriptionChange(index, pointIndex, e)}
                                                 style={rubricCellStyle}
-                                                maxLength={500}
-                                                placeholder={`Description ${point}`}
+                                                placeholder={`Description ${pointValues.length - pointIndex}`}
                                             />
                                         ))}
+                                        <div style={{ gridColumn: `span ${Math.max(6, pointValues.length + 1)}` }}></div> {/* Blank line */}
+
                                     </React.Fragment>
                                 ))}
                             </div>
-                            <button onClick={handleAddCategory} style={buttonStyle}>
+                            <button onClick={handleAddCategory} style={{ marginTop: '16px', ...rubricCellStyle }}>
                                 Add Category
                             </button>
                         </Card>

@@ -17,8 +17,8 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     const [shake, setShake] = useState(false); // State to trigger shake effect
     const [questions, setQuestions] = useState([]); // State to store recorded questions
     const [recording, setRecording] = useState(false); // State to track recording status
-    const [categories, setCategories] = useState([{ name: '', descriptions: Array(4).fill('') }]);
-    const [pointValues, setPointValues] = useState([4, 3, 2, 1]); // Default point values
+    const [categories, setCategories] = useState([{ name: '', descriptions: Array(5).fill('') }]);
+    const [pointValues, setPointValues] = useState([5, 4, 3, 2, 1]); // Default point values
     const [maxTime, setMaxTime] = useState(''); // State to store the max time limit
     const [selectedLanguage, setSelectedLanguage] = useState(''); // State to store the selected language
     const navigate = useNavigate();
@@ -192,12 +192,27 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     };
 
     const handleAddPointValue = () => {
-        const newPoint = pointValues.length > 0 ? Math.max(...pointValues) + 1 : 1;
+        const newPoint = pointValues.length > 1 
+            ? pointValues[0] + (pointValues[0] - pointValues[1]) 
+            : (pointValues.length === 1 ? pointValues[0] + 1 : 1);
         setPointValues((prevPointValues) => [newPoint, ...prevPointValues]);
         setCategories((prevCategories) =>
             prevCategories.map((category) => ({
                 ...category,
                 descriptions: ['', ...category.descriptions],
+            }))
+        );
+    };
+
+    const handleAddPointValue2 = () => {
+        const newPoint = pointValues.length > 1 
+            ? pointValues[pointValues.length - 1] - (pointValues[pointValues.length - 2] - pointValues[pointValues.length - 1]) 
+            : (pointValues.length === 1 ? pointValues[0] - 1 : 1);
+        setPointValues((prevPointValues) => [...prevPointValues, newPoint]);
+        setCategories((prevCategories) =>
+            prevCategories.map((category) => ({
+                ...category,
+                descriptions: [...category.descriptions, ''],
             }))
         );
     };
@@ -309,7 +324,16 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     const handleConfigClick = (config) => {
         // convert the rubric, which is currently a string using the separators, back into an array of objects
 
-        const categories = config.rubric.split('|;;|').map((category) => {
+        let rubric2 = config.rubric
+
+        if (config.rubric && config.rubric.includes("|^^^|")) {
+            setPointValues(rubric2.split("|^^^|")[0].split('|,,|'))
+            rubric2 = rubric2.split("|^^^|")[1]
+        } else if (rubric2) {
+            setPointValues([1, 2, 3, 4, 5])
+        }
+
+        const categories = rubric2.split('|;;|').map((category) => {
             const [name, descriptionsString] = category.split('|:::|');
             const descriptions = descriptionsString.split('|,,|');
             return { name, descriptions };
@@ -424,6 +448,17 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     
     const rubricCellStyle = {
         width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'white',
+        color: 'black',
+        padding: '8px',
+        borderRadius: '16px',
+        border: '1px solid #E6F3FF',
+    };
+
+    const rubricCellStyle2 = {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -689,12 +724,25 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                                 </button>
                             </div>                            
                             <div style={rubricContainerStyle}>
+                                <div style={{ gridColumn: `span 1` }}></div> {/* Blank line */}
+
                                 <button
                                     onClick={handleAddPointValue}
-                                    style={{ width: '100%', gridColumn: `span ${Math.max(6, pointValues.length + 1)}`, ...rubricCellStyle }}
+                                    style={rubricCellStyle2}
                                 >
                                     Add Point Value
                                 </button>
+                                {new Array(Math.max(0, pointValues.length - 2)).fill(null).map((_, index) => (
+                                    <div key={index} style={{ gridColumn: `span 1` }}></div>
+                                ))}
+                                <button
+                                    onClick={handleAddPointValue2}
+                                    style={rubricCellStyle2}
+                                >
+                                    Add Point Value
+                                </button>
+                                <div style={{ gridColumn: `span ${Math.max(6, pointValues.length + 1)}` }}></div> {/* Blank line */}
+
                                 <div style={rubricHeaderStyle}>Category</div>
                                 {pointValues.map((value, index) => (
                                     <div key={index} style={rubricCellStyle}>
@@ -790,7 +838,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                                     type="text"
                                     value={id}
                                     onChange={(e) => setId(e.target.value)}
-                                    style={rubricCellStyle}
+                                    style={rubricCellStyle2}
                                     maxLength={15}
                                     placeholder="Enter Name for Set"
                                 />

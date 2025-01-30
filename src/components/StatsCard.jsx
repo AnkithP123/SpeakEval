@@ -269,7 +269,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       });
 
 
-      onGradeUpdate(name, grades, total, categories, descriptions);
+      onGradeUpdate(name, customName, grades, total, categories, descriptions);
 
     } catch (error) {
       console.error('Error getting grade:', error);
@@ -299,7 +299,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
 
     console.log('Updated categories:', categories);
     
-    onGradeUpdate(name, updatedGrades, total, categories, descriptions);
+    onGradeUpdate(name, customName, updatedGrades, total, categories, descriptions);
 
   };
 
