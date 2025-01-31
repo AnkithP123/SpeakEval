@@ -221,40 +221,40 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     if (sortOption === "none") {
       return participants;
     }
-    return participants.sort((a, b) => {
+    return [...participants].sort((a, b) => {
       if (sortOption === "name") {
-        return sortOrder === "asc" 
-          ? a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) 
-          : b.name.localeCompare(a.name, undefined, { sensitivity: 'base' });
+      return sortOrder === "asc" 
+        ? a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) 
+        : b.name.localeCompare(a.name, undefined, { sensitivity: 'base' });
       }
       if (sortOption === "lastName") {
-          const aLastName = (a.name.split(" ").length > 1 ? (a.name.split(" ").slice(-1)[0] || "") : sortOrder === "asc" ? "zzzzzz" : "aaaaaa") + " " + a.name;
-          const bLastName = (b.name.split(" ").length > 1 ? (b.name.split(" ").slice(-1)[0] || "") : sortOrder === "asc" ? "zzzzzz" : "aaaaaa") + " " + b.name;
-          console.log('A:', aLastName)
-          console.log('B:', bLastName)
+        const aLastName = (a.name.split(" ").length > 1 ? (a.name.split(" ").slice(-1)[0] || "") : sortOrder === "asc" ? "zzzzzz" : "aaaaaa") + " " + a.name;
+        const bLastName = (b.name.split(" ").length > 1 ? (b.name.split(" ").slice(-1)[0] || "") : sortOrder === "asc" ? "zzzzzz" : "aaaaaa") + " " + b.name;
+        console.log('A:', aLastName)
+        console.log('B:', bLastName)
 
-          if (!aLastName && !bLastName) {
-        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-          }
-          if (!aLastName) return 1;
-          if (!bLastName) return -1;
-          return sortOrder === "asc" 
-        ? aLastName.localeCompare(bLastName, undefined, { sensitivity: 'base' }) 
-        : bLastName.localeCompare(aLastName, undefined, { sensitivity: 'base' });
+        if (!aLastName && !bLastName) {
+      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+        }
+        if (!aLastName) return 1;
+        if (!bLastName) return -1;
+        return sortOrder === "asc" 
+      ? aLastName.localeCompare(bLastName, undefined, { sensitivity: 'base' }) 
+      : bLastName.localeCompare(aLastName, undefined, { sensitivity: 'base' });
       }
       if (sortOption === "totalScore") {
-        console.log('Sorting by total score:', a, b);
-        return sortOrder === "asc" ? a.totalScore - b.totalScore : b.totalScore - a.totalScore
+      console.log('Sorting by total score:', a, b);
+      return sortOrder === "asc" ? a.totalScore - b.totalScore : b.totalScore - a.totalScore
       }
       if (sortOption.startsWith("category")) {
-        const categoryIndex = Number.parseInt(sortOption.split("-")[1], 10)
-        return sortOrder === "asc"
-          ? (a.grades[categoryIndex] || 0) - (b.grades[categoryIndex] || 0)
-          : (b.grades[categoryIndex] || 0) - (a.grades[categoryIndex] || 0)
+      const categoryIndex = Number.parseInt(sortOption.split("-")[1], 10)
+      return sortOrder === "asc"
+        ? (a.grades[categoryIndex] || 0) - (b.grades[categoryIndex] || 0)
+        : (b.grades[categoryIndex] || 0) - (a.grades[categoryIndex] || 0)
       }
       return 0
     })
-  }
+    }
 
   // Toggle sort order (flip-flop between ascending and descending)
   const toggleSortOrder = () => {
@@ -262,106 +262,157 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   }
 
   // Download or print report based on user choice
-const handleDownloadReport = (reportOption) => {
-    if (!participants.length) {
-        toast.error("No data available for report generation.");
-        return;
-    }
+  const handleDownloadReport = (reportOption) => {
+      if (!participants.length) {
+          toast.error("No data available for report generation.");
+          return;
+      }
 
-    const doc = new jsPDF();
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("Grading Report", 105, 15, null, null, "center");
-    doc.setFontSize(12);
+      const doc = new jsPDF();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Grading Report", 105, 15, null, null, "center");
+      doc.setFontSize(12);
 
-    let yOffset = 25;
+      let yOffset = 25;
 
-    if (showByPerson) {
-      participants.forEach((participant, pIndex) => {
-        doc.setFont("helvetica", "bold");
-        doc.text(`Student: ${participant.name}`, 15, yOffset);
-        yOffset += 6;
+      // Calculate column widths
+      const maxNameLength = Math.max(...participants.map(p => p.name.length));
+      const nameColumnWidth = Math.max(25, maxNameLength * 2.5);
+      const startX = 15;
+      const startY = yOffset;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const remainingWidth = pageWidth - startX - nameColumnWidth - 15; // 15 for right margin
+      const cellWidth = remainingWidth / (showByPerson ? questionData.questions.length + 1 : 1);
+      const cellHeight = 10;
 
-        questionData.questions.forEach((questionCode, qIndex) => {
-          const questionDataEntry = participant.questionData
-            ? participant.questionData.get(questionCode)
-            : null;
+      // Draw header row with questions
+      doc.setFont("helvetica", "bold");
+      doc.text("Student", startX, startY + cellHeight / 2, { baseline: "middle" });
+      if (showByPerson) {
+        questionData.questions.forEach((_, qIndex) => {
+            doc.text(`Q${qIndex + 1}`, startX + nameColumnWidth + (qIndex + 1) * cellWidth, startY + cellHeight / 2, { baseline: "middle", align: "center" });
+        });
+      } else {
+        doc.text(`Q${questionData.currentIndex}`, startX + nameColumnWidth + cellWidth, startY + cellHeight / 2, { baseline: "middle", align: "center" });
+      }
+      if (showByPerson)
+        doc.text("Total", startX + nameColumnWidth + (showByPerson ? questionData.questions.length + 1 : 1) * cellWidth, startY + cellHeight / 2, { baseline: "middle", align: "center" });
 
-          if (questionDataEntry) {
-            doc.setFont("helvetica", "normal");
-            const questionText = `Q${qIndex + 1}: ${questionDataEntry.questionText || "No question available"}`;
-            const wrappedQuestionText = doc.splitTextToSize(questionText, 180);
-            doc.text(wrappedQuestionText, 15, yOffset);
-            yOffset += wrappedQuestionText.length * 5;
+      doc.setFont("helvetica", "plain");
+      // Draw participant rows with grades
+      sortParticipants().forEach((participant, pIndex) => {
+          const y = startY + (pIndex + 1) * cellHeight;
+          doc.text(participant.name, startX, y + cellHeight / 2, { baseline: "middle" });
 
-            const splitText = doc.splitTextToSize(`Transcript: ${questionDataEntry.transcription || "No response available"}`, 180);
-            doc.text(splitText, 15, yOffset);
-            yOffset += splitText.length * 5;
-
-            doc.text(`Score: ${questionDataEntry.totalScore || "N/A"}`, 15, yOffset);
-            yOffset += 5;
-
-            categories.forEach((category, cIndex) => {
-              const score = questionDataEntry.grades?.[cIndex] ?? "N/A";
-              doc.text(`${category}: ${score}`, 20, yOffset);
-              yOffset += 4;
+          if (showByPerson) {
+            let totalScore = 0;
+            questionData.questions.forEach((questionCode, qIndex) => {
+                const questionDataEntry = participant.questionData ? participant.questionData.get(questionCode) : null;
+                const score = questionDataEntry && (questionDataEntry.totalScore || questionDataEntry.totalScore == 0)? questionDataEntry.totalScore : "N/A";
+                if (score > 0)
+                  totalScore += score;
+                doc.text(`${score}`, startX + nameColumnWidth + (qIndex + 1) * cellWidth, y + cellHeight / 2, { baseline: "middle", align: "center" });
             });
+            doc.text(`${totalScore}`, startX + nameColumnWidth + (showByPerson ? questionData.questions.length + 1: 1) * cellWidth, y + cellHeight / 2, { baseline: "middle", align: "center" });
+          } else {
+            const score = participant.totalScore || participant.totalScore == 0 ? participant.totalScore : "N/A";
+            doc.text(`${score}`, startX + nameColumnWidth + cellWidth, y + cellHeight / 2, { baseline: "middle", align: "center" });
+          }
+      });
 
-            yOffset += 6;
+      yOffset += (participants.length + 1) * cellHeight + 10;
 
+      // Add a page break after the roster
+      doc.addPage();
+      yOffset = 25;
+
+      if (showByPerson) {
+        sortParticipants().forEach((participant, pIndex) => {
+          doc.setFont("helvetica", "bold");
+          doc.text(`Student: ${participant.name}`, 15, yOffset);
+          yOffset += 6;
+
+          questionData.questions.forEach((questionCode, qIndex) => {
+            const questionDataEntry = participant.questionData
+              ? participant.questionData.get(questionCode)
+              : null;
+
+            if (questionDataEntry) {
+              doc.setFont("helvetica", "normal");
+              const questionText = `Q${qIndex + 1}: ${questionDataEntry.questionText || "No question available"}`;
+              const wrappedQuestionText = doc.splitTextToSize(questionText, 180);
+              doc.text(wrappedQuestionText, 15, yOffset);
+              yOffset += wrappedQuestionText.length * 5;
+
+              const splitText = doc.splitTextToSize(`Transcript: ${questionDataEntry.transcription || "No response available"}`, 180);
+              doc.text(splitText, 15, yOffset);
+              yOffset += splitText.length * 5;
+
+              doc.text(`Score: ${questionDataEntry.totalScore || "N/A"}`, 15, yOffset);
+              yOffset += 5;
+
+              categories.forEach((category, cIndex) => {
+                const score = questionDataEntry.grades?.[cIndex] ?? "N/A";
+                doc.text(`${category}: ${score}`, 20, yOffset);
+                yOffset += 4;
+              });
+
+              yOffset += 6;
+
+              if (yOffset > 270) {
+                doc.addPage();
+                yOffset = 25;
+              }
+            }
+          });
+
+          if (pIndex < participants.length - 1) {
+            yOffset += 25;
             if (yOffset > 270) {
               doc.addPage();
               yOffset = 25;
             }
           }
         });
+      } else {
+          doc.setFont("helvetica", "bold");
+          doc.text(`Question #${questionData.currentIndex}`, 15, yOffset);
+          yOffset += 8;
 
-        if (pIndex < participants.length - 1) {
-          yOffset += 25;
-          if (yOffset > 270) {
-            doc.addPage();
-            yOffset = 25;
-          }
-        }
-      });
-    } else {
-        doc.setFont("helvetica", "bold");
-        doc.text(`Question #${questionData.currentIndex}`, 15, yOffset);
-        yOffset += 8;
+          sortParticipants().forEach((participant, index) => {
+              doc.setFont("helvetica", "bold");
+              doc.text(`Student: ${participant.name}`, 15, yOffset);
+              yOffset += 6;
 
-        participants.forEach((participant, index) => {
-            doc.setFont("helvetica", "bold");
-            doc.text(`Student: ${participant.name}`, 15, yOffset);
-            yOffset += 6;
+              doc.setFont("helvetica", "normal");
+              doc.text(`Score: ${participant.totalScore || participant.totalScore == 0 ? participant.totalScore : "N/A"}`, 15, yOffset);
+              yOffset += 5;
 
-            doc.setFont("helvetica", "normal");
-            doc.text(`Score: ${participant.totalScore || participant.totalScore == 0 ? participant.totalScore : "N/A"}`, 15, yOffset);
-            yOffset += 5;
+              categories.forEach((category, cIndex) => {
+                  const score = participant.grades?.[cIndex] ?? "N/A";
+                  doc.text(`${category}: ${score}`, 20, yOffset);
+                  yOffset += 4;
+              });
 
-            categories.forEach((category, cIndex) => {
-                const score = participant.grades?.[cIndex] ?? "N/A";
-                doc.text(`${category}: ${score}`, 20, yOffset);
-                yOffset += 4;
-            });
+              yOffset += 6;
 
-            yOffset += 6;
+              if (yOffset > 270 && index < participants.length - 1) {
+                  doc.addPage();
+                  yOffset = 25;
+              }
+          });
+      }
 
-            if (yOffset > 270 && index < participants.length - 1) {
-                doc.addPage();
-                yOffset = 25;
-            }
-        });
-    }
-
-    if (reportOption === "download") {
-        doc.save("grading_report.pdf");
-    } else if (reportOption === "print") {
-        doc.autoPrint();
-        window.open(doc.output("bloburl"), "_blank");
-    } else {
-        toast.error('Invalid choice. Please select "download" or "print".');
-    }
-};
+      if (reportOption === "download") {
+          doc.save("grading_report.pdf");
+      } else if (reportOption === "print") {
+          doc.autoPrint();
+          window.open(doc.output("bloburl"), "_blank");
+      } else {
+          toast.error('Invalid choice. Please select "download" or "print".');
+      }
+  };
 
   const fetchNextPrevious = async (code) => {
     try {
