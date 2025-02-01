@@ -36,7 +36,7 @@ function Room() {
             return navigate('/join-room');
         }
         if (parsedData.code === 69) {
-            toast.error("UUID and name don't match");
+            toast.error("The IP this user joined from is different than your current IP");
             console.log(parsedData);
             return navigate('/join-room');
         }
