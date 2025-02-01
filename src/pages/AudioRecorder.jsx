@@ -7,7 +7,9 @@ import * as Tone from 'tone';
 import { useReactMediaRecorder } from "react-media-recorder";
 import { toast } from 'react-toastify';
 
-export default function AudioRecorder({ code, participant }) {
+
+//TODO add some UUID checks (marked with comments)
+export default function AudioRecorder({ code, participant, uuid }) {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState(null);
   const [isError, setIsError] = useState(true);
@@ -152,7 +154,7 @@ export default function AudioRecorder({ code, participant }) {
   }
 
   async function sendStatus() {
-    const response = await fetch(`https://www.server.speakeval.org/check_status?code=${code}&participant=${participant}`);
+    const response = await fetch(`https://www.server.speakeval.org/check_status?code=${code}&participant=${participant}&uuid=${uuid}`);
     if (!response.ok) {
       setError('Failed to fetch status');
       setIsError(true);
@@ -166,7 +168,7 @@ export default function AudioRecorder({ code, participant }) {
     const responseCode = data.code;
 
     if (responseCode === 7) {
-      window.location.href = `record?code=${data.newRoomCode}&participant=${participant}`;
+      window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`;
     }
 
     if (mediaRecorder.current && mediaRecorder.current.state === 'inactive' && !playing && !isRecording) {
@@ -387,7 +389,7 @@ export default function AudioRecorder({ code, participant }) {
     }
 
 
-    await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`);
+    await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`); //TODO add a check here
 
     interval = setInterval(() => {
     // Only decrement if the current timer is greater than zero
@@ -457,12 +459,12 @@ export default function AudioRecorder({ code, participant }) {
         closeOnOutsideClick: true,
       }).then(async (event) => {
         if (event === "primaryButtonClicked") {
-          window.open(`feedback?name=${participant}&code=${code}`, '_blank', 'noopener,noreferrer');
+          window.open(`feedback?name=${participant}&code=${code}`, '_blank', 'noopener,noreferrer'); //TODO add a check here
         }
       });
     }, 3000);
 
-    let response = await fetch(`https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
+    let response = await fetch(`https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`, { //TODO add a check here
       method: 'POST',
       body: formData
     });
@@ -470,7 +472,7 @@ export default function AudioRecorder({ code, participant }) {
     if (!response.ok) {
       transcriptionResult.textContent = 'Failed to upload audio. Retrying until success...';
       const retryInterval = setInterval(async () => {
-        let retryResponse = await fetch(`https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`, {
+        let retryResponse = await fetch(`https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`, { //TODO add a check here
           method: 'POST',
           body: formData
         });
@@ -526,7 +528,7 @@ export default function AudioRecorder({ code, participant }) {
 
   const uploadScreen = async (formData) => {
     try {
-      let response = await fetch(`https://www.server.speakeval.org/upload_screen?code=${code}&participant=${participant}&index=${questionIndex}`, {
+      let response = await fetch(`https://www.server.speakeval.org/upload_screen?code=${code}&participant=${participant}&index=${questionIndex}`, { //TODO add a check here
         method: 'POST',
         body: formData
       });

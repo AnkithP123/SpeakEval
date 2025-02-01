@@ -24,9 +24,10 @@ function AudioRecorderRouteWrapper() {
   const queryParams = new URLSearchParams(location.search);
   const code = queryParams.get('code');
   const participant = queryParams.get('participant');
+  const uuid = queryParams.get('uuid');
 
   // You can pass code and participant as props to AudioRecorder if needed
-  return <AudioRecorder code={code} participant={participant} />;
+  return <AudioRecorder code={code} participant={participant} uuid={uuid} />;
 }
 
 
