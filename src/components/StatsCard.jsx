@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaVideo } from 'react-icons/fa';
+import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaVideo, FaSpinner } from 'react-icons/fa';
 
 function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBase64, name, code, onGradeUpdate, customName }) {
   const [completed, setCompleted] = useState(false);
@@ -8,7 +8,8 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   const [justifications, setJustifications] = useState({});
   const [totalScore, setTotalScore] = useState(0);
   const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false); // New state variable for audio playback
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // New state variable for loading
 
   useEffect(() => {
     if (name) {
@@ -22,17 +23,26 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
 
   useEffect(() => {
     fetchAudio = async () => {
-      const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
-      let audioBlob = new Blob([audioData], { type: 'audio/ogg' });
-
-      const wavBlob = await convertOggToWav(audioBlob);
-
       try {
-        const audioUrl = URL.createObjectURL(wavBlob);
+        const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
+        let audioBlob = new Blob([audioData], { type: 'audio/ogg' });
 
-        const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
-        if (answerAudioPlayer) {
-          answerAudioPlayer.src = audioUrl;
+        try {
+          const wavBlob = await convertOggToWav(audioBlob);
+
+          const audioUrl = URL.createObjectURL(wavBlob);
+
+          const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
+          if (answerAudioPlayer) {
+            answerAudioPlayer.src = audioUrl;
+          }
+        } catch (err) {
+          const audioUrl = URL.createObjectURL(audioBlob);
+
+          const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
+          if (answerAudioPlayer) {
+            answerAudioPlayer.src = audioUrl;
+          }
         }
       } catch (error) {
         console.log('Error loading audio:', error);
@@ -101,56 +111,6 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     return new Blob([buffer], { type: 'audio/wav' });
   }
 
-  const fetchAudioData = async () => {
-    try {
-      const response = await fetch(
-        `https://www.server.speakeval.org/download?code=${code}&participant=${name}`
-      );
-      const data = await response.json();
-      if (data.error) return toast.error(data.error);
-
-      const audioData = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
-      const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
-      const wavBlob = await convertOggToWav(audioBlob);
-      const audioUrl = URL.createObjectURL(wavBlob);
-
-      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
-      if (answerAudioPlayer) {
-        answerAudioPlayer.src = audioUrl;
-      }
-
-      readRubric();
-
-      setText('Transcription: ' + data.text);
-      setQuestion('Question: ' + data.question);
-      setIndex(data.index);
-    } catch (error) {
-      console.error('Error loading audio:', error);
-    }
-  };
-
-  const handleDownload = async () => {
-    if (!name)
-      return toast.error('Participant has not completed the task');
-    // Download the wav file from audio in memory using the function
-    const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
-    const audioBlob = new Blob([audioData], { type: 'audio/ogg' });
-
-    const wavBlob = await convertOggToWav(audioBlob);
-
-    const url = URL.createObjectURL(wavBlob);
-
-    const a = document.createElement('a');
-
-    a.href = url;
-
-    a.download = `${name}-${code}.wav`;
-
-    a.click();
-
-    URL.revokeObjectURL(url);
-    
-  };
 
   const handlePlay = async () => {
     if (!name)
@@ -159,61 +119,58 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       // await fetchAudioData();
     }
     try {
+      setIsLoading(true); // Set loading state to true
       const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
       if (answerAudioPlayer && answerAudioPlayer.src) {
         if (isPlaying) {
-          answerAudioPlayer.pause(); // Pause the audio
+          await answerAudioPlayer.pause(); // Pause the audio
           setIsPlaying(false); // Update the playback status
         } else {
-          answerAudioPlayer.play(); // Play the audio
+          await answerAudioPlayer.play(); // Play the audio
+          setIsLoading(false)
           setIsPlaying(true); // Update the playback status
           answerAudioPlayer.addEventListener('ended', () => {
             setIsPlaying(false); // Reset the state when the audio finishes
-          });  
+          });
         }
       } else {
-        fetchAudio();
+        await fetchAudio();
       }
     } catch (error) {
       console.error('Error playing answer audio:', error);
+    } finally {
+      setIsLoading(false); // Set loading state to false
     }
   }
 
-  const convertOpusToWav = async (opusBlob) => {
-    return opusBlob;
+  const handleDownload = async () => {
+    if (!name)
+      return toast.error('Participant has not completed the task');
+    // Download the wav file from audio in memory using the function
+    const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
+    const audioBlob = new Blob([audioData], { type: 'audio/ogg' });
+
+    const a = document.createElement('a');
+
+    try {
+      const wavBlob = await convertOggToWav(audioBlob);
+
+      const url = URL.createObjectURL(wavBlob);
+
+      a.href = url;
+    } catch (err) {
+      const url = URL.createObjectURL(audioBlob);
+
+      a.href = url;
+
+    }
+
+    a.download = `${name}-${code}.wav`;
+
+    a.click();
+
+    URL.revokeObjectURL(url);
   };
-
-  const readRubric = async () => {
-    try {
-      const response = await fetch(
-        `https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${name}`
-      );
-      const data = await response.json();
-      let rubric2 = data.rubric;
-      if (rubric2 && rubric2.includes('|^^^|')) {
-        rubric2 = rubric2.split('|^^^|')[1];
-      }
-      setRubric(data.rubric);
-      setRubric2(rubric2);
-      setQuestionBase64(data.audios[0]);
-    } catch (error) {
-      console.error('Error loading rubric:', error);
-    }
-  }
-
-  const fetchQuestion = async () => {
-    try {
-      const response = await fetch(
-        `https://www.server.speakeval.org/getquestion?code=${code}&index=${index}`
-      );
-      const data = await response.json();
-      if (data.error) return toast.error(data.error);
-
-      return data.audio;
-    } catch (error) {
-      console.error('Error loading question audio:', error);
-    }
-  }
 
   const handlePlayQuestion = async () => {
     if (!name)
@@ -271,7 +228,6 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       let descriptions = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
         return element.split('|:::|')[1].replace('|,,,|', '\n\n');
       });
-
 
       onGradeUpdate(name, customName, grades, total, categories, descriptions);
 
@@ -381,7 +337,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
             className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
             onClick={handlePlay}
           >
-            {isPlaying ? <FaPause /> : <FaPlay />} {/* Render stop button if audio is playing */}
+            {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)} {/* Render loading icon if loading */}
           </button>
           <button
             className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"

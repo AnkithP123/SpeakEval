@@ -79,8 +79,16 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     setIsLoading(true);
     setFetched(false)
     try {
-      const response = await fetch(`https://www.server.speakeval.org/downloadall?code=${roomCode}`)
+      const response = await fetch(`https://www.server.speakeval.org/downloadall?code=${roomCode}`, {
+        headers: {
+          'Cache-Control': 'no-store',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+      })
+
       const data = await response.json()
+
 
       if (data.error) {
         toast.error(data.error)
@@ -123,11 +131,17 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
       setParticipants(uniqueParticipants)
       setFetched(true)
+      setIsLoading(false)
     } catch (error) {
-      console.error("Error fetching participants:", error)
-      toast.error("Error fetching participants")
+      if (error.name === 'AbortError') {
+        toast.error("Request timed out");
+      } else {
+        console.error("Error fetching participants:", error)
+        toast.error("Error fetching participants")
+      }
       setFetched(true)
     }
+
 
     setIsLoading(false)
   }
