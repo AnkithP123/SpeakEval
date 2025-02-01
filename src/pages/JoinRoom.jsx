@@ -18,8 +18,9 @@ function JoinRoom() {
         toast.error(parsedData.message);
         return navigate('/join-room');
       }
-      console.log(roomCode);
-      navigate(`/room/${roomCode}?name=${name}`);
+      console.log(parsedData);
+      console.log(`/room/${roomCode}?name=${name}&uuid=${parsedData.participant.id}`)
+      navigate(`/room/${roomCode}?name=${name}&uuid=${parsedData.participant.id}`);
       // Add your join logic here
     } else {
       console.log('Please fill out both fields.');

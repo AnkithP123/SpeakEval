@@ -7,6 +7,7 @@ import { cuteAlert } from 'cute-alert';
 function Room() {
     const [searchParams] = useSearchParams();
     const name = searchParams.get('name');
+    const uuid = searchParams.get('uuid');
     let { roomCode } = useParams();
     const navigate = useNavigate();
     const [recording, setRecording] = useState(false);
@@ -16,7 +17,8 @@ function Room() {
     const audioChunksRef = useRef([]);
 
     const checkStatus = async () => {
-        let res = await fetch(`https://www.server.speakeval.org/check_status?code=${roomCode}&participant=${name}`);
+        console.log(`uuid: ${uuid}, name: ${name}, roomCode: ${roomCode}`);
+        let res = await fetch(`https://www.server.speakeval.org/check_status?code=${roomCode}&participant=${name}&uuid=${uuid}`);
         let parsedData = await res.json();
         if (parsedData.code === 1) {
             return;
@@ -31,6 +33,11 @@ function Room() {
         }
         if (parsedData.code === 4) {
             toast.error("Room doesn't exist");
+            return navigate('/join-room');
+        }
+        if (parsedData.code === 69) {
+            toast.error("UUID and name don't match");
+            console.log(parsedData);
             return navigate('/join-room');
         }
     };
