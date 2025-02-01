@@ -48,22 +48,22 @@ function App() {
   const route = createBrowserRouter(
     createRoutesFromElements(
       <>
-        <Route path="/" element={<MainLayout set={gold} set2={ultimate} set3={setGold} set4={setUltimate}/>}>
+        {/* <Route path="/" element={<MainLayout set={gold} set2={ultimate} set3={setGold} set4={setUltimate}/>}>
           <Route path="/" element={<HomePage />} />
           <Route path="/create-room" element={<CreateRoom set={setGold} setUltimate={setUltimate} getPin={getPin}/>} />
           <Route path="/join-room" element={<JoinRoom rooms={[]} />} />
           <Route path="/room/:roomCode" element={<Room />} />
           <Route path="/teacher-portal" element={<TeacherPortalRouter set={setGold} setUltimate={setUltimate} getPin={getPin}/>} />
-          <Route path="/configure" element={<Configure set={setGold} setUltimate={setUltimate} getPin={getPin} subscribed={gold || ultimate}/>} />
+          <Route path="/configure" element={<C`onfigure set={setGold} setUltimate={setUltimate} getPin={getPin} subscribed={gold || ultimate}/>} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/upgrade" element={<Upgrade set={setGold} setUltimate={setUltimate}/>} />
           <Route path="/card-payment" element={<CardPayment />} />
           <Route path="/upgraded" element={<Upgraded  set={setGold} setUltimate={setUltimate} getPin={getPin}/>} />
           <Route path="/login" element={<LoginPage set={setGold} setUltimate={setUltimate} setUsername={setUserName} setPin={setPin} />} />
           <Route path="/update" element={<RoomAndConfigPage   set={setGold} setUltimate={setUltimate} getPin={getPin} subscribed={gold || ultimate}/>} />
-          <Route path="*" element={<Maintainence />} />
         </Route>
-        <Route path="/record" element={<AudioRecorderRouteWrapper />} />
+        <Route path="/record" element={<AudioRecorderRouteWrapper />} /> */}
+        <Route path="/*" element={<Maintainence />} />
       </>
     )
   );
