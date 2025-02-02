@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Play, Square, Repeat } from 'lucide-react';
 import styled, { css, keyframes } from "styled-components";
 import { cuteAlert } from 'cute-alert';
@@ -32,6 +32,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
   const [waiting, setWaiting] = useState(false);
   let [premium, setPremium] = useState(false);
   let questionIndex;
+
+  const navigate = useNavigate();
 
   // set the status interval
   useEffect(() => {
