@@ -55,7 +55,7 @@ const FeedbackPage = () => {
             setSubmitted(true);
         } else {
             console.error('Error submitting feedback');
-            toast.error('Error submitting feedback');
+            toast.error(response.error || 'Error submitting feedback');
         }
     };
 
