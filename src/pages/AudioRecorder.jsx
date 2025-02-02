@@ -738,8 +738,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
               
               onEnded={() => {
                 if (!finished) {
-                    setFinished(true);
                     setPlaying(false);
+                    setFinished(true);
                     // Countdown logic
                     countdownRef.current = 5;
                         
