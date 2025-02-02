@@ -185,15 +185,16 @@ export default function AudioRecorder({ code, participant, uuid }) {
     console.log('Response code:', responseCode);
     switch (responseCode) {
       case 1:
-        window.location.href = 'join-room';
+        navigate('/join-room');
         break;
       case 2:
-        window.location.href = 'join-room';
+        toast.error("You are not in the room");
+        navigate('/join-room');
         break;
       case 3:
         break;
       case 4:
-        window.location.href = 'join-room';
+        navigate('/join-room');
         break;
       case 5:
         if (error === 'Reaching time limit. Please finish your response in the next 5 seconds. ') {
@@ -210,8 +211,13 @@ export default function AudioRecorder({ code, participant, uuid }) {
         break;
       case 7:
         break;
+      case 9:
+        toast.error("The IP this user joined from is different than your current IP. If this is a mistake, tell your teacher to remove you and rejoin with the same name.");
+        console.log(parsedData);
+        navigate('/join-room');
+        break;    
       default:
-        window.location.href = 'join-room';
+        navigate('/join-room');
         break;
     }
   }

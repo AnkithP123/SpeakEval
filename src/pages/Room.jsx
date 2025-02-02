@@ -24,7 +24,7 @@ function Room() {
             return;
         }
         if (parsedData.code === 2) {
-            toast.error("You have been removed from the room");
+            toast.error("You are not in the room");
             return navigate('/join-room');
         }
         if (parsedData.code === 3) {
@@ -35,8 +35,8 @@ function Room() {
             toast.error("Room doesn't exist");
             return navigate('/join-room');
         }
-        if (parsedData.code === 69) {
-            toast.error("The IP this user joined from is different than your current IP");
+        if (parsedData.code === 9) {
+            toast.error("The IP this user joined from is different than your current IP. If this is a mistake, tell your teacher to remove you and rejoin with the same name.");
             console.log(parsedData);
             return navigate('/join-room');
         }
