@@ -77,7 +77,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
     console.log('Start button clicked');
     toast.success('Room started');
     
-    document.querySelector('.text-6xl').innerHTML = `<a href="/teacher-portal" class="text-6xl font-bold">Click to go to grading page</a>`;
+    // document.querySelector('.text-6xl').innerHTML = `<a href="/teacher-portal" class="text-6xl font-bold">Click to go to grading page</a>`;
     setRoomStarted(true);
 
   };
