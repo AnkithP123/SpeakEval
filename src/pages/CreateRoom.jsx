@@ -189,23 +189,6 @@ function CreateRoom({ initialUserId = '', set, setUltimate, getPin }) {
     };
 
     return (
-        !loggedIn ? 
-        <div>
-            <title hidden>Create Room</title>
-            <div style={containerStyle} className={shake ? 'shake' : ''}>
-                <title hidden>Join Room</title>
-                <input
-                    type="password"
-                    value={userId}
-                    onChange={handleInputChange}
-                    style={inputStyle}
-                    maxLength={30}
-                    placeholder="Enter Teacher Pin"
-                    onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
-                />
-                <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-            </div>
-        </div> : 
         !isConfigEntered ? 
         <div>
             <title hidden>Create Room</title>

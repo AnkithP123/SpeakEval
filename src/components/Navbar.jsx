@@ -6,10 +6,16 @@ let username;
 
 let setUserName = (val) => {
   username = val;
+  console.log('New Username!', username)
 };
 
 const storedUsername = localStorage.getItem('username');
-if (storedUsername) {
+const storedToken = localStorage.getItem('token');
+if (!storedToken) {
+  localStorage.removeItem('username');
+  setUserName(null);
+}
+else if (storedUsername) {
   setUserName(storedUsername);
   console.log('Username:', storedUsername);
 }
@@ -44,7 +50,7 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
     }
 
     // Fetch the pin from local storage or an API endpoint
-    const storedPin = localStorage.getItem('pin');
+    const storedPin = localStorage.getItem('token');
     if (storedPin) {
       setPin(storedPin);
     }
@@ -63,6 +69,7 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
     setUserName(null);
     localStorage.removeItem('pin');
     setPin(null);
+    localStorage.removeItem('token');
     navigate('/');
   };
 

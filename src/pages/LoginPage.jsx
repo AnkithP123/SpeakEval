@@ -1,48 +1,77 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import './CreateRoom.css'; // Optional for styling like shake animation
+import './LoginPage.css'; // Import the CSS file
 
 function LoginPage({ set, setUltimate, setUsername, setPin }) {
-  const [userId, setUserId] = useState('');
-  const [shake, setShake] = useState(false); // Shake effect for incorrect input
+  // Local state for the input fields
+  const [usernameInput, setUsernameInput] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [isRegister, setIsRegister] = useState(false);
+  const [shake, setShake] = useState(false);
   const navigate = useNavigate();
-
   const [searchParams] = useSearchParams();
-
   const redirect = searchParams.get('redirect');
 
-
-  const handleInputChange = (e) => {
-    setUserId(e.target.value.toUpperCase());
-  };
+  // On mount, check for an existing token in localStorage.
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Optionally, decode the token to get the username.
+      const storedUsername = localStorage.getItem('username');
+      if (storedUsername) {
+        setUsername(storedUsername);
+      }
+      navigate(redirect || '/');
+    }
+  }, [navigate, redirect, setUsername]);
 
   const handleLogin = async () => {
     try {
-      const res = await fetch(`https://www.server.speakeval.org/teacherpin?pin=${userId}`);
+      const endpoint = isRegister ? '/register' : '/login';
+      const payload = isRegister
+        ? { email, username: usernameInput, password }
+        : { username: usernameInput, password };
+
+      const res = await fetch(`https://www.server.speakeval.org${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
       const data = await res.json();
 
-      if (data.code === 401) {
-        toast.error('Incorrect Teacher Pin');
-        setShake(true); // Trigger shake animation
+      if (res.status !== 200) {
+        toast.error(data.error || 'Error occurred');
+        setShake(true);
         setTimeout(() => setShake(false), 500);
-        setUserId('');
         return;
       }
 
-      if (data.subscription) {
-        set(data.subscription !== 'free');
-        setUltimate(data.subscription === 'Ultimate');
-    }
+      if (data.token) {
+        // Save token and username in localStorage to persist login
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', usernameInput);
 
+        // Call the passed-in setters:
+        console.log('Set Username: ', setUsername);
+        setUsername(usernameInput);
+        setPin(data.token); // or data.pin if your backend returns one
+        // If your backend returns a subscription property, set it here:
+        if (data.subscription) {
+          // For example, set 'set' to true if the subscription is not free,
+          // and setUltimate to true if it equals 'Ultimate'
+          set(data.subscription !== 'free');
+          setUltimate(data.subscription === 'Ultimate');
+        } else {
+          // Otherwise, you may default to free
+          set(false);
+          setUltimate(false);
+        }
 
-      if (data.code === 200 && data.name) {
-        setUsername(data.name);
-        setPin(userId);
-        localStorage.setItem('username', data.name);
-        localStorage.setItem('pin', userId);
         navigate(redirect || '/');
-      } else {
+      } else if (!isRegister) {
         toast.error('Unexpected error. Please try again.');
       }
     } catch (err) {
@@ -59,80 +88,48 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
     }
   };
 
-  const containerStyle = {
-    position: 'relative',
-    padding: '10px 20px',
-    borderRadius: '10px',
-    backgroundColor: 'white',
-    color: 'white',
-    fontFamily: "sans-serif",
-    fontSize: '18px',
-    boxShadow: '0 0 10px rgba(0, 0, 0, 0.5)',
-    maxWidth: '300px',
-    margin: '20px auto',
-    textAlign: 'center',
-  };
-
-  const inputStyle = {
-      width: 'calc(100% - 50px)',
-      padding: '10px',
-      border: 'none',
-      backgroundColor: 'transparent',
-      color: 'black',
-      fontFamily: 'inherit',
-      fontSize: 'inherit',
-      textAlign: 'center',
-      outline: 'none',
-      letterSpacing: '2px',
-      marginRight: '10px',
-  };
-
-  const buttonStyle = {
-      backgroundColor: 'black',
-      border: 'none',
-      color: 'white',
-      padding: '5px 10px',
-      textAlign: 'center',
-      fontFamily: 'Montserrat',
-      fontSize: '16px',
-      margin: '4px 2px',
-      cursor: 'pointer',
-      borderRadius: '5px',
-  };
-
-  const chipStyle = {
-      display: 'inline-block',
-      padding: '5px 10px',
-      margin: '5px',
-      borderRadius: '15px',
-      backgroundColor: '#f0f0f0',
-      color: '#333',
-      fontSize: '14px',
-      cursor: 'pointer',
-  };
-
-
-  const titleStyle = {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    marginBottom: '20px',
-    color: 'black',
-  };
-  
   return (
-    <div>
-        <div style={containerStyle} className={shake ? 'shake' : ''}>
-            <input
-                type="password"
-                value={userId}
-                onChange={handleInputChange}
-                style={inputStyle}
-                maxLength={30}
-                placeholder="Enter Teacher Pin"
-                onKeyUp={handleKeyPress}
-            />
-            <button onClick={handleLogin} style={buttonStyle}>Log In</button>
-        </div>
+    <div className={`login-container ${shake ? 'shake' : ''}`}>
+      <div className="login-title">{isRegister ? 'Register' : 'Log In'}</div>
+      {isRegister && (
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="login-input"
+          placeholder="Enter Email"
+          onKeyUp={handleKeyPress}
+        />
+      )}
+      <input
+        type="text"
+        value={usernameInput}
+        onChange={(e) => setUsernameInput(e.target.value)}
+        className="login-input"
+        placeholder="Enter Username"
+        onKeyUp={handleKeyPress}
+      />
+      <input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="login-input"
+        placeholder="Enter Password"
+        onKeyUp={handleKeyPress}
+      />
+      <button onClick={handleLogin} className="login-button">
+        {isRegister ? 'Register' : 'Log In'}
+      </button>
+      <div>
+        <span
+          className="login-toggle"
+          onClick={() => setIsRegister(!isRegister)}
+        >
+          {isRegister
+            ? 'Already have an account? Log In'
+            : 'Need to register? Sign Up'}
+        </span>
+      </div>
     </div>
   );
 }

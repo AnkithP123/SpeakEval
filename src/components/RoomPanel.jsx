@@ -77,7 +77,14 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
     console.log('Start button clicked');
     toast.success('Room started');
     
-    // document.querySelector('.text-6xl').innerHTML = `<a href="/teacher-portal" class="text-6xl font-bold">Click to go to grading page</a>`;
+    const roomCodeElement = document.querySelector('.text-6xl');
+    if (roomCodeElement) {
+      roomCodeElement.style.color = 'white';
+      roomCodeElement.style.background = 'linear-gradient(135deg, rgba(128,128,128,0.8) 25%, transparent 25%, transparent 50%, rgba(128,128,128,0.8) 50%, rgba(128,128,128,0.8) 75%, transparent 75%, transparent)';
+      roomCodeElement.style.backgroundSize = '20px 20px';
+      roomCodeElement.style.padding = '10px';
+      roomCodeElement.style.borderRadius = '5px';
+    }
     setRoomStarted(true);
 
   };
