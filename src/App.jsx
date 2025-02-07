@@ -17,6 +17,7 @@ import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider, u
 import LoginPage from './pages/LoginPage';
 import { getPin, setPin, setUserName } from './components/Navbar';
 import RoomAndConfigPage from './pages/UpdateConfig';
+import VerifyPage from './pages/VerifyPage';
 
 // Custom component to handle /test route with query parameters
 function AudioRecorderRouteWrapper() {
@@ -61,6 +62,7 @@ function App() {
           <Route path="/upgraded" element={<Upgraded  set={setGold} setUltimate={setUltimate} getPin={getPin}/>} />
           <Route path="/login" element={<LoginPage set={setGold} setUltimate={setUltimate} setUsername={setUserName} setPin={setPin} />} />
           <Route path="/update" element={<RoomAndConfigPage   set={setGold} setUltimate={setUltimate} getPin={getPin} subscribed={gold || ultimate}/>} />
+          <Route path="/verify" element={<VerifyPage />} />
           <Route path="*" element={<Maintainence />} />
         </Route>
         <Route path="/record" element={<AudioRecorderRouteWrapper />} />

@@ -74,6 +74,13 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
       } else if (!isRegister) {
         toast.error('Unexpected error. Please try again.');
       }
+      if (data.message) {
+        toast.success(data.message);
+      }
+
+      if (isRegister) {
+        navigate('/verify?email=' + encodeURIComponent(email));
+      }
     } catch (err) {
       console.error('Login Error:', err);
       toast.error('Failed to connect. Please try again.');
