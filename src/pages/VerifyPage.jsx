@@ -25,32 +25,7 @@ function VerifyPage() {
   const handleCodeChange = (e) => {
     setCode(e.target.value)
   }
-
-  const handleResendCode = async () => {
-    if (!email) {
-      return toast.error("Please enter your email first.")
-    }
-    setIsSubmitting(true)
-    try {
-      const res = await fetch("https://www.server.speakeval.org/resend-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      })
-      const data = await res.json()
-      if (data.message) {
-        toast.success(data.message)
-      } else {
-        toast.error(data.error || "Failed to resend code.")
-      }
-    } catch (error) {
-      console.error("Error resending code:", error)
-      toast.error("Error resending verification code.")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
+  
   const handleVerify = async () => {
     if (!email || !code) {
       return toast.error("Please enter both email and verification code.")
@@ -93,7 +68,7 @@ function VerifyPage() {
     borderRadius: "10px",
     boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
     width: "100%",
-    maxWidth: "400px",
+    maxWidth: "600px",
     textAlign: "center",
   }
 
@@ -140,6 +115,9 @@ function VerifyPage() {
     <div style={containerStyle}>
       <div style={cardStyle}>
         <h2 style={headingStyle}>Verify Your Account</h2>
+        <p style={{ marginBottom: "1.5rem" }}>
+          Please enter your email address and the verification code sent to your email to verify your account. If you can't see the content in the email, try opening it on a desktop or another app.
+        </p>
         {!emailFromParams && (
           <>
             <input
@@ -148,8 +126,8 @@ function VerifyPage() {
               value={email}
               onChange={handleEmailChange}
               style={inputStyle}
+              aria-label="Email Address"
             />
-            
           </>
         )}
         <input
@@ -158,6 +136,7 @@ function VerifyPage() {
           value={code}
           onChange={handleCodeChange}
           style={inputStyle}
+          aria-label="Verification Code"
         />
         <button onClick={handleVerify} style={isSubmitting ? disabledButtonStyle : buttonStyle} disabled={isSubmitting}>
           {isSubmitting ? "Verifying..." : "Verify"}
@@ -168,4 +147,3 @@ function VerifyPage() {
 }
 
 export default VerifyPage
-
