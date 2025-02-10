@@ -455,22 +455,23 @@ export default function AudioRecorder({ code, participant, uuid }) {
     setIsError(false);
     let transcriptionResult = { textContent: "" };
 
-    setTimeout(() => {
-      document.documentElement.style.setProperty('--cute-alert-max-width', document.documentElement.style.getPropertyValue('--cute-alert-min-width') || '20%');
-      cuteAlert({
-        type: "question",
-        title: "Feedback",
-        description: "Could you quickly rate your experience with the oral exam assistant? This would open in a new tab, but wait until the exam is over.",
-        primaryButtonText: "Sure!",
-        secondaryButtonText: "No",
-        showCloseButton: true,
-        closeOnOutsideClick: true,
-      }).then(async (event) => {
-        if (event === "primaryButtonClicked") {
-          window.open(`feedback?name=${participant}&code=${code}`, '_blank', 'noopener,noreferrer'); //TODO add a check here
-        }
-      });
-    }, 3000);
+    if (Number.parseInt(roomCode.toString().slice(-3)) === 1)
+      setTimeout(() => {
+        document.documentElement.style.setProperty('--cute-alert-max-width', document.documentElement.style.getPropertyValue('--cute-alert-min-width') || '20%');
+        cuteAlert({
+          type: "question",
+          title: "Feedback",
+          description: "Could you quickly rate your experience with the oral exam assistant? This would open in a new tab, but wait until the exam is over.",
+          primaryButtonText: "Sure!",
+          secondaryButtonText: "No",
+          showCloseButton: true,
+          closeOnOutsideClick: true,
+        }).then(async (event) => {
+          if (event === "primaryButtonClicked") {
+            window.open(`feedback?name=${participant}&code=${code}`, '_blank', 'noopener,noreferrer'); //TODO add a check here
+          }
+        });
+      }, 3000);
 
     let response = await fetch(`https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`, { //TODO add a check here
       method: 'POST',
