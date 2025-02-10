@@ -461,7 +461,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
         cuteAlert({
           type: "question",
           title: "Feedback",
-          description: "Could you quickly rate your experience with the oral exam assistant? This would open in a new tab, but wait until the exam is over.",
+          description: "Could you quickly rate your experience with the oral exam assistant? This would open in a new tab.",
           primaryButtonText: "Sure!",
           secondaryButtonText: "No",
           showCloseButton: true,
