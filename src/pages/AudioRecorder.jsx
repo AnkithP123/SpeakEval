@@ -455,7 +455,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     setIsError(false);
     let transcriptionResult = { textContent: "" };
 
-    if (Number.parseInt(roomCode.toString().slice(-3)) === 1) {
+    if (Number.parseInt(code.toString().slice(-3)) === 1) {
       setTimeout(() => {
         document.documentElement.style.setProperty('--cute-alert-max-width', document.documentElement.style.getPropertyValue('--cute-alert-min-width') || '20%');
         cuteAlert({
