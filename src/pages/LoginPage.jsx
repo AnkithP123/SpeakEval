@@ -28,6 +28,36 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
   }, [navigate, redirect, setUsername]);
 
   const handleLogin = async () => {
+    if (!usernameInput || !password || (isRegister && !email)) {
+      toast.error('Please fill in all required fields.');
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
+    }
+
+    if (isRegister && !email.includes('@')) {
+      toast.error('Please enter a valid email address.');
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
+    }
+
+    if (isRegister) {
+      if (usernameInput.length < 3 || usernameInput.length > 20) {
+      toast.error('Username must be between 3 and 20 characters.');
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
+      }
+
+      if (password.length < 6 || password.length > 50) {
+      toast.error('Password must be between 6 and 50 characters.');
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
+      }
+    }
+
     try {
       const endpoint = isRegister ? '/register' : '/login';
       const payload = isRegister
@@ -110,6 +140,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
       )}
       <input
         type="text"
+        name="username"
         value={usernameInput}
         onChange={(e) => setUsernameInput(e.target.value)}
         className="login-input"
@@ -118,6 +149,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
       />
       <input
         type="password"
+        name="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         className="login-input"
