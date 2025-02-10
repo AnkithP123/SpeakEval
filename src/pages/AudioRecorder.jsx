@@ -455,7 +455,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     setIsError(false);
     let transcriptionResult = { textContent: "" };
 
-    if (Number.parseInt(roomCode.toString().slice(-3)) === 1)
+    if (Number.parseInt(roomCode.toString().slice(-3)) === 1) {
       setTimeout(() => {
         document.documentElement.style.setProperty('--cute-alert-max-width', document.documentElement.style.getPropertyValue('--cute-alert-min-width') || '20%');
         cuteAlert({
@@ -472,6 +472,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
           }
         });
       }, 3000);
+    }
 
     let response = await fetch(`https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`, { //TODO add a check here
       method: 'POST',
