@@ -108,15 +108,6 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                     setSubscribed(true);
                 }
             }
-
-            if (userId === 'CHICHARON123!') {
-                cuteAlert({
-                    type: "info",
-                    title: "Rubric Transferring",
-                    description: "¡Hola, Sra. Abarca! Press the autofill button next to the rubric and select Exam 1 to transfer the rubric to this exam.",
-                    primaryButtonText: "Got it!"
-                });
-            }
         } catch (err) {
             console.error("Error Loading Data", err);
             toast.error("Error Loading Data");
@@ -362,7 +353,14 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
 
         setMaxTime(config.timeLimit);
 
-        setSelectedLanguage(config.language);
+        if (['English', 'Spanish', 'French', 'Chinese', 'Japanese'].includes(config.language)) {
+
+            setSelectedLanguage(config.language);
+        }
+        else {
+            setSelectedLanguage('Other');
+            setOtherLanguage(config.language);
+        }
 
         setId(config.name);
 
