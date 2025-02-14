@@ -294,22 +294,18 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                 const blob = await res.blob();
                 formData.append(`question${i}`, blob, `question${i}.webm`);
             }
-
-            console.log(JSON.stringify(questions));
-
-            console.log(questions.length);
-
+    
             const categoriesString = categories.map((category) => {
                 return `${category.name}|:::| ${category.descriptions[0]}|,,| ${category.descriptions[1]}|,,| ${category.descriptions[2]}|,,| ${category.descriptions[3]}|,,| ${category.descriptions[4]}`;
             }).join('|;;|');
-
+    
             const res = await fetch(`https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}&limit=${maxTime}&language=${selectedLanguage}`, {
                 method: 'POST',
                 body: formData,
             });
-
+    
             const response = await res.json();
-
+    
             if (res.ok && !(response.error)) {
                 toast.success("Configuration registered successfully");
             } else {
@@ -320,7 +316,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
             toast.error("Error registering configuration");
         }
     };
-
+    
     const handleAutofillClick = () => {
         setShowAutofillUpgrade(true);
     };
@@ -347,6 +343,8 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
 
         let rubric2 = config.rubric
 
+        console.log
+
         if (config.rubric && config.rubric.includes("|^^^|")) {
             setPointValues(rubric2.split("|^^^|")[0].split('|,,|'))
             rubric2 = rubric2.split("|^^^|")[1]
@@ -354,7 +352,8 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
 
         const categories = rubric2.split('|;;|').map((category) => {
             const [name, descriptionsString] = category.split('|:::|');
-            const descriptions = descriptionsString.split('|,,|');
+            console.log(descriptionsString);
+            const descriptions = descriptionsString? descriptionsString.split('|,,|') : Array(5).fill('');
             return { name, descriptions };
         });
 

@@ -30,7 +30,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
   const [obtainedAudio, setObtainedAudio] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [waiting, setWaiting] = useState(false);
-  let [premium, setPremium] = useState(false);
+  const [premium, setPremium] = useState(false);
+  const [thinkingTime, setThinkingTime] = useState(5);
+  const [allowRepeat, setAllowRepeat] = useState(true);
   let questionIndex;
 
   const navigate = useNavigate();
@@ -46,7 +48,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     cuteAlert({
         type: "info",
         title: "Welcome to SpeakEval",
-        description: "It's time to record your response. When you're ready, click the play button to download the question and listen to it. After you've listened to the question, it will give you at least 5 seconds to think, during which you can replay the question once, and then begin recording. Speak clearly, confidently, and LOUDLY, so that your microphone picks up your audio well. Speak directly into your microphone, or, if you don't have an external microphone, speak directly into your device's microphone. Good luck!",
+        description: "It's time to record your response. When you're ready, click the play button to download the question and listen to it. If your teacher has allowed it, it will then give you time to think, during which you can replay the question once, and then begin recording. Speak clearly, confidently, and loudly, so that your microphone picks up your audio well.",
         primaryButtonText: "Got it"
     })
   }, []);
@@ -200,7 +202,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
         break;
       case 5:
         if (error === 'Reaching time limit. Please finish your response in the next 5 seconds. ') {
-          setError('You reached the time limit and your audio was stopped and uploaded automatically. ' + premium ? 'Your teacher has a premium subscription, so your audio will be processed faster' : 'It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue. Tell your teacher to upgrade to Premium to bypass the queue.');
+          setError('You reached the time limit and your audio was stopped and uploaded automatically. ' + premium ? 'Your audio will be processed faster, but may still take a little bit of time' : 'It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue. With a premium teacher subscription, the class\'s transcription times will be shorter.');
           setIsError(false)
         }
         stopRecording();
@@ -245,7 +247,15 @@ export default function AudioRecorder({ code, participant, uuid }) {
     console.log(receivedData);
 
     if (receivedData.subscribed) {
-      premium = true;
+      setPremium(true);
+    }
+
+    if (receivedData.thinkingTime) {
+      setThinkingTime(receivedData.thinkingTime);
+    }
+
+    if (receivedData.allowRepeat) {
+      setAllowRepeat(receivedData.allowRepeat);
     }
 
     for (const data of audios) {
@@ -434,6 +444,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
         const audioUrl = URL.createObjectURL(blob);
         setAudioURL(audioUrl);
         setIsRecording(false);
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl;
+        }
       };
         
 
@@ -451,7 +464,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
   const upload = async (formData) => {
     console.log(premium);
-    setError('Processing... ' + (premium ? 'Your teacher has a premium subscription, so your audio will be processed faster' : 'This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue. Tell your teacher to upgrade to Premium to bypass the queue.'));
+    setError('Processing... ' + premium ? 'Your audio will be processed faster, but may still take a little bit of time' : 'It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue. With a premium teacher subscription, transcription times are shorter.');
     setIsError(false);
     let transcriptionResult = { textContent: "" };
 
@@ -703,7 +716,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
           </PulseButton>
         )}
 
-        {countdownDisplay > 0 && (
+        {countdownDisplay > 0 && allowRepeat && (
             <p style={{
                 marginTop: '16px',
                 fontSize: '18px',
@@ -723,7 +736,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
             alignItems: 'center'
           }}>
             <audio
-              controls={!playing && (!audioRef.current || audioRef.current.paused)}
+              controls={allowRepeat && !playing && (!audioRef.current || audioRef.current.paused)}
               ref={(input) => {
                 audioRef.current = input;
               }}
@@ -745,7 +758,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
                     setPlaying(false);
                     setFinished(true);
                     // Countdown logic
-                    countdownRef.current = 5;
+                    countdownRef.current = thinkingTime;
                         
                     setCountdownDisplay(countdownRef.current);
                     if (!audioRef.current || audioRef.current.paused)
