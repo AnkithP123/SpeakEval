@@ -21,6 +21,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     const [pointValues, setPointValues] = useState([1, 2, 3, 4, 5]); // Default point values
     const [maxTime, setMaxTime] = useState(''); // State to store the max time limit
     const [selectedLanguage, setSelectedLanguage] = useState(''); // State to store the selected language
+    const [otherLanguage, setOtherLanguage] = useState(''); // State to store the selected language
     const navigate = useNavigate();
     const mediaRecorderRef = useRef(null);
     const [id, setId] = useState('');
@@ -299,7 +300,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                 return `${category.name}|:::| ${category.descriptions[0]}|,,| ${category.descriptions[1]}|,,| ${category.descriptions[2]}|,,| ${category.descriptions[3]}|,,| ${category.descriptions[4]}`;
             }).join('|;;|');
     
-            const res = await fetch(`https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}&limit=${maxTime}&language=${selectedLanguage}`, {
+            const res = await fetch(`https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${categoriesString}&limit=${maxTime}&language=${selectedLanguage === 'Other' ? otherLanguage : selectedLanguage}`, {
                 method: 'POST',
                 body: formData,
             });
@@ -497,6 +498,19 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
         borderRadius: '16px',
         border: '1px solid #E6F3FF',
     };
+
+    const otherStyle = {
+        marginTop: '10px',
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'white',
+        color: 'black',
+        padding: '8px',
+        borderRadius: '16px',
+        border: '1px solid #E6F3FF',
+    }
     
     const dropdownStyle = {
         width: '100%',
@@ -855,8 +869,20 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                                     <option value="French">French</option>
                                     <option value="Chinese">Chinese</option>
                                     <option value="Japanese">Japanese</option>
+                                    <option value="Other">Other</option>
                                 </select>
                             </div>
+                            {selectedLanguage === 'Other' && (
+                                <div className="flex justify-center">
+                                    <input
+                                        type="text"
+                                        value={otherLanguage}
+                                        onChange={(e) => setOtherLanguage(e.target.value)}
+                                        style={{ ...otherStyle, width: '20%' }}
+                                        placeholder="Enter Language"
+                                    />
+                                </div>
+                            )}
                         </Card>
                         <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
                             <h2 className="text-2xl font-bold mb-4 text-center">
