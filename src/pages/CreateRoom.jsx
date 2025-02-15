@@ -20,6 +20,8 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   const [thinkingTime, setThinkingTime] = useState(5) // Changed default to 5 seconds
   const [canRelisten, setCanRelisten] = useState(true) // Changed default to true
   const [hoveredInfo, setHoveredInfo] = useState(null)
+  const [requireGoogleSignIn, setRequireGoogleSignIn] = useState(false)
+  const [emailEnding, setEmailEnding] = useState("")
 
   useEffect(() => {
     const fetchConfigs = async () => {
@@ -124,7 +126,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
     time = Math.floor(Math.random() * 5) + 1 + time.toString().slice(-7) + "001"
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/create_room?code=${time}&pin=${userId}&config=${configId}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}`,
+        `https://www.server.speakeval.org/create_room?code=${time}&pin=${userId}&config=${configId}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&google=${requireGoogleSignIn}&ending=${emailEnding}`,
       )
       const parsedData = await res.json()
       if (parsedData.code === 400) {
@@ -425,6 +427,81 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                 <span className="slider round"></span>
               </label>
             </div>
+            <div
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}
+            >
+              <span style={{ color: "black", display: "flex", alignItems: "center" }}>
+                Require Google Sign-In
+                <div style={{ position: "relative" }}>
+                  <FaInfoCircle
+                    className="ml-2 text-blue-500 cursor-help"
+                    onMouseEnter={() => setHoveredInfo("googleSignIn")}
+                    onMouseLeave={() => setHoveredInfo(null)}
+                  />
+                  {hoveredInfo === "googleSignIn" && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        backgroundColor: "black",
+                        color: "white",
+                        padding: "5px",
+                        borderRadius: "5px",
+                        zIndex: 1,
+                      }}
+                    >
+                      Require students to sign in with their school Google account to join the room
+                    </div>
+                  )}
+                </div>
+              </span>
+              <label className="switch">
+                <input type="checkbox" checked={requireGoogleSignIn} onChange={(e) => setRequireGoogleSignIn(e.target.checked)} />
+                <span className="slider round"></span>
+              </label>
+            </div>
+            {requireGoogleSignIn && (
+              <div
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}
+              >
+                <span style={{ color: "black", display: "flex", alignItems: "center" }}>
+                  Email Ending
+                  <div style={{ position: "relative" }}>
+                    <FaInfoCircle
+                      className="ml-2 text-blue-500 cursor-help"
+                      onMouseEnter={() => setHoveredInfo("emailEnding")}
+                      onMouseLeave={() => setHoveredInfo(null)}
+                    />
+                    {hoveredInfo === "emailEnding" && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: "50%",
+                          transform: "translateX(-50%)",
+                          backgroundColor: "black",
+                          color: "white",
+                          padding: "5px",
+                          borderRadius: "5px",
+                          zIndex: 1,
+                        }}
+                      >
+                        Specify the email domain students must use to sign in, e.g. student.fuhsd.org, myschool.edu, something like that
+                      </div>
+                    )}
+                  </div>
+                </span>
+                <input
+                  type="text"
+                  value={emailEnding}
+                  onChange={(e) => setEmailEnding(e.target.value)}
+                  style={inputStyle}
+                  placeholder="e.g., fuhsd.org"
+                />
+              </div>
+            )}
             <button onClick={handleFinalRoomCreation} style={buttonStyle}>
               Create Room
             </button>
@@ -439,4 +516,3 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
 }
 
 export default CreateRoom
-

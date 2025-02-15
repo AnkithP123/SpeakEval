@@ -1,51 +1,48 @@
+import { cuteAlert } from 'cute-alert';
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 
-function TeacherPin({ subscriptionData, onPinEntered }) {
-    const [pin, setPin] = useState('');
-    const [email, setEmail] = useState(''); // State for email
-    const [error, setError] = useState('');
+function TeacherLogin({ subscriptionData, onPinEntered }) {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     const [shake, setShake] = useState(false); // State to trigger shake effect
 
-    const handlePinSubmit = async () => {
-        let parsedData;
+    const handleLoginSubmit = async () => {
         try {
-            let res = await fetch(`https://www.server.speakeval.org/teacherpin?pin=${pin}`);
-            parsedData = await res.json();
+            let res = await fetch('https://www.server.speakeval.org/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            });
+            let parsedData = await res.json();
 
-            if (parsedData.code === 401 || !email || email === '' || !isValidEmail(email)) {
+            if (res.status !== 200 || !username || !password) {
                 console.error(parsedData);
-                toast.error(email && email !== '' && isValidEmail(email) ? "Incorrect Teacher Pin" : ((!email || email === '') ? "Please enter an email" : "Invalid Email"));
+                toast.error(username && password ? parsedData.error || "Incorrect Username or Password" : "Please enter both username and password");
                 setShake(true); // Trigger the shake effect
                 setTimeout(() => setShake(false), 500); // Remove shake effect after 500ms
-                return setPin('');
+                return;
             }
-            if (parsedData.code === 200) {
+            else {
                 console.log(parsedData);
-                onPinEntered(pin, email);  // Call the function to proceed after pin and email are entered
+                onPinEntered(username)
             }
         } catch (err) {
             console.error("Error Loading Data", err);
             toast.error("Error Loading Data");
             setShake(true); // Trigger the shake effect
             setTimeout(() => setShake(false), 500); // Remove shake effect after 500ms
-            return setPin('');
         }
-        console.log(parsedData);
-
     };
 
-    const isValidEmail = (email) => {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const handleUsernameChange = (e) => {
+        setUsername(e.target.value);
     };
 
-    const handlePinChange = async (e) => {
-        const input = e.target.value;
-        await setPin(input.toUpperCase());
-    };
-
-    const handleEmailChange = (e) => {
-        setEmail(e.target.value);
+    const handlePasswordChange = (e) => {
+        setPassword(e.target.value);
     };
 
     const containerStyle = {
@@ -91,37 +88,28 @@ function TeacherPin({ subscriptionData, onPinEntered }) {
         borderRadius: '5px',
     };
 
-    const configList = {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-    };
-
-
     return (
         <div style={containerStyle} className={shake ? 'shake' : ''}>
             <input
-                type="email"
-                value={email}
-                onChange={handleEmailChange}
+                type="text"
+                value={username}
+                onChange={handleUsernameChange}
                 style={{ ...inputStyle, backgroundColor: '#f9f9f9' }} // Lighter background color
-                placeholder="Enter Email"
+                placeholder="Enter Username"
             />
             <hr style={{ width: '100%', border: '1px solid lightgray', margin: '10px 0' }} /> {/* Lighter border color */}
             <input
                 type="password"
-                value={pin}
-                onChange={handlePinChange}
+                value={password}
+                onChange={handlePasswordChange}
                 style={{ ...inputStyle, backgroundColor: '#f9f9f9' }} // Lighter background color
                 maxLength={30}
-                placeholder="Enter Teacher Pin"
-                onKeyUp={(e) => e.key === 'Enter' && handlePinSubmit()}
+                placeholder="Enter Password"
+                onKeyUp={(e) => e.key === 'Enter' && handleLoginSubmit()}
             />
-            <button onClick={handlePinSubmit} style={buttonStyle}>Log In</button>
+            <button onClick={handleLoginSubmit} style={buttonStyle}>Log In</button>
         </div>
     );
 }
 
-export default TeacherPin;
+export default TeacherLogin;

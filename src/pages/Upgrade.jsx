@@ -45,56 +45,65 @@ function Upgrade({ onClose, doc }) {
     navigate('/card-payment', { state: { subscriptionData, teacherPin } });
   };
 
-  const sendRequest = async (pin, email) => {
+  const sendRequest = async (username) => {
     setShowPinPage(false); // Show the pin entry page if subscribing
-    try {
-      const response = await fetch('https://www.server.speakeval.org/create-session', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-              subscriptionData,
-              teacherPin: pin,
-              email,
-          }),
-          
-      });
-
-      const result = await response.json();
+    document.documentElement.style.setProperty('cute-alert-z-index', 10000);
+    document.documentElement.style.setProperty('-cute-alert-z-index', 10000);
+    document.documentElement.style.setProperty('--cute-alert-z-index', 10000);
+    cuteAlert({
+        type: 'success',
+        title: 'Login Successful',
+        description: 'On the payment page, you will need to enter the email address associated with your account, or you will not receive the subscription. Subscriptions may take up to an hour to activate.',
+        primaryButtonText: 'OK',
+        secondaryButtonText: 'Cancel',
+    }).then(async (event) => {
+        if (event == 'primaryButtonClicked') {
+          try {
+            const response = await fetch('https://www.server.speakeval.org/create-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    subscriptionData,
+                    username,
+                }),
+                
+            });
       
-      console.log(result);
-
-      // Redirect to success page if payment is successful
-      if (result.error) {
-          console.error(result.error);
-          toast.error('Error processing payment: ' + result.error);
-          document.documentElement.style.setProperty('cute-alert-z-index', 10000);
-          document.documentElement.style.setProperty('-cute-alert-z-index', 10000);
-          document.documentElement.style.setProperty('--cute-alert-z-index', 10000);
-          cuteAlert({
-              type: 'error',
-              title: 'An error occurred',
-              description: result.error,
-              primaryButtonText: 'OK',
-          });
-          return;
-      }
-
-      if (result.paymentLinkUrl) {
-        window
-          .open(result.paymentLinkUrl, '_blank', 'noopener,noreferrer');
-      }
-
-    } catch (err) {
-        console.error('Error processing payment:', err);
-        cuteAlert({
-            type: 'error',
-            title: 'An error occurred',
-            description: 'Error processing request',
-            primaryButtonText: 'OK'
-        })
-    }
+            const result = await response.json();
+            
+            console.log(result);
+      
+            // Redirect to success page if payment is successful
+            if (result.error) {
+                console.error(result.error);
+                toast.error('Error processing payment: ' + result.error);
+                cuteAlert({
+                    type: 'error',
+                    title: 'An error occurred',
+                    description: result.error,
+                    primaryButtonText: 'OK',
+                });
+                return;
+            }
+      
+            if (result.paymentLinkUrl) {
+              window
+                .open(result.paymentLinkUrl, '_blank', 'noopener,noreferrer');
+            }
+      
+          } catch (err) {
+              console.error('Error processing payment:', err);
+              cuteAlert({
+                  type: 'error',
+                  title: 'An error occurred',
+                  description: 'Error processing request',
+                  primaryButtonText: 'OK'
+              })
+          }      
+        }
+    });
   }
 
   const handleClose = () => {
