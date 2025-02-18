@@ -297,7 +297,6 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   const handleCommentChange = (e) => {
     const newComment = e.target.value;
     setComment(newComment);
-    // Immediately update parent component with new comment
     onGradeUpdate(name, customName, grades, totalScore, newComment);
   };
 
