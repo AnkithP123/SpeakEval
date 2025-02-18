@@ -188,7 +188,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     setShowRubricModal(!showRubricModal)
   }
 
-// Update the function signature to match the parameters being passed
+
 const handleGradeUpdate = (participantName, customName, grades, totalScore, comment) => {
   const baseCode = roomCode.toString().slice(0, -3);
   const questionCode = customName ? Number.parseInt(baseCode + customName.substring(1).toString().padStart(3, "0")) : roomCode;
@@ -203,7 +203,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
               ...updatedQuestionData.get(questionCode),
               grades,
               totalScore,
-              teacherComment: comment // Add the comment to the question data
+              teacherComment: comment 
             });
           }
           return {
@@ -222,7 +222,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
             ...participant,
             grades,
             totalScore,
-            teacherComment: comment // Add the comment to the participant data
+            teacherComment: comment 
           };
         }
         return participant;
