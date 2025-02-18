@@ -19,7 +19,6 @@ import { getPin, setPin, setUserName } from './components/Navbar';
 import RoomAndConfigPage from './pages/UpdateConfig';
 import VerifyPage from './pages/VerifyPage';
 
-// Custom component to handle /test route with query parameters
 function AudioRecorderRouteWrapper() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -27,7 +26,6 @@ function AudioRecorderRouteWrapper() {
   const participant = queryParams.get('participant');
   const uuid = queryParams.get('uuid');
 
-  // You can pass code and participant as props to AudioRecorder if needed
   return <AudioRecorder code={code} participant={participant} uuid={uuid} />;
 }
 
