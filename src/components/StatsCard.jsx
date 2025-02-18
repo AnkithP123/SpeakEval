@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaVideo, FaSpinner } from 'react-icons/fa';
+import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaSpinner, FaComment } from 'react-icons/fa';
 
 function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBase64, name, code, onGradeUpdate, customName }) {
   const [completed, setCompleted] = useState(false);
@@ -9,7 +9,10 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   const [totalScore, setTotalScore] = useState(0);
   const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // New state variable for loading
+  const [isLoading, setIsLoading] = useState(false);
+  const [comment, setComment] = useState('');
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [savedComment, setSavedComment] = useState('');
 
   useEffect(() => {
     if (name) {
@@ -29,16 +32,13 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
 
         try {
           const wavBlob = await convertOggToWav(audioBlob);
-
           const audioUrl = URL.createObjectURL(wavBlob);
-
           const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
           if (answerAudioPlayer) {
             answerAudioPlayer.src = audioUrl;
           }
         } catch (err) {
           const audioUrl = URL.createObjectURL(audioBlob);
-
           const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
           if (answerAudioPlayer) {
             answerAudioPlayer.src = audioUrl;
@@ -111,7 +111,6 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     return new Blob([buffer], { type: 'audio/wav' });
   }
 
-
   const handlePlay = async () => {
     if (!name)
       return toast.error('Participant has not completed the task');
@@ -119,18 +118,18 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       // await fetchAudioData();
     }
     try {
-      setIsLoading(true); // Set loading state to true
+      setIsLoading(true);
       const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${name}-${code}`);
       if (answerAudioPlayer && answerAudioPlayer.src) {
         if (isPlaying) {
-          await answerAudioPlayer.pause(); // Pause the audio
-          setIsPlaying(false); // Update the playback status
+          await answerAudioPlayer.pause();
+          setIsPlaying(false);
         } else {
-          await answerAudioPlayer.play(); // Play the audio
-          setIsLoading(false)
-          setIsPlaying(true); // Update the playback status
+          await answerAudioPlayer.play();
+          setIsLoading(false);
+          setIsPlaying(true);
           answerAudioPlayer.addEventListener('ended', () => {
-            setIsPlaying(false); // Reset the state when the audio finishes
+            setIsPlaying(false);
           });
         }
       } else {
@@ -139,14 +138,13 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     } catch (error) {
       console.error('Error playing answer audio:', error);
     } finally {
-      setIsLoading(false); // Set loading state to false
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleDownload = async () => {
     if (!name)
       return toast.error('Participant has not completed the task');
-    // Download the wav file from audio in memory using the function
     const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
     const audioBlob = new Blob([audioData], { type: 'audio/ogg' });
 
@@ -154,22 +152,16 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
 
     try {
       const wavBlob = await convertOggToWav(audioBlob);
-
       const url = URL.createObjectURL(wavBlob);
-
       a.href = url;
     } catch (err) {
       const url = URL.createObjectURL(audioBlob);
-
       a.href = url;
-
     }
 
     a.download = `${name}-${code}.wav`;
-
     a.click();
-
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(a.href);
   };
 
   const handlePlayQuestion = async () => {
@@ -193,7 +185,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     } catch (error) {
       console.error('Error fetching or playing question audio:', error);
     }
-  }
+  };
 
   const handleGetGrade = async () => {
     if (!name)
@@ -208,11 +200,13 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       const data = await response.json();
       
       const grades = data.grades;
-      if (!grades || grades === undefined) return toast.error('Error getting grade. This may be due to a high volume of requests. Try again in a few seconds.');
+      if (!grades || grades === undefined) 
+        return toast.error('Error getting grade. This may be due to a high volume of requests. Try again in a few seconds.');
       setGrades(data.grades);
 
       const justifications = data.justifications;
-      if (!justifications || justifications === undefined) return toast.error('Error getting justifications. This may be due to a high volume of requests. Try again in a few seconds.');
+      if (!justifications || justifications === undefined) 
+        return toast.error('Error getting justifications. This may be due to a high volume of requests. Try again in a few seconds.');
       setJustifications(data.justifications);
 
       let total = 0;
@@ -234,7 +228,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     } catch (error) {
       console.error('Error getting grade:', error);
     }
-  }
+  };
 
   const handleGradeChange = (index, value) => {
     const updatedGrades = { ...grades, [index]: value };
@@ -247,8 +241,6 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
 
     setGrades(updatedGrades);
     
-    // Pass the grades and total score to the parent component
-    console.log('Updated grades:', updatedGrades);
     let categories = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
       return element.split('|:::|')[1].replace('|,,,|', '\n\n');
     });
@@ -256,23 +248,17 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     let descriptions = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
       return element.split('|:::|')[1].split('|,,,|').join('\n\n');
     });
-
-    console.log('Updated categories:', categories);
     
     onGradeUpdate(name, customName, updatedGrades, total, categories, descriptions);
-
   };
 
   const handleAiButtonClick = () => {
-
-    console.log('CLICKED');
-
     if (!name)
       return toast.error('Participant has not completed the task');
 
-    if (aiButtonDisabled) return toast.error('Wait 1 second');
+    if (aiButtonDisabled) 
+      return toast.error('Wait 1 second');
     
-    // Disable the AI button for 5 seconds
     setAiButtonDisabled(true);
     setTimeout(() => {
       setAiButtonDisabled(false);
@@ -304,22 +290,27 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     });
   };
 
-  const handleDownloadScreenRecording = async () => {
+  const toggleCommentModal = () => {
+    setIsCommentModalOpen(!isCommentModalOpen);
+    if (!isCommentModalOpen) {
+      setComment(savedComment);
+    }
+  };
+
+  const handleCommentChange = (e) => {
+    setComment(e.target.value);
+  };
+
+  const handleCommentSubmit = () => {
     if (!name)
       return toast.error('Participant has not completed the task');
-    try {
-      const url = `https://www.server.speakeval.org/download_screen?code=${code}&participant=${name}`;
-      const newTab = window.open(url, '_blank');
-      if (newTab) {
-        newTab.focus();
-        toast.success('Screen recording link opened in a new tab');
-      } else {
-        throw new Error('Failed to open new tab');
-      }
-    } catch (error) {
-      console.error('Error opening screen recording link:', error);
-      toast.error('Failed to open screen recording link');
+    if (comment.trim() === '') {
+      return toast.error('Comment cannot be empty');
     }
+
+    setSavedComment(comment);
+    setIsCommentModalOpen(false);
+    toast.success('Comment saved');
   };
 
   return (
@@ -337,7 +328,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
             className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
             onClick={handlePlay}
           >
-            {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)} {/* Render loading icon if loading */}
+            {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)}
           </button>
           <button
             className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
@@ -345,14 +336,16 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
           >
             <FaRobot />
           </button>
-          {/* <button
-            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
-            onClick={handleDownloadScreenRecording}
+          <button
+            className="p-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600"
+            onClick={toggleCommentModal}
+            title={savedComment ? "View/Edit Comment" : "Add Comment"}
           >
-            <FaVideo />
-          </button> */}
+            <FaComment />
+          </button>
         </div>
       </div>
+
       <div>
         <button
           className="p-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600"
@@ -361,59 +354,91 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
           Play Question
         </button>
       </div>
-      
-      { completed ? 
-      <div>
-        
-      <div className="mt-2 text-gray-800 break-words">
-        {question}
+
+      {completed && (
+        <div>
+          <div className="mt-2 text-gray-800 break-words">
+            {question}
+          </div>
+          <br />
+          <div className="mt-2 text-gray-800 break-words">
+            {text}
+          </div>
+          <div className="mt-2 text-gray-800 break-words">
+            {rubric2 !== '' && text !== '' && rubric2.split('|;;|').map((element, index) => {
+              const [rubricItem, rubricKey] = element.split('|:::|');
+              return (
+                <div key={index} className="flex items-center relative z-10">
+                  <span className="mr-2">{rubricItem}</span>
+                  <input
+                    type="text"
+                    className="border border-gray-300 px-2 py-1 rounded w-20"
+                    placeholder="Points"
+                    value={grades[index] || ''}
+                    onChange={(e) => handleGradeChange(index, e.target.value)}
+                  />
+<div className="relative group flex items-center">
+  <FaInfoCircle className="ml-2 text-blue-500" />
+  <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-20">
+    {justifications[index] ? justifications[index] : 'Press the AI button to receive an automated grade and view the reason here.'}
+  </div>
+</div>
+</div>
+);
+})}
+  </div>
+    <div className="mt-2 text-gray-800">
+      {rubric !== '' && text !== '' && `Total Score: ${totalScore}`}
       </div>
-      <br />
-        <div className="mt-2 text-gray-800 break-words">
-          {text}
-        </div>
-        <div className="mt-2 text-gray-800 break-words">
-          {rubric2 !== '' && text !== '' ? rubric2.split('|;;|').map((element, index) => {
-            const [rubricItem, rubricKey] = element.split('|:::|');
-            return (
-              <div key={index} className="flex items-center relative z-10">
-              <span className="mr-2">{rubricItem}</span>
-              <input
-              type="text"
-              className="border border-gray-300 px-2 py-1 rounded w-20"
-              placeholder="Points"
-              value={grades[index] || ''}
-              onChange={(e) => handleGradeChange(index, e.target.value)}
-              />
-              <div className="relative group flex items-center">
-              <FaInfoCircle className="ml-2 text-blue-500" />
-              <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-20">
-              {justifications[index] ? justifications[index] : 'Press the AI button to receive an automated grade and view the reason here.'}
-              </div>
-              </div>
-              </div>
-            );
-          }) : null}
-        </div>
-        <div className="mt-2 text-gray-800">
-          { rubric !== '' && text !== '' ?
-          `Total Score: ${totalScore}` : null
-          }
-        </div>
-        {rubric !== '' && text !== '' ? <div className="flex justify-center mt-2 mb-2">
-          <button
-            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex items-center justify-center"
-            onClick={handleCopyComments}
-          >
-            <FaClipboard className="mr-2" /> Copy AI Comments
-          </button>
-        </div> : null}
-      </div>
-      : null }
-      <audio id={`answerAudioPlayer-${name}-${code}`} />
-      <audio id={`questionAudioPlayer-${name}-${code}`} />
+        {rubric !== '' && text !== '' && (
+      <div className="flex justify-center mt-2 mb-2">
+        <button
+        className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex items-center justify-center"
+        onClick={handleCopyComments}
+        >
+        <FaClipboard className="mr-2" /> Copy AI Comments
+        </button>
     </div>
-  );
+    )}
+  </div>
+)}
+
+  {/* Comment Modal */}
+  {isCommentModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-4 rounded-lg w-96 max-w-[90vw]">
+      <h3 className="text-lg font-bold mb-4">
+      {savedComment ? 'Edit Comment' : 'Add Comment'}
+        </h3>
+          <textarea
+            className="w-full p-2 border border-gray-300 rounded mb-4"
+            rows="4"
+            placeholder="Write a comment..."
+            value={comment}
+            onChange={handleCommentChange}
+          />
+      <div className="flex justify-end gap-2">
+        <button
+        className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+        onClick={() => setIsCommentModalOpen(false)}
+        >
+        Cancel
+        </button>
+        <button
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        onClick={handleCommentSubmit}
+        >
+        Save
+        </button>
+      </div>
+    </div>
+  </div>
+  )}
+
+  <audio id={`answerAudioPlayer-${name}-${code}`} />
+  <audio id={`questionAudioPlayer-${name}-${code}`} />
+</div>
+);
 }
 
 export default ProfileCard;
