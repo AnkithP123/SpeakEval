@@ -11,8 +11,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [comment, setComment] = useState('');
-  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
-  const [savedComment, setSavedComment] = useState('');
+
 
   useEffect(() => {
     if (name) {
@@ -290,27 +289,16 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     });
   };
 
-  const toggleCommentModal = () => {
-    setIsCommentModalOpen(!isCommentModalOpen);
-    if (!isCommentModalOpen) {
-      setComment(savedComment);
-    }
+  const handleCommentButtonClick = () => {
+    console.log('Comment button (does not work) clicked');
+    toast.info('Comment button (does not work) clicked');
   };
 
   const handleCommentChange = (e) => {
-    setComment(e.target.value);
-  };
-
-  const handleCommentSubmit = () => {
-    if (!name)
-      return toast.error('Participant has not completed the task');
-    if (comment.trim() === '') {
-      return toast.error('Comment cannot be empty');
-    }
-
-    setSavedComment(comment);
-    setIsCommentModalOpen(false);
-    toast.success('Comment saved');
+    const newComment = e.target.value;
+    setComment(newComment);
+    // Immediately update parent component with new comment
+    onGradeUpdate(name, customName, grades, totalScore, newComment);
   };
 
   return (
@@ -338,8 +326,8 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
           </button>
           <button
             className="p-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600"
-            onClick={toggleCommentModal}
-            title={savedComment ? "View/Edit Comment" : "Add Comment"}
+            onClick={handleCommentButtonClick}
+            title="Comment button (does not work)"
           >
             <FaComment />
           </button>
@@ -356,7 +344,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       </div>
 
       {completed && (
-        <div>
+        <div className="w-full">
           <div className="mt-2 text-gray-800 break-words">
             {question}
           </div>
@@ -377,68 +365,47 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
                     value={grades[index] || ''}
                     onChange={(e) => handleGradeChange(index, e.target.value)}
                   />
-<div className="relative group flex items-center">
-  <FaInfoCircle className="ml-2 text-blue-500" />
-  <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-20">
-    {justifications[index] ? justifications[index] : 'Press the AI button to receive an automated grade and view the reason here.'}
-  </div>
-</div>
-</div>
-);
-})}
-  </div>
-    <div className="mt-2 text-gray-800">
-      {rubric !== '' && text !== '' && `Total Score: ${totalScore}`}
-      </div>
-        {rubric !== '' && text !== '' && (
-      <div className="flex justify-center mt-2 mb-2">
-        <button
-        className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex items-center justify-center"
-        onClick={handleCopyComments}
-        >
-        <FaClipboard className="mr-2" /> Copy AI Comments
-        </button>
-    </div>
-    )}
-  </div>
-)}
+                  <div className="relative group flex items-center">
+                    <FaInfoCircle className="ml-2 text-blue-500" />
+                    <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-20">
+                      {justifications[index] ? justifications[index] : 'Press the AI button to receive an automated grade and view the reason here.'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-2 text-gray-800">
+            {rubric !== '' && text !== '' && `Total Score: ${totalScore}`}
+          </div>
+          {rubric !== '' && text !== '' && (
+            <div className="flex justify-center mt-2 mb-2">
+              <button
+                className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex items-center justify-center"
+                onClick={handleCopyComments}
+              >
+                <FaClipboard className="mr-2" /> Copy AI Comments
+              </button>
+            </div>
+          )}
 
-  {/* Comment Modal */}
-  {isCommentModalOpen && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white p-4 rounded-lg w-96 max-w-[90vw]">
-      <h3 className="text-lg font-bold mb-4">
-      {savedComment ? 'Edit Comment' : 'Add Comment'}
-        </h3>
-          <textarea
-            className="w-full p-2 border border-gray-300 rounded mb-4"
-            rows="4"
-            placeholder="Write a comment..."
-            value={comment}
-            onChange={handleCommentChange}
-          />
-      <div className="flex justify-end gap-2">
-        <button
-        className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-        onClick={() => setIsCommentModalOpen(false)}
-        >
-        Cancel
-        </button>
-        <button
-        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        onClick={handleCommentSubmit}
-        >
-        Save
-        </button>
-      </div>
-    </div>
-  </div>
-  )}
+          {/* Comment Section */}
+          <div className="mt-4 w-full">
+            <textarea
+              className="w-full p-2 border border-gray-300 rounded resize-none"
+              rows="4"
+              placeholder="Add your comment here..."
+              value={comment}
+              onChange={handleCommentChange}
+            />
+          </div>
+        </div>
+      )}
 
-  <audio id={`answerAudioPlayer-${name}-${code}`} />
-  <audio id={`questionAudioPlayer-${name}-${code}`} />
-</div>
-);
+      <audio id={`answerAudioPlayer-${name}-${code}`} />
+      <audio id={`questionAudioPlayer-${name}-${code}`} />
+    </div>
+  );
 }
 
 export default ProfileCard;
