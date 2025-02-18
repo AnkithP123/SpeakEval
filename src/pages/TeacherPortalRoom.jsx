@@ -373,6 +373,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
               yOffset += 4;
             });
 
+            doc.text(`Teacher Comment: ${questionDataEntry.teacherComment || "No comment"}`, 15, yOffset);
             yOffset += 6;
 
             if (yOffset > 270) {
@@ -410,6 +411,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
                 yOffset += 4;
             });
 
+            doc.text(`Teacher Comment: ${participant.teacherComment || "No comment"}`, 15, yOffset);
             yOffset += 6;
 
             if (yOffset > 270 && index < participants.length - 1) {
