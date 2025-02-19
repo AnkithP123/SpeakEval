@@ -11,6 +11,7 @@ function JoinRoom() {
   const [ending, setEnding] = useState('');
   const [useGoogle, setUseGoogle] = useState(false);
   const [googleName, setGoogleName] = useState('');
+  const [email, setEmail] = useState(undefined);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ function JoinRoom() {
 
     if (participantName && roomCode) {
       console.log('Joining room with name:', participantName, 'and room code:', roomCode);
-      let res = await fetch(`https://www.server.speakeval.org/join_room?code=${roomCode}&participant=${participantName}`);
+      let res = await fetch(`https://www.server.speakeval.org/join_room?code=${roomCode}&participant=${participantName}${useGoogle ? `&email=${email}` : ''}`);
       let parsedData = await res.json();
       setLoading(false);
       if (parsedData.error) {
@@ -58,6 +59,7 @@ function JoinRoom() {
       console.log('Google sign-in successful:', decoded);
       if (decoded.email.endsWith(ending)) {
         setGoogleName(decoded.name);
+        setEmail(decoded.email);
         setUseGoogle(true);
       } else {
         toast.error(`Email must end with ${ending}`);

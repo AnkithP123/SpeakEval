@@ -18,6 +18,7 @@ import LoginPage from './pages/LoginPage';
 import { getPin, setPin, setUserName } from './components/Navbar';
 import RoomAndConfigPage from './pages/UpdateConfig';
 import VerifyPage from './pages/VerifyPage';
+import ProfileCard from './components/StatsCard';
 
 function AudioRecorderRouteWrapper() {
   const location = useLocation();
@@ -61,6 +62,19 @@ function App() {
           <Route path="/login" element={<LoginPage set={setGold} setUltimate={setUltimate} setUsername={setUserName} setPin={setPin} />} />
           <Route path="/update" element={<RoomAndConfigPage   set={setGold} setUltimate={setUltimate} getPin={getPin} subscribed={gold || ultimate}/>} />
           <Route path="/verify" element={<VerifyPage />} />
+          <Route path="/download" element={                              <ProfileCard
+                                text={''}
+                                rubric={''}
+                                rubric2={''}
+                                audio={''}
+                                question={''}
+                                questionBase64={''}
+                                index={0}
+                                name={''}
+                                code={''}
+                                onGradeUpdate={() => {}}
+                              />
+} />
           <Route path="*" element={<Maintainence />} />
         </Route>
         <Route path="/record" element={<AudioRecorderRouteWrapper />} />
