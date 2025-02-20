@@ -7,7 +7,7 @@ import { FaSpinner } from 'react-icons/fa'
 function Download() {
   const [searchParams] = useSearchParams()
   const [participants, setParticipants] = useState([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
