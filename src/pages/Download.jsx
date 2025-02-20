@@ -92,6 +92,7 @@ function Download() {
             code={participant.code || ''}
             onGradeUpdate={() => {}}
             tokenProvided={true}
+            participantPass = {participant}
           />
         ))}
       </div>

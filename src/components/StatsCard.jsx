@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaSpinner, FaEnvelope } from 'react-icons/fa';
 
-function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBase64, name, code, onGradeUpdate, customName, tokenProvided = false }) {
+function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBase64, name, code, onGradeUpdate, customName, tokenProvided = false, participantPass = null }) {
   // States used in both modes
   const [completed, setCompleted] = useState(false);
   const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
@@ -30,6 +30,11 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   useEffect(() => {
     if(tokenProvided) {
       setDownloadMode(true);
+      const participant = participantPass;
+      participant.questionBase64 = participant.question;
+      participant.question = participant.questionText;
+      participant.text = participant.transcription;
+      setDownloadedData(participant);
       return;
     }
     const urlParams = new URLSearchParams(window.location.search);
@@ -443,7 +448,7 @@ Teacher's Comment: ${comment}` : ''}`;
             className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
             onClick={handlePlay}
           >
-            {/* {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)} */}
+            {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)}
           </button>
           {/* Only show AI and Email buttons if not in download mode */}
           {!downloadMode && (
