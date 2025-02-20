@@ -3,8 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import ProfileCard from "../components/StatsCard"
 import { toast } from "react-toastify"
 import jsPDF from "jspdf"
-import { FaArrowUp, FaArrowDown } from "react-icons/fa" // Import arrow icons
-import { FaEnvelope } from 'react-icons/fa'
+import { FaArrowUp, FaArrowDown,FaEnvelope, FaSpinner } from "react-icons/fa" // Import arrow icons
 
 function TeacherPortalRoom({ initialRoomCode, pin }) {
   const [roomCode, setRoomCode] = useState(initialRoomCode || useParams().roomCode) // Track the room code as state
