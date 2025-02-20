@@ -478,7 +478,8 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
                 transcription: questionData.transcription || "No transcription available",
                 totalScore: questionData.totalScore,
                 grades: questionData.grades,
-                teacherComment: questionData.teacherComment
+                categories:questionData.teacherComment,
+                teacherComment: questionData.teacherComment,
               }
             }
           } else {
@@ -488,7 +489,8 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
               transcription: participant.transcription || "No transcription available",
               totalScore: participant.totalScore,
               grades: participant.grades,
-              teacherComment: participant.teacherComment
+              categories: participant.teacherComment,
+              teacherComment: participant.teacherComment,
             }
           }
           return gradeData
