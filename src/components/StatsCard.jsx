@@ -55,7 +55,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     }
   }, [effectiveName]);
 
-  const fetchAudio = async () => {
+  let fetchAudio = async () => {
     console.log('fetching audio');
     try {
       const audioData = Uint8Array.from(atob(effectiveAudio), c => c.charCodeAt(0));
@@ -82,7 +82,11 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   };;
 
   useEffect(() => {
-    fetchAudio();
+    fetchAudio().then(() => {
+      console.log('Audio fetched');
+    }).catch((error) => {
+      console.error('Error fetching audio:', error);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveAudio]);
 
