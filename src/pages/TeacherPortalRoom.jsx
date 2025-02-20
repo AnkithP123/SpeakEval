@@ -133,6 +133,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
       // Remove duplicates and sort by name
       const uniqueParticipants = data.participants
+      console.log('Unique Participants:', uniqueParticipants)
         .filter((participant, index, self) => index === self.findIndex((p) => p.name === participant.name))
         .sort((a, b) => a.name.localeCompare(b.name))
 
