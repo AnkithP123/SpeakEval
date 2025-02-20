@@ -35,26 +35,6 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       participant.question = participant.questionText;
       participant.text = participant.transcription;
       setDownloadedData(participant);
-      return;
-    }
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    if (token) {
-      setDownloadMode(true);
-      fetch(`https://www.server.speakeval.org/download?token=${token}`)
-        .then((res) => res.json())
-        .then((data) => {
-          // Assuming data contains: { name, text, audio, question, code }
-          const participant = data.participant;
-          participant.questionBase64 = participant.question;
-          participant.question = participant.questionText;
-          participant.text = participant.transcription;
-          setDownloadedData(participant);
-        })
-        .catch((error) => {
-          console.error('Error fetching download data:', error);
-          toast.error('Failed to download data');
-        });
     }
   }, []);
 
