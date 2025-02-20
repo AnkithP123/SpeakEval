@@ -55,35 +55,33 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     }
   }, [effectiveName]);
 
-  let fetchAudio;
+  const fetchAudio = async () => {
+    console.log('fetching audio');
+    try {
+      const audioData = Uint8Array.from(atob(effectiveAudio), c => c.charCodeAt(0));
+      let audioBlob = new Blob([audioData], { type: 'audio/ogg' });
+
+      try {
+        const wavBlob = await convertOggToWav(audioBlob);
+        const audioUrl = URL.createObjectURL(wavBlob);
+        const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${effectiveName}-${effectiveCode}`);
+        if (answerAudioPlayer) {
+          answerAudioPlayer.src = audioUrl;
+        }
+      } catch (err) {
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${effectiveName}-${effectiveCode}`);
+        if (answerAudioPlayer) {
+          answerAudioPlayer.src = audioUrl;
+        }
+      }
+    } catch (error) {
+      console.log('Error loading audio:', error);
+      console.log(effectiveName);
+    }
+  };;
 
   useEffect(() => {
-    fetchAudio = async () => {
-      console.log('fetching audio');
-      try {
-        const audioData = Uint8Array.from(atob(effectiveAudio), c => c.charCodeAt(0));
-        let audioBlob = new Blob([audioData], { type: 'audio/ogg' });
-
-        try {
-          const wavBlob = await convertOggToWav(audioBlob);
-          const audioUrl = URL.createObjectURL(wavBlob);
-          const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${effectiveName}-${effectiveCode}`);
-          if (answerAudioPlayer) {
-            answerAudioPlayer.src = audioUrl;
-          }
-        } catch (err) {
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${effectiveName}-${effectiveCode}`);
-          if (answerAudioPlayer) {
-            answerAudioPlayer.src = audioUrl;
-          }
-        }
-      } catch (error) {
-        console.log('Error loading audio:', error);
-        console.log(effectiveName);
-      }
-    };
-
     fetchAudio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveAudio]);
@@ -147,6 +145,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   }
 
   const handlePlay = async () => {
+    console.log('Fetch Audio: ', fetchAudio);
     if (!effectiveName)
       return toast.error('Participant has not completed the task');
     if (effectiveText === '' && !downloadMode) {
