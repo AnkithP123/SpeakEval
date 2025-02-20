@@ -80,7 +80,7 @@ function Download() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {participants.map((participant, index) => (
           <ProfileCard
-            key={`${participant.name}-${participant.code}-${index}`}
+            key={`${participant.name}-${index}-${index}`}
             text={participant.transcription || ''}
             rubric={participant.rubric || ''}
             rubric2={participant.rubric2 || ''}
@@ -89,7 +89,7 @@ function Download() {
             questionBase64={participant.question || ''}
             index={participant.index || 0}
             name={participant.name || ''}
-            code={participant.code || ''}
+            code={index || ''}
             onGradeUpdate={() => {}}
             tokenProvided={true}
             participantPass = {participant}
