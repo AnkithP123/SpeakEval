@@ -36,7 +36,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       participant.text = participant.transcription;
       setDownloadedData(participant);
     }
-  }, []);
+  });
 
   // Derive effective values using downloadedData if in downloadMode
   const effectiveName = downloadMode && downloadedData ? downloadedData.name : name;
