@@ -517,7 +517,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
       if (data.error) {
         throw new Error(data.error)
       }
-  
+      console.log('Email response:', data)
       // Show success/failure summary
       if (data.summary.failed > 0) {
         toast.warning(`Sent ${data.summary.successful} emails, ${data.summary.failed} failed`)
