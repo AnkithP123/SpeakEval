@@ -41,16 +41,16 @@ function Download() {
     fetchData()
   }, [searchParams])
 
-//   if (isLoading) {
-//     return (
-//       <div className="flex items-center justify-center min-h-screen">
-//         <div className="flex flex-col items-center space-y-4">
-//           <FaSpinner className="animate-spin text-4xl text-blue-500" />
-//           <p className="text-lg text-gray-600">Loading responses...</p>
-//         </div>
-//       </div>
-//     )
-//   }
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="flex flex-col items-center space-y-4">
+                    <FaSpinner className="animate-spin text-4xl text-blue-500" />
+                    <p className="text-lg text-gray-600">Loading responses...</p>
+                </div>
+            </div>
+        )
+    }
 
   if (error) {
     return (

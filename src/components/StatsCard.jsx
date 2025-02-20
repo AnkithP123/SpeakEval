@@ -443,7 +443,7 @@ Teacher's Comment: ${comment}` : ''}`;
             className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
             onClick={handlePlay}
           >
-            {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)}
+            {/* {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)} */}
           </button>
           {/* Only show AI and Email buttons if not in download mode */}
           {!downloadMode && (
