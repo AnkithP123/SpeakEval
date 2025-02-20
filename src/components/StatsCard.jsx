@@ -59,6 +59,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
 
   useEffect(() => {
     fetchAudio = async () => {
+      console.log('fetching audio');
       try {
         const audioData = Uint8Array.from(atob(effectiveAudio), c => c.charCodeAt(0));
         let audioBlob = new Blob([audioData], { type: 'audio/ogg' });
