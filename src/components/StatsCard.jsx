@@ -29,6 +29,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   // Check if URL has a "token" param, then fetch from /download
   useEffect(() => {
     if(tokenProvided) {
+      setDownloadMode(true);
       return;
     }
     const urlParams = new URLSearchParams(window.location.search);
