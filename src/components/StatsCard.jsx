@@ -12,6 +12,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   const [totalScore, setTotalScore] = useState(0);
   const [grades, setGrades] = useState({});
   const [justifications, setJustifications] = useState({});
+  const [categories, setCategories] = useState([]);
 
   // New state for download mode
   const [downloadMode, setDownloadMode] = useState(false);
@@ -260,15 +261,16 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       setTotalScore(total);
 
       // Parse categories and descriptions only in non-download mode
-      let categories = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
+      let category = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
         return element.split('|:::|')[0];
       });
+      setCategories(category)
 
       let descriptions = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
         return element.split('|:::|')[1].replace('|,,,|', '\n\n');
       });
 
-      onGradeUpdate(effectiveName, effectiveCustomName, data.grades, total, categories, descriptions);
+      onGradeUpdate(effectiveName, effectiveCustomName, data.grades, total, comment, categories);
 
     } catch (error) {
       console.error('Error getting grade:', error);
@@ -287,15 +289,16 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
 
     setGrades(updatedGrades);
     
-    let categories = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
-      return element.split('|:::|')[1].replace('|,,,|', '\n\n');
+    let category = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
+      return element.split('|:::|')[0];
     });
+    setCategories(category)
 
     let descriptions = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
       return element.split('|:::|')[1].split('|,,,|').join('\n\n');
     });
     
-    onGradeUpdate(effectiveName, effectiveCustomName, updatedGrades, total, categories, descriptions);
+    onGradeUpdate(effectiveName, effectiveCustomName, updatedGrades, total, comment, categories);
   };
 
   const handleAiButtonClick = () => {
@@ -406,7 +409,7 @@ Teacher's Comment: ${comment}` : ''}`;
   const handleCommentChange = (e) => {
     const newComment = e.target.value;
     setComment(newComment);
-    onGradeUpdate(effectiveName, effectiveCustomName, grades, totalScore, newComment);
+    onGradeUpdate(effectiveName, effectiveCustomName, grades, totalScore, newComment, categories);
   };
 
   // If in download mode and data is still loading, show a temporary loading message.

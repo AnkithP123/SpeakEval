@@ -196,7 +196,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   }
 
 
-const handleGradeUpdate = (participantName, customName, grades, totalScore, comment) => {
+const handleGradeUpdate = (participantName, customName, grades, totalScore, categories) => {
   const baseCode = roomCode.toString().slice(0, -3);
   const questionCode = customName ? Number.parseInt(baseCode + customName.substring(1).toString().padStart(3, "0")) : roomCode;
 
@@ -210,7 +210,8 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
               ...updatedQuestionData.get(questionCode),
               grades,
               totalScore,
-              teacherComment: comment 
+              teacherComment: comment, 
+              categories
             });
           }
           return {
@@ -229,7 +230,8 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
             ...participant,
             grades,
             totalScore,
-            teacherComment: comment 
+            teacherComment: comment,
+            categories
           };
         }
         return participant;
@@ -478,7 +480,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
                 transcription: questionData.transcription || "No transcription available",
                 totalScore: questionData.totalScore,
                 grades: questionData.grades,
-                categories:questionData.teacherComment,
+                categories:questionData.categories,
                 teacherComment: questionData.teacherComment,
               }
             }
@@ -489,7 +491,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
               transcription: participant.transcription || "No transcription available",
               totalScore: participant.totalScore,
               grades: participant.grades,
-              categories: participant.teacherComment,
+              categories: participant.categories,
               teacherComment: participant.teacherComment,
             }
           }
