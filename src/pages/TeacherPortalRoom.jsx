@@ -196,7 +196,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   }
 
 
-const handleGradeUpdate = (participantName, customName, grades, totalScore, categories) => {
+const handleGradeUpdate = (participantName, customName, grades, totalScore, comment, categories) => {
   const baseCode = roomCode.toString().slice(0, -3);
   const questionCode = customName ? Number.parseInt(baseCode + customName.substring(1).toString().padStart(3, "0")) : roomCode;
 
