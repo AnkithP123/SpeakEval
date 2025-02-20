@@ -15,7 +15,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   const [categories, setCategories] = useState([]);
 
   // New state for download mode
-  const [downloadMode, setDownloadMode] = useState(false);
+  const [downloadMode, setDownloadMode] = useState(true);
   const [downloadedData, setDownloadedData] = useState(null);
 
   // Email modal states (unused in download mode)
@@ -30,6 +30,8 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   useEffect(() => {
     if(tokenProvided) {
       return;
+    } else {
+      setDownloadMode(false);
     }
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
