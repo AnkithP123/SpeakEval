@@ -349,7 +349,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     if (!effectiveName)
       return toast.error('Participant has not completed the task');
 
-    const studentName = effectiveCustomName || effectiveName;
+    const studentName = effectiveName;
     let breakdown = '';
     if (rubric2 !== '' && effectiveText !== '') {
       rubric2.split('|;;|').forEach((element, index) => {
