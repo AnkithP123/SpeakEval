@@ -495,7 +495,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
           return gradeData
         })
       }))
-  
+      console.log('Email Data:', emailData)
       const response = await fetch('https://www.server.speakeval.org/send_bulk_email', {
         method: 'POST',
         headers: {
