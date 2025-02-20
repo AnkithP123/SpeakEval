@@ -4,6 +4,7 @@ import ProfileCard from "../components/StatsCard"
 import { toast } from "react-toastify"
 import jsPDF from "jspdf"
 import { FaArrowUp, FaArrowDown } from "react-icons/fa" // Import arrow icons
+import { FaEnvelope } from 'react-icons/fa'
 
 function TeacherPortalRoom({ initialRoomCode, pin }) {
   const [roomCode, setRoomCode] = useState(initialRoomCode || useParams().roomCode) // Track the room code as state
@@ -36,6 +37,13 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   })
   const [isLoading, setIsLoading] = useState(false) // New loading state
   const displayNameInputRef = useRef(null)
+
+  const [showBulkEmailModal, setShowBulkEmailModal] = useState(false)
+  const [selectedQuestionsToEmail, setSelectedQuestionsToEmail] = useState(new Set())
+  const [includeResponseLink, setIncludeResponseLink] = useState(true)
+  const [emailSubject, setEmailSubject] = useState("SpeakEval Exam Results")
+  const [isEmailSending, setIsEmailSending] = useState(false)
+
 
   useEffect(() => {
     localStorage.setItem("descriptions", JSON.stringify(descriptions))
@@ -448,6 +456,83 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
     }
   }
 
+  const handleSendBulkEmail = async () => {
+    if (selectedQuestionsToEmail.size === 0) {
+      toast.error("Please select at least one question to send")
+      return
+    }
+  
+    try {
+      setIsEmailSending(true)
+      const baseExamCode = roomCode.toString().slice(0, -3)
+      
+      const emailData = participants.map(participant => ({
+        studentName: participant.name,
+        grades: Array.from(selectedQuestionsToEmail).map(questionCode => {
+          let gradeData
+          if (showByPerson) {
+            const questionData = participant.questionData?.get(parseInt(questionCode))
+            if (questionData) {
+              gradeData = {
+                questionNumber: parseInt(questionCode.toString().slice(-3)),
+                question: questionData.questionText || "Question not available",
+                transcription: questionData.transcription || "No transcription available",
+                totalScore: questionData.totalScore,
+                grades: questionData.grades,
+                teacherComment: questionData.teacherComment
+              }
+            }
+          } else {
+            gradeData = {
+              questionNumber: questionData.currentIndex,
+              question: participant.questionText || "Question not available",
+              transcription: participant.transcription || "No transcription available",
+              totalScore: participant.totalScore,
+              grades: participant.grades,
+              teacherComment: participant.teacherComment
+            }
+          }
+          return gradeData
+        })
+      }))
+  
+      const response = await fetch('https://www.server.speakeval.org/send_bulk_email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          examCode: baseExamCode,
+          emailData,
+          includeResponseLink,
+          subject: emailSubject,
+          pin: localStorage.getItem('token')
+        })
+      })
+  
+      const data = await response.json()
+      if (data.error) {
+        throw new Error(data.error)
+      }
+  
+      // Show success/failure summary
+      if (data.summary.failed > 0) {
+        toast.warning(`Sent ${data.summary.successful} emails, ${data.summary.failed} failed`)
+      } else {
+        toast.success(`Successfully sent ${data.summary.successful} emails`)
+      }
+  
+      setShowBulkEmailModal(false)
+      setSelectedQuestionsToEmail(new Set())
+    } catch (error) {
+      console.error("Error sending emails:", error)
+      toast.error("Failed to send emails: " + error.message)
+    } finally {
+      setIsEmailSending(false)
+    }
+  }
+
+  
   const handleNextQuestion = () => handleNavigateQuestion("next")
   const handlePreviousQuestion = () => handleNavigateQuestion("previous")
 
@@ -614,6 +699,14 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
               <option value="download">Download</option>
               <option value="print">Print</option>
             </select>
+            <button
+              onClick={() => setShowBulkEmailModal(true)}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 flex items-center"
+              disabled={isEmailSending}
+            >
+              <FaEnvelope className="mr-2" />
+              {isEmailSending ? "Sending..." : "Send Emails"}
+          </button>
           </div>
         </div>
 
@@ -766,6 +859,141 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
           </div>
         </div>
       )}
+
+    {showBulkEmailModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white rounded-lg p-6 shadow-lg w-[90%] max-h-[90vh] overflow-y-auto">
+          <h2 className="text-2xl font-bold mb-4">Send Grade Emails</h2>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email Subject
+            </label>
+            <input
+              type="text"
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Questions to Include:
+            </label>
+            <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded p-4">
+              {showByPerson ? (
+                questionData.questions.map((questionCode, index) => {
+                  const isGraded = participants.some(p => {
+                    const qData = p.questionData?.get(questionCode)
+                    return qData?.totalScore !== undefined
+                  })
+                  
+                  return (
+                    <div key={questionCode} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`question-${questionCode}`}
+                        checked={selectedQuestionsToEmail.has(questionCode)}
+                        onChange={(e) => {
+                          const newSelected = new Set(selectedQuestionsToEmail)
+                          if (e.target.checked) {
+                            newSelected.add(questionCode)
+                          } else {
+                            newSelected.delete(questionCode)
+                          }
+                          setSelectedQuestionsToEmail(newSelected)
+                        }}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor={`question-${questionCode}`} className="text-sm">
+                        Question {index + 1} 
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                          isGraded ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {isGraded ? 'Graded' : 'Not Graded'}
+                        </span>
+                      </label>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`question-${roomCode}`}
+                    checked={selectedQuestionsToEmail.has(roomCode)}
+                    onChange={(e) => {
+                      const newSelected = new Set(selectedQuestionsToEmail)
+                      if (e.target.checked) {
+                        newSelected.add(roomCode)
+                      } else {
+                        newSelected.delete(roomCode)
+                      }
+                      setSelectedQuestionsToEmail(newSelected)
+                    }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor={`question-${roomCode}`} className="text-sm">
+                    Current Question (#{questionData.currentIndex})
+                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                      participants.some(p => p.totalScore !== undefined)
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {participants.some(p => p.totalScore !== undefined) ? 'Graded' : 'Not Graded'}
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={includeResponseLink}
+                onChange={(e) => setIncludeResponseLink(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm text-gray-700">
+                Include links for students to review their responses
+              </span>
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-4">
+            <button
+              onClick={() => {
+                setShowBulkEmailModal(false)
+                setSelectedQuestionsToEmail(new Set())
+              }}
+              className="px-4 py-2 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600"
+              disabled={isEmailSending}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSendBulkEmail}
+              className={`px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 flex items-center ${
+                isEmailSending ? 'opacity-75 cursor-not-allowed' : ''
+              }`}
+              disabled={isEmailSending}
+            >
+              {isEmailSending ? (
+                <>
+                  <FaSpinner className="animate-spin mr-2" />
+                  Sending...
+                </>
+              ) : (
+                'Send Emails'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   )
 }
