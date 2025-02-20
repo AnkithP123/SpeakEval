@@ -24,7 +24,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   const [baseEmailBody, setBaseEmailBody] = useState('');
   const [includeResponseLink, setIncludeResponseLink] = useState(false);
 
-
+  const [error, setError] = useState(false);
 
   // Check if URL has a "token" param, then fetch from /download
   useEffect(() => {
@@ -174,8 +174,10 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
         await fetchAudio();
         handlePlay();
       }
+      setError(false);
     } catch (error) {
       console.error('Error playing answer audio:', error);
+      setError(true);
     } finally {
       setIsLoading(false);
     }
@@ -430,7 +432,7 @@ Teacher's Comment: ${comment}` : ''}`;
             <FaDownload />
           </button>
           <button
-            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
+            className={`p-2 ${error ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"} text-white rounded-full`}
             onClick={handlePlay}
           >
             {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)}
