@@ -149,7 +149,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   }
 
   const handlePlay = async () => {
-    console.log('Fetch Audio: ', fetchAudio);
+    console.log('Fetch Audio: ', await fetchAudio);
     if (!effectiveName)
       return toast.error('Participant has not completed the task');
     if (effectiveText === '' && !downloadMode) {
