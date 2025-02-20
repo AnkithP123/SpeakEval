@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaSpinner, FaEnvelope } from 'react-icons/fa';
 
-function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBase64, name, code, onGradeUpdate, customName }) {
+function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBase64, name, code, onGradeUpdate, customName, tokenProvided = false }) {
   // States used in both modes
   const [completed, setCompleted] = useState(false);
   const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
@@ -28,6 +28,9 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
 
   // Check if URL has a "token" param, then fetch from /download
   useEffect(() => {
+    if(tokenProvided) {
+      return;
+    }
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     if (token) {
