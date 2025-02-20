@@ -23,6 +23,7 @@ function Download() {
       try {
         const response = await fetch(`https://www.server.speakeval.org/download/all?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXJ0aWNpcGFudCI6Ilplbm9zIiwicXVlc2V0aW9uTm8iOlsxLDJdLCJjb2RlIjoiMzY5NTA5NjEiLCJpYXQiOjE3NDAwODQyOTMsImV4cCI6MTc3MTY0MTg5M30.2EKGyEVmqaFZ63o_JzwSS2RPBpQ3SRpow4vrllK0W-I`)
         const data = await response.json()
+        console.log(data)
 
         if (data.error) {
           throw new Error(data.error)
