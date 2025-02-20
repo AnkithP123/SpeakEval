@@ -43,7 +43,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   const effectiveText = downloadMode && downloadedData ? downloadedData.text : text;
   const effectiveAudio = downloadMode && downloadedData ? downloadedData.audio : audio;
   const effectiveQuestion = downloadMode && downloadedData ? downloadedData.question : question;
-  const effectiveCode = downloadMode && downloadedData ? downloadedData.code : code;
+  const effectiveCode = code;
   const effectiveCustomName = downloadMode && downloadedData ? downloadedData.customName : customName;
   const effectiveQuestionBase64 = downloadMode && downloadedData ? downloadedData.questionBase64 : questionBase64;
 
