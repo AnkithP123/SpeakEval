@@ -402,7 +402,7 @@ Teacher's Comment: ${comment}` : ''}`;
         toast.success('Email sent successfully');
         setShowEmailModal(false);
       } else {
-        toast.error('Failed to send email');
+        toast.error(resp.error || 'Failed to send email');
       }
     } catch (error) {
       console.error('Error sending email:', error);
