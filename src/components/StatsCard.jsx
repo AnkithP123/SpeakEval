@@ -23,6 +23,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   const [emailBody, setEmailBody] = useState('');
   const [baseEmailBody, setBaseEmailBody] = useState('');
   const [includeResponseLink, setIncludeResponseLink] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("SpeakEval Exam Result");
 
   const [error, setError] = useState(false);
 
@@ -385,7 +386,7 @@ Teacher's Comment: ${comment}` : ''}`;
         message: emailBody,
         code: effectiveCode,
         participant: effectiveName,
-        subject: "SpeakEval Exam Result",
+        subject: emailSubject,
         pin: localStorage.getItem('token'),
       });
       queryParams.append('link', includeResponseLink);
@@ -554,6 +555,23 @@ Teacher's Comment: ${comment}` : ''}`;
             <div className="bg-white rounded-lg p-6 w-11/12 md:w-1/2">
               <h2 className="text-xl font-bold mb-4">Edit Email</h2>
               <div className="mb-4">
+                <label className="block mb-2 font-semibold">Email Subject</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                />
+              </div>
+              
+              <div className="mb-4">
+                <textarea
+                  className="w-full h-40 p-2 border border-gray-300 rounded"
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                />
+              </div>
+              <div className="mb-4">
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -565,11 +583,6 @@ Teacher's Comment: ${comment}` : ''}`;
                   <span>Include a link for the student to view their response</span>
                 </label>
               </div>
-              <textarea
-                className="w-full h-40 p-2 border border-gray-300 rounded"
-                value={emailBody}
-                onChange={(e) => setEmailBody(e.target.value)}
-              />
               <div className="flex justify-end mt-4">
                 <button
                   className="px-4 py-2 mr-2 bg-gray-300 rounded hover:bg-gray-400"
