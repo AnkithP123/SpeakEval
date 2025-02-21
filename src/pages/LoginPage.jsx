@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import './LoginPage.css'; // Import the CSS file
+import './LoginPage.css';
 
 function LoginPage({ set, setUltimate, setUsername, setPin }) {
   // Local state for the input fields
@@ -10,15 +10,24 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
   const [email, setEmail] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [shake, setShake] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1); // Track registration steps
+  
+  // New state for teacher verification
+  const [fullName, setFullName] = useState('');
+  const [school, setSchool] = useState('');
+  const [schoolAddress, setSchoolAddress] = useState('');
+  const [proofType, setProofType] = useState(''); // 'id' or 'website'
+  const [teacherId, setTeacherId] = useState(null);
+  const [schoolWebsite, setSchoolWebsite] = useState('');
+  const [showProofModal, setShowProofModal] = useState(false);
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect');
 
-  // On mount, check for an existing token in localStorage.
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      // Optionally, decode the token to get the username.
       const storedUsername = localStorage.getItem('username');
       if (storedUsername) {
         setUsername(storedUsername);
@@ -27,93 +36,174 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
     }
   }, [navigate, redirect, setUsername]);
 
-  const handleLogin = async () => {
+  const validateInitialInputs = () => {
     if (!usernameInput || !password || (isRegister && !email)) {
       toast.error('Please fill in all required fields.');
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      return;
+      return false;
     }
 
     if (isRegister && !email.includes('@')) {
       toast.error('Please enter a valid email address.');
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      return;
+      return false;
     }
 
     if (isRegister) {
       if (usernameInput.length < 3 || usernameInput.length > 20) {
-      toast.error('Username must be between 3 and 20 characters.');
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      return;
+        toast.error('Username must be between 3 and 20 characters.');
+        return false;
       }
 
       if (password.length < 6 || password.length > 50) {
-      toast.error('Password must be between 6 and 50 characters.');
+        toast.error('Password must be between 6 and 50 characters.');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const validateTeacherInfo = () => {
+    if (!fullName || !school || !schoolAddress) {
+      toast.error('Please fill in all teacher information fields.');
+      return false;
+    }
+
+    if (!proofType) {
+      toast.error('Please select a verification method.');
+      return false;
+    }
+
+    if (proofType === 'id' && !teacherId) {
+      toast.error('Please upload your teacher ID.');
+      return false;
+    }
+
+    if (proofType === 'website' && !schoolWebsite) {
+      toast.error('Please provide the school website link.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 15 * 1024 * 1024) {  //15mb limit idk how big files get
+        toast.error('File size must be less than 15MB');
+        return;
+      }
+      setTeacherId(file);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!validateInitialInputs()) {
       setShake(true);
       setTimeout(() => setShake(false), 500);
       return;
+    }
+
+    if (!isRegister) {
+      // Handle normal login
+      try {
+        const res = await fetch('https://www.server.speakeval.org/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: usernameInput, password })
+        });
+
+        const data = await res.json();
+
+        if (res.status !== 200) {
+          toast.error(data.error || 'Error occurred');
+          setShake(true);
+          setTimeout(() => setShake(false), 500);
+          return;
+        }
+
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('username', usernameInput);
+          setUsername(usernameInput);
+          setPin(data.token);
+          if (data.subscription) {
+            set(data.subscription !== 'free');
+            setUltimate(data.subscription === 'Ultimate');
+          } else {
+            set(false);
+            setUltimate(false);
+          }
+          navigate(redirect || '/');
+        }
+      } catch (err) {
+        console.error('Login Error:', err);
+        toast.error('Failed to connect. Please try again.');
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
       }
+    } else {
+      setCurrentStep(2);
+    }
+  };
+
+  const handleTeacherInfoSubmit = async () => {
+    if (!validateTeacherInfo()) {
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
     }
 
     try {
-      const endpoint = isRegister ? '/register' : '/login';
-      const payload = isRegister
-        ? { email, username: usernameInput, password }
-        : { username: usernameInput, password };
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('username', usernameInput);
+      formData.append('password', password);
+      formData.append('fullName', fullName);
+      formData.append('school', school);
+      formData.append('schoolAddress', schoolAddress);
+      formData.append('proofType', proofType);
+      
+      if (proofType === 'id' && teacherId) {
+        formData.append('teacherId', teacherId);
+      } else if (proofType === 'website') {
+        formData.append('schoolWebsite', schoolWebsite);
+      }
 
-      const res = await fetch(`https://www.server.speakeval.org${endpoint}`, {
+      const res = await fetch('https://www.server.speakeval.org/verification', { 
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: formData
       });
 
       const data = await res.json();
 
-      if (res.status !== 200) {
-        toast.error(data.error || 'Error occurred');
+      if (res.status !== 200 || !data.success) {
+        toast.error(data.error || 'Verification failed. Please try again.');
+        return;
+      }
+
+      const registerRes = await fetch('https://www.server.speakeval.org/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, username: usernameInput, password })
+      });
+
+      const registerData = await registerRes.json();
+
+      if (registerRes.status !== 200) {
+        toast.error(registerData.error || 'Error occurred');
         setShake(true);
         setTimeout(() => setShake(false), 500);
         return;
       }
 
-      if (data.token) {
-        // Save token and username in localStorage to persist login
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('username', usernameInput);
-
-        // Call the passed-in setters:
-        console.log('Set Username: ', setUsername);
-        setUsername(usernameInput);
-        setPin(data.token); // or data.pin if your backend returns one
-        // If your backend returns a subscription property, set it here:
-        if (data.subscription) {
-          // For example, set 'set' to true if the subscription is not free,
-          // and setUltimate to true if it equals 'Ultimate'
-          set(data.subscription !== 'free');
-          setUltimate(data.subscription === 'Ultimate');
-        } else {
-          // Otherwise, you may default to free
-          set(false);
-          setUltimate(false);
-        }
-
-        navigate(redirect || '/');
-      } else if (!isRegister) {
-        toast.error('Unexpected error. Please try again.');
-      }
-      if (data.message) {
-        toast.success(data.message);
+      if (registerData.message) {
+        toast.success(registerData.message);
       }
 
-      if (isRegister) {
-        navigate('/verify?email=' + encodeURIComponent(email));
-      }
+      navigate('/verify?email=' + encodeURIComponent(email));
     } catch (err) {
-      console.error('Login Error:', err);
-      toast.error('Failed to connect. Please try again.');
+      console.error('Registration Error:', err);
+      toast.error('Failed to submit teacher information. Please try again.');
       setShake(true);
       setTimeout(() => setShake(false), 500);
     }
@@ -121,54 +211,161 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      handleLogin();
+      if (currentStep === 1) {
+        handleLogin();
+      } else if (currentStep === 2) {
+        handleTeacherInfoSubmit();
+      }
     }
+  };
+
+  const renderProofModal = () => {
+    if (!showProofModal) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h3>Select Verification Method</h3>
+          <div className="proof-options">
+            <div className="proof-option" onClick={() => {
+              setProofType('id');
+              setShowProofModal(false);
+            }}>
+              <h4>Upload Teacher ID</h4>
+              <p>Upload an image of your school-issued teacher ID</p>
+            </div>
+            <div className="proof-option" onClick={() => {
+              setProofType('website');
+              setShowProofModal(false);
+            }}>
+              <h4>Provide School Website</h4>
+              <p>Provide a link to your school's staff directory</p>
+            </div>
+          </div>
+          <button className="close-modal" onClick={() => setShowProofModal(false)}>
+            Close
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
     <div className={`login-container ${shake ? 'shake' : ''}`}>
       <div className="login-title">{isRegister ? 'Register' : 'Log In'}</div>
-      {isRegister && (
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="login-input"
-          placeholder="Enter Email"
-          onKeyUp={handleKeyPress}
-        />
+      
+      {currentStep === 1 && (
+        <>
+          {isRegister && (
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="login-input"
+              placeholder="Enter Email"
+              onKeyUp={handleKeyPress}
+            />
+          )}
+          <input
+            type="text"
+            name="username"
+            value={usernameInput}
+            onChange={(e) => setUsernameInput(e.target.value)}
+            className="login-input"
+            placeholder="Enter Username"
+            onKeyUp={handleKeyPress}
+          />
+          <input
+            type="password"
+            name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="login-input"
+            placeholder="Enter Password"
+            onKeyUp={handleKeyPress}
+          />
+          <button onClick={handleLogin} className="login-button">
+            {isRegister ? 'Next' : 'Log In'}
+          </button>
+          <div>
+            <span
+              className="login-toggle"
+              onClick={() => setIsRegister(!isRegister)}
+            >
+              {isRegister
+                ? 'Already have an account? Log In'
+                : 'Need to register? Sign Up'}
+            </span>
+          </div>
+        </>
       )}
-      <input
-        type="text"
-        name="username"
-        value={usernameInput}
-        onChange={(e) => setUsernameInput(e.target.value)}
-        className="login-input"
-        placeholder="Enter Username"
-        onKeyUp={handleKeyPress}
-      />
-      <input
-        type="password"
-        name="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="login-input"
-        placeholder="Enter Password"
-        onKeyUp={handleKeyPress}
-      />
-      <button onClick={handleLogin} className="login-button">
-        {isRegister ? 'Register' : 'Log In'}
-      </button>
-      <div>
-        <span
-          className="login-toggle"
-          onClick={() => setIsRegister(!isRegister)}
-        >
-          {isRegister
-            ? 'Already have an account? Log In'
-            : 'Need to register? Sign Up'}
-        </span>
-      </div>
+
+      {currentStep === 2 && (
+        <>
+          <input
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="login-input"
+            placeholder="Full Name"
+            onKeyUp={handleKeyPress}
+          />
+          <input
+            type="text"
+            value={school}
+            onChange={(e) => setSchool(e.target.value)}
+            className="login-input"
+            placeholder="School Name"
+            onKeyUp={handleKeyPress}
+          />
+          <input
+            type="text"
+            value={schoolAddress}
+            onChange={(e) => setSchoolAddress(e.target.value)}
+            className="login-input"
+            placeholder="School Address"
+            onKeyUp={handleKeyPress}
+          />
+          <button 
+            className="proof-select-button"
+            onClick={() => setShowProofModal(true)}
+          >
+            {proofType ? 'Change Verification Method' : 'Select Verification Method'}
+          </button>
+
+          {proofType === 'id' && (
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="file-input"
+            />
+          )}
+
+          {proofType === 'website' && (
+            <input
+              type="url"
+              value={schoolWebsite}
+              onChange={(e) => setSchoolWebsite(e.target.value)}
+              className="login-input"
+              placeholder="School Website Staff Directory URL"
+              onKeyUp={handleKeyPress}
+            />
+          )}
+
+          <button onClick={handleTeacherInfoSubmit} className="login-button">
+            Submit
+          </button>
+          <button 
+            onClick={() => setCurrentStep(1)} 
+            className="back-button"
+          >
+            Back
+          </button>
+        </>
+      )}
+
+      {renderProofModal()}
     </div>
   );
 }

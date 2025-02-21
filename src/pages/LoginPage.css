@@ -19,7 +19,7 @@
     padding: 10px 20px;
     border-radius: 10px;
     background-color: white;
-    max-width: 300px;
+    max-width: 350px;
     margin: 20px auto;
     text-align: center;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
@@ -66,4 +66,91 @@
     color: #333;
     font-size: 14px;
   }
+
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+  }
+  
+  .proof-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .proof-option {
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .proof-option:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .proof-option h4 {
+    margin: 0 0 0.5rem 0;
+  }
+  
+  .proof-option p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+  }
+  
+  .close-modal {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #ddd;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .proof-select-button {
+    width: 95%;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .file-input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+  }
+  
+  .back-button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background-color: #ddd;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
   
