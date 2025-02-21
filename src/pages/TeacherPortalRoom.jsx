@@ -24,6 +24,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   const [displayName, setDisplayName] = useState("")
   const [nextRoomCode, setNextRoomCode] = useState(null)
   const [previousRoomCode, setPreviousRoomCode] = useState(null)
+  const [failedEmails, setFailedEmails] = useState(new Set()) 
   const [categories, setCategories] = useState([]) // New state for categories
   const [descriptions, setDescriptions] = useState(() => {
     const savedDescriptions = localStorage.getItem("descriptions")
@@ -465,6 +466,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
   
     try {
       setIsEmailSending(true)
+      setFailedEmails(new Set()) // Reset failed emails state
       const baseExamCode = roomCode.toString().slice(0, -3)
       
       const emailData = participants.map(participant => ({
@@ -480,7 +482,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
                 transcription: questionData.transcription || "No transcription available",
                 totalScore: questionData.totalScore,
                 grades: questionData.grades,
-                categories:questionData.categories,
+                categories: questionData.categories,
                 teacherComment: questionData.teacherComment,
               }
             }
@@ -498,7 +500,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
           return gradeData
         })
       }))
-      console.log('Email Data:', emailData)
+
       const response = await fetch('https://www.server.speakeval.org/send_bulk_email', {
         method: 'POST',
         headers: {
@@ -517,19 +519,47 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
       if (data.error) {
         throw new Error(data.error)
       }
-      console.log('Email response:', data)
-      // Show success/failure summary
-      if (data.summary.failed > 0) {
-        toast.warning(`Sent ${data.summary.successful} emails, ${data.summary.failed} failed`)
-      } else {
+
+      // Handle failed emails
+      if (data.results?.failed?.length > 0) {
+        const failedStudents = new Set(data.results.failed.map(f => f.name))
+        setFailedEmails(failedStudents)
+        
+        // Create detailed error message
+        const errorDetails = data.results.failed
+          .map(failure => `${failure.student}: ${failure.error}`)
+          .join('\n')
+        
+        toast.error(
+          <div>
+            <div className="font-bold mb-2">Failed to send some emails:</div>
+            <div className="max-h-32 overflow-y-auto">
+              {data.results.failed.map((failure, idx) => (
+                <div key={idx} className="text-sm">
+                  {failure.student}: {failure.error}
+                </div>
+              ))}
+            </div>
+          </div>,
+          { autoClose: 5000 }
+        )
+      }
+
+      if (data.summary.successful > 0) {
         toast.success(`Successfully sent ${data.summary.successful} emails`)
       }
+
+      if (data.summary.successful === 0 && data.summary.failed === 0) {
+        toast.warning("No emails were sent - no valid recipients found")
+      }
   
-      setShowBulkEmailModal(false)
-      setSelectedQuestionsToEmail(new Set())
+      if (data.summary.failed === 0) {
+        setShowBulkEmailModal(false)
+        setSelectedQuestionsToEmail(new Set())
+      }
     } catch (error) {
       console.error("Error sending emails:", error)
-      toast.error("Failed to send emails: " + error.message)
+      toast.error(`Failed to send emails: ${error.message}`)
     } finally {
       setIsEmailSending(false)
     }
@@ -754,21 +784,30 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
             </div>
           ) : showByPerson ? (
             <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-300">
-                <thead>
-                  <tr>
-                    <th className="py-2 px-4 border-b border-gray-300">Student</th>
-                    {questionData.questions.map((_, index) => (
-                      <th key={index} className="py-2 px-4 border-b border-gray-300">
-                        Question {index + 1}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
+      <table className="min-w-full bg-white border border-gray-300">
+        <thead>
+          <tr>
+            <th className="py-2 px-4 border-b border-gray-300">Student</th>
+            {questionData.questions.map((_, index) => (
+              <th key={index} className="py-2 px-4 border-b border-gray-300">
+                Question {index + 1}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
                   {sortParticipants().map((participant, index) => (
-                    <tr key={index}>
-                      <td className="py-2 px-4 border-b border-gray-300">{participant.name}</td>
+                     <tr key={index} className={failedEmails.has(participant.name) ? "bg-red-50" : ""}>
+                     <td className="py-2 px-4 border-b border-gray-300">
+                       <div className="flex items-center">
+                         <span>{participant.name}</span>
+                         {failedEmails.has(participant.name) && (
+                           <span className="ml-2 text-xs text-red-600 bg-red-100 px-2 py-1 rounded-full">
+                             Email Failed
+                           </span>
+                         )}
+                       </div>
+                     </td>
                       {questionData.questions.map((questionCode, qIndex) => {
                         const questionData = participant.questionData ? participant.questionData.get(questionCode) : null
                         return (
@@ -800,8 +839,16 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sortParticipants().map((participant, index) => (
-                <ProfileCard
+      {sortParticipants().map((participant, index) => (
+        <div key={index} className={failedEmails.has(participant.name) ? "relative" : ""}>
+          {failedEmails.has(participant.name) && (
+            <div className="absolute -top-2 -right-2 z-10">
+              <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">
+                Email Failed
+              </span>
+            </div>
+          )}
+          <ProfileCard
                   key={index}
                   text={participant.transcription}
                   rubric={rubric}
@@ -813,7 +860,9 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
                   name={participant.name}
                   code={roomCode}
                   onGradeUpdate={handleGradeUpdate}
-                />
+                  className={failedEmails.has(participant.name) ? "border-2 border-red-200" : ""}
+                  />
+                </div>
               ))}
             </div>
           )}
