@@ -4,6 +4,7 @@ import ProfileCard from "../components/StatsCard"
 import { toast } from "react-toastify"
 import jsPDF from "jspdf"
 import { FaArrowUp, FaArrowDown,FaEnvelope, FaSpinner } from "react-icons/fa" // Import arrow icons
+import { f } from "html2pdf.js"
 
 function TeacherPortalRoom({ initialRoomCode, pin }) {
   const [roomCode, setRoomCode] = useState(initialRoomCode || useParams().roomCode) // Track the room code as state
@@ -466,7 +467,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
   
     try {
       setIsEmailSending(true)
-      setFailedEmails(new Set()) // Reset failed emails state
+      setFailedEmails(new Set()) 
       const baseExamCode = roomCode.toString().slice(0, -3)
       
       const emailData = participants.map(participant => ({
@@ -500,7 +501,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
           return gradeData
         })
       }))
-
+  
       const response = await fetch('https://www.server.speakeval.org/send_bulk_email', {
         method: 'POST',
         headers: {
@@ -519,18 +520,18 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
       if (data.error) {
         throw new Error(data.error)
       }
-
+  
       // Handle failed emails
       if (data.results?.failed?.length > 0) {
-        const failedStudents = new Set(data.results.failed.map(f => f.name))
-        setFailedEmails(failedStudents)
+        const failedStudents = new Set(data.results.failed.map(f => f.student))
         
-        // Create detailed error message
-        const errorDetails = data.results.failed
-          .map(failure => `${failure.student}: ${failure.error}`)
-          .join('\n')
-        
-        toast.error(
+        setFailedEmails(prevFailedEmails => {
+          const newFailedEmails = new Set(failedStudents)
+          console.log("Updating failed emails set:", newFailedEmails)
+          return newFailedEmails
+        })
+  
+        const errorToast = (
           <div>
             <div className="font-bold mb-2">Failed to send some emails:</div>
             <div className="max-h-32 overflow-y-auto">
@@ -540,19 +541,28 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
                 </div>
               ))}
             </div>
-          </div>,
-          { autoClose: 5000 }
+          </div>
         )
+        
+        toast.error(errorToast, { 
+          autoClose: 5000,
+          onOpen: () => {
+            console.log("Current failed emails after update:", failedStudents)
+          }
+        })
       }
+  
 
       if (data.summary.successful > 0) {
         toast.success(`Successfully sent ${data.summary.successful} emails`)
       }
-
+  
+      // Show warning if no emails were sent
       if (data.summary.successful === 0 && data.summary.failed === 0) {
         toast.warning("No emails were sent - no valid recipients found")
       }
   
+
       if (data.summary.failed === 0) {
         setShowBulkEmailModal(false)
         setSelectedQuestionsToEmail(new Set())
@@ -564,7 +574,6 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
       setIsEmailSending(false)
     }
   }
-
   
   const handleNextQuestion = () => handleNavigateQuestion("next")
   const handlePreviousQuestion = () => handleNavigateQuestion("previous")
@@ -816,6 +825,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
                                 code={questionCode}
                                 onGradeUpdate={handleGradeUpdate}
                                 customName={`Q${qIndex + 1}`}
+                                isRed={failedEmails.has(participant.name)}
                               />
                             ) : (
                               <div className="text-gray-400">No submission</div>
@@ -843,6 +853,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
                   name={participant.name}
                   code={roomCode}
                   onGradeUpdate={handleGradeUpdate}
+                  isRed={failedEmails.has(participant.name)}
                 />
               ))}
             </div>

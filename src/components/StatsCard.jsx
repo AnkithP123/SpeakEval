@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaSpinner, FaEnvelope } from 'react-icons/fa';
 
-function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBase64, name, code, onGradeUpdate, customName, tokenProvided = false, participantPass = null }) {
+function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBase64, name, code, onGradeUpdate, customName, tokenProvided = false, participantPass = null, isRed = false }) {
   // States used in both modes
   const [completed, setCompleted] = useState(false);
   const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
@@ -443,9 +443,9 @@ Teacher's Comment: ${comment}` : ''}`;
           animation: shake 1s;
         }
       `}</style>
-      <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
+      <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'} ${isRed ? 'border-2 border-red-500' : ''}`}>
         <div className="flex items-center w-full">
-          <span className="mr-[8px] text-[23px] truncate">{effectiveCustomName || effectiveName}</span>
+          <span className={`mr-[8px] text-[23px] truncate ${isRed ? 'text-red-500' : ''}`}>{effectiveCustomName || effectiveName}</span>
           <div className="flex gap-[8px] ml-auto">
             <button
               className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
