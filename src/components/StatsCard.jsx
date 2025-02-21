@@ -30,7 +30,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
   useEffect(() => {
     if(error) {
       const timer = setTimeout(() => {
-        setError(false);
+        // setError(false);
       }, 1000);
       return () => clearTimeout(timer);
     }
@@ -425,18 +425,18 @@ Teacher's Comment: ${comment}` : ''}`;
       <style>{`
         @keyframes shake {
           0% { transform: translateX(0); background-color: #38a169; }
-          5% { transform: translateX(-4px); background-color: #FF0000; }
-          10% { transform: translateX(4px); background-color: #FF0000; }
-          15% { transform: translateX(-4px); background-color: #FF0000; }
-          20% { transform: translateX(4px); background-color: #FF0000; }
-          25% { transform: translateX(-4px); background-color: #FF0000; }
+          5% { transform: translateX(-4px); background-color: #598658; }
+          10% { transform: translateX(4px); background-color: #7A6B46; }
+          15% { transform: translateX(-4px); background-color: #9C5135; }
+          20% { transform: translateX(4px); background-color: #BD3623; }
+          25% { transform: translateX(-4px); background-color: #DE1B12; }
           30% { transform: translateX(4px); background-color: #FF0000; }
-          35% { transform: translateX(-2px); background-color: #38a169; }
-          40% { transform: translateX(2px); background-color: #38a169; }
-          45% { transform: translateX(-1px); background-color: #38a169; }
-          50% { transform: translateX(1px); background-color: #38a169; }
-          55% { transform: translateX(0); background-color: #38a169; }
-          100% { transform: translateX(0); background-color: #38a169; }
+          35% { transform: translateX(-2px); background-color: #FF0000; }
+          40% { transform: translateX(2px); background-color: #FF0000; }
+          45% { transform: translateX(-1px); background-color: #FF0000; }
+          50% { transform: translateX(1px); background-color: #FF0000; }
+          55% { transform: translateX(0); background-color: #FF0000; }
+          100% { transform: translateX(0); background-color: #FF0000; }
         }
         .shake {
           animation: shake 1s;
