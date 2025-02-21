@@ -26,6 +26,16 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
 
   const [error, setError] = useState(false);
 
+  // Reset error after animation
+  useEffect(() => {
+    if(error) {
+      const timer = setTimeout(() => {
+        setError(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   // Check if URL has a "token" param, then fetch from /download
   useEffect(() => {
     if(tokenProvided) {
@@ -36,7 +46,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       participant.text = participant.transcription;
       setDownloadedData(participant);
     }
-  });
+  }, [tokenProvided, participantPass]);
 
   // Derive effective values using downloadedData if in downloadMode
   const effectiveName = downloadMode && downloadedData ? downloadedData.name : name;
@@ -79,7 +89,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       console.log('Error loading audio:', error);
       console.log(effectiveName);
     }
-  };;
+  };
 
   useEffect(() => {
     fetchAudio().then(() => {
@@ -177,6 +187,7 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       setError(false);
     } catch (error) {
       console.error('Error playing answer audio:', error);
+      // Trigger error animation
       setError(true);
     } finally {
       setIsLoading(false);
@@ -256,15 +267,10 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
       });
       setTotalScore(total);
 
-      // Parse categories and descriptions only in non-download mode
       let category = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
         return element.split('|:::|')[0];
       });
-      setCategories(category)
-
-      let descriptions = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
-        return element.split('|:::|')[1].replace('|,,,|', '\n\n');
-      });
+      setCategories(category);
 
       onGradeUpdate(effectiveName, effectiveCustomName, data.grades, total, comment, categories);
 
@@ -288,12 +294,8 @@ function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBa
     let category = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
       return element.split('|:::|')[0];
     });
-    setCategories(category)
+    setCategories(category);
 
-    let descriptions = rubric === '' ? [] : rubric.split('|;;|').map((element) => {
-      return element.split('|:::|')[1].split('|,,,|').join('\n\n');
-    });
-    
     onGradeUpdate(effectiveName, effectiveCustomName, updatedGrades, total, comment, categories);
   };
 
@@ -366,7 +368,6 @@ Total Score: ${totalScore}${comment && comment !== '' ? `
   
 Teacher's Comment: ${comment}` : ''}`;
 
-    // Save the base email body and set the initial email body
     setBaseEmailBody(autoEmail);
     setEmailBody(autoEmail);
     setIncludeResponseLink(true);
@@ -408,7 +409,6 @@ Teacher's Comment: ${comment}` : ''}`;
     onGradeUpdate(effectiveName, effectiveCustomName, grades, totalScore, newComment, categories);
   };
 
-  // If in download mode and data is still loading, show a temporary loading message.
   if (downloadMode && !downloadedData) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -421,155 +421,174 @@ Teacher's Comment: ${comment}` : ''}`;
   }
 
   return (
-    <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
-      <div className="flex items-center w-full">
-        <span className="mr-[8px] text-[23px] truncate">{effectiveCustomName || effectiveName}</span>
-        <div className="flex gap-[8px] ml-auto">
+    <>
+      <style>{`
+        @keyframes shake {
+          0% { transform: translateX(0); background-color: #38a169; }
+          5% { transform: translateX(-4px); background-color: #FF0000; }
+          10% { transform: translateX(4px); background-color: #FF0000; }
+          15% { transform: translateX(-4px); background-color: #FF0000; }
+          20% { transform: translateX(4px); background-color: #FF0000; }
+          25% { transform: translateX(-4px); background-color: #FF0000; }
+          30% { transform: translateX(4px); background-color: #FF0000; }
+          35% { transform: translateX(-2px); background-color: #38a169; }
+          40% { transform: translateX(2px); background-color: #38a169; }
+          45% { transform: translateX(-1px); background-color: #38a169; }
+          50% { transform: translateX(1px); background-color: #38a169; }
+          55% { transform: translateX(0); background-color: #38a169; }
+          100% { transform: translateX(0); background-color: #38a169; }
+        }
+        .shake {
+          animation: shake 1s;
+        }
+      `}</style>
+      <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'}`}>
+        <div className="flex items-center w-full">
+          <span className="mr-[8px] text-[23px] truncate">{effectiveCustomName || effectiveName}</span>
+          <div className="flex gap-[8px] ml-auto">
+            <button
+              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
+              onClick={handleDownload}
+            >
+              <FaDownload />
+            </button>
+            <button
+              className={`p-2 ${error ? "bg-red-500 hover:bg-red-600 shake" : "bg-green-500 hover:bg-green-600"} text-white rounded-full`}
+              onClick={handlePlay}
+            >
+              {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)}
+            </button>
+            {!downloadMode && (
+              <>
+                <button
+                  className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
+                  onClick={handleAiButtonClick}
+                >
+                  <FaRobot />
+                </button>
+                <button
+                  className="p-2 bg-sky-500 text-white rounded-full hover:bg-sky-600"
+                  onClick={handleEmailButtonClick}
+                  title="Send Email"
+                >
+                  <FaEnvelope />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div>
           <button
-            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
-            onClick={handleDownload}
+            className="p-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600"
+            onClick={handlePlayQuestion}
           >
-            <FaDownload />
+            Play Question
           </button>
-          <button
-            className={`p-2 ${error ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"} text-white rounded-full`}
-            onClick={handlePlay}
-          >
-            {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)}
-          </button>
-          {/* Only show AI and Email buttons if not in download mode */}
-          {!downloadMode && (
-            <>
-              <button
-                className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
-                onClick={handleAiButtonClick}
-              >
-                <FaRobot />
-              </button>
-              <button
-                className="p-2 bg-sky-500 text-white rounded-full hover:bg-sky-600"
-                onClick={handleEmailButtonClick}
-                title="Send Email"
-              >
-                <FaEnvelope />
-              </button>
-            </>
-          )}
         </div>
-      </div>
 
-      <div>
-        <button
-          className="p-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600"
-          onClick={handlePlayQuestion}
-        >
-          Play Question
-        </button>
-      </div>
-
-      <div className="w-full">
-        <div className="mt-2 text-gray-800 break-words">
-          {effectiveQuestion}
-        </div>
-        <br />
-        <div className="mt-2 text-gray-800 break-words">
-          {effectiveText}
-        </div>
-      </div>
-
-      {/* Render grade inputs, total, and comments only if not in download mode */}
-      {!downloadMode && (
-        <>
+        <div className="w-full">
           <div className="mt-2 text-gray-800 break-words">
-            {rubric2 !== '' && effectiveText !== '' && rubric2.split('|;;|').map((element, idx) => {
-              const [rubricItem] = element.split('|:::|');
-              return (
-                <div key={idx} className="flex items-center relative z-10">
-                  <span className="mr-2">{rubricItem}</span>
-                  <input
-                    type="text"
-                    className="border border-gray-300 px-2 py-1 rounded w-20"
-                    placeholder="Points"
-                    value={grades[idx] || ''}
-                    onChange={(e) => handleGradeChange(idx, e.target.value)}
-                  />
-                  <div className="relative group flex items-center">
-                    <FaInfoCircle className="ml-2 text-blue-500" />
-                    <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-20">
-                      {justifications[idx] ? justifications[idx] : 'Press the AI button to receive an automated grade and view the reason here.'}
+            {effectiveQuestion}
+          </div>
+          <br />
+          <div className="mt-2 text-gray-800 break-words">
+            {effectiveText}
+          </div>
+        </div>
+
+        {!downloadMode && (
+          <>
+            <div className="mt-2 text-gray-800 break-words">
+              {rubric2 !== '' && effectiveText !== '' && rubric2.split('|;;|').map((element, idx) => {
+                const [rubricItem] = element.split('|:::|');
+                return (
+                  <div key={idx} className="flex items-center relative z-10">
+                    <span className="mr-2">{rubricItem}</span>
+                    <input
+                      type="text"
+                      className="border border-gray-300 px-2 py-1 rounded w-20"
+                      placeholder="Points"
+                      value={grades[idx] || ''}
+                      onChange={(e) => handleGradeChange(idx, e.target.value)}
+                    />
+                    <div className="relative group flex items-center">
+                      <FaInfoCircle className="ml-2 text-blue-500" />
+                      <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-20">
+                        {justifications[idx] ? justifications[idx] : 'Press the AI button to receive an automated grade and view the reason here.'}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-2 text-gray-800">
-            {rubric !== '' && effectiveText !== '' && `Total Score: ${totalScore}`}
-          </div>
-          <div className="flex justify-center mt-2 mb-2">
-            <button
-              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex items-center justify-center"
-              onClick={handleCopyComments}
-            >
-              <FaClipboard className="mr-2" /> Copy AI Comments
-            </button>
-          </div>
-
-          {/* Comment Section */}
-          <div className="mt-4 w-full">
-            <textarea
-              className="w-full p-2 border border-gray-300 rounded resize-none"
-              rows="4"
-              placeholder="Add your comment here..."
-              value={comment}
-              onChange={handleCommentChange}
-            />
-          </div>
-        </>
-      )}
-
-      <audio id={`answerAudioPlayer-${effectiveName}-${effectiveCode}`} />
-      <audio id={`questionAudioPlayer-${effectiveName}-${effectiveCode}`} />
-
-      {showEmailModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg p-6 w-11/12 md:w-1/2">
-            <h2 className="text-xl font-bold mb-4">Edit Email</h2>
-            <div className="mb-4">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={includeResponseLink}
-                  onChange={(e) => {
-                    setIncludeResponseLink(e.target.checked);
-                  }}
-                />
-                <span>Include a link for the student to view their response</span>
-              </label>
+                );
+              })}
             </div>
-            <textarea
-              className="w-full h-40 p-2 border border-gray-300 rounded"
-              value={emailBody}
-              onChange={(e) => setEmailBody(e.target.value)}
-            />
-            <div className="flex justify-end mt-4">
+            <div className="mt-2 text-gray-800">
+              {rubric !== '' && effectiveText !== '' && `Total Score: ${totalScore}`}
+            </div>
+            <div className="flex justify-center mt-2 mb-2">
               <button
-                className="px-4 py-2 mr-2 bg-gray-300 rounded hover:bg-gray-400"
-                onClick={() => setShowEmailModal(false)}
+                className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex items-center justify-center"
+                onClick={handleCopyComments}
               >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                onClick={handleSendEmail}
-              >
-                Send Email
+                <FaClipboard className="mr-2" /> Copy AI Comments
               </button>
             </div>
+
+            <div className="mt-4 w-full">
+              <textarea
+                className="w-full p-2 border border-gray-300 rounded resize-none"
+                rows="4"
+                placeholder="Add your comment here..."
+                value={comment}
+                onChange={handleCommentChange}
+              />
+            </div>
+          </>
+        )}
+
+        <audio id={`answerAudioPlayer-${effectiveName}-${effectiveCode}`} />
+        <audio id={`questionAudioPlayer-${effectiveName}-${effectiveCode}`} />
+
+        {showEmailModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white rounded-lg p-6 w-11/12 md:w-1/2">
+              <h2 className="text-xl font-bold mb-4">Edit Email</h2>
+              <div className="mb-4">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={includeResponseLink}
+                    onChange={(e) => {
+                      setIncludeResponseLink(e.target.checked);
+                    }}
+                  />
+                  <span>Include a link for the student to view their response</span>
+                </label>
+              </div>
+              <textarea
+                className="w-full h-40 p-2 border border-gray-300 rounded"
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+              />
+              <div className="flex justify-end mt-4">
+                <button
+                  className="px-4 py-2 mr-2 bg-gray-300 rounded hover:bg-gray-400"
+                  onClick={() => setShowEmailModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  onClick={handleSendEmail}
+                >
+                  Send Email
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
 
