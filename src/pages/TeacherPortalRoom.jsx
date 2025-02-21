@@ -704,7 +704,7 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
             </select>
             <button
               onClick={() => setShowBulkEmailModal(true)}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 flex items-center"
+              className="bg-sky-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-sky-600 flex items-center"
               disabled={isEmailSending}
             >
               <FaEnvelope className="mr-2" />
