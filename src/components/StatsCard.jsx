@@ -395,6 +395,7 @@ Teacher's Comment: ${comment}` : ''}`;
       if (resp.success) {
         toast.success('Email sent successfully');
         setShowEmailModal(false);
+        isRed = false;
       } else {
         toast.error(resp.error || 'Failed to send email');
       }
@@ -468,11 +469,16 @@ Teacher's Comment: ${comment}` : ''}`;
                   <FaRobot />
                 </button>
                 <button
-                  className="p-2 bg-sky-500 text-white rounded-full hover:bg-sky-600"
+                  className="p-2 bg-sky-500 text-white rounded-full hover:bg-sky-600 relative"
                   onClick={handleEmailButtonClick}
                   title="Send Email"
                 >
                   <FaEnvelope />
+                  {isRed && (
+                    <span className="absolute top-1 right-1 translate-x-1/2 -translate-y-1/2 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
+                      !
+                    </span>
+                  )}
                 </button>
               </>
             )}
