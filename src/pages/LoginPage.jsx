@@ -13,7 +13,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
   const [currentStep, setCurrentStep] = useState(1); // Track registration steps
   
   // New state for teacher verification
-  const [fullName, setFullName] = useState('');
+  //const [fullName, setFullName] = useState('');
   const [school, setSchool] = useState('');
   const [schoolAddress, setSchoolAddress] = useState('');
   const [proofType, setProofType] = useState(''); // 'id' or 'website'
@@ -48,8 +48,8 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
     }
 
     if (isRegister) {
-      if (usernameInput.length < 3 || usernameInput.length > 20) {
-        toast.error('Username must be between 3 and 20 characters.');
+      if (usernameInput.length < 3 || usernameInput.length > 30) {
+        toast.error('Full Name must be between 3 and 30 characters.');
         return false;
       }
 
@@ -62,7 +62,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
   };
 
   const validateTeacherInfo = () => {
-    if (!fullName || !school || !schoolAddress) {
+    if (!school || !schoolAddress) {
       toast.error('Please fill in all teacher information fields.');
       return false;
     }
@@ -115,7 +115,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
       }
     }
   };
-  
+
   const handleLogin = async () => {
     if (!validateInitialInputs()) {
       setShake(true);
@@ -178,7 +178,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
         email,
         username: usernameInput,
         password,
-        fullName,
+        fullName: usernameInput,
         school,
         schoolAddress,
         proofType,
@@ -295,7 +295,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
             value={usernameInput}
             onChange={(e) => setUsernameInput(e.target.value)}
             className="login-input"
-            placeholder="Enter Username"
+            placeholder="Enter Full Name"
             onKeyUp={handleKeyPress}
           />
           <input
@@ -325,14 +325,6 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
 
       {currentStep === 2 && (
         <>
-          <input
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="login-input"
-            placeholder="Full Name"
-            onKeyUp={handleKeyPress}
-          />
           <input
             type="text"
             value={school}
