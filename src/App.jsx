@@ -20,6 +20,7 @@ import RoomAndConfigPage from './pages/UpdateConfig';
 import VerifyPage from './pages/VerifyPage';
 import ProfileCard from './components/StatsCard';
 import Download from './pages/Download';
+import TeacherVerifyPage from './pages/TeacherVerifyPage';
 
 function AudioRecorderRouteWrapper() {
   const location = useLocation();
@@ -64,6 +65,7 @@ function App() {
           <Route path="/update" element={<RoomAndConfigPage   set={setGold} setUltimate={setUltimate} getPin={getPin} subscribed={gold || ultimate}/>} />
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/download" element={<Download />}/>
+          <Route path="/teacher-verify" element={<TeacherVerifyPage />} />
           <Route path="*" element={<Maintainence />} />
         </Route>
         <Route path="/record" element={<AudioRecorderRouteWrapper />} />
