@@ -211,7 +211,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
       const registerRes = await fetch('https://www.server.speakeval.org/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, username: usernameInput, password })
+        body: JSON.stringify({ email, fullName: fullName, username: usernameInput, password })
       });
 
       const registerData = await registerRes.json();
