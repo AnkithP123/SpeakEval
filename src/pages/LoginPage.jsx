@@ -85,17 +85,37 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
     return true;
   };
 
-  const handleFileUpload = (event) => {
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+        const base64String = reader.result.split(',')[1];
+        resolve(base64String);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Update handleFileUpload to convert file to base64
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 15 * 1024 * 1024) {  //15mb limit idk how big files get
+      if (file.size > 15 * 1024 * 1024) {
         toast.error('File size must be less than 15MB');
         return;
       }
-      setTeacherId(file);
+      try {
+        const base64String = await fileToBase64(file);
+        setTeacherId(base64String);
+      } catch (error) {
+        console.error('File conversion error:', error);
+        toast.error('Error processing the image. Please try again.');
+      }
     }
   };
-
+  
   const handleLogin = async () => {
     if (!validateInitialInputs()) {
       setShake(true);
@@ -154,27 +174,30 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
     }
 
     try {
-      const formData = new FormData();
-      formData.append('email', email);
-      formData.append('username', usernameInput);
-      formData.append('password', password);
-      formData.append('fullName', fullName);
-      formData.append('school', school);
-      formData.append('schoolAddress', schoolAddress);
-      formData.append('proofType', proofType);
-      
-      if (proofType === 'id' && teacherId) {
-        formData.append('teacherId', teacherId);
-      } else if (proofType === 'website') {
-        formData.append('schoolWebsite', schoolWebsite);
-      }
+      const verificationData = {
+        email,
+        username: usernameInput,
+        password,
+        fullName,
+        school,
+        schoolAddress,
+        proofType,
+      };
 
+      if (proofType === 'id' && teacherId) {
+        verificationData.teacherId = teacherId;
+      } else if (proofType === 'website') {
+        verificationData.schoolWebsite = schoolWebsite;
+      }
+      console.log(verificationData);
       const res = await fetch('https://www.server.speakeval.org/verification', { 
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(verificationData)
       });
-
+      console.log(res);
       const data = await res.json();
+      console.log(data);
 
       if (res.status !== 200 || !data.success) {
         toast.error(data.error || 'Verification failed. Please try again.');
