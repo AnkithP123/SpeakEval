@@ -761,8 +761,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
                     countdownRef.current = thinkingTime;
                         
                     setCountdownDisplay(countdownRef.current);
-                    if (!audioRef.current || audioRef.current.paused)
-                        playBeep();
+                    if (!audioRef.current || audioRef.current.paused) {
+                        // playBeep();
+                    }
                     countdownInterval = setInterval(() => {
                     countdownRef.current -= 1;
                     setCountdownDisplay(countdownRef.current);
@@ -779,8 +780,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
                             audioRef.current.pause();
                         playRecordingStarted();
                     } else {
-                        if (!audioRef.current || audioRef.current.paused)
-                            playBeep();
+                        if (!audioRef.current || audioRef.current.paused) {
+                            // playBeep();
+                        }
                     }
                     }, 1000);
                 } else {
