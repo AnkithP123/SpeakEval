@@ -141,6 +141,16 @@
     width: 100%;
     padding: 10px;
     margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+
+  .file-input:hover {
+    border-color: #ccc;
+    background-color: #f0f0f0;
   }
   
   .back-button {
@@ -153,4 +163,36 @@
     cursor: pointer;
   }
   
-  
+  /* LoginPage.css */
+
+.proof-method {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+
+.or-divider {
+  text-align: center;
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+.camera-button {
+  padding: 10px;
+  margin: 10px 0;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.proof-status {
+  margin-top: 10px;
+  color: green;
+  font-weight: bold;
+}

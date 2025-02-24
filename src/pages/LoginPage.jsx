@@ -76,6 +76,14 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
 
         const data = await res.json();
 
+        if (data.redirect) {
+          navigate('/' + data.redirect);
+          if (res.status !== 200) {
+            toast.error(data.error || 'Error occurred');
+          }  
+          return;
+        }
+
         if (res.status !== 200) {
           toast.error(data.error || 'Error occurred');
           setShake(true);
