@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import PracticeAudioRecorder from "./PracticeAudioRecorder"
+import party from "party-js"
 
 export default function PracticeExam() {
   const [examData, setExamData] = useState(null)
@@ -45,6 +46,48 @@ export default function PracticeExam() {
   const handleComplete = (recordings) => {
     console.log("Practice exam completed", recordings)
     setExamCompleted(true)
+    party.confetti(document.body, {
+      count: party.variation.range(100, 200),
+      spread: 60,
+      origin: { x: 0.5, y: 0.5 },
+      speed: party.variation.range(200, 300),
+    })
+
+    // Create audio elements and animate them
+    setTimeout(() => {
+      recordings && recordings.forEach((recording, index) => {
+        const audio = document.createElement("audio")
+        audio.src = recording;
+        audio.controls = true
+        audio.style.position = "absolute"
+        const cardRect = document.querySelector(".bg-white").getBoundingClientRect()
+        
+        let top, left
+        do {
+          top = Math.random() * 80 + 10
+          left = Math.random() * 80 + 10
+        } while (
+          top >= cardRect.top - 50 && top <= cardRect.bottom + 50 &&
+          left >= cardRect.left - 50 && left <= cardRect.right + 50
+        )
+        audio.style.top = `${top}%`
+        audio.style.left = `${left}%`
+        audio.style.transform = "scale(0)"
+        audio.style.transition = "transform 0.5s ease-in-out"
+        document.body.appendChild(audio)
+
+        setTimeout(() => {
+          audio.style.transform = "scale(1)"
+        }, 100 * index)
+
+        setTimeout(() => {
+          audio.style.transform = "scale(0)"
+          setTimeout(() => {
+            document.body.removeChild(audio)
+          }, 500)
+        }, 3000 + 100 * index)
+      })
+    }, 50)
   }
 
   const handleRetry = () => {

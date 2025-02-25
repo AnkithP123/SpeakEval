@@ -47,9 +47,34 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     const countdownRef = useRef(0)
     const countdownInterval = useRef(null)
 
+    function shuffle(array, seed) {                // <-- ADDED ARGUMENT
+        var m = array.length, t, i;
+      
+        // While there remain elements to shuffle…
+        while (m) {
+      
+          // Pick a remaining element…
+          i = Math.floor(random(seed) * m--);        // <-- MODIFIED LINE
+      
+          // And swap it with the current element.
+          t = array[m];
+          array[m] = array[i];
+          array[i] = t;
+          ++seed                                     // <-- ADDED LINE
+        }
+      
+        return array;
+      }
+      
+      function random(seed) {
+        var x = Math.sin(seed++) * 10000; 
+        return x - Math.floor(x);
+      }
+      
+
     const getExamData = () => {
         if (randomizeQuestions) {
-            const shuffledQuestions = [...examData.questions].sort(() => randomSeed - 0.5)
+            const shuffledQuestions = shuffle([...examData.questions], randomSeed)
             shuffledQuestions.forEach((question, index) => {
                 question.index = index
             })
@@ -262,6 +287,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                             type="checkbox"
                             checked={randomizeQuestions}
                             onChange={() => {
+                                if (isPlaying || waiting || isRecording || countdownRef.current > 0) return
                                 setRandomizeQuestions(!randomizeQuestions)
                                 setRandomSeed(Math.random())
                             }}
@@ -273,7 +299,10 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                         <input
                             type="checkbox"
                             checked={showTranscriptions}
-                            onChange={() => setShowTranscriptions(!showTranscriptions)}
+                            onChange={() => {
+                                if (isPlaying || waiting || isRecording || countdownRef.current > 0) return
+                                setShowTranscriptions(!showTranscriptions)
+                            }}
                             className="mr-2"
                         />
                         Show Transcriptions
@@ -380,10 +409,12 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
 
                 {currentQuestionIndex === getExamData().questions.length - 1 && (
                     <button
-                        onClick={onComplete}
+                        onClick={() => {
+                            onComplete(studentAudioBlobURLs)
+                        }}
                         className="mt-8 w-full bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600 transition-colors"
                     >
-                        Complete Practice Exam
+                        Finish Practice Exam
                     </button>
                 )}
 
