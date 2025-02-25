@@ -59,6 +59,32 @@ function HomeCards() {
               Configure
             </Link>
           </Card>
+          <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+            <h2 className="text-2xl font-bold">Create Practice</h2>
+            <p className="mt-4 mb-8 text-lg text-gray-800">
+              For Teacher Use. Create a practice session for your students.
+            </p>
+            <Link
+              to="/create-practice"
+              className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
+              style={{'transition': 'background-color 0.3s ease'}}
+            >
+              Create
+            </Link>
+          </Card>
+          <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
+            <h2 className="text-2xl font-bold">Join Practice</h2>
+            <p className="mt-4 mb-8 text-lg text-gray-800">
+              Join a practice session created by your teacher.
+            </p>
+            <Link
+              to="/practice"
+              className="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3]"
+              style={{'transition': 'background-color 0.3s ease'}}
+            >
+              Join
+            </Link>
+          </Card>
         </div>
       </div>
     </section>

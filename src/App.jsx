@@ -21,6 +21,9 @@ import VerifyPage from './pages/VerifyPage';
 import ProfileCard from './components/StatsCard';
 import Download from './pages/Download';
 import TeacherVerifyPage from './pages/TeacherVerifyPage';
+import CreatePractice from './pages/CreatePractice';
+import Practice from './pages/Practice';
+import PracticeExam from './pages/PracticeExam';
 
 function AudioRecorderRouteWrapper() {
   const location = useLocation();
@@ -66,6 +69,10 @@ function App() {
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/download" element={<Download />}/>
           <Route path="/teacher-verify" element={<TeacherVerifyPage />} />
+          <Route path="/create-practice" element={<CreatePractice getPin={getPin} />} />
+          <Route path="/practice" element={<Practice />} />
+          <Route path="/practice-exam" element={<PracticeExam />} />
+          <Route path="/profile" element={<ProfileCard />} />
           <Route path="*" element={<Maintainence />} />
         </Route>
         <Route path="/record" element={<AudioRecorderRouteWrapper />} />
