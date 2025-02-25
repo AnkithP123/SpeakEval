@@ -34,6 +34,9 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     const [studentAudioBlobURLs, setStudentAudioBlobURLs] = useState([])
     const [displayTime, setDisplayTime] = useState("xx:xx")
     const [countdownDisplay, setCountdownDisplay] = useState(0)
+    const [randomizeQuestions, setRandomizeQuestions] = useState(false)
+    const [randomSeed, setRandomSeed] = useState(0)
+    const [showTranscriptions, setShowTranscriptions] = useState(true)
 
     const mediaRecorder = useRef(null)
     const audioChunks = useRef([])
@@ -43,6 +46,17 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     const timer = useRef(0)
     const countdownRef = useRef(0)
     const countdownInterval = useRef(null)
+
+    const getExamData = () => {
+        if (randomizeQuestions) {
+            const shuffledQuestions = [...examData.questions].sort(() => randomSeed - 0.5)
+            shuffledQuestions.forEach((question, index) => {
+                question.index = index
+            })
+            return { ...examData, questions: shuffledQuestions }
+        }
+        return examData
+    }
 
     useEffect(() => {
         return () => {
@@ -112,11 +126,11 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
         timerInterval.current = setInterval(() => {
             setRecordingTime((prevTime) => {
                 const newTime = prevTime + 1
-                const remainingTime = examData.timeLimit - newTime
+                const remainingTime = getExamData().timeLimit - newTime
                 updateTimer(remainingTime * 1000)
-                if (newTime >= examData.timeLimit) {
+                if (newTime >= getExamData().timeLimit) {
                     stopRecording()
-                    return examData.timeLimit
+                    return getExamData().timeLimit
                 }
                 return newTime
             })
@@ -133,7 +147,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
         setWaiting(true)
 
         if (!questionAudioBlobURL) {
-            const audioData = Uint8Array.from(atob(examData.questions[currentQuestionIndex].audio), (c) => c.charCodeAt(0))
+            const audioData = Uint8Array.from(atob(getExamData().questions[currentQuestionIndex].audio), (c) => c.charCodeAt(0))
             const audioBlob = new Blob([audioData], { type: "audio/webm" })
             const audioUrl = URL.createObjectURL(audioBlob)
             setQuestionAudioBlobURL(audioUrl)
@@ -177,7 +191,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     const handleQuestionEnd = () => {
         if (!isPlaying) return
         setIsPlaying(false)
-        countdownRef.current = examData.thinkingTime
+        countdownRef.current = getExamData().thinkingTime
         setCountdownDisplay(countdownRef.current)
 
         countdownInterval.current = setInterval(() => {
@@ -203,7 +217,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
         setQuestionAudioBlobURL(null)
         setRecordingTime(0)
         setDisplayTime("xx:xx")
-        countdownRef.current = examData.thinkingTime
+        countdownRef.current = getExamData().thinkingTime
         setCountdownDisplay(0)
         clearInterval(timerInterval.current)
         clearInterval(countdownInterval.current)
@@ -218,6 +232,8 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
         timer.current = 0
         countdownRef.current = 0
     }
+
+    
 
     const recordStyle = {
         background: "radial-gradient(circle at bottom, #ff0000 0%, #b20000 70%)",
@@ -239,6 +255,31 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
         <div className="flex flex-col items-center justify-center min-h-screen bg-blue-100 p-4">
             <div className="bg-white rounded-3xl shadow-lg p-8 w-full max-w-2xl">
                 <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Practice Exam</h1>
+                
+                <div className="flex justify-between mb-4">
+                    <label className="flex items-center">
+                        <input
+                            type="checkbox"
+                            checked={randomizeQuestions}
+                            onChange={() => {
+                                setRandomizeQuestions(!randomizeQuestions)
+                                setRandomSeed(Math.random())
+                            }}
+                            className="mr-2"
+                        />
+                        Randomize Questions
+                    </label>
+                    <label className="flex items-center">
+                        <input
+                            type="checkbox"
+                            checked={showTranscriptions}
+                            onChange={() => setShowTranscriptions(!showTranscriptions)}
+                            className="mr-2"
+                        />
+                        Show Transcriptions
+                    </label>
+                </div>
+
                 <div
                     className="text-5xl font-bold text-center mb-8"
                     style={{
@@ -257,11 +298,11 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                         Previous
                     </button>
                     <span className="text-lg font-semibold">
-                        Question {currentQuestionIndex + 1} of {examData.questions.length}
+                        Question {currentQuestionIndex + 1} of {getExamData().questions.length}
                     </span>
                     <button
-                        onClick={() => handleQuestionChange(Math.min(examData.questions.length - 1, currentQuestionIndex + 1))}
-                        disabled={currentQuestionIndex === examData.questions.length - 1}
+                        onClick={() => handleQuestionChange(Math.min(getExamData().questions.length - 1, currentQuestionIndex + 1))}
+                        disabled={currentQuestionIndex === getExamData().questions.length - 1}
                         className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50"
                     >
                         Next
@@ -270,7 +311,9 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
 
                 <div className="mb-6">
                     <h3 className="text-xl font-bold mb-2">Question {currentQuestionIndex + 1}</h3>
-                    <p className="text-gray-700 mb-4">{examData.questions[currentQuestionIndex].transcription}</p>
+                    {showTranscriptions && (
+                        <p className="text-gray-700 mb-4">{getExamData().questions[currentQuestionIndex].transcription}</p>
+                    )}
                 </div>
 
                 {questionAudioBlobURL && !isRecording && (
@@ -335,7 +378,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                     <p className="mt-4 text-2xl font-bold text-red-600 text-center">Recording starts in {countdownDisplay}...</p>
                 )}
 
-                {currentQuestionIndex === examData.questions.length - 1 && (
+                {currentQuestionIndex === getExamData().questions.length - 1 && (
                     <button
                         onClick={onComplete}
                         className="mt-8 w-full bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600 transition-colors"
@@ -349,7 +392,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                         <h2 className="text-2xl font-bold text-center mb-4">Your Recordings</h2>
                         {studentAudioBlobURLs.map((audioUrl, index) => (
                             <div key={index} className="mb-4">
-                                <h3 className="text-lg font-semibold">Question {index + 1} - {examData.questions[index].transcription}</h3>
+                                <h3 className="text-lg font-semibold">Question {index + 1} - {getExamData().questions[index].transcription}</h3>
                                 <audio
                                     ref={studentAudioRef}
                                     src={audioUrl}
