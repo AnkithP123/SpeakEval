@@ -2,12 +2,20 @@
 
 import { useState, useEffect, useRef } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
+import { cuteAlert } from "cute-alert"
 
 let username
 
 const setUserName = (val) => {
   username = val
   console.log("New Username!", username)
+  if (username === 'JeetWonAgain') {
+    cuteAlert({
+      type: "error",
+      title: "Jeet did NOT win again!",
+      description: "Haha, you thought. Sign out of that account right now.",
+    })
+  }
 }
 
 const storedUsername = localStorage.getItem("username")
