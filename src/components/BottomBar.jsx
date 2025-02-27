@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Mail, Github, Linkedin, ExternalLink } from "lucide-react"
-import { BsDiscord } from "react-icons/bs"
+import { useState, useEffect } from "react";
+import { Mail, Github, Linkedin, ExternalLink } from "lucide-react";
+import { BsDiscord } from "react-icons/bs";
 
 function BottomBar() {
-  const [year, setYear] = useState(new Date().getFullYear())
+  const [year, setYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    setYear(new Date().getFullYear())
-  }, [])
+    setYear(new Date().getFullYear());
+  }, []);
 
   return (
     <footer className="relative overflow-hidden bg-gradient-to-r from-blue-900 to-purple-900 border-t border-cyan-500/30 py-[2px]">
@@ -28,14 +28,29 @@ function BottomBar() {
               <div className="h-10 w-10 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
                 <span className="text-white font-bold">SE</span>
               </div>
-              <span className="text-white text-xl font-medium tracking-wide">SpeakEval</span>
+              <span className="text-white text-xl font-medium tracking-wide">
+                SpeakEval
+              </span>
             </div>
           </div>
 
           {/* Social and copyright section */}
           <div className="flex flex-col items-center space-y-4">
             <div className="flex flex-wrap justify-center gap-4">
-            <div className="flex space-x-4">
+              <div className="text-center md:text-center">
+                <p className="text-cyan-200 text-sm">
+                  Created by Ankith Prabhakar with Nikunj Bafna
+                </p>
+                <p className="text-cyan-300/70 text-xs mt-1">
+                  © {year} SpeakEval. All rights reserved.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Links Section */}
+          <div className="flex flex-col items-center md:items-end space-y-4">
+            <div className="flex space-x-4 items-left">
               <a
                 href="https://mail.google.com/mail/u/0/?fs=1&tf=cm&source=mailto&to=info@speakeval.org"
                 className="text-cyan-200 hover:text-cyan-400 transition-all transform hover:scale-110"
@@ -58,16 +73,7 @@ function BottomBar() {
                 <BsDiscord className="h-5 w-5" />
               </a>
             </div>
-            <div className="text-center md:text-center">
-              <p className="text-cyan-200 text-sm">Created by Ankith Prabhakar with Nikunj Bafna</p>
-              <p className="text-cyan-300/70 text-xs mt-1">© {year} SpeakEval. All rights reserved.</p>
-            </div>
-            </div>
-          </div>
-
-          {/* Links Section */}
-          <div className="flex flex-col items-center md:items-end space-y-4">
-          <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
               <a
                 href="#features"
                 className="text-cyan-200 text-sm hover:text-cyan-400 transition-colors flex items-center gap-1 group"
@@ -105,8 +111,7 @@ function BottomBar() {
       {/* Bottom border with gradient */}
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500/50 via-purple-500/50 to-blue-500/50"></div>
     </footer>
-  )
+  );
 }
 
-export default BottomBar
-
+export default BottomBar;
