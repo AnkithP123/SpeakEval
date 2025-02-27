@@ -21,7 +21,7 @@ function MainLayout({ set, set2, set3, set4 }) {
         <Outlet />
       </div>
       <ToastContainer
-        position="bottom-right"
+        position="top-right"
         autoClose={5000}
         hideProgressBar={false}
         newestOnTop
