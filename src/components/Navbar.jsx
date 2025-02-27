@@ -129,13 +129,18 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
                   onError={(e) => { e.target.src = setVar ? (setVar2 ? 'crownlogo.png' : 'goldlogo.png') : 'logo.png'; }}
                 />
               </div>
-              <span className={`hidden md:block text-[50px] font-bold ml-[-10px] transition-all duration-300 ${
-                setVar
-                  ? "bg-clip-text text-transparent bg-gradient-to-r from-[#EBC050] via-[#F5ED88] to-[#EBC764]"
-                  : "bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500"
-              }`} style={{ fontFamily: "Montserrat", textShadow: "0 0 15px rgba(80, 200, 255, 0.5)" }}>
+              {setVar ?
+              <span className={"hidden md:block text-[50px] font-bold ml-[-10px] bg-clip-text text-transparent bg-gradient-to-r from-[#EBC050] via-[#F5ED88] to-[#EBC764]"}
+                style={{ fontFamily: "Montserrat" }}
+              >
                 peakEval
               </span>
+              :
+              <span className={`hidden md:block text-[50px] font-bold ml-[-10px] transition-all duration-300 ${
+                  "bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500"
+              }`} style={{ fontFamily: "Montserrat", textShadow: "0 0 15px rgba(80, 200, 255, 0.5)" }}>
+                peakEval
+              </span>}
             </NavLink>
           </div>
           <div className="flex items-center">
