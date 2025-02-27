@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Mail, Github, ExternalLink } from "lucide-react";
 import { BsDiscord } from "react-icons/bs";
-import logo from "../../public/logo_centered_white.png";
+import logo from "/logo_centered_white.png";
 
 function BottomBar() {
   const [year, setYear] = useState(new Date().getFullYear());
