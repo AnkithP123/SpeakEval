@@ -42,7 +42,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
     if (loggedIn) {
       fetchConfigs()
     }
-  }, [loggedIn, userId, configs])
+  }, [loggedIn, userId])
 
   useEffect(() => {
     if (!loggedIn) {

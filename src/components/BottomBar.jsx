@@ -37,7 +37,7 @@ function BottomBar() {
             <div className="flex flex-wrap justify-center gap-4">
             <div className="flex space-x-4">
               <a
-                href="https://mail.google.com/mail/u/0/?fs=1&tf=cm&source=mailto&to=info@speakeval.org"
+                href="mailto:info@speakeval.org"
                 className="text-cyan-200 hover:text-cyan-400 transition-all transform hover:scale-110"
                 aria-label="Email"
               >
@@ -87,7 +87,7 @@ function BottomBar() {
                 </span>
               </a>
               <a
-                href="https://mail.google.com/mail/u/0/?fs=1&tf=cm&source=mailto&to=info@speakeval.org"
+                href="mailto:support@speakeval.org"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-cyan-200 text-sm hover:text-cyan-400 transition-colors flex items-center gap-1 group"

@@ -51,7 +51,7 @@ function HomeCards() {
   ]
 
   return (
-    <section className="py-16 px-4 relative overflow-hidden">
+    <section className="py-0 px-4 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full filter blur-3xl animate-pulse-slow"></div>

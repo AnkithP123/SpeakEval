@@ -2,11 +2,68 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
-import Card from '../components/Card';
+import Card from '../components/Card2';
 import Upgrade from './Upgrade';
-import { FaMagic } from 'react-icons/fa';
-import { cuteAlert } from 'cute-alert';
-import LoginPage from './LoginPage';
+import { FaMagic, FaMicrophone, FaTimes, FaStop, FaPlus } from 'react-icons/fa';
+import { DndProvider, useDrag, useDrop } from "react-dnd"
+import { HTML5Backend } from "react-dnd-html5-backend"
+
+const DraggableColumn = ({ index, value, moveColumn, handlePointValueChange, handleDeletePointValue }) => {
+    const ref = useRef(null)
+  
+    const [{ isDragging }, drag] = useDrag({
+      type: "COLUMN",
+      item: { index },
+      collect: (monitor) => ({
+        isDragging: monitor.isDragging(),
+      }),
+    })
+  
+    const [, drop] = useDrop({
+      accept: "COLUMN",
+      hover(item, monitor) {
+        if (!ref.current) {
+          return
+        }
+        const dragIndex = item.index
+        const hoverIndex = index
+  
+        // Don't replace items with themselves
+        if (dragIndex === hoverIndex) {
+          return
+        }
+  
+        moveColumn(dragIndex, hoverIndex)
+        item.index = hoverIndex
+      },
+    })
+  
+    drag(drop(ref))
+  
+    return (
+      <th
+        ref={ref}
+        className={`text-white text-center p-2 border-b border-purple-500/30 ${isDragging ? "opacity-50" : ""}`}
+        style={{ cursor: "move" }}
+      >
+        <div className="flex items-center justify-center space-x-2">
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => handlePointValueChange(index, e)}
+            className="w-16 text-center bg-black/30 border border-purple-500/30 rounded p-1 text-white"
+            step="0.5"
+          />
+          <button
+            onClick={() => handleDeletePointValue(index)}
+            className="text-red-400 hover:text-red-300 transition-colors"
+          >
+            <FaTimes size={12} />
+          </button>
+        </div>
+      </th>
+    )
+}  
 
 const Configure = ({set, setUltimate, getPin, subscribed}) => {
     const [popupVisible, setPopupVisible] = useState(false);
@@ -32,6 +89,8 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     const [button2Hover, setButton2Hover] = useState(false);
     const [selected, setSelected] = useState(false);
     const [configs, setConfigs] = useState([]); // State to store the configs
+    const [hoverButton, setHoverButton] = useState(false);
+    const [isConfigRegistered, setIsConfigRegistered] = useState(false);
 
     
     useEffect(() => {
@@ -300,6 +359,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     
             if (res.ok && !(response.error)) {
                 toast.success("Configuration registered successfully");
+                setIsConfigRegistered(true);
             } else {
                 toast.error("Failed to register configuration" + response.error ? `: ${response.error}` : '');
             }
@@ -334,8 +394,6 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
         // convert the rubric, which is currently a string using the separators, back into an array of objects
 
         let rubric2 = config.rubric
-
-        console.log
 
         if (config.rubric && config.rubric.includes("|^^^|")) {
             setPointValues(rubric2.split("|^^^|")[0].split('|,,|'))
@@ -673,9 +731,59 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
         }
         return positions;
     };
+
+    const moveColumn = (dragIndex, hoverIndex) => {
+        // Update point values order
+        setPointValues((prevPointValues) => {
+          const newPointValues = [...prevPointValues]
+          const draggedValue = newPointValues[dragIndex]
+          newPointValues.splice(dragIndex, 1)
+          newPointValues.splice(hoverIndex, 0, draggedValue)
+          return newPointValues
+        })
+    
+        // Update category descriptions to match the new order
+        setCategories((prevCategories) => {
+          return prevCategories.map((category) => {
+            const newDescriptions = [...category.descriptions]
+            const draggedDescription = newDescriptions[dragIndex]
+            newDescriptions.splice(dragIndex, 1)
+            newDescriptions.splice(hoverIndex, 0, draggedDescription)
+            return { ...category, descriptions: newDescriptions }
+          })
+        })
+      }    
     
 
     return (
+        <DndProvider backend={HTML5Backend}>
+        {popupVisible && !isConfigRegistered ? ( // Added warning banner
+        <div className="fixed top-20 left-0 right-0 bg-amber-500/90 border-l-4 border-amber-700 text-white p-4 rounded-md mb-6 shadow-md z-50">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-amber-100"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium">
+                <strong>Warning:</strong> Your configuration has not been update yet. Click "Update"
+                at the bottom of the page to save your work.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
         <div>
             <style>{styles}</style>
             {showUpgrade && <Upgrade onClose={() => setShowUpgrade(false)} doc={document} />}
@@ -685,218 +793,191 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
             {selected ? (
                 <div className="container-xl lg:container m-auto">
                     <div className="grid grid-cols-1 md:grid-cols-1 gap-8 p-8 rounded-lg justify-center">
-                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                            <div className="flex justify-center items-center mb-4 relative">
-                                <div className="w-[10%]"></div> {/* Spacer to balance the button on the right */}
-                                <h2 className="text-2xl font-bold text-center flex-grow">
-                                    Record Questions
-                                </h2>
-                                <button
-                                    onClick={handleAutofillClick}
-                                    style={{
-                                        ...premiumButtonStyle,
-                                        background: button1Hover ? '#F0C63C' : premiumButtonStyle.background,
-                                        boxShadow: button1Hover
-                                            ? '0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.8), 0 0 90px rgba(255, 215, 0, 0.6)'
-                                            : premiumButtonStyle.boxShadow,
-                                        transform: button1Hover ? 'scale(1.1)' : premiumButtonStyle.transform,
-                                        transition: 'transform 0.3s, box-shadow 0.3s'
-                                    }}
-                                    className="absolute right-0"
-                                    onMouseEnter={() => { setButton1Hover(true) }}
-                                    onMouseLeave={() => { setButton1Hover(false) }}
-                                >
-                                    <FaMagic style={fancyButtonIconStyle} />
-                                    Autofill
-                                    <div className={"gleam"}></div>
-                                    {(button1Hover ? generateSparklePositions(15) : sparklePositions).map((style, index) => (
-                                        <div key={index} className="sparkle" style={style}></div>
-                                    ))}
-                                </button>
-                            </div>
-    
-                            <div className="flex justify-center">
-                                <button onClick={handleToggleRecording} style={buttonStyle}>
-                                    {recording ? 'Stop' : 'Record Question'}
-                                </button>
-                            </div>
-                            {recording && (
-                                <p className="text-red-500 mt-4 text-center">Recording...</p>
-                            )}
-                            {questions.map((question, index) => (
-                                <div key={index} style={chipStyle}>
-                                    <audio controls src={question} />
-                                    <span
-                                        style={deleteButtonStyle}
-                                        onClick={() => handleDeleteQuestion(index)}
-                                    >
-                                        &#x2715;
-                                    </span>
-                                </div>
-                            ))}
-                        </Card>
-                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                            <div className="flex justify-center items-center mb-4 relative">
-                                <div className="w-[10%]"></div> {/* Spacer to balance the button */}
-                                <h2 className="text-2xl font-bold text-center flex-grow">
-                                    Create Rubric
-                                </h2>
-                                <button
-                                    onClick={handleRubricAutofillClick}
-                                    style={{
-                                        ...premiumButtonStyle,
-                                        background: button2Hover ? '#F0C63C' : premiumButtonStyle.background,
-                                        boxShadow: button2Hover
-                                            ? '0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.8), 0 0 90px rgba(255, 215, 0, 0.6)'
-                                            : premiumButtonStyle.boxShadow,
-                                        transform: button2Hover ? 'scale(1.1)' : premiumButtonStyle.transform,
-                                        transition: 'transform 0.3s, box-shadow 0.3s'
-                                    }}
-                                    className="absolute right-0"
-                                    onMouseEnter={() => { setButton2Hover(true) }}
-                                    onMouseLeave={() => { setButton2Hover(false) }}
-                                >
-                                    <FaMagic style={fancyButtonIconStyle} />
-                                    Autofill
-                                    <div className={"gleam"}></div>
-                                    {(button2Hover ? generateSparklePositions(15) : sparklePositions).map((style, index) => (
-                                        <div key={index} className="sparkle" style={style}></div>
-                                    ))}
-                                </button>
-                            </div>                            
-                            <div style={rubricContainerStyle}>
-                                <div style={{ gridColumn: `span 1` }}></div> {/* Blank line */}
+                    <Card color="cyan">
+          <h2 className="text-2xl font-bold text-white mb-4">Record Questions</h2>
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <button
+                onClick={handleToggleRecording}
+                className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white transition-all duration-300 ${
+                  recording
+                    ? "bg-red-500 hover:bg-red-600"
+                    : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                }`}
+              >
+                {recording ? <FaStop className="mr-2" /> : <FaMicrophone className="mr-2" />}
+                <span>{recording ? "Stop Recording" : "Start Recording"}</span>
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {questions.map((question, index) => (
+                <div key={index} className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30">
+                  <audio
+                    controls
+                    src={question}
+                    className="mr-2"
+                    style={{ 
+                        backgroundColor: "transparent", 
+                        border: "none", 
+                        filter: "invert(1)" /* Makes buttons white */ 
+                      }}
+                  />
+                  <button
+                    onClick={() => handleDeleteQuestion(index)}
+                    className="text-red-400 hover:text-red-300 transition-colors p-2"
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
 
-                                <button
-                                    onClick={handleAddPointValue}
-                                    style={rubricCellStyle2}
-                                >
-                                    Add Point Value
-                                </button>
-                                {new Array(Math.max(0, pointValues.length - 2)).fill(null).map((_, index) => (
-                                    <div key={index} style={{ gridColumn: `span 1` }}></div>
-                                ))}
-                                <button
-                                    onClick={handleAddPointValue2}
-                                    style={rubricCellStyle2}
-                                >
-                                    Add Point Value
-                                </button>
-                                <div style={{ gridColumn: `span ${Math.max(6, pointValues.length + 1)}` }}></div> {/* Blank line */}
 
-                                <div style={rubricHeaderStyle}>Category</div>
-                                {pointValues.map((value, index) => (
-                                    <div key={index} style={rubricCellStyle}>
-                                        <input
-                                            type="number"
-                                            value={value}
-                                            onChange={(e) => handlePointValueChange(index, e)}
-                                            style={{ width: '100%', textAlign: 'center' }}
-                                            step="0.5"
-                                        />
-                                        <button
-                                            onClick={() => handleDeletePointValue(index)}
-                                            style={{ marginLeft: '8px', cursor: 'pointer', color: 'red' }}
-                                        >
-                                            &#x2715;
-                                        </button>
-                                    </div>
-                                ))}
+        <Card color="purple">
+          <h2 className="text-2xl font-bold text-white mb-4">Create Rubric</h2>
+          <div className="space-y-4">
+            <div className="flex space-x-4">
+              <button
+                onClick={handleAddPointValue}
+                className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
+              >
+                <FaPlus className="mr-2" /> Add Point Value
+              </button>
+              <button
+                onClick={handleAddPointValue2}
+                className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
+              >
+                <FaPlus className="mr-2" /> Add Point Value
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="text-white text-left p-2 border-b border-purple-500/30">Category</th>
+                    {pointValues.map((value, index) => (
+                      <DraggableColumn
+                        key={index}
+                        index={index}
+                        value={value}
+                        moveColumn={moveColumn}
+                        handlePointValueChange={handlePointValueChange}
+                        handleDeletePointValue={handleDeletePointValue}
+                      />
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map((category, categoryIndex) => (
+                    <tr key={categoryIndex}>
+                      <td className="p-2 border-b border-purple-500/30">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleDeleteCategory(categoryIndex)}
+                            className="text-red-400 hover:text-red-300 transition-colors"
+                          >
+                            <FaTimes size={12} />
+                          </button>
+                          <input
+                            type="text"
+                            value={category.name}
+                            onChange={(e) => handleCategoryNameChange(categoryIndex, e)}
+                            placeholder="Category Name"
+                            className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
+                          />
+                        </div>
+                      </td>
+                      {pointValues.map((_, pointIndex) => (
+                        <td key={pointIndex} className="p-2 border-b border-purple-500/30">
+                          <input
+                            type="text"
+                            value={category.descriptions[pointIndex]}
+                            onChange={(e) => handleCategoryDescriptionChange(categoryIndex, pointIndex, e)}
+                            placeholder={`Description for ${pointValues[pointIndex]} points`}
+                            className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button
+              onClick={handleAddCategory}
+              className="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
+            >
+              <FaPlus className="mr-2" /> Add Category
+            </button>
+          </div>
+        </Card>
+        <Card color="blue">
+          <h2 className="text-2xl font-bold text-white mb-4">Additional Settings</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-white mb-2">Answer Time Limit (seconds)</label>
+              <input
+                type="number"
+                value={maxTime}
+                onChange={(e) => setMaxTime(e.target.value)}
+                className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
+                placeholder="Enter time limit"
+              />
+            </div>
+            <div>
+              <label className="block text-white mb-2">Language</label>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
+              >
+                <option value="">Select Language</option>
+                <option value="English">English</option>
+                <option value="Spanish">Spanish</option>
+                <option value="French">French</option>
+                <option value="Chinese">Chinese</option>
+                <option value="Japanese">Japanese</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            {selectedLanguage === "Other" && (
+              <div>
+                <label className="block text-white mb-2">Specify Language</label>
+                <input
+                  type="text"
+                  value={otherLanguage}
+                  onChange={(e) => setOtherLanguage(e.target.value)}
+                  className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
+                  placeholder="Enter language"
+                />
+              </div>
+            )}
+          </div>
+        </Card>
+        <Card color="pink">
+          <h2 className="text-2xl font-bold text-white mb-4">Register Configuration</h2>
+          <div className="space-y-4">
+            <button
+              onClick={handleRegisterConfig}
+              onMouseEnter={() => setHoverButton(true)}
+              onMouseLeave={() => setHoverButton(false)}
+              className={`w-full relative overflow-hidden text-white text-base rounded-md px-5 py-3 transition-all duration-300 ${
+                hoverButton
+                  ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
+                  : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
+              }`}
+            >
+              <span className="relative z-10">Update</span>
+            </button>
+          </div>
+        </Card>
 
-                                <div style={{ gridColumn: `span ${Math.max(6, pointValues.length + 1)}` }}></div> {/* Blank line */}
-                                
-                                {categories.map((category, index) => (
-                                    <React.Fragment key={index}>
-                                        <div style={rubricCellStyle}>
-                                            <span
-                                                style={{ marginRight: '8px', cursor: 'pointer', color: 'red' }}
-                                                onClick={() => handleDeleteCategory(index)}
-                                            >
-                                                &#x2715;
-                                            </span>
-                                            <input
-                                                type="text"
-                                                value={category.name}
-                                                onChange={(e) => handleCategoryNameChange(index, e)}
-                                                placeholder="Category Name"
-                                                style={{ width: 'auto' }}
-                                            />
-                                        </div>
-                                        {pointValues.map((_, pointIndex) => (
-                                            <input
-                                                key={pointIndex}
-                                                type="text"
-                                                value={category.descriptions[pointIndex]}
-                                                onChange={(e) => handleCategoryDescriptionChange(index, pointIndex, e)}
-                                                style={rubricCellStyle}
-                                                placeholder={`Description ${pointValues.length - pointIndex}`}
-                                            />
-                                        ))}
-                                        <div style={{ gridColumn: `span ${Math.max(6, pointValues.length + 1)}` }}></div> {/* Blank line */}
-
-                                    </React.Fragment>
-                                ))}
-                            </div>
-                            <button onClick={handleAddCategory} style={{ marginTop: '16px', ...rubricCellStyle }}>
-                                Add Category
-                            </button>
-                        </Card>
-                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                            <h2 className="text-2xl font-bold mb-4 text-center">
-                                Additional Settings
-                            </h2>
-                            <div className="flex justify-center">
-                                <input
-                                    type="text"
-                                    value={maxTime}
-                                    onChange={handleMaxTimeChange}
-                                    style={{ ...rubricCellStyle, width: '20%' }}
-                                    maxLength={20}
-                                    placeholder="Answer Time Limit, in seconds"
-                                />
-                            </div>
-                            <div className="flex justify-center">
-                                <select
-                                    value={selectedLanguage}
-                                    onChange={handleLanguageChange}
-                                    style={{ ...dropdownStyle, width: '20%' }}
-                                >
-                                    <option value="">Select Language</option>
-                                    <option value="English">English</option>
-                                    <option value="Spanish">Spanish</option>
-                                    <option value="French">French</option>
-                                    <option value="Chinese">Chinese</option>
-                                    <option value="Japanese">Japanese</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            {selectedLanguage === 'Other' && (
-                                <div className="flex justify-center">
-                                    <input
-                                        type="text"
-                                        value={otherLanguage}
-                                        onChange={(e) => setOtherLanguage(e.target.value)}
-                                        style={{ ...otherStyle, width: '20%' }}
-                                        placeholder="Enter Language"
-                                    />
-                                </div>
-                            )}
-                        </Card>
-                        <Card bg="bg-[#E6F3FF]" className="w-64 h-80 p-8">
-                            <h2 className="text-2xl font-bold mb-4 text-center">
-                                Register Configuration
-                            </h2>
-                            <div className="flex justify-center">
-                                <button onClick={handleRegisterConfig} style={buttonStyle}>
-                                    Update
-                                </button>
-                            </div>
-                        </Card>
                     </div>
                 </div>
             ) : (
                 <div>
-                <title hidden>Create Room</title>
                 <div style={containerStyle}>
                     <div>
                         {configs.length > 0 ? 
@@ -947,6 +1028,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                 </div>
             )}
         </div>
+        </DndProvider>
     );
 };
 export default Configure;
