@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mail, Github, Linkedin, ExternalLink } from "lucide-react";
+import { Mail, Github, ExternalLink } from "lucide-react";
 import { BsDiscord } from "react-icons/bs";
+import logo from "../../public/logo_centered_white.png";
 
 function BottomBar() {
   const [year, setYear] = useState(new Date().getFullYear());
@@ -26,7 +27,7 @@ function BottomBar() {
           <div className="flex flex-col items-center md:items-start space-y-2">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                <span className="text-white font-bold">SE</span>
+                <img src={logo} alt="SpeakEval Logo" className="h-8 w-8" />
               </div>
               <span className="text-white text-xl font-medium tracking-wide">
                 SpeakEval
