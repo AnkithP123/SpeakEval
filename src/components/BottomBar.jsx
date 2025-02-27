@@ -12,7 +12,7 @@ function BottomBar() {
   }, [])
 
   return (
-    <footer className="relative overflow-hidden bg-gradient-to-r from-blue-900 to-purple-900 border-t border-cyan-500/30 py-[10px]">
+    <footer className="relative overflow-hidden bg-gradient-to-r from-blue-900 to-purple-900 border-t border-cyan-500/30 py-[2px]">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -bottom-8 left-1/4 w-72 h-72 bg-cyan-500/10 rounded-full filter blur-3xl animate-pulse-slow"></div>
@@ -32,10 +32,42 @@ function BottomBar() {
             </div>
           </div>
 
-          {/* Links section */}
+          {/* Social and copyright section */}
           <div className="flex flex-col items-center space-y-4">
-            <h3 className="text-white font-medium mb-1">Quick Links</h3>
             <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex space-x-4">
+              <a
+                href="https://mail.google.com/mail/u/0/?fs=1&tf=cm&source=mailto&to=info@speakeval.org"
+                className="text-cyan-200 hover:text-cyan-400 transition-all transform hover:scale-110"
+                aria-label="Email"
+              >
+                <Mail className="h-5 w-5" />
+              </a>
+              <a
+                href="https://github.com/AnkithP123/SpeakEval"
+                className="text-cyan-200 hover:text-cyan-400 transition-all transform hover:scale-110"
+                aria-label="GitHub"
+              >
+                <Github className="h-5 w-5" />
+              </a>
+              <a
+                href="#discord-sever" //idk
+                className="text-cyan-200 hover:text-cyan-400 transition-all transform hover:scale-110"
+                aria-label="discord"
+              >
+                <BsDiscord className="h-5 w-5" />
+              </a>
+            </div>
+            <div className="text-center md:text-center">
+              <p className="text-cyan-200 text-sm">Created by Ankith Prabhakar with Nikunj Bafna</p>
+              <p className="text-cyan-300/70 text-xs mt-1">© {year} SpeakEval. All rights reserved.</p>
+            </div>
+            </div>
+          </div>
+
+          {/* Links Section */}
+          <div className="flex flex-col items-center md:items-end space-y-4">
+          <div className="flex flex-wrap justify-center gap-4">
               <a
                 href="#features"
                 className="text-cyan-200 text-sm hover:text-cyan-400 transition-colors flex items-center gap-1 group"
@@ -65,37 +97,6 @@ function BottomBar() {
                   <ExternalLink className="h-3 w-3" />
                 </span>
               </a>
-            </div>
-          </div>
-
-          {/* Social and copyright section */}
-          <div className="flex flex-col items-center md:items-end space-y-4">
-            <div className="flex space-x-4">
-              <a
-                href="https://mail.google.com/mail/u/0/?fs=1&tf=cm&source=mailto&to=info@speakeval.org"
-                className="text-cyan-200 hover:text-cyan-400 transition-all transform hover:scale-110"
-                aria-label="Email"
-              >
-                <Mail className="h-5 w-5" />
-              </a>
-              <a
-                href="https://github.com/AnkithP123/SpeakEval"
-                className="text-cyan-200 hover:text-cyan-400 transition-all transform hover:scale-110"
-                aria-label="GitHub"
-              >
-                <Github className="h-5 w-5" />
-              </a>
-              <a
-                href="#discord-sever" //idk
-                className="text-cyan-200 hover:text-cyan-400 transition-all transform hover:scale-110"
-                aria-label="discord"
-              >
-                <BsDiscord className="h-5 w-5" />
-              </a>
-            </div>
-            <div className="text-center md:text-right">
-              <p className="text-cyan-200 text-sm">Created by Ankith Prabhakar with Nikunj Bafna</p>
-              <p className="text-cyan-300/70 text-xs mt-1">© {year} SpeakEval. All rights reserved.</p>
             </div>
           </div>
         </div>
