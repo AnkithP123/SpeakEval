@@ -6,6 +6,7 @@ import ProfileCard from "./ProfileCard"
 import { toast } from "react-toastify"
 import { FaUsers, FaPlay, FaRedo, FaUserPlus } from "react-icons/fa"
 import Card from "./Card"
+import { cuteAlert } from 'cute-alert';
 
 function RoomPanel({ roomCode, userId, setRoomCodes }) {
   const [participants, setParticipants] = useState([])
@@ -79,45 +80,38 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
   const handleRestart = async () => {
     const everyoneCompleted = participants.every((participant) => completedParticipants.includes(participant))
 
-    const confirmRestart = await new Promise((resolve) => {
-      toast.info(
-        <div>
-          <p>Are you sure you want to administer another question?</p>
-          {!everyoneCompleted && <p>Not everyone has finished with the current question.</p>}
-          <div className="mt-2 flex justify-end space-x-2">
-            <button onClick={() => resolve(true)} className="px-2 py-1 bg-green-500 text-white rounded">
-              Confirm
-            </button>
-            <button onClick={() => resolve(false)} className="px-2 py-1 bg-red-500 text-white rounded">
-              Cancel
-            </button>
-          </div>
-        </div>,
-        {
-          autoClose: false,
-          closeOnClick: false,
-          draggable: false,
-          closeButton: false,
-        },
-      )
-    })
-
-    if (confirmRestart) {
-      const response = await fetch(`https://www.server.speakeval.org/restart_room?code=${roomCode}&pin=${userId}`)
-      const data = await response.json()
-      if (data.error) {
-        toast.error(data.error)
-        return navigate("/")
+    document.documentElement.style.setProperty('--cute-alert-max-width', document.documentElement.style.getPropertyValue('--cute-alert-min-width') || '20%');
+    
+    cuteAlert({
+      type: everyoneCompleted ? "question" : "error",
+      title: "Are you sure?",
+      description: "Are you sure you want to administer another question?" + (everyoneCompleted ? "" : "\nNot everyone has finished with the current question."),
+      primaryButtonText: "Confirm",
+      secondaryButtonText: "Cancel",
+      showCloseButton: true,
+      closeOnOutsideClick: true,
+    }).then(async (event) => {
+      if (event === "primaryButtonClicked") {
+        const response = await fetch(`https://www.server.speakeval.org/restart_room?code=${roomCode}&pin=${userId}`);
+        const data = await response.json();
+        if(data.error){
+          toast.error(data.error);
+          return navigate('/');
+        }
+        setCompletedParticipants([]);
+        // in 1 second, do the same
+        setTimeout(() => {
+          setCompletedParticipants([]);
+        }, 1000);
+    
+        toast.success('Room restarted');
+        setRoomCodes(data.newRoomCode);
+        roomCode = data.newRoomCode;
+        console.log("New: " + roomCode);
+        setRoomStarted(true);    
       }
-      setCompletedParticipants([])
-      setTimeout(() => {
-        setCompletedParticipants([])
-      }, 1000)
+    });
 
-      toast.success("Room restarted")
-      setRoomCodes(data.newRoomCode)
-      setRoomStarted(true)
-    }
   }
 
   const handleDisplayNameSubmit = async () => {
