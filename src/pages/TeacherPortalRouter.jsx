@@ -1,175 +1,99 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import RoomCodePanel from '../components/RoomCodePanel';
-import { useNavigate } from 'react-router-dom';
-import './CreateRoom.css'; // Import the CSS file where the shake animation is defined
-import Card from '../components/Card';
+"use client"
 
-function TeacherPortalRouter({ initialUserId = '', set, setUltimate, getPin }) {
-    const [userId, setUserId] = useState(getPin());
-    const [loggedIn, setLoggedIn] = useState(userId);
-    const [shake, setShake] = useState(false); // State to trigger shake effect
-    const [rooms, setRooms] = useState([]); // State to store the rooms
-    const navigate = useNavigate();
+import { useState, useEffect } from "react"
+import { toast } from "react-toastify"
+import RoomCodePanel from "../components/RoomCodePanel"
+import { useNavigate } from "react-router-dom"
+import Card from "../components/Card"
 
-    const handleInputChange = async (e) => {
-        const input = e.target.value;
-        await setUserId(input.toUpperCase());
-    };
+function TeacherPortalRouter({ initialUserId = "", set, setUltimate, getPin }) {
+  const [userId, setUserId] = useState(getPin())
+  const [loggedIn, setLoggedIn] = useState(userId)
+  const [shake, setShake] = useState(false)
+  const [rooms, setRooms] = useState([])
+  const navigate = useNavigate()
 
-    const checkUserId = async (userId) => {
-        let parsedData;
-        try {
-            let res = await fetch(`https://www.server.speakeval.org/teacherpin?pin=${userId}`);
-            parsedData = await res.json();
+  useEffect(() => {
+    console.log("userId", userId)
+    if (!loggedIn) {
+      navigate("/login?redirect=/teacher-portal")
+    } else {
+      fetchRooms()
+    }
+  }, [loggedIn, navigate])
 
-            if (parsedData.code === 401) {
-                console.error(parsedData);
-                toast.error("Incorrect Teacher Pin");
-                setShake(true); // Trigger the shake effect
-                setTimeout(() => setShake(false), 500); // Remove shake effect after 500ms
-                return setUserId('');
-            }
-            if (parsedData.code === 200) {
-                console.log(parsedData);
-                setLoggedIn(true);
-            }
-            if (parsedData.subscription) {
-                set(parsedData.subscription !== 'free');
-                setUltimate(parsedData.subscription === 'Ultimate');
-            }
-        } catch (err) {
-            console.error("Error Loading Data", err);
-            toast.error("Error Loading Data");
-            setShake(true); // Trigger the shake effect
-            setTimeout(() => setShake(false), 500); // Remove shake effect after 500ms
-            return setUserId('');
+  const fetchRooms = async () => {
+    try {
+      const res = await fetch(`https://www.server.speakeval.org/getrooms?pin=${userId}`)
+      let data = await res.json()
+      data = data.map((room) => ({
+        ...room,
+        code: Number.parseInt(room.code.toString().slice(0, -3)),
+      }))
+
+      data = data.filter((room, index, self) => index === self.findIndex((t) => t.code === room.code))
+
+      setRooms(data.sort((a, b) => a.created - b.created))
+    } catch (err) {
+      console.error("Error Fetching Rooms", err)
+      toast.error("Error Fetching Rooms")
+    }
+  }
+
+  const handleLogin = async () => {
+    try {
+      const res = await fetch(`https://www.server.speakeval.org/teacherpin?pin=${userId}`)
+      const data = await res.json()
+
+      if (data.code === 401) {
+        toast.error("Incorrect Teacher Pin")
+        setShake(true)
+        setTimeout(() => setShake(false), 500)
+        setUserId("")
+      } else if (data.code === 200) {
+        setLoggedIn(true)
+        if (data.subscription) {
+          set(data.subscription !== "free")
+          setUltimate(data.subscription === "Ultimate")
         }
-        console.log(parsedData);
-    };
+      }
+    } catch (err) {
+      console.error("Error Loading Data", err)
+      toast.error("Error Loading Data")
+      setShake(true)
+      setTimeout(() => setShake(false), 500)
+      setUserId("")
+    }
+  }
 
-    useEffect(() => {
-        if (!loggedIn) {
-            navigate('/login?redirect=/teacher-portal'); // Navigate to the login page
-        }
-    }, [loggedIn, navigate]);
-    
-
-    const fetchRooms = async () => {
-        try {
-            const res = await fetch(`https://www.server.speakeval.org/getrooms?pin=${userId}`);
-            let data = await res.json();
-            for (let i = 0; i < data.length; i++) {
-                if (data[i].code)
-                    data[i].code = parseInt(data[i].code.toString().slice(0, -3));
-            }
-
-            // remove data duplicates
-            data = data.filter((room, index, self) => {
-                const firstIndex = self.findIndex((t) => t.code === room.code);
-                if (firstIndex === index) {
-                    return true;
-                }
-                if (room.display) {
-                    self[firstIndex] = room;
-                }
-                return false;
-            });
-
-            data = data.sort((a, b) => a.created - b.created);
-
-            console.log(data);
-            setRooms(data);
-        } catch (err) {
-            console.error("Error Fetching Rooms", err);
-            toast.error("Error Fetching Rooms");
-        }
-    };
-
-    useEffect(() => {
-        if (loggedIn) {
-            fetchRooms();
-        }
-    }, [loggedIn]);
-
-    const handleGoClick = () => {
-        checkUserId(userId);
-    };
-
-    const containerStyle = {
-        position: 'relative',
-        padding: '10px 20px',
-        borderRadius: '10px',
-        backgroundColor: 'white',
-        color: 'white',
-        fontFamily: "sans-serif",
-        fontSize: '18px',
-        boxShadow: '0 0 10px rgba(0, 0, 0, 0.5)',
-        maxWidth: '300px',
-        margin: '20px auto',
-        textAlign: 'center',
-    };
-
-    const inputStyle = {
-        width: 'calc(100% - 50px)', // Reduced width to accommodate the button
-        padding: '10px',
-        border: 'none',
-        backgroundColor: 'transparent',
-        color: 'black',
-        fontFamily: 'inherit',
-        fontSize: 'inherit',
-        textAlign: 'center',
-        outline: 'none',
-        letterSpacing: '2px',
-        marginRight: '10px', // Add some space between input and button
-    };
-
-    const buttonStyle = {
-        backgroundColor: 'black', // Green background
-        border: 'none',
-        color: 'white',
-        padding: '5px 10px',
-        textAlign: 'center',
-        textDecoration: 'none',
-        display: 'inline-block',
-        fontFamily: 'Montserrat',
-        fontSize: '16px',
-        margin: '4px 2px',
-        cursor: 'pointer',
-        borderRadius: '5px',
-    };
-
-    const configList = {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-    };
-
+  if (!loggedIn) {
     return (
-        !loggedIn ? 
-        <div style={containerStyle} className={shake ? 'shake' : ''}>
-            <input
-                type="password"
-                value={userId}
-                onChange={handleInputChange}
-                style={inputStyle}
-                maxLength={30}
-                placeholder="Enter Teacher Pin"
-                onKeyUp={(e) => e.key === 'Enter' && handleGoClick()}
-            />
-            <button onClick={handleGoClick} style={buttonStyle}>Log In</button>
-        </div> : <div>
-        
+      <div className="container">
+        <Card className={`max-w-md mx-auto ${shake ? "animate-shake" : ""}`}>
+          <h2 className="text-2xl font-bold mb-6 text-center">Teacher Login</h2>
+          <input
+            type="password"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value.toUpperCase())}
+            className="input mb-4"
+            maxLength={30}
+            placeholder="Enter Teacher Pin"
+            onKeyUp={(e) => e.key === "Enter" && handleLogin()}
+          />
+          <button onClick={handleLogin} className="btn btn-primary w-full">
+            Log In
+          </button>
+        </Card>
+      </div>
+    )
+  }
 
-        
-
-            <RoomCodePanel rooms={rooms} pin={userId}/>
-        </div>        
-
-    );
-
+  return (
+    <div className="container">
+      <RoomCodePanel rooms={rooms} pin={userId} />
+    </div>
+  )
 }
 
-export default TeacherPortalRouter;
+export default TeacherPortalRouter
+

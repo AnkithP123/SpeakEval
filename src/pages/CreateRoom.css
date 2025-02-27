@@ -1,15 +1,200 @@
 /* CreateRoom.css */
 
 @keyframes shake {
-    0% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    50% { transform: translateX(5px); }
-    75% { transform: translateX(-5px); }
-    100% { transform: translateX(0); }
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+.shake {
+  animation: shake 0.2s;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
   }
-  
-  .shake {
-    animation: shake 0.2s;
+  50% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.8), 0 0 30px rgba(168, 85, 247, 0.4);
   }
-  
-  
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes sparkle {
+  0% { transform: scale(0); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.7; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+@keyframes gleam {
+  0% { transform: translateX(-100%); }
+  80% { transform: translateX(2860%); }
+  100% { transform: translateX(2860%); }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 200% 50%; }
+  80% { background-position: 0% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.sparkle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.7) 40%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 255, 255, 0.2);
+  animation: sparkle 1.5s infinite;
+  pointer-events: none;
+}
+
+.gleam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  animation: gleam 5s ease infinite;
+  pointer-events: none;
+  filter: blur(1px);
+}
+
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  z-index: 1000;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+  max-width: 500px;
+  width: 90%;
+  animation: fadeIn 0.3s ease-in-out;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.popup h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  text-align: center;
+  color: white;
+  background-clip: text;
+  text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+.popup ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.popup li {
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 5px;
+  background-color: rgba(15, 23, 42, 0.6);
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(6, 182, 212, 0.2);
+}
+
+.popup li:hover {
+  background-color: rgba(6, 182, 212, 0.2);
+  transform: scale(1.02);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+}
+
+.popup button {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.7), rgba(168, 85, 247, 0.7));
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: block;
+  margin: 0 auto;
+}
+
+.popup button:hover {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.9), rgba(168, 85, 247, 0.9));
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Switch styling */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  transition: .4s;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+
+input:checked + .slider {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.7), rgba(168, 85, 247, 0.7));
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}

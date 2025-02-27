@@ -1,28 +1,40 @@
+"use client"
+
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import Card from "../components/Card"
+import "../styles/globals3.css"
 
 export default function Practice() {
   const [code, setPracticeCode] = useState("")
   const [name, setName] = useState("")
   const [step, setStep] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [hoverButton, setHoverButton] = useState(false)
   const navigate = useNavigate()
 
   const handleVerifyCode = async () => {
+    if (!code) {
+      toast.error("Please enter a practice code")
+      return
+    }
+
+    setLoading(true)
     try {
       const res = await fetch(`https://www.server.speakeval.org/verify_practice?code=${code}`)
       const data = await res.json()
 
       if (data.error) {
         toast.error(data.error)
-        return
+      } else {
+        setStep(2)
       }
-
-      setStep(2)
     } catch (err) {
       console.error("Error verifying practice code", err)
       toast.error("Error verifying practice code")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -32,66 +44,91 @@ export default function Practice() {
       return
     }
 
+    setLoading(true)
     try {
       const res = await fetch(`https://www.server.speakeval.org/join_practice?code=${code}&name=${name}`)
       const data = await res.json()
 
       if (data.error) {
         toast.error(data.error)
-        return
+      } else {
+        navigate(`/practice-exam?code=${code}&name=${name}&uuid=${data.uuid}`)
       }
-
-      navigate(`/practice-exam?code=${code}&name=${name}&uuid=${data.uuid}`)
     } catch (err) {
       console.error("Error joining practice exam", err)
       toast.error("Error joining practice exam")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleInputChange = (e, setter) => {
+    if (e.target.value.length <= 20) {
+      setter(e.target.value)
     }
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card bg="bg-[#E6F3FF]" className="max-w-md mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-8">Practice Exam</h1>
-
+    <div className="flex-grow flex items-center justify-center mt-[4.5%]">
+      <title hidden>Join Practice</title>
+      <Card className="w-full max-w-md mx-auto">
+        <h2 className="text-2xl font-bold text-white text-center mb-6">Join Practice</h2>
         {step === 1 ? (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-lg font-semibold mb-2">Practice Code</label>
+          <div className="w-full mb-4 space-y-6">
+            <div className="space-y-2">
+              <label className="block text-lg font-semibold text-white" htmlFor="practiceCode">
+                Practice Code
+              </label>
               <input
+                id="practiceCode"
                 type="text"
                 value={code}
-                onChange={(e) => setPracticeCode(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg"
+                onChange={(e) => handleInputChange(e, setPracticeCode)}
+                className="w-full p-3 bg-black/30 border border-purple-500/30 rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                 placeholder="Enter practice code"
+                disabled={loading}
+                onKeyUp={(e) => e.key === "Enter" && handleVerifyCode()}
               />
             </div>
-
             <button
               onClick={handleVerifyCode}
-              className="w-full bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3] transition-colors"
+              onMouseEnter={() => setHoverButton(true)}
+              onMouseLeave={() => setHoverButton(false)}
+              className={`btn btn-primary w-full relative overflow-hidden transition-all duration-300`}
+              disabled={loading}
             >
-              Next
+              <span className="relative z-10">{loading ? "Loading..." : "Next"}</span>
             </button>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-lg font-semibold mb-2">Your Name</label>
+          <div className="w-full mb-4 space-y-4">
+            <div className="space-y-2">
+              <label className="block text-lg font-semibold text-white" htmlFor="name">
+                Your Name
+              </label>
               <input
+                id="name"
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg"
+                onChange={(e) => handleInputChange(e, setName)}
+                className="w-full p-3 bg-black/30 border border-purple-500/30 rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                 placeholder="Enter your name"
-                maxLength={20}
+                disabled={loading}
+                onKeyUp={(e) => e.key === "Enter" && handleStartPractice()}
               />
             </div>
-
             <button
               onClick={handleStartPractice}
-              className="w-full bg-black text-white rounded-lg px-4 py-2 hover:bg-[#3666a3] transition-colors"
+              onMouseEnter={() => setHoverButton(true)}
+              onMouseLeave={() => setHoverButton(false)}
+              className={`w-full relative overflow-hidden text-white text-base rounded-lg px-5 py-3 transition-all duration-300 ${
+                hoverButton
+                  ? "bg-gradient-to-r from-purple-500 to-pink-600 shadow-lg shadow-purple-500/30"
+                  : "bg-gradient-to-r from-purple-600/50 to-pink-700/50"
+              }`}
+              disabled={loading}
             >
-              Start Practice
+              <span className="relative z-10">{loading ? "Loading..." : "Start Practice"}</span>
             </button>
           </div>
         )}

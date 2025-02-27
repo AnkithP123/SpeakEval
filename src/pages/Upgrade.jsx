@@ -120,6 +120,7 @@ function Upgrade({ onClose, doc }) {
         <div
           className={`fixed inset-0 flex justify-center items-center overflow-auto ${closing ? '' : "bg-black bg-opacity-70 z-50"}`}
           onClick={handleClose}
+          style={{ zIndex: 10000 }} // Increase z-index
         >
           <div
             className="my-8"

@@ -6,6 +6,7 @@ import RoomPanel from "../components/RoomPanel"
 import { useNavigate } from "react-router-dom"
 import "./CreateRoom.css"
 import { FaInfoCircle } from "react-icons/fa"
+import Card from "../components/Card"
 
 function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   const [userId, setUserId] = useState(getPin())
@@ -17,11 +18,12 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   const [configs, setConfigs] = useState([])
   const navigate = useNavigate()
   const [timeLimit, setTimeLimit] = useState(3600)
-  const [thinkingTime, setThinkingTime] = useState(5) // Changed default to 5 seconds
-  const [canRelisten, setCanRelisten] = useState(true) // Changed default to true
+  const [thinkingTime, setThinkingTime] = useState(5)
+  const [canRelisten, setCanRelisten] = useState(true)
   const [hoveredInfo, setHoveredInfo] = useState(null)
   const [requireGoogleSignIn, setRequireGoogleSignIn] = useState(false)
   const [emailEnding, setEmailEnding] = useState("")
+  const [hoverButton, setHoverButton] = useState(false)
 
   useEffect(() => {
     const fetchConfigs = async () => {
@@ -40,22 +42,13 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
     if (loggedIn) {
       fetchConfigs()
     }
-  }, [loggedIn, userId])
+  }, [loggedIn, userId, configs])
 
   useEffect(() => {
     if (!loggedIn) {
       navigate("/login?redirect=/create-room")
     }
   }, [loggedIn, navigate])
-
-  useEffect(() => {
-    const style = document.createElement("style")
-    style.textContent = switchStyle
-    document.head.appendChild(style)
-    return () => {
-      document.head.removeChild(style)
-    }
-  }, [])
 
   const handleInputChange = async (e) => {
     const input = e.target.value
@@ -103,7 +96,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   const handleConfigSubmit = async () => {
     if (configId === "") {
       return toast.error(
-        "Please enter a config name into the box or click one of your saved configs before creating the room!",
+        "Please enter a config name into the box or click one of your saved configs before creating the room!"
       )
     }
     try {
@@ -126,7 +119,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
     time = Math.floor(Math.random() * 5) + 1 + time.toString().slice(-7) + "001"
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/create_room?code=${time}&pin=${userId}&config=${configId}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&google=${requireGoogleSignIn}&ending=${emailEnding}`,
+        `https://www.server.speakeval.org/create_room?code=${time}&pin=${userId}&config=${configId}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&google=${requireGoogleSignIn}&ending=${emailEnding}`
       )
       const parsedData = await res.json()
       if (parsedData.code === 400) {
@@ -142,374 +135,222 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
     }
   }
 
-  const containerStyle = {
-    position: "relative",
-    padding: "10px 20px",
-    borderRadius: "10px",
-    backgroundColor: "white",
-    color: "white",
-    fontFamily: "sans-serif",
-    fontSize: "18px",
-    boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
-    maxWidth: "400px",
-    margin: "20px auto",
-    textAlign: "center",
-  }
-
-  const inputStyle = {
-    width: "calc(100% - 50px)",
-    padding: "10px",
-    border: "none",
-    backgroundColor: "transparent",
-    color: "black",
-    fontFamily: "inherit",
-    fontSize: "inherit",
-    textAlign: "center",
-    outline: "none",
-    letterSpacing: "2px",
-    marginRight: "10px",
-  }
-
-  const timeInputStyle = {
-    width: "80px",
-    padding: "10px",
-    border: "none",
-    backgroundColor: "#f2f2f2",
-    color: "black",
-    fontFamily: "inherit",
-    fontSize: "inherit",
-    textAlign: "right",
-    outline: "none",
-    letterSpacing: "2px",
-    marginLeft: "auto",
-    borderRadius: "5px",
-  }
-
-  const buttonStyle = {
-    backgroundColor: "black",
-    border: "none",
-    color: "white",
-    padding: "5px 10px",
-    textAlign: "center",
-    fontFamily: "Montserrat",
-    fontSize: "16px",
-    margin: "4px 2px",
-    cursor: "pointer",
-    borderRadius: "5px",
-  }
-
-  const chipStyle = {
-    display: "inline-block",
-    padding: "5px 10px",
-    margin: "5px",
-    borderRadius: "15px",
-    backgroundColor: "#f0f0f0",
-    color: "#333",
-    fontSize: "14px",
-    cursor: "pointer",
-  }
-
-  const switchStyle = `
-  .switch {
-      position: relative;
-      display: inline-block;
-      width: 60px;
-      height: 34px;
-  }
-
-  .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-  }
-
-  .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: .4s;
-  }
-
-  .slider:before {
-      position: absolute;
-      content: "";
-      height: 26px;
-      width: 26px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .4s;
-  }
-
-  input:checked + .slider {
-      background-color: #2196F3;
-  }
-
-  input:focus + .slider {
-      box-shadow: 0 0 1px #2196F3;
-  }
-
-  input:checked + .slider:before {
-      transform: translateX(26px);
-  }
-
-  .slider.round {
-      border-radius: 34px;
-  }
-
-  .slider.round:before {
-      border-radius: 50%;
-  }
-`
-
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
       <title hidden>Create Room</title>
-      {!roomCode && <div style={containerStyle}>
-        {!isConfigEntered ? (
-          <>
-            <div>
-              {configs.length > 0 ? (
-                configs.map((config) =>
-                  config.name ? (
-                    <div key={config.name} style={chipStyle} onClick={() => setConfigId(config.name)}>
-                      {config.name}
-                    </div>
-                  ) : null,
-                )
-              ) : (
-                <>
-                  <p className="text-2xl font-bold" style={{ color: "black" }}>
-                    No configurations found. Go to the configurations page to make one.
-                  </p>
-                  <hr style={{ width: "100%", border: "1px solid lightgray", margin: "10px 0" }} />
-                </>
-              )}
-            </div>
-            <input
-              type="text"
-              value={configId}
-              onChange={handleConfigChange}
-              style={inputStyle}
-              placeholder="Enter Name of Set"
-              onKeyUp={(e) => {
-                if (e.key === "Enter") handleConfigSubmit()
-              }}
-            />
-            <button onClick={handleConfigSubmit} style={buttonStyle}>
-              Create Room
-            </button>
-          </>
-        ) : !roomCode ? (
-          <>
-            <div
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}
-            >
-              <span style={{ color: "black", display: "flex", alignItems: "center" }}>
-                Response Time Limit (s)
-                <div style={{ position: "relative" }}>
-                  <FaInfoCircle
-                    className="ml-2 text-blue-500 cursor-help"
-                    onMouseEnter={() => setHoveredInfo("timeLimit")}
-                    onMouseLeave={() => setHoveredInfo(null)}
-                  />
-                  {hoveredInfo === "timeLimit" && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        backgroundColor: "black",
-                        color: "white",
-                        padding: "5px",
-                        borderRadius: "5px",
-                        zIndex: 1,
-                      }}
-                    >
-                      Time allowed for response after thinking time
-                    </div>
-                  )}
-                </div>
-              </span>
-              <input
-                type="text"
-                value={timeLimit}
-                onChange={(e) => {
-                  const value = e.target.value === "" ? "" : Number(e.target.value)
-                  setTimeLimit(value)
-                }}
-                onBlur={() => {
-                  if (timeLimit === "") setTimeLimit(0)
-                }}
-                style={timeInputStyle}
-              />
-            </div>
-            <div
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}
-            >
-              <span style={{ color: "black", display: "flex", alignItems: "center" }}>
-                Thinking Time (s)
-                <div style={{ position: "relative" }}>
-                  <FaInfoCircle
-                    className="ml-2 text-blue-500 cursor-help"
-                    onMouseEnter={() => setHoveredInfo("thinkingTime")}
-                    onMouseLeave={() => setHoveredInfo(null)}
-                  />
-                  {hoveredInfo === "thinkingTime" && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        backgroundColor: "black",
-                        color: "white",
-                        padding: "5px",
-                        borderRadius: "5px",
-                        zIndex: 1,
-                      }}
-                    >
-                      Time allowed for thinking before answering
-                    </div>
-                  )}
-                </div>
-              </span>
-              <input
-                type="text"
-                value={thinkingTime}
-                onChange={(e) => {
-                  const value = e.target.value === "" ? "" : Number(e.target.value)
-                  setThinkingTime(value)
-                }}
-                onBlur={() => {
-                  if (thinkingTime === "") setThinkingTime(0)
-                }}
-                style={timeInputStyle}
-              />
-            </div>
-            <div
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}
-            >
-              <span style={{ color: "black", display: "flex", alignItems: "center" }}>
-                Allow question relisten
-                <div style={{ position: "relative" }}>
-                  <FaInfoCircle
-                    className="ml-2 text-blue-500 cursor-help"
-                    onMouseEnter={() => setHoveredInfo("relisten")}
-                    onMouseLeave={() => setHoveredInfo(null)}
-                  />
-                  {hoveredInfo === "relisten" && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        backgroundColor: "black",
-                        color: "white",
-                        padding: "5px",
-                        borderRadius: "5px",
-                        zIndex: 1,
-                      }}
-                    >
-                      Allow students to listen to the question again during thinking time
-                    </div>
-                  )}
-                </div>
-              </span>
-              <label className="switch">
-                <input type="checkbox" checked={canRelisten} onChange={(e) => setCanRelisten(e.target.checked)} />
-                <span className="slider round"></span>
-              </label>
-            </div>
-            <div
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}
-            >
-              <span style={{ color: "black", display: "flex", alignItems: "center" }}>
-                Require Google Sign-In
-                <div style={{ position: "relative" }}>
-                  <FaInfoCircle
-                    className="ml-2 text-blue-500 cursor-help"
-                    onMouseEnter={() => setHoveredInfo("googleSignIn")}
-                    onMouseLeave={() => setHoveredInfo(null)}
-                  />
-                  {hoveredInfo === "googleSignIn" && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        backgroundColor: "black",
-                        color: "white",
-                        padding: "5px",
-                        borderRadius: "5px",
-                        zIndex: 1,
-                      }}
-                    >
-                      Require students to sign in with their school Google account to join the room
-                    </div>
-                  )}
-                </div>
-              </span>
-              <label className="switch">
-                <input type="checkbox" checked={requireGoogleSignIn} onChange={(e) => setRequireGoogleSignIn(e.target.checked)} />
-                <span className="slider round"></span>
-              </label>
-            </div>
-            {requireGoogleSignIn && (
-              <div
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}
-              >
-                <span style={{ color: "black", display: "flex", alignItems: "center" }}>
-                  Email Ending
-                  <div style={{ position: "relative" }}>
-                    <FaInfoCircle
-                      className="ml-2 text-blue-500 cursor-help"
-                      onMouseEnter={() => setHoveredInfo("emailEnding")}
-                      onMouseLeave={() => setHoveredInfo(null)}
-                    />
-                    {hoveredInfo === "emailEnding" && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: "50%",
-                          transform: "translateX(-50%)",
-                          backgroundColor: "black",
-                          color: "white",
-                          padding: "5px",
-                          borderRadius: "5px",
-                          zIndex: 1,
-                        }}
-                      >
-                        Specify the email domain students must use to sign in, e.g. student.fuhsd.org, myschool.edu, something like that
-                      </div>
+      {!roomCode && (
+        <div className="max-w-md mx-auto">
+          <Card color="cyan" className="w-full">
+            {!isConfigEntered ? (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-white text-center mb-6">Create Room</h2>
+                {configs.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {configs.map(
+                      (config) =>
+                        config.name && (
+                          <div
+                            key={config.name}
+                            className="px-4 py-2 rounded-full bg-black/30 text-cyan-300 cursor-pointer hover:bg-cyan-900/50 transition-colors duration-300 border border-cyan-500/30"
+                            onClick={() => setConfigId(config.name)}
+                          >
+                            {config.name}
+                          </div>
+                        )
                     )}
                   </div>
-                </span>
-                <input
-                  type="text"
-                  value={emailEnding}
-                  onChange={(e) => setEmailEnding(e.target.value)}
-                  style={inputStyle}
-                  placeholder="e.g., fuhsd.org"
-                />
+                ) : (
+                  <div className="text-center">
+                    <p className="text-lg text-white mb-2">
+                      No configurations found. Go to the configurations page to make one.
+                    </p>
+                    <div className="w-full h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent my-4"></div>
+                  </div>
+                )}
+                <div className="flex flex-col space-y-4">
+                  <input
+                    type="text"
+                    value={configId}
+                    onChange={handleConfigChange}
+                    className="w-full px-4 py-3 bg-black/30 border border-cyan-500/30 rounded-lg text-white placeholder-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                    placeholder="Enter Name of Set"
+                    onKeyUp={(e) => {
+                      if (e.key === "Enter") handleConfigSubmit()
+                    }}
+                  />
+                  <button
+                    onClick={handleConfigSubmit}
+                    onMouseEnter={() => setHoverButton(true)}
+                    onMouseLeave={() => setHoverButton(false)}
+                    className={`relative overflow-hidden text-white text-base rounded-md px-5 py-3 transition-all duration-300 ${
+                      hoverButton
+                        ? "bg-gradient-to-r from-cyan-500 to-purple-600 shadow-lg shadow-cyan-500/30"
+                        : "bg-gradient-to-r from-cyan-600/50 to-purple-700/50"
+                    }`}
+                  >
+                    <span className="relative z-10">Create Room</span>
+                  </button>
+                </div>
               </div>
+            ) : !roomCode ? (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-white text-center mb-6">Room Settings</h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-white">
+                      Response Time Limit (s)
+                      <div className="relative ml-2">
+                        <FaInfoCircle
+                          className="text-cyan-400 cursor-help"
+                          onMouseEnter={() => setHoveredInfo("timeLimit")}
+                          onMouseLeave={() => setHoveredInfo(null)}
+                        />
+                        {hoveredInfo === "timeLimit" && (
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
+                            Time allowed for response after thinking time
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      value={timeLimit}
+                      onChange={(e) => {
+                        const value = e.target.value === "" ? "" : Number(e.target.value)
+                        setTimeLimit(value)
+                      }}
+                      onBlur={() => {
+                        if (timeLimit === "") setTimeLimit(0)
+                      }}
+                      className="w-24 px-3 py-2 bg-black/30 border border-cyan-500/30 rounded-lg text-white text-right focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-white">
+                      Thinking Time (s)
+                      <div className="relative ml-2">
+                        <FaInfoCircle
+                          className="text-cyan-400 cursor-help"
+                          onMouseEnter={() => setHoveredInfo("thinkingTime")}
+                          onMouseLeave={() => setHoveredInfo(null)}
+                        />
+                        {hoveredInfo === "thinkingTime" && (
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
+                            Time allowed for thinking before answering
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      value={thinkingTime}
+                      onChange={(e) => {
+                        const value = e.target.value === "" ? "" : Number(e.target.value)
+                        setThinkingTime(value)
+                      }}
+                      onBlur={() => {
+                        if (thinkingTime === "") setThinkingTime(0)
+                      }}
+                      className="w-24 px-3 py-2 bg-black/30 border border-cyan-500/30 rounded-lg text-white text-right focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-white">
+                      Allow question relisten
+                      <div className="relative ml-2">
+                        <FaInfoCircle
+                          className="text-cyan-400 cursor-help"
+                          onMouseEnter={() => setHoveredInfo("relisten")}
+                          onMouseLeave={() => setHoveredInfo(null)}
+                        />
+                        {hoveredInfo === "relisten" && (
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
+                            Allow students to listen to the question again during thinking time
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <label className="switch">
+                      <input type="checkbox" checked={canRelisten} onChange={(e) => setCanRelisten(e.target.checked)} />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-white">
+                      Require Google Sign-In
+                      <div className="relative ml-2">
+                        <FaInfoCircle
+                          className="text-cyan-400 cursor-help"
+                          onMouseEnter={() => setHoveredInfo("googleSignIn")}
+                          onMouseLeave={() => setHoveredInfo(null)}
+                        />
+                        {hoveredInfo === "googleSignIn" && (
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
+                            Require students to sign in with their school Google account to join the room
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={requireGoogleSignIn}
+                        onChange={(e) => setRequireGoogleSignIn(e.target.checked)}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+
+                  {requireGoogleSignIn && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-white">
+                        Email Ending
+                        <div className="relative ml-2">
+                          <FaInfoCircle
+                            className="text-cyan-400 cursor-help"
+                            onMouseEnter={() => setHoveredInfo("emailEnding")}
+                            onMouseLeave={() => setHoveredInfo(null)}
+                          />
+                          {hoveredInfo === "emailEnding" && (
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
+                              Specify the email domain students must use to sign in (e.g., student.fuhsd.org)
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        value={emailEnding}
+                        onChange={(e) => setEmailEnding(e.target.value)}
+                        className="w-40 px-3 py-2 bg-black/30 border border-cyan-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                        placeholder="e.g., fuhsd.org"
+                      />
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleFinalRoomCreation}
+                    onMouseEnter={() => setHoverButton(true)}
+                    onMouseLeave={() => setHoverButton(false)}
+                    className={`w-full relative overflow-hidden text-white text-base rounded-md px-5 py-3 transition-all duration-300 ${
+                      hoverButton
+                        ? "bg-gradient-to-r from-cyan-500 to-purple-600 shadow-lg shadow-cyan-500/30"
+                        : "bg-gradient-to-r from-cyan-600/50 to-purple-700/50"
+                    }`}
+                  >
+                    <span className="relative z-10">Create Room</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div></div>
             )}
-            <button onClick={handleFinalRoomCreation} style={buttonStyle}>
-              Create Room
-            </button>
-          </>
-        ) : (
-            <div></div>
-        )}
-      </div>}
+          </Card>
+        </div>
+      )}
       {roomCode && isConfigEntered && <RoomPanel roomCode={roomCode} userId={userId} setRoomCodes={setRoomCode} />}
     </div>
   )

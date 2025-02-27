@@ -1,204 +1,116 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import './LoginPage.css';
+"use client"
+
+import { useState, useEffect } from "react"
+import { useNavigate, useSearchParams, Link } from "react-router-dom"
+import { toast } from "react-toastify"
+import "./auth.css"
 
 function LoginPage({ set, setUltimate, setUsername, setPin }) {
-  // Local state for the input fields
-  const [usernameInput, setUsernameInput] = useState('');
-  const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
-  const [shake, setShake] = useState(false);
-  const [fullName, setFullName] = useState('');
+  const [usernameInput, setUsernameInput] = useState("")
+  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [shake, setShake] = useState(false)
 
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const redirect = searchParams.get('redirect');
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get("redirect")
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token")
     if (token) {
-      const storedUsername = localStorage.getItem('username');
+      const storedUsername = localStorage.getItem("username")
       if (storedUsername) {
-        setUsername(storedUsername);
+        setUsername(storedUsername)
       }
-      navigate(redirect || '/');
+      navigate(redirect || "/")
     }
-  }, [navigate, redirect, setUsername]);
+  }, [navigate, redirect, setUsername])
 
-  const validateInitialInputs = () => {
-    if (!usernameInput || !password || (isRegister && !email && !fullName)) {
-      toast.error('Please fill in all required fields.');
-      return false;
-    }
-
-    if (isRegister && !email.includes('@')) {
-      toast.error('Please enter a valid email address.');
-      return false;
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    if (!usernameInput || !password) {
+      toast.error("Please fill in all fields.")
+      setShake(true)
+      setTimeout(() => setShake(false), 500)
+      return
     }
 
-    if (isRegister) {
-      if(fullName.length < 3 || fullName.length > 50) {
-        toast.error('Full name must be between 3 and 50 characters.');
-        return false;
+    setIsLoading(true)
+    try {
+      const res = await fetch("https://www.server.speakeval.org/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: usernameInput, password }),
+      })
+
+      const data = await res.json()
+
+      if (data.redirect) {
+        navigate("/" + data.redirect)
+        return
       }
-      if (usernameInput.length < 3 || usernameInput.length > 20) {
-        toast.error('Username must be between 3 and 20 characters.');
-        return false;
+
+      if (res.status !== 200) {
+        throw new Error(data.error || "Login failed")
       }
 
-      if (password.length < 6 || password.length > 50) {
-        toast.error('Password must be between 6 and 50 characters.');
-        return false;
-      }
-    }
-    return true;
-  };
-
-
-  
-  const handleLogin = async () => {
-    if (!validateInitialInputs()) {
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      return;
-    }
-
-    if (!isRegister) {
-      // Handle normal login
-      try {
-        const res = await fetch('https://www.server.speakeval.org/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: usernameInput, password })
-        });
-
-        const data = await res.json();
-
-        if (data.redirect) {
-          navigate('/' + data.redirect);
-          if (res.status !== 200) {
-            toast.error(data.error || 'Error occurred');
-          }  
-          return;
+      if (data.token) {
+        localStorage.setItem("token", data.token)
+        localStorage.setItem("username", usernameInput)
+        setUsername(usernameInput)
+        setPin(data.token)
+        if (data.subscription) {
+          set(data.subscription !== "free")
+          setUltimate(data.subscription === "Ultimate")
+        } else {
+          set(false)
+          setUltimate(false)
         }
-
-        if (res.status !== 200) {
-          toast.error(data.error || 'Error occurred');
-          setShake(true);
-          setTimeout(() => setShake(false), 500);
-          return;
-        }
-
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('username', usernameInput);
-          setUsername(usernameInput);
-          setPin(data.token);
-          if (data.subscription) {
-            set(data.subscription !== 'free');
-            setUltimate(data.subscription === 'Ultimate');
-          } else {
-            set(false);
-            setUltimate(false);
-          }
-          navigate(redirect || '/');
-        }
-      } catch (err) {
-        console.error('Login Error:', err);
-        toast.error('Failed to connect. Please try again.');
-        setShake(true);
-        setTimeout(() => setShake(false), 500);
+        navigate(redirect || "/")
       }
-    } else {
-      const registerRes = await fetch('https://www.server.speakeval.org/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, fullName: fullName, username: usernameInput, password })
-      });
-
-      const registerData = await registerRes.json();
-
-      if (registerRes.status !== 200) {
-        toast.error(registerData.error || 'Error occurred');
-        setShake(true);
-        setTimeout(() => setShake(false), 500);
-        return;
-      }
-
-      if (registerData.message) {
-        toast.success(registerData.message);
-      }
-
-      navigate('/verify?email=' + encodeURIComponent(email));
+    } catch (err) {
+      console.error("Login Error:", err)
+      toast.error(err.message || "Failed to login. Please try again.")
+      setShake(true)
+      setTimeout(() => setShake(false), 500)
+    } finally {
+      setIsLoading(false)
     }
-  };
-
-
-  const handleKeyPress = (e) => {
-  };
-
+  }
 
   return (
-    <div className={`login-container ${shake ? 'shake' : ''}`}>
-      <div className="login-title">{isRegister ? 'Register' : 'Log In'}</div>
-        <>
-          {isRegister && (
-            <>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="login-input"
-              placeholder="Enter Email"
-              onKeyUp={handleKeyPress}
-            />
-            <input
-              type="full name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="login-input"
-              placeholder="Enter your full name"
-              onKeyUp={handleKeyPress}
-            />
-            </>
-          )}
+    <div className="auth-container">
+      <div className={`auth-card ${shake ? "shake" : ""}`}>
+        <h2 className="auth-title">Log In</h2>
+        <form className="auth-form" onSubmit={handleLogin}>
           <input
             type="text"
-            name="username"
+            className="auth-input"
+            placeholder="Username"
             value={usernameInput}
             onChange={(e) => setUsernameInput(e.target.value)}
-            className="login-input"
-            placeholder="Enter Username"
-            onKeyUp={handleKeyPress}
           />
           <input
             type="password"
-            name="password"
+            className="auth-input"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="login-input"
-            placeholder="Enter Password"
-            onKeyUp={handleKeyPress}
           />
-          <button onClick={handleLogin} className="login-button">
-            {isRegister ? 'Next' : 'Log In'}
+          <button type="submit" className="auth-button" disabled={isLoading}>
+            {isLoading ? <span className="spinner"></span> : "Log In"}
           </button>
-          <div>
-            <span
-              className="login-toggle"
-              onClick={() => setIsRegister(!isRegister)}
-            >
-              {isRegister
-                ? 'Already have an account? Log In'
-                : 'Need to register? Sign Up'}
-            </span>
-          </div>
-        </>
-
+        </form>
+        <p className="mt-4 text-center">
+          Don't have an account?{" "}
+          <Link to="/register" className="auth-link">
+            Sign Up
+          </Link>
+        </p>
+      </div>
     </div>
-  );
+  )
 }
 
-export default LoginPage;
+export default LoginPage
+

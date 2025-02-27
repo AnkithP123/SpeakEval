@@ -24,6 +24,7 @@ import TeacherVerifyPage from './pages/TeacherVerifyPage';
 import CreatePractice from './pages/CreatePractice';
 import Practice from './pages/Practice';
 import PracticeExam from './pages/PracticeExam';
+import RegisterPage from './pages/RegisterPage';
 
 function AudioRecorderRouteWrapper() {
   const location = useLocation();
@@ -73,6 +74,7 @@ function App() {
           <Route path="/practice" element={<Practice />} />
           <Route path="/practice-exam" element={<PracticeExam />} />
           <Route path="/profile" element={<ProfileCard />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="*" element={<Maintainence />} />
         </Route>
         <Route path="/record" element={<AudioRecorderRouteWrapper />} />
