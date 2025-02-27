@@ -1,3 +1,124 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+.Toastify__toast-container {
+    width: 350px;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.Toastify__toast {
+    background: rgba(16, 24, 52, 0.85); 
+    border-left: 4px solid #5f9dff; 
+    color: white;
+    font-family: 'Inter', sans-serif; 
+    font-size: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+}
+
+.Toastify__toast:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.Toastify__toast--success {
+    border-left-color: #5ee4a0; 
+}
+
+.Toastify__toast--error {
+    border-left-color: #ff5f7e; 
+}
+
+.Toastify__toast--info {
+    border-left-color: #5f9dff; 
+}
+
+.Toastify__toast--warning {
+    border-left-color: #ffbb5f; 
+}
+
+.Toastify__toast-body {
+    padding: 0;
+    margin: 0;
+}
+
+.Toastify__toast-icon {
+    margin-right: 12px;
+    width: 20px;
+}
+
+.Toastify__toast h4,
+.Toastify__toast-body strong {
+    margin-bottom: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    background: linear-gradient(90deg, #5f9dff, #a45fff); 
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: block;
+}
+
+.Toastify__close-button {
+    color: rgba(255, 255, 255, 0.7);
+    background: none;
+    font-size: 18px;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.Toastify__close-button:hover {
+    opacity: 1;
+    color: white;
+}
+
+.Toastify__progress-bar {
+    height: 3px;
+    bottom: 0;
+    background: linear-gradient(90deg, #5f9dff, #a45fff); 
+    border-radius: 0 0 4px 4px;
+}
+
+
+.Toastify__toast--animate {
+    animation-fill-mode: both;
+    animation-duration: 0.7s;
+}
+
+.Toastify__slide-enter--top-right {
+    animation-name: Toastify__slideInRight;
+}
+
+.Toastify__slide-exit--top-right {
+    animation-name: Toastify__slideOutRight;
+}
+
+@keyframes Toastify__slideInRight {
+    from {
+        transform: translate3d(100%, 0, 0);
+        opacity: 0;
+    }
+    to {
+        transform: translate3d(0, 0, 0);
+        opacity: 1;
+    }
+}
+
+@keyframes Toastify__slideOutRight {
+    from {
+        transform: translate3d(0, 0, 0);
+        opacity: 1;
+    }
+    to {
+        transform: translate3d(100%, 0, 0);
+        opacity: 0;
+    }
+}
