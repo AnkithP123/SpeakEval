@@ -27,7 +27,11 @@ function BottomBar() {
           <div className="flex flex-col items-center md:items-start space-y-2">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                <img src={logo} alt="SpeakEval Logo" className="h-8 w-8" />
+                <img
+                  src={logo}
+                  alt="SpeakEval Logo"
+                  className="h-8 w-8 translate-y-[-1px]"
+                />
               </div>
               <span className="text-white text-xl font-medium tracking-wide">
                 SpeakEval
