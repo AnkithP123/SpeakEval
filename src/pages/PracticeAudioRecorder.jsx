@@ -140,10 +140,10 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     const stopRecording = () => {
         if (mediaRecorder.current && mediaRecorder.current.state === "recording") {
             mediaRecorder.current.stop()
-            setIsRecording(false)
-            setDisplayTime("xx:xx")
-            stopTimer()
         }
+        setIsRecording(false)
+        setDisplayTime("xx:xx")
+        stopTimer()
     }
 
     const startTimer = () => {
@@ -214,17 +214,21 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     }
 
     const handleQuestionEnd = () => {
-        if (!isPlaying) return
-        setIsPlaying(false)
-        countdownRef.current = getExamData().thinkingTime
-        setCountdownDisplay(countdownRef.current)
-
+        if (!isPlaying) {
+            countdownRef.current = -1;
+            setCountdownDisplay(-1);
+            return;
+        }
         countdownInterval.current = setInterval(() => {
-            countdownRef.current -= 1
+            if (!questionAudioRef.current || questionAudioRef.current.paused) {
+                countdownRef.current -= 1
+            }
             setCountdownDisplay(countdownRef.current)
             if (countdownRef.current <= 0) {
-                questionAudioRef.current.currentTime = 0
-                questionAudioRef.current.pause()
+                if (questionAudioRef.current) {
+                    questionAudioRef.current.currentTime = 0
+                    questionAudioRef.current.pause()
+                }
                 clearInterval(countdownInterval.current)
                 startRecording()
                 playRecordingStarted()
@@ -232,6 +236,9 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                 // playBeep()
             }
         }, 1000)
+        setIsPlaying(false)
+        countdownRef.current = getExamData().thinkingTime
+        setCountdownDisplay(countdownRef.current)
     }
 
     const handleQuestionChange = (newIndex) => {
@@ -351,6 +358,11 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                             ref={questionAudioRef}
                             src={questionAudioBlobURL}
                             onEnded={handleQuestionEnd}
+                            onPlay={() => {
+                                if (!isPlaying) {
+                                    countdownRef.current = questionAudioRef.current.duration + 1;
+                                }
+                            }}
                             style={{
                                 width: "100%",
                                 borderRadius: "8px",
@@ -358,7 +370,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                                 backgroundColor: "#F8F8F8",
                                 marginBottom: "1rem",
                             }}
-                            controls={!isPlaying && !waiting && !isRecording && (!questionAudioRef.current || questionAudioRef.current.paused)}
+                            controls={getExamData().allowRepeat && !isPlaying && !waiting && !isRecording && (!questionAudioRef.current || questionAudioRef.current.paused)}
                         >
                             Your browser does not support the audio element.
                         </audio>
@@ -404,7 +416,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                 )}
 
                 {countdownDisplay > 0 && (
-                    <p className="mt-4 text-2xl font-bold text-red-600 text-center">Recording starts in {countdownDisplay}...</p>
+                    <p className="mt-4 text-2xl font-bold text-red-600 text-center">{!isPlaying && questionAudioRef.current.paused ? `Recording starts in ${countdownDisplay}` : `Recording starts immediately upon question completion`}...</p>
                 )}
 
                 {currentQuestionIndex === getExamData().questions.length - 1 && (
