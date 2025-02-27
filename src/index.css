@@ -31,11 +31,11 @@
 }
 
 .Toastify__toast--success {
-    border-left-color: #5ee4a0; 
+    border-left-color: #28a745; /* A more vibrant green */
 }
 
 .Toastify__toast--error {
-    border-left-color: #ff5f7e; 
+    border-left-color: #dc3545; /* A more vibrant red */
 }
 
 .Toastify__toast--info {
@@ -83,8 +83,23 @@
 .Toastify__progress-bar {
     height: 3px;
     bottom: 0;
-    background: linear-gradient(90deg, #5f9dff, #a45fff); 
     border-radius: 0 0 4px 4px;
+}
+
+.Toastify__toast--success .Toastify__progress-bar {
+    background: #28a745; /* Green for success */
+}
+
+.Toastify__toast--error .Toastify__progress-bar {
+    background: #dc3545; /* Red for error */
+}
+
+.Toastify__toast--info .Toastify__progress-bar {
+    background: #5f9dff; /* Blue for info */
+}
+
+.Toastify__toast--warning .Toastify__progress-bar {
+    background: #ffbb5f; /* Orange for warning */
 }
 
 
