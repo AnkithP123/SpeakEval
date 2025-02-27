@@ -57,7 +57,7 @@ function Download() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
-          <p className="text-gray-700">{error}</p>
+          <p className="text-foreground">{error}</p>
         </div>
       </div>
     )
@@ -67,8 +67,8 @@ function Download() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">No Responses Found</h2>
-          <p className="text-gray-600">No responses are available for this token.</p>
+          <h2 className="text-2xl font-bold text-foreground-700 mb-4">No Responses Found</h2>
+          <p className="text-foreground-600">No responses are available for this token.</p>
         </div>
       </div>
     )

@@ -86,14 +86,6 @@
     border-radius: 0 0 4px 4px;
 }
 
-.Toastify__toast--success .Toastify__progress-bar {
-    background: #28a745; /* Green for success */
-}
-
-.Toastify__toast--error .Toastify__progress-bar {
-    background: #dc3545; /* Red for error */
-}
-
 .Toastify__toast--info .Toastify__progress-bar {
     background: #5f9dff; /* Blue for info */
 }

@@ -45,7 +45,7 @@ function JoinRoomContent() {
     } else {
       setLoading(false)
       console.log("Please fill out both fields.")
-      toast.error("Please fill out both fields.")
+      toast.error("Please fill out all required fields.")
     }
   }
 

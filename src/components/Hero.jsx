@@ -96,7 +96,7 @@ const Hero = (props) => {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center relative z-10">
         <div className="text-center">
-          <h1 className="text-[4xl] font-extrabold sm:text-5xl md:text-6xl drop-shadow-lg mb-6">
+          <h1 className="text-[4xl] font-extrabold sm:text-5xl md:text-6xl drop-shadow-lg mb-6 w-full whitespace-nowrap">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient-x">
               <ReactTyped strings={props.title} typeSpeed={100} loop backSpeed={65} cursorChar="_" showCursor={true} />
             </span>
