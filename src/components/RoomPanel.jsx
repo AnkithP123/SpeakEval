@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import ProfileCard from "./ProfileCard"
 import { toast } from "react-toastify"
-import { FaPlay, FaRedo, FaUserPlus } from "react-icons/fa"
+import { FaUsers, FaPlay, FaRedo, FaUserPlus } from "react-icons/fa"
 import Card from "./Card"
 
 function RoomPanel({ roomCode, userId, setRoomCodes }) {
@@ -140,9 +140,11 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Card color="cyan" className="relative">
+      <Card color="cyan" className="relative min-h-[80vh]">
         <div className="flex justify-between items-center mb-6">
-          <div className="bg-black/30 text-white rounded-lg p-3">Participants: {participants.length}</div>
+          <div className="bg-black/30 text-white rounded-lg p-3 flex items-center mb-3">
+            <FaUsers className="text-cyan-400 mr-2" /> Participants: {participants.length}
+          </div>
           <button
             onClick={roomStarted ? handleRestart : handleStart}
             className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg px-4 py-2 flex items-center space-x-2 hover:from-red-600 hover:to-pink-600 transition-all duration-300"
@@ -159,30 +161,34 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {completedParticipants.map((participant, index) => (
-            <ProfileCard
-              key={index}
-              name={participant}
-              code={roomCode}
-              onParticipantRemoved={fetchParticipants}
-              userId={userId}
-              completed={true}
-            />
-          ))}
-          {participants
-            .filter((participant) => !completedParticipants.includes(participant))
-            .map((participant, index) => (
+        <div className="min-h-60">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {completedParticipants.map((participant, index) => (
               <ProfileCard
                 key={index}
                 name={participant}
                 code={roomCode}
                 onParticipantRemoved={fetchParticipants}
                 userId={userId}
-                completed={false}
+                completed={true}
               />
             ))}
+            {participants
+              .filter((participant) => !completedParticipants.includes(participant))
+              .map((participant, index) => (
+                <ProfileCard
+                  key={index}
+                  name={participant}
+                  code={roomCode}
+                  onParticipantRemoved={fetchParticipants}
+                  userId={userId}
+                  completed={false}
+                />
+              ))}
+          </div>
         </div>
+        
+        <div className="min-h-20"></div>
 
         <button
           onClick={() => setShowDisplayNameInput(true)}

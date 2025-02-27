@@ -145,7 +145,7 @@ function JoinRoomContent() {
             </button>
           </div>
         ) : (
-          <div className="w-full mb-8 space-y-6">
+          <div className="w-full space-y-6">
             {useGoogle ? (
               <div className="w-full mb-8 text-center">
                 <p className="text-lg font-semibold mb-4 text-white">Signed in as {googleName}</p>
@@ -159,7 +159,7 @@ function JoinRoomContent() {
                 )}
               </div>
             ) : (
-              <div className="w-full mb-8">
+              <div className="w-full">
                 {!google ? (
                   <div>
                     <label className="block text-lg font-semibold mb-2 text-white" htmlFor="name">
