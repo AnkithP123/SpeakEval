@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react"
 import { Play, Square, RotateCcw, FastForward } from 'lucide-react'
-import styled from "styled-components"
+import styled, { css, keyframes } from "styled-components"
 import * as Tone from "tone"
 import "../styles/globals2.css"
 
@@ -18,7 +18,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [recordings, setRecordings] = useState([])
   const [isPlaying, setIsPlaying] = useState(false)
-  const [displayTime, setDisplayTime] = useState("00:00")
+  const [displayTime, setDisplayTime] = useState("xx:xx")
   const [countdownDisplay, setCountdownDisplay] = useState(0)
   const [randomizeQuestions, setRandomizeQuestions] = useState(false)
   const [showTranscriptions, setShowTranscriptions] = useState(true)
@@ -47,6 +47,13 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
       return { ...examData, questions: shuffle([...examData.questions]) }
     }
     return examData
+  }
+
+  const getRecordings = () => {
+    if (randomizeQuestions) {
+        return shuffle([...recordings])
+    }
+    return recordings
   }
 
   const shuffle = (array) => {
@@ -92,7 +99,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
       mediaRecorder.current.stop()
     }
     setIsRecording(false)
-    setDisplayTime("00:00")
+    setDisplayTime("xx:xx")
     stopTimer()
   }
 
@@ -159,6 +166,41 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     }
   }
 
+  const pulse = keyframes`
+      0% {
+          transform: scale(1);
+      }
+      50% {
+          transform: scale(1.1);
+      }
+      100% {
+          transform: scale(1);
+      }
+          `
+  
+
+  const animation = (props) => css`
+    ${pulse} 1.1s infinite;
+`
+
+
+  const recordStyle = {
+    background: "radial-gradient(circle at bottom, #ff0000 0%, #b20000 70%)",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.2)",
+    borderRadius: "50%",
+    width: "80px",
+    height: "80px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    margin: "0 auto",
+    position: "relative",
+    transition: "background 0.3s ease",
+    animation: `${animation}`,
+}
+
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-b from-background to-gray-900">
       <div className="glass-morphism p-8 w-full max-w-2xl">
@@ -195,7 +237,6 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
             disabled={currentQuestionIndex === 0}
             className="futuristic-button"
           >
-            <RotateCcw className="mr-2" />
             Previous
           </button>
           <span className="text-lg font-semibold text-foreground">
@@ -207,7 +248,6 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
             className="futuristic-button"
           >
             Next
-            <FastForward className="ml-2" />
           </button>
         </div>
 
@@ -220,21 +260,30 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
 
         {!isRecording && countdownDisplay === 0 && (
           <PulseButton
-            onClick={playQuestionAudio}
-            className="futuristic-button w-full flex items-center justify-center"
+              onClick={playQuestionAudio}
+              style={{
+                  width: "80px",
+                  height: "80px",
+                  borderRadius: "50%",
+                  backgroundColor: "#28a745",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "background-color 0.3s",
+                  margin: "0 auto",
+                  animation: "none"
+              }}
           >
-            <Play className="mr-2" /> Play Question
+              <Play size={24} color="white" fill="white" />
           </PulseButton>
         )}
 
         {isRecording && (
-          <PulseButton
-            onClick={stopRecording}
-            className="futuristic-button w-full flex items-center justify-center bg-accent"
-            isRecording={true}
-          >
-            <Square className="mr-2" /> Stop Recording
-          </PulseButton>
+          <PulseButton onClick={stopRecording} style={recordStyle}>
+                <Square size={24} color="white" fill="white" />
+            </PulseButton>
         )}
 
         {isRecording && (
@@ -263,7 +312,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
         {recordings.length > 0 && (
           <div className="mt-8 w-full">
             <h2 className="text-2xl font-bold text-center mb-4 text-foreground">Your Recordings</h2>
-            {recordings.map((recording, index) => (
+            {getRecordings().map((recording, index) => (
               <div key={index} className="mb-4 p-4 glass-morphism">
                 <h3 className="text-lg font-semibold text-foreground">
                   Question {recording.questionIndex + 1} - {getExamData().questions[recording.questionIndex].transcription}

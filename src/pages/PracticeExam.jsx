@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import PracticeAudioRecorder from "./PracticeAudioRecorder"
+import PracticeAudioRecorder from "./P2"
 import party from "party-js"
 import Card from "../components/Card"
 
@@ -146,7 +146,7 @@ export default function PracticeExam() {
 
   return (
     <div className="container">
-      <Card>
+      <Card hover={false}>
         <h1 className="text-3xl font-bold mb-4">{examData.config} Practice Exam</h1>
         <div className="mb-6">
           <p className="text-lg">

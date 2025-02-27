@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 
-function Card({ children, bg = "bg-gray-100", className = "", color = "cyan" }) {
+function Card({ children, bg = "bg-gray-100", className = "", color = "cyan", hover=true }) {
   const [isHovered, setIsHovered] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const cardRef = useRef(null)
@@ -48,10 +48,10 @@ function Card({ children, bg = "bg-gray-100", className = "", color = "cyan" }) 
       className={`relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 ${className}`}
       style={{
         background: "rgba(15, 23, 42, 0.6)",
-        boxShadow: isHovered
+        boxShadow: isHovered && hover
           ? `0 0 30px rgba(var(--tw-color-${colorStyle.glow}-rgb), 0.3)`
           : "0 10px 30px rgba(0, 0, 0, 0.1)",
-        transform: isHovered ? "translateY(-5px)" : "translateY(0)",
+        transform: isHovered && hover ? "translateY(-5px)" : "translateY(0)",
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -60,12 +60,12 @@ function Card({ children, bg = "bg-gray-100", className = "", color = "cyan" }) 
       {/* Animated border */}
       <div
         className={`absolute inset-0 rounded-2xl border border-${colorStyle.border}/40 transition-opacity duration-300 ${
-          isHovered ? "opacity-100" : "opacity-0"
+          isHovered && hover ? "opacity-100" : "opacity-0"
         }`}
       ></div>
 
       {/* Glow effect that follows mouse */}
-      {isHovered && (
+      {isHovered && hover && (
         <div
           className={`absolute w-40 h-40 rounded-full bg-${colorStyle.glow}/20 filter blur-xl pointer-events-none transition-opacity duration-300`}
           style={{
@@ -79,7 +79,7 @@ function Card({ children, bg = "bg-gray-100", className = "", color = "cyan" }) 
       {/* Background gradient */}
       <div
         className={`absolute inset-0 bg-gradient-to-br ${colorStyle.gradient} transition-opacity duration-300 ${
-          isHovered ? "opacity-100" : "opacity-50"
+          isHovered && hover ? "opacity-100" : "opacity-50"
         }`}
       ></div>
 

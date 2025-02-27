@@ -121,11 +121,7 @@ export default function Practice() {
               onClick={handleStartPractice}
               onMouseEnter={() => setHoverButton(true)}
               onMouseLeave={() => setHoverButton(false)}
-              className={`w-full relative overflow-hidden text-white text-base rounded-lg px-5 py-3 transition-all duration-300 ${
-                hoverButton
-                  ? "bg-gradient-to-r from-purple-500 to-pink-600 shadow-lg shadow-purple-500/30"
-                  : "bg-gradient-to-r from-purple-600/50 to-pink-700/50"
-              }`}
+              className={`btn btn-primary w-full relative overflow-hidden transition-all duration-300`}
               disabled={loading}
             >
               <span className="relative z-10">{loading ? "Loading..." : "Start Practice"}</span>

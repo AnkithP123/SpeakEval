@@ -40,6 +40,18 @@ body {
   transition: all 0.3s ease;
 }
 
+.futuristic-button-disabled {
+  background: grey;
+  color: var(--foreground);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .futuristic-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
