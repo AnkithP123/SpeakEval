@@ -618,9 +618,10 @@ Teacher's Comment: ${comment}`
 
         <audio id={`answerAudioPlayer-${effectiveName}-${effectiveCode}`} />
         <audio id={`questionAudioPlayer-${effectiveName}-${effectiveCode}`} />
+        
         </div>
+        
         </div>
-
         {showEmailModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg p-6 w-11/12 md:w-1/2 shadow-lg">
@@ -671,6 +672,7 @@ Teacher's Comment: ${comment}`
             </div>
           </div>
         )}
+
     </>
   )
 }

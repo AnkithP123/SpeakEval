@@ -644,32 +644,36 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900">
       {/* Display name modal */}
       {showDisplayNameInput && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div ref={displayNameInputRef} className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-center">Rename this exam</h2>
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div
+            ref={displayNameInputRef}
+            className="relative overflow-hidden bg-black/60 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-md shadow-xl"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none" />
+            <h2 className="text-2xl font-bold mb-6 text-center text-white">Rename this exam</h2>
             <input
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="border p-2 rounded w-full mb-4"
+              className="w-full px-4 py-3 bg-black/50 border border-cyan-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300"
               placeholder="Enter display name"
             />
-            <div className="flex justify-center space-x-4">
+            <div className="flex justify-center space-x-4 mt-6">
               <button
                 onClick={async () => {
                   await handleDisplayNameSubmit()
                   setShowDisplayNameInput(false)
                 }}
-                className="bg-green-500 text-white rounded-lg p-2 shadow-md hover:bg-green-600"
+                className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300"
               >
                 Submit
               </button>
               <button
                 onClick={() => setShowDisplayNameInput(false)}
-                className="bg-gray-500 text-white rounded-lg p-2 shadow-md hover:bg-gray-600"
+                className="px-6 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg shadow-lg hover:shadow-gray-500/30 transition-all duration-300"
               >
                 Cancel
               </button>
@@ -678,225 +682,231 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
         </div>
       )}
 
-      {!showDisplayNameInput && (<div className="relative flex flex-col items-center" style={{ fontFamily: "Montserrat" }}>
-        {/* Header controls */}
-        <div className="w-full px-4 py-2 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white text-black rounded-lg p-3 shadow-md">
-              {fetched ? `Participants: ${participants.length}` : "Loading..."}
+      {!showDisplayNameInput && (
+        <div className="relative flex flex-col items-center min-h-screen" style={{ fontFamily: "Montserrat" }}>
+          {/* Header controls */}
+          <div className="w-full px-6 py-4 bg-black/40 backdrop-blur-md border-b border-cyan-500/30">
+            <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+              <div className="flex items-center space-x-4">
+                <div className="px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 backdrop-blur-md rounded-lg border border-cyan-500/30 text-white">
+                  {fetched ? `Participants: ${participants.length}` : "Loading..."}
+                </div>
+                <button
+                  onClick={toggleViewMode}
+                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg shadow-lg shadow-green-500/30 hover:shadow-green-500/50 transition-all duration-300"
+                >
+                  {showByPerson ? "Show by Question" : "Show by Person"}
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <button
+                  onClick={toggleSortOrder}
+                  className="p-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-lg shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-300"
+                >
+                  {sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />}
+                </button>
+                <select
+                  className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-lg shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-300 cursor-pointer"
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                >
+                  <option value="none">None</option>
+                  <option value="name">Sort by Name</option>
+                  <option value="lastName">Sort by Last Name</option>
+                </select>
+
+                <button
+                  onClick={() => setShowDisplayNameInput(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300"
+                >
+                  Set Display Name
+                </button>
+                <button
+                  onClick={() => setShowRubricModal(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all duration-300"
+                >
+                  Show Rubric
+                </button>
+                <select
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 cursor-pointer"
+                  value={reportOption}
+                  onChange={(e) => {
+                    handleDownloadReport(e.target.value)
+                  }}
+                >
+                  <option value="">Grade Report</option>
+                  <option value="download">Download</option>
+                  <option value="print">Print</option>
+                </select>
+                <button
+                  onClick={() => setShowBulkEmailModal(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-sky-500 to-cyan-600 text-white rounded-lg shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50 transition-all duration-300 flex items-center"
+                  disabled={isEmailSending}
+                >
+                  <FaEnvelope className="mr-2" />
+                  {isEmailSending ? "Sending..." : "Send Emails"}
+                </button>
+              </div>
             </div>
-            <button
-              onClick={toggleViewMode}
-              className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600"
-            >
-              {showByPerson ? "Show by Question" : "Show by Person"}
-            </button>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={toggleSortOrder}
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600"
-            >
-              {sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />}
-            </button>
-            <select
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600"
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-            >
-              <option value="none">None</option>
-              <option value="name">Sort by Name</option>
-              <option value="lastName">Sort by Last Name</option>
-
-              {/* <option value="totalScore">Sort by Total Score</option> */}
-              {/* categories.map((category, index) => (
-                <option key={index} value={`category-${index}`}>
-                  Sort by {category}
-                </option>
-              )) */}
-            </select>
-            
-            <button
-              onClick={() => setShowDisplayNameInput(true)}
-              className="bg-blue-500 text-white px-3 py-2 rounded-lg shadow-md hover:bg-blue-600"
-            >
-              Set Display Name
-            </button>
-            <button
-              onClick={() => setShowRubricModal(true)}
-              className="bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-600"
-            >
-              Show Rubric
-            </button>
-            <select
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
-              value={reportOption}
-              onChange={(e) => {
-                // setReportOption(e.target.value)
-                handleDownloadReport(e.target.value)
-              }}
-            >
-              <option value="">Grade Report</option>
-              <option value="download">Download</option>
-              <option value="print">Print</option>
-            </select>
-            <button
-              onClick={() => setShowBulkEmailModal(true)}
-              className="bg-sky-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-sky-600 flex items-center"
-              disabled={isEmailSending}
-            >
-              <FaEnvelope className="mr-2" />
-              {isEmailSending ? "Sending..." : "Send Emails"}
-          </button>
+          {/* Question navigation */}
+          <div className="w-full text-center py-12">
+            <h1 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600">
+              Grading: {roomCode.toString().slice(0, -3)} (Question #{questionData.currentIndex})
+            </h1>
+            {!showByPerson && (
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => handleNavigateQuestion("previous")}
+                  disabled={questionData.currentIndex === 1}
+                  className={`px-6 py-2 rounded-lg shadow-lg transition-all duration-300 ${
+                    questionData.currentIndex === 1
+                      ? "bg-gray-600/50 cursor-not-allowed"
+                      : "bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-yellow-500/30 hover:shadow-yellow-500/50"
+                  }`}
+                >
+                  Previous Question
+                </button>
+                <button
+                  onClick={() => handleNavigateQuestion("next")}
+                  disabled={questionData.currentIndex === questionData.totalQuestions}
+                  className={`px-6 py-2 rounded-lg shadow-lg transition-all duration-300 ${
+                    questionData.currentIndex === questionData.totalQuestions
+                      ? "bg-gray-600/50 cursor-not-allowed"
+                      : "bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-yellow-500/30 hover:shadow-yellow-500/50"
+                  }`}
+                >
+                  Next Question
+                </button>
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Question navigation */}
-        <div className="w-full text-center py-8">
-          <h1 className="text-4xl font-bold mb-4">
-            Grading: {roomCode.toString().slice(0, -3)} (Question #{questionData.currentIndex})
-          </h1>
-          {!showByPerson && (
-            <div className="flex justify-center space-x-4">
-              <button
-                onClick={() => handleNavigateQuestion("previous")}
-                disabled={questionData.currentIndex === 1}
-                className={`px-4 py-2 rounded-lg shadow-md ${
-                  questionData.currentIndex === 1
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-yellow-500 text-white hover:bg-yellow-600"
-                }`}
-              >
-                Previous Question
-              </button>
-              <button
-                onClick={() => handleNavigateQuestion("next")}
-                disabled={questionData.currentIndex === questionData.totalQuestions}
-                className={`px-4 py-2 rounded-lg shadow-md ${
-                  questionData.currentIndex === questionData.totalQuestions
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-yellow-500 text-white hover:bg-yellow-600"
-                }`}
-              >
-                Next Question
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Profile cards grid */}
-        <div className="w-full px-4">
-          {isLoading ? (
-            <div className="flex justify-center items-center min-h-[200px]">
-              <div className="text-xl font-semibold">Loading...</div>
-            </div>
-          ) : showByPerson ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-300">
-                <thead>
-                  <tr>
-                    <th className="py-2 px-4 border-b border-gray-300">Student</th>
-                    {questionData.questions.map((_, index) => (
-                      <th key={index} className="py-2 px-4 border-b border-gray-300">
-                        Question {index + 1}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortParticipants().map((participant, index) => (
-                    <tr key={index}>
-                      <td className="py-2 px-4 border-b border-gray-300">{participant.name}</td>
-                      {questionData.questions.map((questionCode, qIndex) => {
-                        const questionData = participant.questionData ? participant.questionData.get(questionCode) : null
-                        return (
-                          <td key={qIndex} className={`py-2 px-4 border-b border-gray-300 ${questionData ? "" : "text-center"}`}>
-                            {questionData ? (
-                              <ProfileCard
-                                text={questionData.transcription}
-                                rubric={rubric}
-                                rubric2={rubric2}
-                                audio={questionData.audio}
-                                question={questionData.questionText}
-                                questionBase64={questionData.question}
-                                index={questionData.index}
-                                name={participant.name}
-                                code={questionCode}
-                                onGradeUpdate={handleGradeUpdate}
-                                customName={`Q${qIndex + 1}`}
-                                isRed={failedEmails.has(participant.name)}
-                              />
-                            ) : (
-                              <div className="text-gray-400">No submission</div>
-                            )}
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sortParticipants().map((participant, index) => (
-                <ProfileCard
-                  key={index}
-                  text={participant.transcription}
-                  rubric={rubric}
-                  rubric2={rubric2}
-                  audio={participant.audio}
-                  question={participant.questionText}
-                  questionBase64={participant.question}
-                  index={participant.index}
-                  name={participant.name}
-                  code={roomCode}
-                  onGradeUpdate={handleGradeUpdate}
-                  isRed={failedEmails.has(participant.name)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>)}
-      {/* Rubric modal */}
-      {showRubricModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg w-[90%]">
-            <h2 className="text-2xl font-bold mb-4">Rubric</h2>
-            {participants.length > 0 ? (
-              <table className="min-w-full bg-white border border-gray-300">
-                <thead>
-                  <tr>
-                    <th className="py-2 px-4 border-b border-gray-300">Category</th>
-                    {pointValues.map((value, index) => (
-                      <th key={index} className="py-2 px-4 border-b border-gray-300">{value}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {categories.map((category, index) => {
-                    const descriptionParts = descriptions[index] ? descriptions[index].split("|,,|") : []
-                    return (
-                      <tr key={index}>
-                        <td className="py-2 px-4 border-b border-gray-300">{category}</td>
-                        {descriptionParts.map((part, partIndex) => (
-                          <td key={partIndex} className="py-2 px-4 border-b border-gray-300">
-                            {part || "No description available"}
-                          </td>
+          {/* Profile cards grid */}
+          <div className="w-full px-6 pb-12">
+            {isLoading ? (
+              <div className="flex justify-center items-center min-h-[200px]">
+                <div className="text-xl font-semibold text-white">Loading...</div>
+              </div>
+            ) : showByPerson ? (
+              <div className="overflow-x-auto">
+                <div className="inline-block min-w-full bg-black/40 backdrop-blur-md rounded-xl border border-cyan-500/30 shadow-xl">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-cyan-500/30">
+                        <th className="py-4 px-6 text-left text-sm font-semibold text-white">Student</th>
+                        {questionData.questions.map((_, index) => (
+                          <th key={index} className="py-4 px-6 text-left text-sm font-semibold text-white">
+                            Question {index + 1}
+                          </th>
                         ))}
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {sortParticipants().map((participant, index) => (
+                        <tr key={index} className="border-b border-cyan-500/10">
+                          <td className="py-4 px-6 text-white">{participant.name}</td>
+                          {questionData.questions.map((questionCode, qIndex) => {
+                            const questionData = participant.questionData
+                              ? participant.questionData.get(questionCode)
+                              : null
+                            return (
+                              <td key={qIndex} className="py-4 px-6">
+                                {questionData ? (
+                                  <ProfileCard
+                                    text={questionData.transcription}
+                                    rubric={rubric}
+                                    rubric2={rubric2}
+                                    audio={questionData.audio}
+                                    question={questionData.questionText}
+                                    questionBase64={questionData.question}
+                                    index={questionData.index}
+                                    name={participant.name}
+                                    code={questionCode}
+                                    onGradeUpdate={handleGradeUpdate}
+                                    customName={`Q${qIndex + 1}`}
+                                    isRed={failedEmails.has(participant.name)}
+                                  />
+                                ) : (
+                                  <div className="text-gray-400">No submission</div>
+                                )}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             ) : (
-              <p>No rubric available.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {sortParticipants().map((participant, index) => (
+                  <ProfileCard
+                    key={index}
+                    text={participant.transcription}
+                    rubric={rubric}
+                    rubric2={rubric2}
+                    audio={participant.audio}
+                    question={participant.questionText}
+                    questionBase64={participant.question}
+                    index={participant.index}
+                    name={participant.name}
+                    code={roomCode}
+                    onGradeUpdate={handleGradeUpdate}
+                    isRed={failedEmails.has(participant.name)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Rubric modal */}
+      {showRubricModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="relative bg-black/60 rounded-2xl p-8 shadow-xl border border-cyan-500/30 w-[90%] max-h-[90vh] overflow-y-auto">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none rounded-2xl" />
+            <h2 className="text-2xl font-bold mb-6 text-white relative z-10">Rubric</h2>
+            {participants.length > 0 ? (
+              <div className="relative z-10 overflow-x-auto">
+                <table className="min-w-full border border-cyan-500/30 rounded-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-cyan-500/10">
+                      <th className="py-3 px-4 border-b border-cyan-500/30 text-white">Category</th>
+                      {pointValues.map((value, index) => (
+                        <th key={index} className="py-3 px-4 border-b border-cyan-500/30 text-white">
+                          {value}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categories.map((category, index) => {
+                      const descriptionParts = descriptions[index] ? descriptions[index].split("|,,|") : []
+                      return (
+                        <tr key={index} className="border-b border-cyan-500/30">
+                          <td className="py-3 px-4 text-white">{category}</td>
+                          {descriptionParts.map((part, partIndex) => (
+                            <td key={partIndex} className="py-3 px-4 text-gray-300">
+                              {part || "No description available"}
+                            </td>
+                          ))}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-white relative z-10">No rubric available.</p>
             )}
             <button
               onClick={() => setShowRubricModal(false)}
-              className="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600"
+              className="mt-6 px-6 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 relative z-10"
             >
               Close
             </button>
@@ -904,142 +914,147 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
         </div>
       )}
 
-    {showBulkEmailModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-        <div className="bg-white rounded-lg p-6 shadow-lg w-[90%] max-h-[90vh] overflow-y-auto">
-          <h2 className="text-2xl font-bold mb-4">Send Grade Emails</h2>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Subject
-            </label>
-            <input
-              type="text"
-              value={emailSubject}
-              onChange={(e) => setEmailSubject(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+      {/* Bulk Email Modal */}
+      {showBulkEmailModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="relative bg-black/60 rounded-2xl p-8 shadow-xl border border-cyan-500/30 w-[90%] max-h-[90vh] overflow-y-auto">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none rounded-2xl" />
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold mb-6 text-white">Send Grade Emails</h2>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Questions to Include:
-            </label>
-            <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded p-4">
-              {showByPerson ? (
-                questionData.questions.map((questionCode, index) => {
-                  const isGraded = participants.some(p => {
-                    const qData = p.questionData?.get(questionCode)
-                    return qData?.totalScore !== undefined
-                  })
-                  
-                  return (
-                    <div key={questionCode} className="flex items-center space-x-2">
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-white mb-2">Email Subject</label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/50 border border-cyan-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-white mb-2">Select Questions to Include:</label>
+                <div className="space-y-2 max-h-60 overflow-y-auto border border-cyan-500/30 rounded-lg p-4 bg-black/30">
+                  {showByPerson ? (
+                    questionData.questions.map((questionCode, index) => {
+                      const isGraded = participants.some((p) => {
+                        const qData = p.questionData?.get(questionCode)
+                        return qData?.totalScore !== undefined
+                      })
+
+                      return (
+                        <div key={questionCode} className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id={`question-${questionCode}`}
+                            checked={selectedQuestionsToEmail.has(questionCode)}
+                            onChange={(e) => {
+                              const newSelected = new Set(selectedQuestionsToEmail)
+                              if (e.target.checked) {
+                                newSelected.add(questionCode)
+                              } else {
+                                newSelected.delete(questionCode)
+                              }
+                              setSelectedQuestionsToEmail(newSelected)
+                            }}
+                            className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
+                          />
+                          <label htmlFor={`question-${questionCode}`} className="text-white">
+                            Question {index + 1}
+                            <span
+                              className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                                isGraded
+                                  ? "bg-green-500/20 text-green-300 border border-green-500/30"
+                                  : "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                              }`}
+                            >
+                              {isGraded ? "Graded" : "Not Graded"}
+                            </span>
+                          </label>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="flex items-center space-x-3">
                       <input
                         type="checkbox"
-                        id={`question-${questionCode}`}
-                        checked={selectedQuestionsToEmail.has(questionCode)}
+                        id={`question-${roomCode}`}
+                        checked={selectedQuestionsToEmail.has(roomCode)}
                         onChange={(e) => {
                           const newSelected = new Set(selectedQuestionsToEmail)
                           if (e.target.checked) {
-                            newSelected.add(questionCode)
+                            newSelected.add(roomCode)
                           } else {
-                            newSelected.delete(questionCode)
+                            newSelected.delete(roomCode)
                           }
                           setSelectedQuestionsToEmail(newSelected)
                         }}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
                       />
-                      <label htmlFor={`question-${questionCode}`} className="text-sm">
-                        Question {index + 1} 
-                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                          isGraded ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {isGraded ? 'Graded' : 'Not Graded'}
+                      <label htmlFor={`question-${roomCode}`} className="text-white">
+                        Current Question (#{questionData.currentIndex})
+                        <span
+                          className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                            participants.some((p) => p.totalScore !== undefined)
+                              ? "bg-green-500/20 text-green-300 border border-green-500/30"
+                              : "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                          }`}
+                        >
+                          {participants.some((p) => p.totalScore !== undefined) ? "Graded" : "Not Graded"}
                         </span>
                       </label>
                     </div>
-                  )
-                })
-              ) : (
-                <div className="flex items-center space-x-2">
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    id={`question-${roomCode}`}
-                    checked={selectedQuestionsToEmail.has(roomCode)}
-                    onChange={(e) => {
-                      const newSelected = new Set(selectedQuestionsToEmail)
-                      if (e.target.checked) {
-                        newSelected.add(roomCode)
-                      } else {
-                        newSelected.delete(roomCode)
-                      }
-                      setSelectedQuestionsToEmail(newSelected)
-                    }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={includeResponseLink}
+                    onChange={(e) => setIncludeResponseLink(e.target.checked)}
+                    className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
                   />
-                  <label htmlFor={`question-${roomCode}`} className="text-sm">
-                    Current Question (#{questionData.currentIndex})
-                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                      participants.some(p => p.totalScore !== undefined)
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {participants.some(p => p.totalScore !== undefined) ? 'Graded' : 'Not Graded'}
-                    </span>
-                  </label>
-                </div>
-              )}
+                  <span className="text-sm text-white">Include links for students to review their responses</span>
+                </label>
+              </div>
+
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={() => {
+                    setShowBulkEmailModal(false)
+                    setSelectedQuestionsToEmail(new Set())
+                  }}
+                  className="px-6 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg shadow-lg hover:shadow-gray-500/30 transition-all duration-300"
+                  disabled={isEmailSending}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendBulkEmail}
+                  className={`px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 flex items-center ${
+                    isEmailSending ? "opacity-75 cursor-not-allowed" : ""
+                  }`}
+                  disabled={isEmailSending}
+                >
+                  {isEmailSending ? (
+                    <>
+                      <FaSpinner className="animate-spin mr-2" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Send Emails"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-
-          <div className="mb-6">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={includeResponseLink}
-                onChange={(e) => setIncludeResponseLink(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-sm text-gray-700">
-                Include links for students to review their responses
-              </span>
-            </label>
-          </div>
-
-          <div className="flex justify-end space-x-4">
-            <button
-              onClick={() => {
-                setShowBulkEmailModal(false)
-                setSelectedQuestionsToEmail(new Set())
-              }}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600"
-              disabled={isEmailSending}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSendBulkEmail}
-              className={`px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 flex items-center ${
-                isEmailSending ? 'opacity-75 cursor-not-allowed' : ''
-              }`}
-              disabled={isEmailSending}
-            >
-              {isEmailSending ? (
-                <>
-                  <FaSpinner className="animate-spin mr-2" />
-                  Sending...
-                </>
-              ) : (
-                'Send Emails'
-              )}
-            </button>
-          </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   )
 }
+
 export default TeacherPortalRoom
 
