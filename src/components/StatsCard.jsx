@@ -1,357 +1,393 @@
-import React, { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
-import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaSpinner, FaEnvelope } from 'react-icons/fa';
+"use client"
 
-function ProfileCard({ text, rubric, rubric2, audio, question, index, questionBase64, name, code, onGradeUpdate, customName, tokenProvided = false, participantPass = null, isRed = false }) {
+import { useEffect, useState, useCallback } from "react"
+import { toast } from "react-toastify"
+import { FaDownload, FaPlay, FaPause, FaRobot, FaInfoCircle, FaClipboard, FaSpinner, FaEnvelope } from "react-icons/fa"
+
+function ProfileCard({
+  text,
+  rubric,
+  rubric2,
+  audio,
+  question,
+  index,
+  questionBase64,
+  name,
+  code,
+  onGradeUpdate,
+  customName,
+  tokenProvided = false,
+  participantPass = null,
+  isRed = false,
+}) {
   // States used in both modes
-  const [completed, setCompleted] = useState(false);
-  const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [comment, setComment] = useState('');
-  const [totalScore, setTotalScore] = useState(0);
-  const [grades, setGrades] = useState({});
-  const [justifications, setJustifications] = useState({});
-  const [categories, setCategories] = useState([]);
+  const [completed, setCompleted] = useState(false)
+  const [aiButtonDisabled, setAiButtonDisabled] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [comment, setComment] = useState("")
+  const [totalScore, setTotalScore] = useState(0)
+  const [grades, setGrades] = useState({})
+  const [justifications, setJustifications] = useState({})
+  const [categories, setCategories] = useState([])
 
   // New state for download mode
-  const [downloadMode, setDownloadMode] = useState(false);
-  const [downloadedData, setDownloadedData] = useState(null);
+  const [downloadMode, setDownloadMode] = useState(false)
+  const [downloadedData, setDownloadedData] = useState(null)
 
   // Email modal states (unused in download mode)
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailBody, setEmailBody] = useState('');
-  const [baseEmailBody, setBaseEmailBody] = useState('');
-  const [includeResponseLink, setIncludeResponseLink] = useState(false);
-  const [emailSubject, setEmailSubject] = useState("SpeakEval Exam Result");
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [emailBody, setEmailBody] = useState("")
+  const [baseEmailBody, setBaseEmailBody] = useState("")
+  const [includeResponseLink, setIncludeResponseLink] = useState(false)
+  const [emailSubject, setEmailSubject] = useState("SpeakEval Exam Result")
 
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(false)
 
   // Reset error after animation
   useEffect(() => {
-    if(error) {
+    if (error) {
       const timer = setTimeout(() => {
         // setError(false);
-      }, 1000);
-      return () => clearTimeout(timer);
+      }, 1000)
+      return () => clearTimeout(timer)
     }
-  }, [error]);
+  }, [error])
 
   // Check if URL has a "token" param, then fetch from /download
   useEffect(() => {
-    if(tokenProvided) {
-      setDownloadMode(true);
-      const participant = participantPass;
-      participant.questionBase64 = participant.question;
-      participant.question = participant.questionText;
-      participant.text = participant.transcription;
-      setDownloadedData(participant);
+    if (tokenProvided) {
+      setDownloadMode(true)
+      const participant = participantPass
+      participant.questionBase64 = participant.question
+      participant.question = participant.questionText
+      participant.text = participant.transcription
+      setDownloadedData(participant)
     }
-  }, [tokenProvided, participantPass]);
+  }, [tokenProvided, participantPass])
 
   // Derive effective values using downloadedData if in downloadMode
-  const effectiveName = downloadMode && downloadedData ? downloadedData.name : name;
-  const effectiveText = downloadMode && downloadedData ? downloadedData.text : text;
-  const effectiveAudio = downloadMode && downloadedData ? downloadedData.audio : audio;
-  const effectiveQuestion = downloadMode && downloadedData ? downloadedData.question : question;
-  const effectiveCode = code;
-  const effectiveCustomName = downloadMode && downloadedData ? downloadedData.customName : customName;
-  const effectiveQuestionBase64 = downloadMode && downloadedData ? downloadedData.questionBase64 : questionBase64;
+  const effectiveName = downloadMode && downloadedData ? downloadedData.name : name
+  const effectiveText = downloadMode && downloadedData ? downloadedData.text : text
+  const effectiveAudio = downloadMode && downloadedData ? downloadedData.audio : audio
+  const effectiveQuestion = downloadMode && downloadedData ? downloadedData.question : question
+  const effectiveCode = code
+  const effectiveCustomName = downloadMode && downloadedData ? downloadedData.customName : customName
+  const effectiveQuestionBase64 = downloadMode && downloadedData ? downloadedData.questionBase64 : questionBase64
 
   useEffect(() => {
     if (effectiveName) {
-      setCompleted(true);
+      setCompleted(true)
     } else {
-      setCompleted(false);
+      setCompleted(false)
     }
-  }, [effectiveName]);
+  }, [effectiveName])
 
-  let fetchAudio = async () => {
-    console.log('fetching audio');
+  const fetchAudio = useCallback(async () => {
+    console.log("fetching audio")
     try {
-      const audioData = Uint8Array.from(atob(effectiveAudio), c => c.charCodeAt(0));
-      let audioBlob = new Blob([audioData], { type: 'audio/ogg' });
+      const audioData = Uint8Array.from(atob(effectiveAudio), (c) => c.charCodeAt(0))
+      const audioBlob = new Blob([audioData], { type: "audio/ogg" })
 
       try {
-        const wavBlob = await convertOggToWav(audioBlob);
-        const audioUrl = URL.createObjectURL(wavBlob);
-        const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${effectiveName}-${effectiveCode}`);
+        const wavBlob = await convertOggToWav(audioBlob)
+        const audioUrl = URL.createObjectURL(wavBlob)
+        const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${effectiveName}-${effectiveCode}`)
         if (answerAudioPlayer) {
-          answerAudioPlayer.src = audioUrl;
+          answerAudioPlayer.src = audioUrl
         }
       } catch (err) {
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${effectiveName}-${effectiveCode}`);
+        const audioUrl = URL.createObjectURL(audioBlob)
+        const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${effectiveName}-${effectiveCode}`)
         if (answerAudioPlayer) {
-          answerAudioPlayer.src = audioUrl;
+          answerAudioPlayer.src = audioUrl
         }
       }
     } catch (error) {
-      console.log('Error loading audio:', error);
-      console.log(effectiveName);
+      console.log("Error loading audio:", error)
+      console.log(effectiveName)
     }
-  };
+  }, [effectiveAudio, effectiveCode, effectiveName])
 
   useEffect(() => {
-    fetchAudio().then(() => {
-      console.log('Audio fetched');
-    }).catch((error) => {
-      console.error('Error fetching audio:', error);
-    });
+    fetchAudio()
+      .then(() => {
+        console.log("Audio fetched")
+      })
+      .catch((error) => {
+        console.error("Error fetching audio:", error)
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveAudio]);
+  }, [fetchAudio])
 
   async function convertOggToWav(oggBlob) {
-    const arrayBuffer = await oggBlob.arrayBuffer();
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    const arrayBuffer = await oggBlob.arrayBuffer()
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-    const numberOfChannels = audioBuffer.numberOfChannels;
-    const length = audioBuffer.length * numberOfChannels * 2 + 44;
-    const buffer = new ArrayBuffer(length);
-    const view = new DataView(buffer);
+    const numberOfChannels = audioBuffer.numberOfChannels
+    const length = audioBuffer.length * numberOfChannels * 2 + 44
+    const buffer = new ArrayBuffer(length)
+    const view = new DataView(buffer)
 
     function writeString(view, offset, string) {
       for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i));
+        view.setUint8(offset + i, string.charCodeAt(i))
       }
     }
 
-    let offset = 0;
+    let offset = 0
 
     // RIFF identifier
-    writeString(view, offset, 'RIFF'); offset += 4;
+    writeString(view, offset, "RIFF")
+    offset += 4
     // File length
-    view.setUint32(offset, 36 + audioBuffer.length * numberOfChannels * 2, true); offset += 4;
+    view.setUint32(offset, 36 + audioBuffer.length * numberOfChannels * 2, true)
+    offset += 4
     // RIFF type
-    writeString(view, offset, 'WAVE'); offset += 4;
+    writeString(view, offset, "WAVE")
+    offset += 4
     // Format chunk identifier
-    writeString(view, offset, 'fmt '); offset += 4;
+    writeString(view, offset, "fmt ")
+    offset += 4
     // Format chunk length
-    view.setUint32(offset, 16, true); offset += 4;
+    view.setUint32(offset, 16, true)
+    offset += 4
     // Sample format (raw)
-    view.setUint16(offset, 1, true); offset += 2;
+    view.setUint16(offset, 1, true)
+    offset += 2
     // Channel count
-    view.setUint16(offset, numberOfChannels, true); offset += 2;
+    view.setUint16(offset, numberOfChannels, true)
+    offset += 2
     // Sample rate
-    view.setUint32(offset, audioBuffer.sampleRate, true); offset += 4;
+    view.setUint32(offset, audioBuffer.sampleRate, true)
+    offset += 4
     // Byte rate
-    view.setUint32(offset, audioBuffer.sampleRate * numberOfChannels * 2, true); offset += 4;
+    view.setUint32(offset, audioBuffer.sampleRate * numberOfChannels * 2, true)
+    offset += 4
     // Block align
-    view.setUint16(offset, numberOfChannels * 2, true); offset += 2;
+    view.setUint16(offset, numberOfChannels * 2, true)
+    offset += 2
     // Bits per sample
-    view.setUint16(offset, 16, true); offset += 2;
+    view.setUint16(offset, 16, true)
+    offset += 2
     // Data chunk identifier
-    writeString(view, offset, 'data'); offset += 4;
+    writeString(view, offset, "data")
+    offset += 4
     // Data chunk length
-    view.setUint32(offset, audioBuffer.length * numberOfChannels * 2, true); offset += 4;
+    view.setUint32(offset, audioBuffer.length * numberOfChannels * 2, true)
+    offset += 4
 
     // Write interleaved data
     for (let i = 0; i < audioBuffer.length; i++) {
       for (let channel = 0; channel < numberOfChannels; channel++) {
-        const sample = audioBuffer.getChannelData(channel)[i];
-        const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-        view.setInt16(offset, intSample, true);
-        offset += 2;
+        const sample = audioBuffer.getChannelData(channel)[i]
+        const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7fff
+        view.setInt16(offset, intSample, true)
+        offset += 2
       }
     }
 
-    return new Blob([buffer], { type: 'audio/wav' });
+    return new Blob([buffer], { type: "audio/wav" })
   }
 
   const handlePlay = async () => {
-    console.log('Fetch Audio: ', fetchAudio);
-    if (!effectiveName)
-      return toast.error('Participant has not completed the task');
-    if (effectiveText === '' && !downloadMode) {
+    console.log("Fetch Audio: ", fetchAudio)
+    if (!effectiveName) return toast.error("Participant has not completed the task")
+    if (effectiveText === "" && !downloadMode) {
       // await fetchAudioData();
     }
     try {
-      setIsLoading(true);
-      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${effectiveName}-${effectiveCode}`);
+      setIsLoading(true)
+      const answerAudioPlayer = document.getElementById(`answerAudioPlayer-${effectiveName}-${effectiveCode}`)
       if (answerAudioPlayer && answerAudioPlayer.src) {
         if (isPlaying) {
-          await answerAudioPlayer.pause();
-          setIsPlaying(false);
+          await answerAudioPlayer.pause()
+          setIsPlaying(false)
         } else {
-          await answerAudioPlayer.play();
-          setIsLoading(false);
-          setIsPlaying(true);
-          answerAudioPlayer.addEventListener('ended', () => {
-            setIsPlaying(false);
-          });
+          await answerAudioPlayer.play()
+          setIsLoading(false)
+          setIsPlaying(true)
+          answerAudioPlayer.addEventListener("ended", () => {
+            setIsPlaying(false)
+          })
         }
       } else {
-        await fetchAudio();
-        handlePlay();
+        await fetchAudio()
+        handlePlay()
       }
-      setError(false);
+      setError(false)
     } catch (error) {
-      console.error('Error playing answer audio:', error);
+      console.error("Error playing answer audio:", error)
       // Trigger error animation
-      setError(true);
+      setError(true)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleDownload = async () => {
-    if (!effectiveName)
-      return toast.error('Participant has not completed the task');
-    const audioData = Uint8Array.from(atob(effectiveAudio), c => c.charCodeAt(0));
-    const audioBlob = new Blob([audioData], { type: 'audio/ogg' });
+    if (!effectiveName) return toast.error("Participant has not completed the task")
+    const audioData = Uint8Array.from(atob(effectiveAudio), (c) => c.charCodeAt(0))
+    const audioBlob = new Blob([audioData], { type: "audio/ogg" })
 
-    const a = document.createElement('a');
+    const a = document.createElement("a")
 
     try {
-      const wavBlob = await convertOggToWav(audioBlob);
-      const url = URL.createObjectURL(wavBlob);
-      a.href = url;
+      const wavBlob = await convertOggToWav(audioBlob)
+      const url = URL.createObjectURL(wavBlob)
+      a.href = url
     } catch (err) {
-      const url = URL.createObjectURL(audioBlob);
-      a.href = url;
+      const url = URL.createObjectURL(audioBlob)
+      a.href = url
     }
 
-    a.download = `${effectiveName}-${effectiveCode}.wav`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
+    a.download = `${effectiveName}-${effectiveCode}.wav`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
 
   const handlePlayQuestion = async () => {
-    if (!effectiveName)
-      return toast.error('Participant has not completed the task');
+    if (!effectiveName) return toast.error("Participant has not completed the task")
     try {
       if (effectiveQuestionBase64) {
-        const audioData = Uint8Array.from(atob(effectiveQuestionBase64), c => c.charCodeAt(0));
-        const audioBlob = new Blob([audioData], { type: 'audio/ogg; codecs=opus' });
-        const wavBlob = await convertOggToWav(audioBlob);
-        const audioUrl = URL.createObjectURL(wavBlob);
+        const audioData = Uint8Array.from(atob(effectiveQuestionBase64), (c) => c.charCodeAt(0))
+        const audioBlob = new Blob([audioData], { type: "audio/ogg; codecs=opus" })
+        const wavBlob = await convertOggToWav(audioBlob)
+        const audioUrl = URL.createObjectURL(wavBlob)
 
-        const questionAudioPlayer = document.getElementById(`questionAudioPlayer-${effectiveName}-${effectiveCode}`);
+        const questionAudioPlayer = document.getElementById(`questionAudioPlayer-${effectiveName}-${effectiveCode}`)
         if (questionAudioPlayer) {
-          questionAudioPlayer.src = audioUrl;
-          questionAudioPlayer.play();
+          questionAudioPlayer.src = audioUrl
+          questionAudioPlayer.play()
         }
       } else {
-        console.error('No audio data returned from fetchQuestion.');
+        console.error("No audio data returned from fetchQuestion.")
       }
     } catch (error) {
-      console.error('Error fetching or playing question audio:', error);
+      console.error("Error fetching or playing question audio:", error)
     }
-  };
+  }
 
   // The following grading functions are skipped/unused in download mode.
   const handleGetGrade = async () => {
-    if (downloadMode) return;
-    if (!effectiveName)
-      return toast.error('Participant has not completed the task');
-    if (effectiveText === '') {
-      return toast.error('Press the download button to fetch this student\'s data.');
+    if (downloadMode) return
+    if (!effectiveName) return toast.error("Participant has not completed the task")
+    if (effectiveText === "") {
+      return toast.error("Press the download button to fetch this student's data.")
     }
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/getgrade?transcription=${effectiveText}&rubric=${rubric}&code=${effectiveCode}&index=${index}`
-      );
-      const data = await response.json();
-      
-      if (!data.grades) 
-        return toast.error('Error getting grade. This may be due to a high volume of requests. Try again in a few seconds.');
-      setGrades(data.grades);
+        `https://www.server.speakeval.org/getgrade?transcription=${effectiveText}&rubric=${rubric}&code=${effectiveCode}&index=${index}`,
+      )
+      const data = await response.json()
+
+      if (!data.grades)
+        return toast.error(
+          "Error getting grade. This may be due to a high volume of requests. Try again in a few seconds.",
+        )
+      setGrades(data.grades)
 
       if (!data.justifications)
-        return toast.error('Error getting justifications. This may be due to a high volume of requests. Try again in a few seconds.');
-      setJustifications(data.justifications);
+        return toast.error(
+          "Error getting justifications. This may be due to a high volume of requests. Try again in a few seconds.",
+        )
+      setJustifications(data.justifications)
 
-      let total = 0;
+      let total = 0
       Object.values(data.grades).forEach((grade) => {
-        total += parseFloat(grade);
-      });
-      setTotalScore(total);
+        total += Number.parseFloat(grade) || 0
+      })
+      setTotalScore(total)
 
-      let category = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
-        return element.split('|:::|')[0];
-      });
-      setCategories(category);
+      const category =
+        rubric2 === ""
+          ? []
+          : rubric2.split("|;;|").map((element) => {
+              return element.split("|:::|")[0]
+            })
+      setCategories(category)
 
-      onGradeUpdate(effectiveName, effectiveCustomName, data.grades, total, comment, categories);
-
+      onGradeUpdate(effectiveName, effectiveCustomName, data.grades, total, comment, categories)
     } catch (error) {
-      console.error('Error getting grade:', error);
+      console.error("Error getting grade:", error)
     }
-  };
+  }
 
   const handleGradeChange = (gradeIndex, value) => {
-    if (downloadMode) return;
-    const updatedGrades = { ...grades, [gradeIndex]: value };
+    if (downloadMode) return
+    const updatedGrades = { ...grades, [gradeIndex]: value }
 
-    let total = 0;
+    let total = 0
     Object.values(updatedGrades).forEach((grade) => {
-      total += parseFloat(grade);
-    });
-    setTotalScore(total);
+      total += Number.parseFloat(grade) || 0
+    })
+    setTotalScore(total)
 
-    setGrades(updatedGrades);
-    
-    let category = rubric2 === '' ? [] : rubric2.split('|;;|').map((element) => {
-      return element.split('|:::|')[0];
-    });
-    setCategories(category);
+    setGrades(updatedGrades)
 
-    onGradeUpdate(effectiveName, effectiveCustomName, updatedGrades, total, comment, categories);
-  };
+    const category =
+      rubric2 === ""
+        ? []
+        : rubric2.split("|;;|").map((element) => {
+            return element.split("|:::|")[0]
+          })
+    setCategories(category)
+
+    onGradeUpdate(effectiveName, effectiveCustomName, updatedGrades, total, comment, categories)
+  }
 
   const handleAiButtonClick = () => {
-    if (downloadMode) return;
-    if (!effectiveName)
-      return toast.error('Participant has not completed the task');
+    if (downloadMode) return
+    if (!effectiveName) return toast.error("Participant has not completed the task")
 
-    if (aiButtonDisabled) 
-      return toast.error('Wait 1 second');
-    
-    setAiButtonDisabled(true);
+    if (aiButtonDisabled) return toast.error("Wait 1 second")
+
+    setAiButtonDisabled(true)
     setTimeout(() => {
-      setAiButtonDisabled(false);
-    }, 1000);
+      setAiButtonDisabled(false)
+    }, 1000)
 
-    handleGetGrade();
-  };
+    handleGetGrade()
+  }
 
   const handleCopyComments = () => {
-    if (!effectiveName)
-      return toast.error('Participant has not completed the task');
-    if (rubric === '' || effectiveText === '') {
-      return toast.error('Press the download button to fetch this student\'s data.');
+    if (!effectiveName) return toast.error("Participant has not completed the task")
+    if (rubric === "" || effectiveText === "") {
+      return toast.error("Press the download button to fetch this student's data.")
     }
 
-    let commentsText = 'AI Grade based on the rubric set by the teacher:\n\n';
-    rubric2.split('|;;|').forEach((element, index) => {
-      const [rubricItem] = element.split('|:::|');
-      commentsText += `${rubricItem}: ${justifications[index] || 'AI was not used in the grading process, and there is no description to give'}\n\n`;
-    });
+    let commentsText = "AI Grade based on the rubric set by the teacher:\n\n"
+    rubric2.split("|;;|").forEach((element, index) => {
+      const [rubricItem] = element.split("|:::|")
+      commentsText += `${rubricItem}: ${justifications[index] || "AI was not used in the grading process, and there is no description to give"}\n\n`
+    })
 
-    commentsText += `\n\nThis is NOT your final grade, as there WILL be manual review by the teacher, and AI may make mistakes initially.\n\n`;
+    commentsText += `\n\nThis is NOT your final grade, as there WILL be manual review by the teacher, and AI may make mistakes initially.\n\n`
 
-    navigator.clipboard.writeText(commentsText).then(() => {
-      toast.success('Comments copied to clipboard');
-    }).catch((error) => {
-      console.error('Error copying comments:', error);
-      toast.error('Failed to copy comments');
-    });
-  };
+    navigator.clipboard
+      .writeText(commentsText)
+      .then(() => {
+        toast.success("Comments copied to clipboard")
+      })
+      .catch((error) => {
+        console.error("Error copying comments:", error)
+        toast.error("Failed to copy comments")
+      })
+  }
 
   const handleEmailButtonClick = () => {
-    if (downloadMode) return;
-    if (!effectiveName)
-      return toast.error('Participant has not completed the task');
+    if (downloadMode) return
+    if (!effectiveName) return toast.error("Participant has not completed the task")
 
-    const studentName = effectiveName;
-    let breakdown = '';
-    if (rubric2 !== '' && effectiveText !== '') {
-      rubric2.split('|;;|').forEach((element, index) => {
-        const [rubricItem] = element.split('|:::|');
-        const grade = grades[index] !== undefined ? grades[index] : 'N/A';
-        breakdown += `${rubricItem}: ${grade}\n`;
-      });
+    const studentName = effectiveName
+    let breakdown = ""
+    if (rubric2 !== "" && effectiveText !== "") {
+      rubric2.split("|;;|").forEach((element, index) => {
+        const [rubricItem] = element.split("|:::|")
+        const grade = grades[index] !== undefined ? grades[index] : "N/A"
+        breakdown += `${rubricItem}: ${grade}\n`
+      })
     }
     const autoEmail = `Hello ${studentName},
 
@@ -365,20 +401,24 @@ The above transcription may be innaccurate, but the grade is most likely based o
 
 Here's a breakdown of your grade:
 ${breakdown}
-Total Score: ${totalScore}${comment && comment !== '' ? `
+Total Score: ${totalScore}${
+      comment && comment !== ""
+        ? `
   
-Teacher's Comment: ${comment}` : ''}`;
+Teacher's Comment: ${comment}`
+        : ""
+    }`
 
-    setBaseEmailBody(autoEmail);
-    setEmailBody(autoEmail);
-    setIncludeResponseLink(true);
-    setShowEmailModal(true);
-  };
+    setBaseEmailBody(autoEmail)
+    setEmailBody(autoEmail)
+    setIncludeResponseLink(true)
+    setShowEmailModal(true)
+  }
 
   const updateEmailBodyWithLink = (includeLink) => {
-    let updatedBody = baseEmailBody;
-    setEmailBody(updatedBody);
-  };
+    const updatedBody = baseEmailBody
+    setEmailBody(updatedBody)
+  }
 
   const handleSendEmail = async () => {
     try {
@@ -387,29 +427,29 @@ Teacher's Comment: ${comment}` : ''}`;
         code: effectiveCode,
         participant: effectiveName,
         subject: emailSubject,
-        pin: localStorage.getItem('token'),
-      });
-      queryParams.append('link', includeResponseLink);
-      const response = await fetch(`https://www.server.speakeval.org/send_email?${queryParams.toString()}`);
-      const resp = await response.json();
+        pin: localStorage.getItem("token"),
+      })
+      queryParams.append("link", includeResponseLink)
+      const response = await fetch(`https://www.server.speakeval.org/send_email?${queryParams.toString()}`)
+      const resp = await response.json()
       if (resp.success) {
-        toast.success('Email sent successfully');
-        setShowEmailModal(false);
-        isRed = false;
+        toast.success("Email sent successfully")
+        setShowEmailModal(false)
+        isRed = false
       } else {
-        toast.error(resp.error || 'Failed to send email');
+        toast.error(resp.error || "Failed to send email")
       }
     } catch (error) {
-      console.error('Error sending email:', error);
-      toast.error('Error sending email');
+      console.error("Error sending email:", error)
+      toast.error("Error sending email")
     }
-  };
+  }
 
   const handleCommentChange = (e) => {
-    const newComment = e.target.value;
-    setComment(newComment);
-    onGradeUpdate(effectiveName, effectiveCustomName, grades, totalScore, newComment, categories);
-  };
+    const newComment = e.target.value
+    setComment(newComment)
+    onGradeUpdate(effectiveName, effectiveCustomName, grades, totalScore, newComment, categories)
+  }
 
   if (downloadMode && !downloadedData) {
     return (
@@ -419,12 +459,12 @@ Teacher's Comment: ${comment}` : ''}`;
           <p className="mt-4 text-xl font-semibold text-gray-700">Loading...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <>
-      <style>{`
+      <style jsx>{`
         @keyframes shake {
           0% { transform: translateX(0); background-color: #38a169; }
           5% { transform: translateX(-4px); background-color: #598658; }
@@ -443,98 +483,121 @@ Teacher's Comment: ${comment}` : ''}`;
         .shake {
           animation: shake 1s;
         }
+        .profile-card {
+          transition: transform 0.3s ease-in-out;
+        }
+        .profile-card:hover {
+          transform: translateY(-5px);
+        }
       `}</style>
-      <div className={`relative flex flex-col items-start px-5 h-auto max-w-[400px] rounded-lg bg-gray-200 m-2 ${completed ? '' : 'text-red-500'} ${isRed ? 'border-2 border-red-500' : ''}`}>
-        <div className="flex items-center w-full">
-          <span className={`mr-[8px] text-[23px] truncate ${isRed ? 'text-red-500' : ''}`}>{effectiveCustomName || effectiveName}</span>
-          <div className="flex gap-[8px] ml-auto">
-            <button
-              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
-              onClick={handleDownload}
+      <div className="profile-card">
+        <div
+          className={`relative flex flex-col items-start p-6 h-auto max-w-[400px] rounded-lg bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 m-2 ${
+            completed ? "" : "text-red-400"
+          } ${isRed ? "border-2 border-red-500" : ""} shadow-lg shadow-cyan-500/20 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/30`}
+        >
+          <div className="flex items-center w-full mb-4">
+            <span
+              className={`mr-2 text-2xl font-bold truncate bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 ${isRed ? "text-red-500" : ""}`}
             >
-              <FaDownload />
-            </button>
+              {effectiveCustomName || effectiveName}
+            </span>
+            <div className="flex gap-2 ml-auto">
+              <button
+                className="p-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-full hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-md shadow-blue-500/50"
+                onClick={handleDownload}
+              >
+                <FaDownload />
+              </button>
+              <button
+                className={`p-2 ${error ? "bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 shake" : "bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"} text-white rounded-full transition-all duration-300 shadow-md shadow-green-500/50`}
+                onClick={handlePlay}
+              >
+                {isLoading ? <FaSpinner className="animate-spin" /> : isPlaying ? <FaPause /> : <FaPlay />}
+              </button>
+              {!downloadMode && (
+                <>
+                  <button
+                    className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-md shadow-purple-500/50"
+                    onClick={handleAiButtonClick}
+                  >
+                    <FaRobot />
+                  </button>
+                  <button
+                    className="p-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-full hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 shadow-md shadow-cyan-500/50 relative"
+                    onClick={handleEmailButtonClick}
+                    title="Send Email"
+                  >
+                    <FaEnvelope />
+                    {isRed && (
+                      <span className="absolute top-1 right-1 translate-x-1/2 -translate-y-1/2 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
+                        !
+                      </span>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div>
             <button
-              className={`p-2 ${error ? "bg-red-500 hover:bg-red-600 shake" : "bg-green-500 hover:bg-green-600"} text-white rounded-full`}
-              onClick={handlePlay}
+              className="p-2 bg-yellow-600 text-white rounded-full hover:bg-yellow-700 transition-colors duration-300"
+              onClick={handlePlayQuestion}
             >
-              {isLoading ? <FaSpinner className="animate-spin" /> : (isPlaying ? <FaPause /> : <FaPlay />)}
+              Play Question
             </button>
-            {!downloadMode && (
-              <>
-                <button
-                  className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
-                  onClick={handleAiButtonClick}
-                >
-                  <FaRobot />
-                </button>
-                <button
-                  className="p-2 bg-sky-500 text-white rounded-full hover:bg-sky-600 relative"
-                  onClick={handleEmailButtonClick}
-                  title="Send Email"
-                >
-                  <FaEnvelope />
-                  {isRed && (
-                    <span className="absolute top-1 right-1 translate-x-1/2 -translate-y-1/2 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
-                      !
-                    </span>
-                  )}
-                </button>
-              </>
-            )}
           </div>
-        </div>
 
-        <div>
-          <button
-            className="p-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600"
-            onClick={handlePlayQuestion}
-          >
-            Play Question
-          </button>
-        </div>
+          <div className="mt-4"></div>
 
-        <div className="w-full">
-          <div className="mt-2 text-gray-800 break-words">
-            {effectiveQuestion}
+          <div className="w-full space-y-4">
+            <div className="p-3 bg-gray-800 rounded-lg shadow-inner">
+              <h3 className="text-lg font-semibold text-cyan-300 mb-2">Question:</h3>
+              <p className="text-gray-300 break-words">{effectiveQuestion}</p>
+            </div>
+            <div className="p-3 bg-gray-800 rounded-lg shadow-inner">
+              <h3 className="text-lg font-semibold text-cyan-300 mb-2">Answer:</h3>
+              <p className="text-gray-300 break-words">{effectiveText}</p>
+            </div>
           </div>
-          <br />
-          <div className="mt-2 text-gray-800 break-words">
-            {effectiveText}
-          </div>
-        </div>
 
         {!downloadMode && (
           <>
-            <div className="mt-2 text-gray-800 break-words">
-              {rubric2 !== '' && effectiveText !== '' && rubric2.split('|;;|').map((element, idx) => {
-                const [rubricItem] = element.split('|:::|');
-                return (
-                  <div key={idx} className="flex items-center relative z-10">
-                    <span className="mr-2">{rubricItem}</span>
-                    <input
-                      type="text"
-                      className="border border-gray-300 px-2 py-1 rounded w-20"
-                      placeholder="Points"
-                      value={grades[idx] || ''}
-                      onChange={(e) => handleGradeChange(idx, e.target.value)}
-                    />
-                    <div className="relative group flex items-center">
-                      <FaInfoCircle className="ml-2 text-blue-500" />
-                      <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-20">
-                        {justifications[idx] ? justifications[idx] : 'Press the AI button to receive an automated grade and view the reason here.'}
+            <div className="mt-2 text-gray-300 break-words">
+              {rubric2 !== "" &&
+                effectiveText !== "" &&
+                rubric2.split("|;;|").map((element, idx) => {
+                  const [rubricItem] = element.split("|:::|")
+                  return (
+                    <div key={idx} className="flex items-center relative z-10">
+                      <span className="mr-2">{rubricItem}</span>
+                      <input
+                        type="text"
+                        className="bg-gray-800 border border-cyan-500/30 px-2 py-1 rounded w-20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300"
+                        placeholder="Points"
+                        value={grades[idx] || ""}
+                        onChange={(e) => handleGradeChange(idx, e.target.value)}
+                      />
+                      <div className="relative group flex items-center">
+                        <FaInfoCircle className="ml-2 text-blue-500" />
+                        <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-21">
+                          {justifications[idx]
+                            ? justifications[idx]
+                            : "Press the AI button to receive an automated grade and view the reason here."}
+                        </div>
                       </div>
+                      <div className="h-10"></div>
                     </div>
-                  </div>
-                );
-              })}
+                  )
+                })}
             </div>
-            <div className="mt-2 text-gray-800">
-              {rubric !== '' && effectiveText !== '' && `Total Score: ${totalScore}`}
+            <div className="mt-2 text-gray-300">
+              {rubric !== "" && effectiveText !== "" && `Total Score: ${totalScore}`}
             </div>
             <div className="flex justify-center mt-2 mb-2">
               <button
-                className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex items-center justify-center"
+                className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors duration-300 flex items-center justify-center"
                 onClick={handleCopyComments}
               >
                 <FaClipboard className="mr-2" /> Copy AI Comments
@@ -543,7 +606,7 @@ Teacher's Comment: ${comment}` : ''}`;
 
             <div className="mt-4 w-full">
               <textarea
-                className="w-full p-2 border border-gray-300 rounded resize-none"
+                className="w-full p-2 bg-gray-800 border border-cyan-500/30 rounded resize-none text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300"
                 rows="4"
                 placeholder="Add your comment here..."
                 value={comment}
@@ -555,35 +618,37 @@ Teacher's Comment: ${comment}` : ''}`;
 
         <audio id={`answerAudioPlayer-${effectiveName}-${effectiveCode}`} />
         <audio id={`questionAudioPlayer-${effectiveName}-${effectiveCode}`} />
+        </div>
+        </div>
 
         {showEmailModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white rounded-lg p-6 w-11/12 md:w-1/2">
-              <h2 className="text-xl font-bold mb-4">Edit Email</h2>
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg p-6 w-11/12 md:w-1/2 shadow-lg">
+              <h2 className="text-xl font-bold mb-4 text-white">Edit Email</h2>
               <div className="mb-4">
-                <label className="block mb-2 font-semibold">Email Subject</label>
+                <label className="block mb-2 font-semibold text-gray-300">Email Subject</label>
                 <input
                   type="text"
-                  className="w-full p-2 border border-gray-300 rounded"
+                  className="w-full p-2 border border-cyan-500/30 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
                 />
               </div>
-              
+
               <div className="mb-4">
                 <textarea
-                  className="w-full h-40 p-2 border border-gray-300 rounded"
+                  className="w-full h-40 p-2 border border-cyan-500/30 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300"
                   value={emailBody}
                   onChange={(e) => setEmailBody(e.target.value)}
                 />
               </div>
               <div className="mb-4">
-                <label className="flex items-center space-x-2">
+                <label className="flex items-center space-x-2 text-gray-300">
                   <input
                     type="checkbox"
                     checked={includeResponseLink}
                     onChange={(e) => {
-                      setIncludeResponseLink(e.target.checked);
+                      setIncludeResponseLink(e.target.checked)
                     }}
                   />
                   <span>Include a link for the student to view their response</span>
@@ -591,13 +656,13 @@ Teacher's Comment: ${comment}` : ''}`;
               </div>
               <div className="flex justify-end mt-4">
                 <button
-                  className="px-4 py-2 mr-2 bg-gray-300 rounded hover:bg-gray-400"
+                  className="px-4 py-2 mr-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-300"
                   onClick={() => setShowEmailModal(false)}
                 >
                   Cancel
                 </button>
                 <button
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300"
                   onClick={handleSendEmail}
                 >
                   Send Email
@@ -606,9 +671,9 @@ Teacher's Comment: ${comment}` : ''}`;
             </div>
           </div>
         )}
-      </div>
     </>
-  );
+  )
 }
 
-export default ProfileCard;
+export default ProfileCard
+

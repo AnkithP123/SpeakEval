@@ -9,13 +9,6 @@ let username
 const setUserName = (val) => {
   username = val
   console.log("New Username!", username)
-  if (username === 'JeetWonAgain') {
-    cuteAlert({
-      type: "error",
-      title: "Jeet did NOT win again!",
-      description: "Haha, you thought. Sign out of that account right now.",
-    })
-  }
 }
 
 const storedUsername = localStorage.getItem("username")
@@ -128,10 +121,10 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
         <div className="flex h-20 items-center justify-between">
           <div className="flex flex-1 items-center justify-center md:justify-start">
             <NavLink className="flex flex-shrink-0 items-center mr-4 group transform transition-transform duration-300 hover:scale-105" to="/">
-              <div className="relative overflow-hidden rounded-full">
+              <div className="relative overflow-hidden">
                 <div className="absolute inset-0 animate-spin-slow opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <img
-                  className="h-[70px] w-[70px] relative rounded-full p-[3px] transform transition-transform duration-300"
+                  className="h-[70px] w-[70px] relative p-[3px] transform transition-transform duration-300"
                   src={setVar ? (setVar2 ? 'crownlogo.png' : 'goldlogo.png') : 'logo.png'}
                   alt=""
                   onError={(e) => { e.target.src = setVar ? (setVar2 ? 'crownlogo.png' : 'goldlogo.png') : 'logo.png'; }}
