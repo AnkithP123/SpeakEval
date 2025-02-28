@@ -72,6 +72,14 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     initializeRoom();
   }, [roomCode]);
 
+  useEffect(() => {
+    if (showBulkEmailModal || showSingleEmailModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+  }, [showBulkEmailModal, showSingleEmailModal]);
+
   const fetchTotalQuestions = async () => {
     try {
       const response = await fetch(
