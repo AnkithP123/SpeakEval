@@ -686,20 +686,14 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
         <div className="relative flex flex-col items-center min-h-screen" style={{ fontFamily: "Montserrat" }}>
           {/* Header controls */}
           <div className="w-full px-6 py-4 bg-black/40 backdrop-blur-md border-b border-cyan-500/30">
-            <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
-              <div className="flex items-center space-x-4">
-                <div className="px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 backdrop-blur-md rounded-lg border border-cyan-500/30 text-white">
-                  {fetched ? `Participants: ${participants.length}` : "Loading..."}
-                </div>
+            <div className="max-w-7xl mx-auto flex flex-wrap justify-center items-center gap-4">
                 <button
                   onClick={toggleViewMode}
                   className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg shadow-lg shadow-green-500/30 hover:shadow-green-500/50 transition-all duration-300"
                 >
                   {showByPerson ? "Show by Question" : "Show by Person"}
                 </button>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-4">
                 <button
                   onClick={toggleSortOrder}
                   className="p-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-lg shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-300"
@@ -747,7 +741,6 @@ const handleGradeUpdate = (participantName, customName, grades, totalScore, comm
                   <FaEnvelope className="mr-2" />
                   {isEmailSending ? "Sending..." : "Send Emails"}
                 </button>
-              </div>
             </div>
           </div>
 
