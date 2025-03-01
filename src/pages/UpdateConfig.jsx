@@ -91,6 +91,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
     const [configs, setConfigs] = useState([]); // State to store the configs
     const [hoverButton, setHoverButton] = useState(false);
     const [isConfigRegistered, setIsConfigRegistered] = useState(false);
+    const [hoverIndex, setHoverIndex] = useState(null);
 
     
     useEffect(() => {
@@ -977,57 +978,102 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
                     </div>
                 </div>
             ) : (
-                <div>
-                <div style={containerStyle}>
-                    <div>
-                        {configs.length > 0 ? 
-                        configs.map((config) => (
-                            config.name ? (
-                                <button
-                                    key={config.name}
-                                    style={chipStyle}
-                                    onClick={() => handleConfigClick(config)}
-                                >
-                                    {config.name}
-                                </button>
-                            ) : null
-                        )) : 
-                        <><p className='text-2xl font-bold' style={{ color: 'black' }}>No configurations found. Go to the configurations page to make one.</p>
-                        <hr style={{ width: '100%', border: '1px solid lightgray', margin: '10px 0' }} /></>
-                        }
-                    </div>
-                    {/* <button onClick={handleConfigSubmit} style={buttonStyle}>Create Room</button> */}
+              <div className="w-full max-w-md mx-auto margin mt-20">
+              <div className="relative overflow-hidden bg-black/40 backdrop-blur-md rounded-xl border border-cyan-500/30 p-6">
+                {/* Background effects */}
+                <div className="absolute inset-0">
+                  <div className="absolute top-0 left-1/4 w-64 h-64 bg-cyan-500/10 rounded-full filter blur-3xl animate-pulse-slow"></div>
+                  <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full filter blur-3xl animate-pulse-slow animation-delay-2000"></div>
                 </div>
+        
+                {/* Content */}
+                <div className="relative z-10">
+                  <h2 className="text-2xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600">
+                    Select a Configuration
+                  </h2>
+        
+                  <div className="space-y-4">
+                    {configs.length > 0 ? (
+                      <div className="flex flex-wrap gap-3 justify-center">
+                        {configs.map((config, index) =>
+                          config.name ? (
+                            <button
+                              key={config.name}
+                              onClick={() => handleConfigClick(config)}
+                              onMouseEnter={() => setHoverIndex(index)}
+                              onMouseLeave={() => setHoverIndex(null)}
+                              className={`relative overflow-hidden px-4 py-2 rounded-full transition-all duration-300 ${
+                                hoverIndex === index
+                                  ? "bg-gradient-to-r from-cyan-500/20 to-purple-500/20 shadow-lg shadow-cyan-500/30"
+                                  : "bg-black/30"
+                              } border border-cyan-500/30 text-white hover:border-cyan-400/50`}
+                            >
+                              {/* Gleam animation */}
+                              {hoverIndex === index && (
+                                <div className="absolute inset-0 overflow-hidden">
+                                  <div className="gleam"></div>
+                                </div>
+                              )}
+        
+                              {/* Button text */}
+                              <span className="relative z-10">{config.name}</span>
+                            </button>
+                          ) : null,
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center space-y-4">
+                        <p className="text-lg text-white">
+                          No configurations found. Go to the configurations page to make one.
+                        </p>
+                        <div className="w-full h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent"></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
+        
     
             )}
     
             {/* Conditionally render the popup */}
             {popupVisible && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto shadow-lg">
-                        <h2 className="text-2xl font-bold mb-4 text-center">Select a Configuration</h2>
-                        <ul className="space-y-2">
-                            {selectedConfig && selectedConfig.map((config, index) => (
-                                <li
-                                    key={index}
-                                    className="p-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition"
-                                    onClick={() => handleConfigClick(config)}
-                                >
-                                    {config.name}
-                                </li>
-                            ))}
-                        </ul>
-                        <button
-                            className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg w-full hover:bg-blue-600 transition"
-                            onClick={() => setPopupVisible(false)}
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="relative overflow-hidden bg-black/60 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-md shadow-xl w-full max-w-md mx-auto">
+            {/* Animated gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none" />
+
+            {/* Content */}
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+                Select a Configuration
+              </h2>
+
+              <ul className="space-y-3">
+                {selectedConfig &&
+                  selectedConfig.map((config, index) => (
+                    <li
+                      key={index}
+                      className="p-4 rounded-lg cursor-pointer transition-all duration-300 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/20 hover:border-cyan-500/50 hover:-translate-y-0.5"
+                      onClick={() => handleConfigClick(config)}
+                    >
+                      <span className="text-white">{config.name}</span>
+                    </li>
+                  ))}
+              </ul>
+
+              <button
+                className="mt-6 w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 font-medium"
+                onClick={() => setPopupVisible(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
+      )}
+              </div>
         </DndProvider>
     );
 };
