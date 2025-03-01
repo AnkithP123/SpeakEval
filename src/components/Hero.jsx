@@ -72,6 +72,7 @@ const Hero = (props) => {
         transition: "background-position 0.3s ease-out",
       }}
     >
+      <meta name="description" content="SpeakEval: Give foreign language oral exams quickly and confidently, online" />
       {/* Animated background elements */}
       <div ref={particlesRef} className="absolute inset-0 overflow-hidden">
         {particles.map((particle, index) => (
@@ -102,7 +103,7 @@ const Hero = (props) => {
             </span>
           </h1>
           <div className="relative">
-            <p className="my-6 text-xl text-white drop-shadow-md max-w-2xl mx-auto leading-relaxed">{props.subtitle}</p>
+            <p name="description" className="my-6 text-xl text-white drop-shadow-md max-w-2xl mx-auto leading-relaxed">{props.subtitle}</p>
             <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"></div>
           </div>
         </div>
