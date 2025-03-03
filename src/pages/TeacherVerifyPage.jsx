@@ -175,12 +175,6 @@ function TeacherVerifyPage() {
     <div className="auth-container">
       <div className={`auth-card ${shake ? "shake" : ""}`}>
         <h2 className="auth-title">Teacher Verification</h2>
-        <a
-          href="mailto:info@speakeval.org?subject=Teacher Verification Help"
-          style={helpLinkStyle}
-        >
-          Help Me
-        </a>
         <form className="auth-form" onSubmit={handleTeacherInfoSubmit}>
           {!emailFromParams && (
             <input
