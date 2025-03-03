@@ -98,7 +98,7 @@ function BottomBar() {
                 </span>
               </a>
               <a
-                href="mailto:support@speakeval.org"
+                href="mailto:info@speakeval.org"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-cyan-200 text-sm hover:text-cyan-400 transition-colors flex items-center gap-1 group"
