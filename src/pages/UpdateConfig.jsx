@@ -758,7 +758,7 @@ const Configure = ({set, setUltimate, getPin, subscribed}) => {
 
     return (
         <DndProvider backend={HTML5Backend}>
-        {popupVisible && !isConfigRegistered ? ( // Added warning banner
+        {!isConfigRegistered ? ( // Added warning banner
         <div className="fixed top-20 left-0 right-0 bg-amber-500/90 border-l-4 border-amber-700 text-white p-4 rounded-md mb-6 shadow-md z-50">
           <div className="flex items-start">
             <div className="flex-shrink-0">
