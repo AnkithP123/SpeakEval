@@ -246,7 +246,7 @@ function TeacherVerifyPage() {
                 }}
               >
                 <h4>Provide School Website</h4>
-                <p>Provide a link to your school's staff directory</p>
+                <p>Provide a link to your school's staff directory. The page must have your name or email clearly visible on it</p>
               </div>
             </div>
             <button className="close-modal" onClick={() => setShowProofModal(false)}>
