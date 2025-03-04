@@ -573,7 +573,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     if (playing || waiting)
       return;
 
-    const {permissionGranted, audio, video} = await requestMicrophonePermission();
+    const {permissionGranted} = await requestMicrophonePermission();
     if (!permissionGranted) {
       setError('Microphone access is required. Click here to try again.');
       return;
