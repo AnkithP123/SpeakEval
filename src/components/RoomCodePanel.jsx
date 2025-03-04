@@ -2,12 +2,14 @@
 
 import { useState } from "react"
 import { toast } from "react-toastify"
+import { ChevronDown, ChevronUp } from "lucide-react"
 import GradingPanel from "../pages/TeacherPortalRoom.jsx"
 
 function JoinRoom({ rooms, pin }) {
   const [roomCode, setRoomCode] = useState("")
   const [grading, setGrading] = useState(false)
   const [hoveredRoom, setHoveredRoom] = useState(null)
+  const [showOlderRooms, setShowOlderRooms] = useState(false)
 
   const handleGrade = async () => {
     if (roomCode) {
@@ -54,44 +56,85 @@ function JoinRoom({ rooms, pin }) {
     return date.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })
   }
 
+  const isOlderThanWeek = (createdTime) => {
+    const oneWeekInMs = 7 * 24 * 60 * 60 * 1000
+    return Date.now() - createdTime > oneWeekInMs
+  }
+
+  // Filter rooms into recent and older categories
+  const getFilteredRooms = () => {
+    if (!rooms) return { recentRooms: [], olderRooms: [] }
+
+    const sortedRooms = [...rooms].reverse()
+    const recentRooms = sortedRooms.filter((room) => room.code && !isOlderThanWeek(room.created))
+    const olderRooms = sortedRooms.filter((room) => room.code && isOlderThanWeek(room.created))
+
+    return { recentRooms, olderRooms }
+  }
+
+  const { recentRooms, olderRooms } = getFilteredRooms()
+  const hasOlderRooms = olderRooms.length > 0
+
+  const renderRoomChip = (room) => (
+    <div
+      key={room.code}
+      className="relative flex items-center justify-between px-3 py-1.5 w-[190px] bg-gradient-to-r from-gray-800 to-gray-700 rounded-md shadow cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/30 border border-cyan-500/30"
+      onMouseEnter={() => setHoveredRoom(room.code)}
+      onMouseLeave={() => setHoveredRoom(null)}
+      onClick={() => goToRoom(room.code)}
+    >
+      <span className="text-cyan-300 font-semibold text-sm">{room.display || room.code}</span>
+      <span className="text-gray-400 text-xs ml-2">{formatRelativeTime(room.created)}</span>
+
+      {/* Tooltip for Full Timestamp */}
+      {hoveredRoom === room.code && (
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2 bg-gray-800 text-white text-xs rounded-lg shadow-md font-montserrat whitespace-nowrap border border-cyan-500/30 z-10">
+          {formatFullTimestamp(room.created)}
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-t-gray-800" />
+        </div>
+      )}
+    </div>
+  )
+
   return !grading ? (
     <div className="flex-grow flex items-center justify-center mb-8">
       <div className="w-full max-w-2xl bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg shadow-lg flex flex-col items-center p-8 border border-cyan-500/30">
         <h2 className="text-3xl font-bold mb-8 text-white">Grade Room</h2>
 
         {/* Scrollable Chips Container */}
-
-        <div className="max-h-40 w-full overflow-y-auto mb-6 custom-scrollbar">
+        <div className="w-full mb-6">
           <h3 className="text-xl font-semibold text-cyan-300 mb-4 text-center">Rooms (Newest to Oldest)</h3>
-          <div className="flex flex-wrap gap-2 px-2 justify-center">
-          {rooms
-              ? rooms
-                  .slice()
-                  .reverse()
-                  .map((room) =>
-                    room.code ? (
-                      <div
-                        key={room.code}
-                        className="relative flex items-center justify-between px-3 py-1.5 w-[190px] bg-gradient-to-r from-gray-800 to-gray-700 rounded-md shadow cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/30 border border-cyan-500/30"
-                        onMouseEnter={() => setHoveredRoom(room.code)}
-                        onMouseLeave={() => setHoveredRoom(null)}
-                        onClick={() => goToRoom(room.code)}
-                      >
-                        <span className="text-cyan-300 font-semibold text-sm">{room.display || room.code}</span>
-                        <span className="text-gray-400 text-xs ml-2">{formatRelativeTime(room.created)}</span>
 
-                        {/* Tooltip for Full Timestamp */}
-                        {hoveredRoom === room.code && (
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2 bg-gray-800 text-white text-xs rounded-lg shadow-md font-montserrat whitespace-nowrap border border-cyan-500/30">
-                            {formatFullTimestamp(room.created)}
-                            <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-t-gray-800" />
-                          </div>
-                        )}
-                      </div>
-                    ) : null,
-                  )
-              : null}
+          {/* Recent Rooms */}
+          <div className="max-h-40 w-full overflow-y-auto custom-scrollbar mb-2">
+            <div className="flex flex-wrap gap-2 px-2 justify-center">
+              {recentRooms.map(renderRoomChip)}
+              {recentRooms.length === 0 && (
+                <p className="text-gray-400 text-center w-full py-2">No recent rooms found</p>
+              )}
+            </div>
           </div>
+
+          {/* Older Rooms Dropdown */}
+          {hasOlderRooms && (
+            <div className="w-full mt-3">
+              <button
+                onClick={() => setShowOlderRooms(!showOlderRooms)}
+                className="flex items-center justify-center w-full py-2 px-4 bg-gray-800 text-cyan-300 rounded-md border border-cyan-500/30 hover:bg-gray-700 transition-colors duration-200"
+              >
+                <span className="mr-2">
+                  {showOlderRooms ? "Hide" : "Show"} Older Rooms ({olderRooms.length})
+                </span>
+                {showOlderRooms ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+
+              {showOlderRooms && (
+                <div className="mt-3 max-h-40 overflow-y-auto custom-scrollbar border border-cyan-500/20 rounded-md p-2 bg-gray-800/50">
+                  <div className="flex flex-wrap gap-2 px-2 justify-center">{olderRooms.map(renderRoomChip)}</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Divider */}
@@ -127,23 +170,22 @@ function JoinRoom({ rooms, pin }) {
         </button>
       </div>
       <style jsx>{`
-          .custom-scrollbar::-webkit-scrollbar {
-    width: 0.5rem;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #4fd1c5; /* Change this color to match your theme */
-    border-radius: 0.25rem;
-    border: 3px solid transparent;
-  }
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #4fd1c5 transparent;
-  }
-        `}</style>
-
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 0.5rem;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #4fd1c5;
+          border-radius: 0.25rem;
+          border: 3px solid transparent;
+        }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #4fd1c5 transparent;
+        }
+      `}</style>
     </div>
   ) : (
     <GradingPanel initialRoomCode={roomCode} pin={pin} />
