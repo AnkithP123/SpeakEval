@@ -568,10 +568,10 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
   const playRecording = async () => {
 
-    setWaiting(true);
-
     if (playing || waiting)
       return;
+
+    setWaiting(true);
 
     const {permissionGranted} = await requestMicrophonePermission();
     if (!permissionGranted) {
