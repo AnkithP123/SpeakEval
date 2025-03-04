@@ -820,6 +820,17 @@ export default function AudioRecorder({ code, participant, uuid }) {
           </p>
         )}
 
+        {waiting && (
+          <p style={{
+            marginTop: '8px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: '#FF0000',
+          }}>
+            If this is taking too long, please ensure you have allowed microphone permissions. If it still doesn't work, try switching to another browser.
+          </p>
+        )}
+
         {countdownDisplay > 0 && (
           <p style={{
             marginTop: '16px',
