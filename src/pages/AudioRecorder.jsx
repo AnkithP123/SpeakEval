@@ -724,7 +724,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
                 fontWeight: 'bold',
                 color: '#374151',
             }}>
-                If you couldn't hear or understand the question, you can use this time to replay it using the audio component below.
+                Did the question not play? If you couldn't hear or understand the question, you can use this time to replay it using the audio component below.
             </p>
         )}
 
