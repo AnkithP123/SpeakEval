@@ -407,7 +407,6 @@ export default function AudioRecorder({ code, participant, uuid }) {
     }
 
 
-    await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`); //TODO add a check here
 
     interval = setInterval(() => {
     // Only decrement if the current timer is greater than zero
@@ -453,6 +452,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
       await sendStatus();
       
       mediaRecorder.current.start();
+
+      await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`); //TODO add a check here
 
 
     } catch (err) {
