@@ -1022,7 +1022,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                     <tbody>
                       {sortParticipants().map((participant, index) => (
                         <tr key={index} className="border-b border-cyan-500/10">
-                          <td className="py-4 px-6 text-white">
+                          <td className="py-4 px-6 text-white align-top">
                             {participant.name}
                           </td>
                           {questionData.questions.map(
