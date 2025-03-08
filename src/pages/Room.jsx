@@ -57,6 +57,7 @@ function Room() {
     cuteAlert({
       type: "info",
       title: "Welcome to SpeakEval",
+      id: "cute-alert-welcome",
       description:
         "You're currently in a waiting room. Please wait until your instructor starts the oral examination. It is VERY IMPORTANT that you follow the directions on this screen, and that you watch the video, then scroll down and test your audio devices. Make sure your teacher does not start the exam until you have completed this. Good luck!",
       primaryButtonText: "Got it",
