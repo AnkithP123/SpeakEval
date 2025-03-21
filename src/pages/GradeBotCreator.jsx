@@ -5,14 +5,63 @@ import QuestionCardContainer from "../components/QCardContainer";
 import Card from "../components/Card";
 import PromptModal from "../components/PromptModal";
 
-export default function Home() {
+export default function Home({ getPin }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [selectedConfig, setSelectedConfig] = useState(null);
+  const [categories, setCategories] = useState([]);
+
   const [promptMessage, setPromptMessage] = useState(
     "You are an AI assistant that helps grade speaking assessments. Evaluate the student's response based on the provided rubric and give constructive feedback."
   );
+  const [questionSet, setQuestionSet] = useState([]);
 
   const handleSavePrompt = (newPrompt) => {
     setPromptMessage(newPrompt);
+  };
+
+  const handleImportQuestions = async () => {
+    try {
+      console.log("Fetching autofill data...");
+      setPopupVisible(true);
+      const configs = await fetch(
+        `https://www.server.speakeval.org/getconfigs?pin=${getPin()}`
+      );
+      console.log("Fetched autofill data:", configs);
+      const configsList = await configs.json();
+      setSelectedConfig(configsList);
+    } catch (error) {
+      setPopupVisible(false);
+      console.error("Failed to fetch configs:", error);
+      toast.error("Failed to fetch configurations");
+    }
+  };
+
+  const handleConfigClick = (config) => {
+    console.log("Selected config:", config);
+    let samplearr = [];
+    for (let question of config.questions) {
+      samplearr.push({
+        question: question.transcription,
+        audioBlob: question.audio,
+      });
+    }
+    let newQuestionSet = [...questionSet, ...samplearr];
+    setQuestionSet(newQuestionSet);
+
+    let rubric2 = config.rubric;
+    const categories = rubric2.split("|;;|").map((category) => {
+      const [name, descriptionsString] = category.split("|:::|");
+      console.log(descriptionsString);
+      const descriptions = descriptionsString
+        ? descriptionsString.split("|,,|")
+        : Array(5).fill("");
+      return { name, descriptions };
+    });
+
+    setCategories(categories);
+
+    setPopupVisible(false);
   };
 
   return (
@@ -61,24 +110,23 @@ export default function Home() {
             >
               PROMPT MESSAGE
             </button>
-
-            <select className="bg-gradient-to-r from-red-600 to-red-800 text-white py-2 px-4 rounded-md font-bold text-lg border-none focus:ring-2 focus:ring-red-500/50">
-              <option>MODEL</option>
-              <option>GPT-4</option>
-              <option>Claude 3</option>
-              <option>Llama 3</option>
-            </select>
           </div>
         </Card>
 
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-white">Fine-Tuning</h2>
-          <button className="bg-gradient-to-r from-purple-500 to-purple-700 text-white py-2 px-4 rounded-md font-bold transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30">
+          <button
+            className="bg-gradient-to-r from-purple-500 to-purple-700 text-white py-2 px-4 rounded-md font-bold transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30"
+            onClick={() => handleImportQuestions()}
+          >
             IMPORT QUESTION-SET
           </button>
         </div>
 
-        <QuestionCardContainer />
+        <QuestionCardContainer
+          questionSet={questionSet}
+          storedCategories={categories}
+        />
 
         <Card color="pink" className="mt-8">
           <h2 className="text-2xl font-bold text-white mb-4">
@@ -106,6 +154,43 @@ export default function Home() {
         setPrompt={setPromptMessage}
         onSave={handleSavePrompt}
       />
+
+      {/* Conditionally render the popup */}
+      {popupVisible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="relative overflow-hidden bg-black/60 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-md shadow-xl w-full max-w-md mx-auto">
+            {/* Animated gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none" />
+
+            {/* Content */}
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+                Select a Configuration
+              </h2>
+
+              <ul className="space-y-3">
+                {selectedConfig &&
+                  selectedConfig.map((config, index) => (
+                    <li
+                      key={index}
+                      className="p-4 rounded-lg cursor-pointer transition-all duration-300 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/20 hover:border-cyan-500/50 hover:-translate-y-0.5"
+                      onClick={() => handleConfigClick(config)}
+                    >
+                      <span className="text-white">{config.name}</span>
+                    </li>
+                  ))}
+              </ul>
+
+              <button
+                className="mt-6 w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 font-medium"
+                onClick={() => setPopupVisible(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

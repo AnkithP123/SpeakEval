@@ -158,7 +158,10 @@ function App() {
           <Route path="/practice-exam" element={<PracticeExam />} />
           <Route path="/profile" element={<ProfileCard />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/grade-bot" element={<GradeBotCreator />} />
+          <Route
+            path="/grade-bot"
+            element={<GradeBotCreator getPin={getPin} />}
+          />
           <Route path="*" element={<Maintainence />} />
         </Route>
         <Route path="/record" element={<AudioRecorderRouteWrapper />} />

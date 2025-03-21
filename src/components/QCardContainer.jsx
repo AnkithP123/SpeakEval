@@ -4,7 +4,10 @@ import { useState } from "react";
 import QuestionCard from "./QCard";
 import Card from "./Card";
 
-export default function QuestionCardContainer() {
+export default function QuestionCardContainer({
+  questionSet,
+  storedCategories,
+}) {
   const [cards, setCards] = useState([
     { id: 1, question: "", grade: "", justification: "", audioBlob: null },
   ]);
@@ -20,6 +23,8 @@ export default function QuestionCardContainer() {
         grade: "",
         justification: "",
         audioBlob: null,
+        questions: questionSet,
+        storedCategories: storedCategories,
       },
     ]);
   };
@@ -38,6 +43,8 @@ export default function QuestionCardContainer() {
             key={card.id}
             id={card.id}
             data={card}
+            questions={questionSet}
+            storedCategories={storedCategories}
             updateCard={updateCard}
           />
         ))}
