@@ -239,50 +239,58 @@ export default function QuestionCard({
 
   return (
     <div className="bg-black/30 rounded-lg p-4 mb-4 border border-cyan-500/30 backdrop-blur-sm transition-all duration-300 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/20">
-      <div className="flex flex-col md:flex-row gap-4 mb-4">
-        <div className="flex-1">
-          <label className="block text-sm font-medium mb-1 text-white">
-            Select Question
-          </label>
-          <select
-            className="w-full p-2 rounded-md bg-black/30 border border-red-500/30 text-white focus:border-red-500/50 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-            value={data.question}
-            onChange={handleQuestionChange}
-          >
-            <option value="">Select a question</option>
-            {questions &&
-              questions.map((q, i) => (
-                <option key={i} value={q.question}>
-                  {q.question}
-                </option>
-              ))}
-          </select>
-        </div>
+      <div className="flex flex-col gap-4 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-1 text-white">
+              Select Question
+            </label>
+            <select
+              className="w-full p-2 rounded-md bg-black/30 border border-red-500/30 text-white focus:border-red-500/50 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+              value={data.question}
+              onChange={handleQuestionChange}
+            >
+              <option value="">Select a question</option>
+              {questions &&
+                questions.map((q, i) => (
+                  <option key={i} value={q.question}>
+                    {q.question}
+                  </option>
+                ))}
+            </select>
+          </div>
 
-        <div className="flex gap-2">
           <button
             onClick={handlePlayClick}
             disabled={false}
-            className={`p-2 rounded-full transition-all duration-300 ${
+            className={`p-3 rounded-md flex items-center justify-center transition-all duration-300 h-10 self-end ${
               questions && questions.length > 0
                 ? "bg-gradient-to-r from-purple-500 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/30"
                 : "bg-purple-500/30 text-gray-500 cursor-not-allowed"
             }`}
           >
-            <FaPlay size={16} />
-          </button>
-
-          <button
-            onClick={handleRecordClick}
-            className={`p-2 rounded-full transition-all duration-300 ${
-              isRecording
-                ? "bg-gradient-to-r from-red-500 to-red-700 text-white hover:shadow-lg hover:shadow-red-500/30"
-                : "bg-gradient-to-r from-purple-500 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/30"
-            }`}
-          >
-            {isRecording ? <FaStop size={16} /> : <FaMicrophone size={16} />}
+            <FaPlay size={16} className="mr-2" /> Play
           </button>
         </div>
+
+        <button
+          onClick={handleRecordClick}
+          className={`p-3 rounded-md flex items-center justify-center transition-all duration-300 ${
+            isRecording
+              ? "bg-gradient-to-r from-red-500 to-red-700 text-white hover:shadow-lg hover:shadow-red-500/30"
+              : "bg-gradient-to-r from-green-500 to-green-700 text-white hover:shadow-lg hover:shadow-green-500/30"
+          }`}
+        >
+          {isRecording ? (
+            <>
+              <FaStop size={16} className="mr-2" /> Stop Recording
+            </>
+          ) : (
+            <>
+              <FaMicrophone size={16} className="mr-2" /> Record Answer
+            </>
+          )}
+        </button>
       </div>
 
       {audioURL && (
