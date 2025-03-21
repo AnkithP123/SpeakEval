@@ -37,6 +37,10 @@ export default function Home({ getPin }) {
     }
   };
 
+  const handlePromptChange = (e) => {
+    setPromptMessage(e.target.value);
+  };
+
   const handleConfigClick = (config) => {
     console.log("Selected config:", config);
     let samplearr = [];
@@ -103,14 +107,12 @@ export default function Home({ getPin }) {
             AI SETTINGS
           </h2>
 
-          <div className="flex flex-col md:flex-row gap-4 justify-between">
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-gradient-to-r from-purple-500 to-purple-700 text-white py-2 px-4 rounded-md font-bold text-lg transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30"
-            >
-              PROMPT MESSAGE
-            </button>
-          </div>
+          <textarea
+            value={promptMessage}
+            onChange={handlePromptChange}
+            className="w-full h-32 p-4 bg-black/30 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none"
+            placeholder="Enter prompt message for the AI"
+          />
         </Card>
 
         <div className="flex justify-between items-center mb-4">
