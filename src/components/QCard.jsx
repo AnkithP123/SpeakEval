@@ -3,14 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { FaPlay, FaMicrophone, FaStop, FaRedo } from "react-icons/fa";
 
-const SAMPLE_QUESTIONS = [
-  "Explain the concept of machine learning.",
-  "What is the difference between supervised and unsupervised learning?",
-  "How do neural networks work?",
-  "Explain the concept of natural language processing.",
-  "What are the ethical considerations in AI development?",
-];
-
 export default function QuestionCard({
   id,
   data,
