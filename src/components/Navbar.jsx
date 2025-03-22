@@ -13,17 +13,29 @@ const setUserName = (val) => {
 
 const storedUsername = localStorage.getItem("username");
 const storedToken = localStorage.getItem("token");
-let tokenExpired = await fetch(
-  "https://www.server.speakeval.org/expired-token?token=" + storedToken
-);
-let tokenExpiredJson = await tokenExpired.json();
-if (!storedToken || tokenExpiredJson.expired) {
-  localStorage.removeItem("username");
-  setUserName(null);
-} else if (storedUsername) {
-  setUserName(storedUsername);
-  console.log("Username:", storedUsername);
-}
+const checkTokenExpiry = async () => {
+  if (storedToken) {
+    let tokenExpired = await fetch(
+      "https://www.server.speakeval.org/expired-token?token=" + storedToken
+    );
+    let tokenExpiredJson = await tokenExpired.json();
+    if (tokenExpiredJson.expired) {
+      localStorage.removeItem("username");
+      setUserName(null);
+    } else if (storedUsername) {
+      setUserName(storedUsername);
+      console.log("Username:", storedUsername);
+    }
+  } else if (!storedToken) {
+    localStorage.removeItem("username");
+    setUserName(null);
+  } else if (storedUsername) {
+    setUserName(storedUsername);
+    console.log("Username:", storedUsername);
+  }
+};
+
+checkTokenExpiry();
 
 let pin = null;
 
