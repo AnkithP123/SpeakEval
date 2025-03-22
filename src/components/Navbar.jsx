@@ -1,93 +1,97 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { NavLink, useNavigate } from "react-router-dom"
-import { cuteAlert } from "cute-alert"
+import { useState, useEffect, useRef } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { cuteAlert } from "cute-alert";
 
-let username
+let username;
 
 const setUserName = (val) => {
-  username = val
-  console.log("New Username!", username)
-}
+  username = val;
+  console.log("New Username!", username);
+};
 
-const storedUsername = localStorage.getItem("username")
-const storedToken = localStorage.getItem("token")
-if (!storedToken) {
-  localStorage.removeItem("username")
-  setUserName(null)
+const storedUsername = localStorage.getItem("username");
+const storedToken = localStorage.getItem("token");
+let tokenExpired = await fetch(
+  "https://www.server.speakeval.org/expired-token?token=" + storedToken
+);
+let tokenExpiredJson = await tokenExpired.json();
+if (!storedToken || tokenExpiredJson.expired) {
+  localStorage.removeItem("username");
+  setUserName(null);
 } else if (storedUsername) {
-  setUserName(storedUsername)
-  console.log("Username:", storedUsername)
+  setUserName(storedUsername);
+  console.log("Username:", storedUsername);
 }
 
-let pin = null
+let pin = null;
 
 const setPin = (val) => {
-  pin = val
-}
+  pin = val;
+};
 
 const getPin = () => {
-  return pin
-}
+  return pin;
+};
 
-const storedPin = localStorage.getItem("pin")
+const storedPin = localStorage.getItem("pin");
 if (storedPin) {
-  setPin(storedPin)
+  setPin(storedPin);
 }
 
 function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const navigate = useNavigate()
-  const [scrolled, setScrolled] = useState(false)
-  const [hoverButton, setHoverButton] = useState(false)
-  const dropdownRef = useRef(null)
-  const buttonRef = useRef(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+  const [hoverButton, setHoverButton] = useState(false);
+  const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
-      const isScrolled = window.scrollY > 10
+      const isScrolled = window.scrollY > 10;
       if (isScrolled !== scrolled) {
-        setScrolled(isScrolled)
+        setScrolled(isScrolled);
       }
-    }
+    };
 
-    document.addEventListener("scroll", handleScroll)
+    document.addEventListener("scroll", handleScroll);
     return () => {
-      document.removeEventListener("scroll", handleScroll)
-    }
-  }, [scrolled])
+      document.removeEventListener("scroll", handleScroll);
+    };
+  }, [scrolled]);
 
   useEffect(() => {
     // Fetch the username from local storage or an API endpoint
-    const storedUsername = localStorage.getItem("username")
+    const storedUsername = localStorage.getItem("username");
     if (storedUsername) {
-      setUserName(storedUsername)
+      setUserName(storedUsername);
     }
 
     // Fetch the pin from local storage or an API endpoint
-    const storedPin = localStorage.getItem("token")
+    const storedPin = localStorage.getItem("token");
     if (storedPin) {
-      setPin(storedPin)
+      setPin(storedPin);
     }
-  }, [])
+  }, []);
 
   const handleLogin = () => {
-    navigate("/login")
-  }
+    navigate("/login");
+  };
 
   const handleLogout = () => {
-    localStorage.removeItem("gold")
-    setVar3(false)
-    localStorage.removeItem("ultimate")
-    setVar4(false)
-    localStorage.removeItem("username")
-    setUserName(null)
-    localStorage.removeItem("pin")
-    setPin(null)
-    localStorage.removeItem("token")
-    navigate("/")
-  }
+    localStorage.removeItem("gold");
+    setVar3(false);
+    localStorage.removeItem("ultimate");
+    setVar4(false);
+    localStorage.removeItem("username");
+    setUserName(null);
+    localStorage.removeItem("pin");
+    setPin(null);
+    localStorage.removeItem("token");
+    navigate("/");
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -98,15 +102,15 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
         buttonRef.current &&
         !buttonRef.current.contains(event.target)
       ) {
-        setDropdownOpen(false)
+        setDropdownOpen(false);
       }
-    }
+    };
 
-    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [dropdownOpen])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   return (
     <nav
@@ -120,28 +124,51 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
           <div className="flex flex-1 items-center justify-center md:justify-start">
-            <NavLink className="flex flex-shrink-0 items-center mr-4 group transform transition-transform duration-300 hover:scale-105" to="/">
+            <NavLink
+              className="flex flex-shrink-0 items-center mr-4 group transform transition-transform duration-300 hover:scale-105"
+              to="/"
+            >
               <div className="relative overflow-hidden">
                 <div className="absolute inset-0 animate-spin-slow opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <img
                   className="h-[70px] w-[70px] relative p-[3px] transform transition-transform duration-300"
-                  src={setVar ? (setVar2 ? 'crownlogo.png' : 'goldlogo.png') : 'logo.png'}
+                  src={
+                    setVar
+                      ? setVar2
+                        ? "crownlogo.png"
+                        : "goldlogo.png"
+                      : "logo.png"
+                  }
                   alt=""
-                  onError={(e) => { e.target.src = setVar ? (setVar2 ? 'crownlogo.png' : 'goldlogo.png') : 'logo.png'; }}
+                  onError={(e) => {
+                    e.target.src = setVar
+                      ? setVar2
+                        ? "crownlogo.png"
+                        : "goldlogo.png"
+                      : "logo.png";
+                  }}
                 />
               </div>
-              {setVar ?
-              <span className={"hidden md:block text-[50px] font-bold ml-[-10px] bg-clip-text text-transparent bg-gradient-to-r from-[#EBC050] via-[#F5ED88] to-[#EBC764]"}
-                style={{ fontFamily: "Montserrat" }}
-              >
-                peakEval
-              </span>
-              :
-              <span className={`hidden md:block text-[50px] font-bold ml-[-10px] transition-all duration-300 ${
-                  "bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500"
-              }`} style={{ fontFamily: "Montserrat", textShadow: "0 0 15px rgba(80, 200, 255, 0.5)" }}>
-                peakEval
-              </span>}
+              {setVar ? (
+                <span
+                  className={
+                    "hidden md:block text-[50px] font-bold ml-[-10px] bg-clip-text text-transparent bg-gradient-to-r from-[#EBC050] via-[#F5ED88] to-[#EBC764]"
+                  }
+                  style={{ fontFamily: "Montserrat" }}
+                >
+                  peakEval
+                </span>
+              ) : (
+                <span
+                  className={`hidden md:block text-[50px] font-bold ml-[-10px] transition-all duration-300 ${"bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500"}`}
+                  style={{
+                    fontFamily: "Montserrat",
+                    textShadow: "0 0 15px rgba(80, 200, 255, 0.5)",
+                  }}
+                >
+                  peakEval
+                </span>
+              )}
             </NavLink>
           </div>
           <div className="flex items-center">
@@ -161,7 +188,9 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
                   <span className="relative z-10 flex items-center">
                     {username}
                     <svg
-                      className={`ml-2 h-5 w-5 transition-transform duration-300 ${dropdownOpen ? "rotate-180" : ""}`}
+                      className={`ml-2 h-5 w-5 transition-transform duration-300 ${
+                        dropdownOpen ? "rotate-180" : ""
+                      }`}
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 20 20"
                       fill="currentColor"
@@ -209,14 +238,13 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
         </div>
       </div>
     </nav>
-  )
+  );
 }
 
-export { setUserName }
-export { username }
-export { pin }
-export { setPin }
-export { getPin }
+export { setUserName };
+export { username };
+export { pin };
+export { setPin };
+export { getPin };
 
-export default Navbar
-
+export default Navbar;
