@@ -37,13 +37,7 @@ const checkTokenExpiry = async () => {
   }
 };
 
-(async () => {
-  try {
-    await checkTokenExpiry();
-  } catch (error) {
-    console.error("Error checking token expiry:", error);
-  }
-})();
+checkTokenExpiry();
 
 let pin = null;
 
