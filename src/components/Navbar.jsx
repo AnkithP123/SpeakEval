@@ -25,6 +25,8 @@ const checkTokenExpiry = async () => {
     } else if (storedUsername) {
       setUserName(storedUsername);
       console.log("Username:", storedUsername);
+    } else {
+      setUserName(tokenExpiredJson.decoded.username);
     }
   } else if (!storedToken) {
     localStorage.removeItem("username");
@@ -35,7 +37,13 @@ const checkTokenExpiry = async () => {
   }
 };
 
-checkTokenExpiry();
+(async () => {
+  try {
+    await checkTokenExpiry();
+  } catch (error) {
+    console.error("Error checking token expiry:", error);
+  }
+})();
 
 let pin = null;
 
@@ -54,6 +62,7 @@ if (storedPin) {
 
 function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [name, setName] = useState(null);
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [hoverButton, setHoverButton] = useState(false);
@@ -73,6 +82,10 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
       document.removeEventListener("scroll", handleScroll);
     };
   }, [scrolled]);
+
+  useEffect(() => {
+    setName(username);
+  }, [username]);
 
   useEffect(() => {
     // Fetch the username from local storage or an API endpoint
