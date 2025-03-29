@@ -18,8 +18,8 @@ function HomeCards() {
       color: "purple",
     },
     {
-      title: "Configure Exams",
-      description: "For teacher use. Create rubrics and question banks.",
+      title: "Configure Sets",
+      description: "For teacher use. Configure question sets: create rubrics and question banks.",
       link: "/configure",
       buttonText: "Configure",
       color: "blue",

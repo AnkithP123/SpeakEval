@@ -1,22 +1,16 @@
-"use client";
+"use client"
 
-import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import { FaTimes, FaPlus, FaMicrophone, FaStop } from "react-icons/fa";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import Card from "../components/Card";
+import { useState, useRef, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import { toast } from "react-toastify"
+import { FaTimes, FaPlus, FaMicrophone, FaStop } from "react-icons/fa"
+import { DndProvider, useDrag, useDrop } from "react-dnd"
+import { HTML5Backend } from "react-dnd-html5-backend"
+import Card from "../components/Card"
 
 // Draggable column component
-const DraggableColumn = ({
-  index,
-  value,
-  moveColumn,
-  handlePointValueChange,
-  handleDeletePointValue,
-}) => {
-  const ref = useRef(null);
+const DraggableColumn = ({ index, value, moveColumn, handlePointValueChange, handleDeletePointValue }) => {
+  const ref = useRef(null)
 
   const [{ isDragging }, drag] = useDrag({
     type: "COLUMN",
@@ -24,35 +18,33 @@ const DraggableColumn = ({
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-  });
+  })
 
   const [, drop] = useDrop({
     accept: "COLUMN",
     hover(item, monitor) {
       if (!ref.current) {
-        return;
+        return
       }
-      const dragIndex = item.index;
-      const hoverIndex = index;
+      const dragIndex = item.index
+      const hoverIndex = index
 
       // Don't replace items with themselves
       if (dragIndex === hoverIndex) {
-        return;
+        return
       }
 
-      moveColumn(dragIndex, hoverIndex);
-      item.index = hoverIndex;
+      moveColumn(dragIndex, hoverIndex)
+      item.index = hoverIndex
     },
-  });
+  })
 
-  drag(drop(ref));
+  drag(drop(ref))
 
   return (
     <th
       ref={ref}
-      className={`text-white text-center p-2 border-b border-purple-500/30 ${
-        isDragging ? "opacity-50" : ""
-      }`}
+      className={`text-white text-center p-2 border-b border-purple-500/30 ${isDragging ? "opacity-50" : ""}`}
       style={{ cursor: "move" }}
     >
       <div className="flex items-center justify-center space-x-2">
@@ -71,142 +63,131 @@ const DraggableColumn = ({
         </button>
       </div>
     </th>
-  );
-};
+  )
+}
 
 const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
-  const [userId, setUserId] = useState(getPin());
-  const [loggedIn, setLoggedIn] = useState(userId);
-  const [questions, setQuestions] = useState([]);
-  const [recording, setRecording] = useState(false);
-  const [categories, setCategories] = useState([
-    { name: "", descriptions: Array(5).fill("") },
-  ]);
-  const [pointValues, setPointValues] = useState([5, 4, 3, 2, 1]);
-  const [maxTime, setMaxTime] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("");
-  const [otherLanguage, setOtherLanguage] = useState("");
-  const [id, setId] = useState("");
-  const [showUpgrade, setShowUpgrade] = useState(false);
-  const [showAutofillUpgrade, setShowAutofillUpgrade] = useState(false);
-  const [hoverButton, setHoverButton] = useState(false);
-  const [isConfigRegistered, setIsConfigRegistered] = useState(false); // Added state variable
-  const [button2Hover, setButton2Hover] = useState(false);
-  const [popupVisible, setPopupVisible] = useState(false);
-  const [selectedConfig, setSelectedConfig] = useState(null);
-  const navigate = useNavigate();
-  const mediaRecorderRef = useRef(null);
+  const [userId, setUserId] = useState(getPin())
+  const [loggedIn, setLoggedIn] = useState(userId)
+  const [questions, setQuestions] = useState([])
+  const [recording, setRecording] = useState(false)
+  const [categories, setCategories] = useState([{ name: "", descriptions: Array(5).fill("") }])
+  const [pointValues, setPointValues] = useState([5, 4, 3, 2, 1])
+  const [maxTime, setMaxTime] = useState("")
+  const [selectedLanguage, setSelectedLanguage] = useState("")
+  const [otherLanguage, setOtherLanguage] = useState("")
+  const [id, setId] = useState("")
+  const [showUpgrade, setShowUpgrade] = useState(false)
+  const [showAutofillUpgrade, setShowAutofillUpgrade] = useState(false)
+  const [hoverButton, setHoverButton] = useState(false)
+  const [isConfigRegistered, setIsConfigRegistered] = useState(false) // Added state variable
+  const [button2Hover, setButton2Hover] = useState(false)
+  const [popupVisible, setPopupVisible] = useState(false)
+  const [selectedConfig, setSelectedConfig] = useState(null)
+  const navigate = useNavigate()
+  const mediaRecorderRef = useRef(null)
 
   useEffect(() => {
     if (!loggedIn) {
-      navigate("/login?redirect=/configure");
+      navigate("/login?redirect=/configure")
     }
-  }, [loggedIn, navigate]);
+  }, [loggedIn, navigate])
 
   const checkUserId = async (userId) => {
     try {
-      const res = await fetch(
-        `https://www.server.speakeval.org/teacherpin?pin=${userId}`
-      );
-      const parsedData = await res.json();
+      const res = await fetch(`https://www.server.speakeval.org/teacherpin?pin=${userId}`)
+      const parsedData = await res.json()
 
       if (parsedData.code === 401) {
-        toast.error("Incorrect Teacher Pin");
-        return setUserId("");
+        toast.error("Incorrect Teacher Pin")
+        return setUserId("")
       }
       if (parsedData.code === 200) {
-        setLoggedIn(true);
+        setLoggedIn(true)
       }
       if (parsedData.subscription) {
-        set(parsedData.subscription !== "free");
-        setUltimate(parsedData.subscription === "Ultimate");
+        set(parsedData.subscription !== "free")
+        setUltimate(parsedData.subscription === "Ultimate")
         if (parsedData.subscription !== "free") {
-          setSubscribed(true);
+          setSubscribed(true)
         }
       }
     } catch (err) {
-      console.error("Error Loading Data", err);
-      toast.error("Error Loading Data");
-      return setUserId("");
+      console.error("Error Loading Data", err)
+      toast.error("Error Loading Data")
+      return setUserId("")
     }
-  };
+  }
 
   const handleToggleRecording = () => {
     if (questions.length >= 60 && !subscribed) {
-      setShowUpgrade(true);
-      return;
+      setShowUpgrade(true)
+      return
     }
     if (navigator.mediaDevices.getUserMedia) {
       if (recording) {
-        mediaRecorderRef.current.stop();
-        setRecording(false);
+        mediaRecorderRef.current.stop()
+        setRecording(false)
       } else {
         navigator.mediaDevices
           .getUserMedia({ audio: true })
           .then((stream) => {
-            mediaRecorderRef.current = new MediaRecorder(stream);
-            mediaRecorderRef.current.start();
-            mediaRecorderRef.current.addEventListener(
-              "dataavailable",
-              handleDataAvailable
-            );
-            setRecording(true);
+            mediaRecorderRef.current = new MediaRecorder(stream)
+            mediaRecorderRef.current.start()
+            mediaRecorderRef.current.addEventListener("dataavailable", handleDataAvailable)
+            setRecording(true)
           })
           .catch((err) => {
-            console.error("Error accessing microphone", err);
-            toast.error("Error accessing microphone");
-          });
+            console.error("Error accessing microphone", err)
+            toast.error("Error accessing microphone")
+          })
       }
     } else {
-      console.error("getUserMedia not supported");
-      toast.error("getUserMedia not supported");
+      console.error("getUserMedia not supported")
+      toast.error("getUserMedia not supported")
     }
-  };
+  }
 
   const handleDataAvailable = (event) => {
     if (event.data.size > 0) {
-      const recordedQuestion = URL.createObjectURL(event.data);
-      setQuestions((prevQuestions) => [...prevQuestions, recordedQuestion]);
+      const recordedQuestion = URL.createObjectURL(event.data)
+      setQuestions((prevQuestions) => [...prevQuestions, recordedQuestion])
     }
-  };
+  }
 
   const handleDeleteQuestion = (index) => {
-    setQuestions((prevQuestions) =>
-      prevQuestions.filter((_, i) => i !== index)
-    );
-    toast.success("Question deleted");
-  };
+    setQuestions((prevQuestions) => prevQuestions.filter((_, i) => i !== index))
+    toast.success("Question deleted")
+  }
 
   const handleAddCategory = () => {
     setCategories((prevCategories) => [
       ...prevCategories,
       { name: "", descriptions: Array(pointValues.length).fill("") },
-    ]);
-  };
+    ])
+  }
 
   const handleDeleteCategory = (index) => {
-    setCategories((prevCategories) =>
-      prevCategories.filter((_, i) => i !== index)
-    );
-  };
+    setCategories((prevCategories) => prevCategories.filter((_, i) => i !== index))
+  }
 
   const handleCategoryNameChange = (index, e) => {
-    const { value } = e.target;
+    const { value } = e.target
     setCategories((prevCategories) => {
-      const updatedCategories = [...prevCategories];
-      updatedCategories[index].name = value;
-      return updatedCategories;
-    });
-  };
+      const updatedCategories = [...prevCategories]
+      updatedCategories[index].name = value
+      return updatedCategories
+    })
+  }
 
   const handleCategoryDescriptionChange = (categoryIndex, pointIndex, e) => {
-    const { value } = e.target;
+    const { value } = e.target
     setCategories((prevCategories) => {
-      const updatedCategories = [...prevCategories];
-      updatedCategories[categoryIndex].descriptions[pointIndex] = value;
-      return updatedCategories;
-    });
-  };
+      const updatedCategories = [...prevCategories]
+      updatedCategories[categoryIndex].descriptions[pointIndex] = value
+      return updatedCategories
+    })
+  }
 
   // Add point value to the beginning (highest)
   const handleAddPointValueToStart = () => {
@@ -214,177 +195,162 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
       pointValues.length > 1
         ? pointValues[0] + (pointValues[0] - pointValues[1])
         : pointValues.length === 1
-        ? pointValues[0] + 1
-        : 1;
-    setPointValues((prevPointValues) => [newPoint, ...prevPointValues]);
+          ? pointValues[0] + 1
+          : 1
+    setPointValues((prevPointValues) => [newPoint, ...prevPointValues])
     setCategories((prevCategories) =>
       prevCategories.map((category) => ({
         ...category,
         descriptions: ["", ...category.descriptions],
-      }))
-    );
-  };
+      })),
+    )
+  }
 
   // Add point value to the end (lowest)
   const handleAddPointValueToEnd = () => {
     const newPoint =
       pointValues.length > 1
         ? pointValues[pointValues.length - 1] -
-          (pointValues[pointValues.length - 2] -
-            pointValues[pointValues.length - 1])
+          (pointValues[pointValues.length - 2] - pointValues[pointValues.length - 1])
         : pointValues.length === 1
-        ? pointValues[0] - 1
-        : 1;
-    setPointValues((prevPointValues) => [...prevPointValues, newPoint]);
+          ? pointValues[0] - 1
+          : 1
+    setPointValues((prevPointValues) => [...prevPointValues, newPoint])
     setCategories((prevCategories) =>
       prevCategories.map((category) => ({
         ...category,
         descriptions: [...category.descriptions, ""],
-      }))
-    );
-  };
+      })),
+    )
+  }
 
   const handleDeletePointValue = (index) => {
     if (pointValues.length > 1) {
-      setPointValues((prevPointValues) =>
-        prevPointValues.filter((_, i) => i !== index)
-      );
+      setPointValues((prevPointValues) => prevPointValues.filter((_, i) => i !== index))
       setCategories((prevCategories) =>
         prevCategories.map((category) => {
-          const updatedDescriptions = category.descriptions.filter(
-            (_, i) => i !== index
-          );
-          return { ...category, descriptions: updatedDescriptions };
-        })
-      );
+          const updatedDescriptions = category.descriptions.filter((_, i) => i !== index)
+          return { ...category, descriptions: updatedDescriptions }
+        }),
+      )
     } else {
-      toast.error("You must have at least one point value");
+      toast.error("You must have at least one point value")
     }
-  };
+  }
 
   const handlePointValueChange = (index, e) => {
-    const { value } = e.target;
+    const { value } = e.target
     setPointValues((prevPointValues) => {
-      const updatedValues = [...prevPointValues];
-      updatedValues[index] = Number.parseFloat(value) || 0;
-      return updatedValues;
-    });
-  };
+      const updatedValues = [...prevPointValues]
+      updatedValues[index] = Number.parseFloat(value) || 0
+      return updatedValues
+    })
+  }
 
   // Move column function for drag and drop
   const moveColumn = (dragIndex, hoverIndex) => {
     // Update point values order
     setPointValues((prevPointValues) => {
-      const newPointValues = [...prevPointValues];
-      const draggedValue = newPointValues[dragIndex];
-      newPointValues.splice(dragIndex, 1);
-      newPointValues.splice(hoverIndex, 0, draggedValue);
-      return newPointValues;
-    });
+      const newPointValues = [...prevPointValues]
+      const draggedValue = newPointValues[dragIndex]
+      newPointValues.splice(dragIndex, 1)
+      newPointValues.splice(hoverIndex, 0, draggedValue)
+      return newPointValues
+    })
 
     // Update category descriptions to match the new order
     setCategories((prevCategories) => {
       return prevCategories.map((category) => {
-        const newDescriptions = [...category.descriptions];
-        const draggedDescription = newDescriptions[dragIndex];
-        newDescriptions.splice(dragIndex, 1);
-        newDescriptions.splice(hoverIndex, 0, draggedDescription);
-        return { ...category, descriptions: newDescriptions };
-      });
-    });
-  };
+        const newDescriptions = [...category.descriptions]
+        const draggedDescription = newDescriptions[dragIndex]
+        newDescriptions.splice(dragIndex, 1)
+        newDescriptions.splice(hoverIndex, 0, draggedDescription)
+        return { ...category, descriptions: newDescriptions }
+      })
+    })
+  }
 
   const handleAutofillClick = () => {
-    setShowAutofillUpgrade(true);
-  };
+    setShowAutofillUpgrade(true)
+  }
 
   const handleRubricAutofillClick = async () => {
     if (!subscribed) {
       try {
-        console.log("Fetching autofill data...");
-        setPopupVisible(true); // Show popup
-        const configs = await fetch(
-          `https://www.server.speakeval.org/getconfigs?pin=${userId}`
-        );
-        const configsList = await configs.json();
+        console.log("Fetching autofill data...")
+        setPopupVisible(true) // Show popup
+        const configs = await fetch(`https://www.server.speakeval.org/getconfigs?pin=${userId}`)
+        const configsList = await configs.json()
         // Set the fetched config list to state to use in rendering
-        setSelectedConfig(configsList);
+        setSelectedConfig(configsList)
       } catch (error) {
-        console.error("Failed to fetch configs:", error);
-        toast.error("Failed to fetch configurations");
+        console.error("Failed to fetch configs:", error)
+        toast.error("Failed to fetch question sets")
       }
     } else {
-      handleAutofillClick();
+      handleAutofillClick()
     }
-  };
+  }
 
   const handleConfigClick = (config) => {
     // convert the rubric, which is currently a string using the separators, back into an array of objects
 
-    let rubric2 = config.rubric;
+    let rubric2 = config.rubric
 
     if (config.rubric && config.rubric.includes("|^^^|")) {
-      setPointValues(rubric2.split("|^^^|")[0].split("|,,|"));
-      rubric2 = rubric2.split("|^^^|")[1];
+      setPointValues(rubric2.split("|^^^|")[0].split("|,,|"))
+      rubric2 = rubric2.split("|^^^|")[1]
     }
 
     const categories = rubric2.split("|;;|").map((category) => {
-      const [name, descriptionsString] = category.split("|:::|");
-      console.log(descriptionsString);
-      const descriptions = descriptionsString
-        ? descriptionsString.split("|,,|")
-        : Array(5).fill("");
-      return { name, descriptions };
-    });
+      const [name, descriptionsString] = category.split("|:::|")
+      console.log(descriptionsString)
+      const descriptions = descriptionsString ? descriptionsString.split("|,,|") : Array(5).fill("")
+      return { name, descriptions }
+    })
 
-    setCategories(categories);
+    setCategories(categories)
 
-    setMaxTime(config.timeLimit);
+    setMaxTime(config.timeLimit)
 
-    if (
-      ["English", "Spanish", "French", "Chinese", "Japanese"].includes(
-        config.language
-      )
-    ) {
-      setSelectedLanguage(config.language);
+    if (["English", "Spanish", "French", "Chinese", "Japanese"].includes(config.language)) {
+      setSelectedLanguage(config.language)
     } else {
-      setSelectedLanguage("Other");
-      setOtherLanguage(config.language);
+      setSelectedLanguage("Other")
+      setOtherLanguage(config.language)
     }
 
-    setId(config.name);
+    setId(config.name)
 
-    setPopupVisible(false); // Hide the popup
-  };
+    setPopupVisible(false) // Hide the popup
+  }
 
   const handleRegisterConfig = async () => {
     if (!id) {
-      toast.error("Please enter a name for the set");
-      return;
+      toast.error("Please enter a name for the set")
+      return
     }
     if (!userId) {
-      toast.error("Please log in");
-      return;
+      toast.error("Please log in")
+      return
     }
     if (questions.length === 0) {
-      toast.error("Please record at least one question");
-      return;
+      toast.error("Please record at least one question")
+      return
     }
     try {
-      const formData = new FormData();
+      const formData = new FormData()
       for (let i = 0; i < questions.length; i++) {
-        const res = await fetch(questions[i]);
-        const blob = await res.blob();
-        formData.append(`question${i}`, blob, `question${i}.webm`);
+        const res = await fetch(questions[i])
+        const blob = await res.blob()
+        formData.append(`question${i}`, blob, `question${i}.webm`)
       }
 
       const rubricString = `${pointValues.join("|,,|")}|^^^|${categories
         .map((category) => {
-          return `${category.name}|:::|${category.descriptions
-            .map((description) => description || "")
-            .join("|,,|")}`;
+          return `${category.name}|:::|${category.descriptions.map((description) => description || "").join("|,,|")}`
         })
-        .join("|;;|")}`;
+        .join("|;;|")}`
 
       const res = await fetch(
         `https://www.server.speakeval.org/registerconfig?id=${id}&pin=${userId}&length=${
@@ -395,25 +361,22 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
         {
           method: "POST",
           body: formData,
-        }
-      );
+        },
+      )
 
-      const response = await res.json();
+      const response = await res.json()
 
       if (res.ok && !response.error) {
-        toast.success("Configuration registered successfully");
-        setIsConfigRegistered(true); // Update isConfigRegistered state on success
+        toast.success("Question set registered successfully")
+        setIsConfigRegistered(true) // Update isConfigRegistered state on success
       } else {
-        toast.error(
-          "Failed to register configuration" +
-            (response.error ? `: ${response.error}` : "")
-        );
+        toast.error("Failed to register question set" + (response.error ? `: ${response.error}` : ""))
       }
     } catch (err) {
-      console.error("Error registering configuration", err);
-      toast.error("Error registering configuration");
+      console.error("Error registering question set", err)
+      toast.error("Error registering question set")
     }
-  };
+  }
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -436,23 +399,33 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium">
-                <strong>Warning:</strong> Your configuration has not been
-                registered yet. Click "Register Configuration" at the bottom of
-                the page to save your work.
+                <strong>Warning:</strong> Your question set has not been saved yet. Click "Register Question Set"
+                at the bottom of the page to save your work.
               </p>
             </div>
           </div>
         </div>
       )}
       <div className="container mx-auto px-4 py-8 space-y-8">
-        <h1 className="text-4xl font-bold text-white text-center mb-8">
-          Configure Exam
-        </h1>
+        <h1 className="text-4xl font-bold text-white text-center mb-8">Configure Exam</h1>
+        <Card color="pink">
+          <h2 className="text-2xl font-bold text-white mb-4">Question Set Name</h2>
+          <div className="space-y-4">
+            <div>
+              <input
+                type="text"
+                value={id}
+                onChange={(e) => setId(e.target.value)}
+                className="w-full bg-black/30 border border-pink-500/30 rounded p-2 text-white"
+                maxLength={30}
+                placeholder="Enter Name for Set"
+              />
+            </div>
+          </div>
+        </Card>
 
         <Card color="cyan">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Record Questions
-          </h2>
+          <h2 className="text-2xl font-bold text-white mb-4">Record Questions</h2>
           <div className="space-y-4">
             <div className="flex justify-center">
               <button
@@ -463,20 +436,13 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
                     : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
                 }`}
               >
-                {recording ? (
-                  <FaStop className="mr-2" />
-                ) : (
-                  <FaMicrophone className="mr-2" />
-                )}
+                {recording ? <FaStop className="mr-2" /> : <FaMicrophone className="mr-2" />}
                 <span>{recording ? "Stop Recording" : "Start Recording"}</span>
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
               {questions.map((question, index) => (
-                <div
-                  key={index}
-                  className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30"
-                >
+                <div key={index} className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30">
                   <audio
                     controls
                     src={question}
@@ -507,10 +473,10 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
               onClick={handleRubricAutofillClick}
               className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
               onMouseEnter={() => {
-                setButton2Hover(true);
+                setButton2Hover(true)
               }}
               onMouseLeave={() => {
-                setButton2Hover(false);
+                setButton2Hover(false)
               }}
             >
               Autofill
@@ -535,9 +501,7 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
-                    <th className="text-white text-left p-2 border-b border-purple-500/30">
-                      Category
-                    </th>
+                    <th className="text-white text-left p-2 border-b border-purple-500/30">Category</th>
                     {pointValues.map((value, index) => (
                       <DraggableColumn
                         key={index}
@@ -564,29 +528,18 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
                           <input
                             type="text"
                             value={category.name}
-                            onChange={(e) =>
-                              handleCategoryNameChange(categoryIndex, e)
-                            }
+                            onChange={(e) => handleCategoryNameChange(categoryIndex, e)}
                             placeholder="Category Name"
                             className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
                           />
                         </div>
                       </td>
                       {pointValues.map((_, pointIndex) => (
-                        <td
-                          key={pointIndex}
-                          className="p-2 border-b border-purple-500/30"
-                        >
+                        <td key={pointIndex} className="p-2 border-b border-purple-500/30">
                           <input
                             type="text"
                             value={category.descriptions[pointIndex]}
-                            onChange={(e) =>
-                              handleCategoryDescriptionChange(
-                                categoryIndex,
-                                pointIndex,
-                                e
-                              )
-                            }
+                            onChange={(e) => handleCategoryDescriptionChange(categoryIndex, pointIndex, e)}
                             placeholder={`Description for ${pointValues[pointIndex]} points`}
                             className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
                           />
@@ -608,14 +561,10 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
 
         {/* Additional Settings Section */}
         <Card color="blue">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Additional Settings
-          </h2>
+          <h2 className="text-2xl font-bold text-white mb-4">Additional Settings</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-white mb-2">
-                Answer Time Limit (seconds)
-              </label>
+              <label className="block text-white mb-2">Answer Time Limit (seconds)</label>
               <input
                 type="number"
                 value={maxTime}
@@ -642,9 +591,7 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
             </div>
             {selectedLanguage === "Other" && (
               <div>
-                <label className="block text-white mb-2">
-                  Specify Language
-                </label>
+                <label className="block text-white mb-2">Specify Language</label>
                 <input
                   type="text"
                   value={otherLanguage}
@@ -657,25 +604,10 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
           </div>
         </Card>
 
-        {/* Register Configuration Section */}
+        {/* Register question set Section */}
         <Card color="pink">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Register Configuration
-          </h2>
+          <h2 className="text-2xl font-bold text-white mb-4">Register Question Set</h2>
           <div className="space-y-4">
-            <div>
-              <label className="block text-white mb-2">
-                Configuration Name
-              </label>
-              <input
-                type="text"
-                value={id}
-                onChange={(e) => setId(e.target.value)}
-                className="w-full bg-black/30 border border-pink-500/30 rounded p-2 text-white"
-                maxLength={30}
-                placeholder="Enter Name for Set"
-              />
-            </div>
             <button
               onClick={handleRegisterConfig}
               onMouseEnter={() => setHoverButton(true)}
@@ -686,7 +618,7 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
                   : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
               }`}
             >
-              <span className="relative z-10">Register Configuration</span>
+              <span className="relative z-10">Register Question Set</span>
             </button>
           </div>
         </Card>
@@ -701,7 +633,7 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
               {/* Content */}
               <div className="relative z-10">
                 <h2 className="text-2xl font-bold mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
-                  Select a Configuration
+                  Select a Question Set
                 </h2>
 
                 <ul className="space-y-3">
@@ -729,7 +661,8 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
         )}
       </div>
     </DndProvider>
-  );
-};
+  )
+}
 
-export default Configure;
+export default Configure
+
