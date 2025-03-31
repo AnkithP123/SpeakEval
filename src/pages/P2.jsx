@@ -349,7 +349,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
 
                 <div className="mb-6">
                     <h3 className="text-xl font-bold mb-2">Question {currentQuestionIndex + 1}</h3>
-                    {showTranscriptions && (
+                    {showTranscriptions && getExamData().questions.length > 0 && (
                         <p className="text-foreground mb-4">{getExamData().questions[currentQuestionIndex].transcription}</p>
                     )}
                 </div>
