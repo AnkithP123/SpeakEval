@@ -340,8 +340,8 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                 </span>
                 <button
                     onClick={() => handleQuestionChange(currentQuestionIndex + 1)}
-                    disabled={currentQuestionIndex === getExamData().questions.length - 1}
-                    className={currentQuestionIndex === getExamData().questions.length - 1 ? "futuristic-button-disabled" : "futuristic-button"}
+                    disabled={currentQuestionIndex >= getExamData().questions.length - 1}
+                    className={currentQuestionIndex >= getExamData().questions.length - 1 ? "futuristic-button-disabled" : "futuristic-button"}
                 >
                     Next
                 </button>
