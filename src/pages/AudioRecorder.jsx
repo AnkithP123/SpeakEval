@@ -45,10 +45,11 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
   useEffect(() => {
     document.documentElement.style.setProperty('--cute-alert-max-width', '40%');
+    document.documentElement.style.setProperty('--cute-alert-max-width', '40%');
     cuteAlert({
         type: "info",
-        title: "Welcome to SpeakEval",
-        description: "It's time to record your response. When you're ready, click the play button to download the question and listen to it. If your teacher has allowed it, it will then give you time to think, during which you can replay the question once, and then begin recording. Speak clearly, confidently, and loudly, so that your microphone picks up your audio well.",
+        title: "Get Ready to Record",
+        description: "It's time to record your response. When you're ready, click the play button to listen to the question. If your teacher has allowed it, it will then count down for a few seconds before beginning recording, during which you think about your answer, or replay the question once (if allowed), and THEN begin recording. Speak clearly, confidently, and loudly, so that your microphone picks up your audio well. If you are not currently wearing headphones, please do so now if possible. Please ensure that your microphone is allowed and working.",
         primaryButtonText: "Got it"
     })
   }, []);
@@ -756,6 +757,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
               
               onEnded={() => {
                 if (!finished) {
+                    if (thinkingTime >= 1) {
+                      toast.info('Recording will start after countdown ends. Recording has NOT YET STARTED.');
+                    }
                     setPlaying(false);
                     setFinished(true);
                     // Countdown logic
@@ -839,7 +843,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
             fontWeight: 'bold',
             color: 'red',
           }}>
-            {!playing && audioRef.current.paused ? `Recording starts in ${countdownDisplay}...` : `Recording starts immediately upon question completion`}
+            {!playing && audioRef.current.paused ? `Recording will start in ${countdownDisplay}...` : `Recording will begin immediately upon question completion`}
           </p>
         )}
 
