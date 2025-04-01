@@ -321,8 +321,6 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
       setOtherLanguage(config.language)
     }
 
-    setId(config.name)
-
     setPopupVisible(false) // Hide the popup
   }
 
