@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
+import { cuteAlert } from "cute-alert"
 import { FaTimes, FaPlus, FaMicrophone, FaStop } from "react-icons/fa"
 import { DndProvider, useDrag, useDrop } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
@@ -367,9 +368,21 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
       const response = await res.json()
 
       if (res.ok && !response.error) {
+        cuteAlert({
+          type: "success",
+          title: "Success",
+          description: "Question set registered successfully",
+          primaryButtonText: "OK",
+        })
         toast.success("Question set registered successfully")
         setIsConfigRegistered(true) // Update isConfigRegistered state on success
       } else {
+        cuteAlert({
+          type: "error",
+          title: "Error",
+          description: "Failed to register question set" + (response.error ? `: ${response.error}` : ""),
+          primaryButtonText: "OK",
+        })
         toast.error("Failed to register question set" + (response.error ? `: ${response.error}` : ""))
       }
     } catch (err) {
