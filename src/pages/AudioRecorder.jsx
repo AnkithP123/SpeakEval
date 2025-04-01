@@ -516,7 +516,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
           if (transcriptionResult.textContent == 'Processing... This may take anywhere from 10 seconds to a few minutes depending on how many other students are ahead in the queue.')
             transcriptionResult.textContent = '';
 
-          transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
+          transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. We think you might have said: ' + data.transcription;
 
           setDisplayTime('xx:xx');
 
@@ -543,7 +543,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     if (transcriptionResult.textContent === 'You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.')
       transcriptionResult.textContent = '';
 
-    transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. Tentative transcription: ' + data.transcription;
+    transcriptionResult.textContent = transcriptionResult.textContent + 'Uploaded to server successfully. We think you might have said: ' + data.transcription;
     setIsError(false);
 
     console.log("Bob: " + transcriptionResult.textContent);
