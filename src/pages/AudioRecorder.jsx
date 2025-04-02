@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Play, Square, Repeat } from 'lucide-react';
 import styled, { css, keyframes } from "styled-components";
-import { cuteAlert } from 'cute-alert';
+import { cuteAlert, cuteToast } from 'cute-alert';
 import * as Tone from 'tone';
 import { useReactMediaRecorder } from "react-media-recorder";
 import { toast } from 'react-toastify';
@@ -757,8 +757,14 @@ export default function AudioRecorder({ code, participant, uuid }) {
               
               onEnded={() => {
                 if (!finished) {
+                    console.log("Thinking time: ", thinkingTime);
                     if (thinkingTime >= 1) {
-                      toast.info('Recording will start after countdown ends. Recording has NOT YET STARTED.');
+                      cuteToast({
+                        type: "info",
+                        title: "Recording will start after countdown ends",
+                        description: `Recording will start in ${thinkingTime} seconds. Please think about your answer. Recording has NOT YET STARTED`,
+                        timer: 5000,
+                      });
                     }
                     setPlaying(false);
                     setFinished(true);
