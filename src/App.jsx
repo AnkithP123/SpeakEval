@@ -32,6 +32,7 @@ import Practice from "./pages/Practice";
 import PracticeExam from "./pages/PracticeExam";
 import RegisterPage from "./pages/RegisterPage";
 import GradeBotCreator from "./pages/GradeBotCreator";
+import ResetPasswordPage from "./pages/ResetPassword";
 
 function AudioRecorderRouteWrapper() {
   const location = useLocation();
@@ -158,6 +159,7 @@ function App() {
           <Route path="/practice-exam" element={<PracticeExam />} />
           <Route path="/profile" element={<ProfileCard />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/grade-bot"
             element={<GradeBotCreator getPin={getPin} />}
