@@ -345,6 +345,13 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
         formData.append(`question${i}`, blob, `question${i}.webm`)
       }
 
+      cuteAlert({
+        type: "info",
+        title: "Debug info",
+        description: "We have detected " + questions.length + " questions",
+        primaryButtonText: "OK",
+      })
+
       const rubricString = `${pointValues.join("|,,|")}|^^^|${categories
         .map((category) => {
           return `${category.name}|:::|${category.descriptions.map((description) => description || "").join("|,,|")}`
