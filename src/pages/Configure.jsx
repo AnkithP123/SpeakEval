@@ -345,7 +345,7 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
         formData.append(`question${i}`, blob, `question${i}.webm`)
       }
 
-      cuteAlert({
+      await cuteAlert({
         type: "info",
         title: "Debug info",
         description: "We have detected " + questions.length + " questions",
