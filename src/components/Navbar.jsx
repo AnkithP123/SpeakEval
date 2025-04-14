@@ -287,7 +287,10 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
               ))}
             </div>
             <div className="w-3/4 p-6 flex flex-col justify-between">
-              <div className="flex justify-end">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-3xl text-cyan-300 text-center w-full">
+                  {chapters[currentChapter]}
+                </h2>
                 <button
                   className="text-red-500 text-xl hover:text-red-700 transition duration-300"
                   onClick={() => setTutorialOpen(false)}
