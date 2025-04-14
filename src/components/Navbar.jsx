@@ -22,11 +22,12 @@ const checkTokenExpiry = async () => {
     if (tokenExpiredJson.expired) {
       localStorage.removeItem("username");
       setUserName(null);
-    } else if (storedUsername) {
-      setUserName(storedUsername);
-      console.log("Username:", storedUsername);
     } else {
       setUserName(tokenExpiredJson.decoded.username);
+      localStorage.setItem(
+        "username",
+        tokenExpiredJson.decoded.username
+      );
     }
   } else if (!storedToken) {
     localStorage.removeItem("username");
