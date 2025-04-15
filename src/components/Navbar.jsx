@@ -24,10 +24,7 @@ const checkTokenExpiry = async () => {
       setUserName(null);
     } else {
       setUserName(tokenExpiredJson.decoded.username);
-      localStorage.setItem(
-        "username",
-        tokenExpiredJson.decoded.username
-      );
+      localStorage.setItem("username", tokenExpiredJson.decoded.username);
     }
   } else if (!storedToken) {
     localStorage.removeItem("username");
@@ -66,7 +63,7 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
 
-  const chapters = ["Creating a Set", "Updating a Set"];
+  const chapters = ["Creating a Set", "Updating a Set", "Creating a Room"];
 
   useEffect(() => {
     const handleScroll = () => {
