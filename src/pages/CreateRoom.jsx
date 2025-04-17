@@ -17,7 +17,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   const [isConfigEntered, setIsConfigEntered] = useState(false)
   const [configs, setConfigs] = useState([])
   const navigate = useNavigate()
-  const [timeLimit, setTimeLimit] = useState(3600)
+  const [timeLimit, setTimeLimit] = useState(30)
   const [thinkingTime, setThinkingTime] = useState(5)
   const [canRelisten, setCanRelisten] = useState(true)
   const [hoveredInfo, setHoveredInfo] = useState(null)
@@ -103,7 +103,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
       const res = await fetch(`https://www.server.speakeval.org/verifyconfig?name=${configId}`)
       const parsedData = await res.json()
       if (parsedData.valid) {
-        setTimeLimit(configs.find((c) => c.name === configId)?.timeLimit || 3600)
+        setTimeLimit(configs.find((c) => c.name === configId)?.timeLimit || 30)
         setIsConfigEntered(true)
       } else {
         toast.error("The config name you entered is invalid. Please enter a valid config name.")
