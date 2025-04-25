@@ -81,10 +81,12 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [showAutofillUpgrade, setShowAutofillUpgrade] = useState(false)
   const [hoverButton, setHoverButton] = useState(false)
-  const [isConfigRegistered, setIsConfigRegistered] = useState(false) // Added state variable
+  const [isConfigRegistered, setIsConfigRegistered] = useState(false)
   const [button2Hover, setButton2Hover] = useState(false)
   const [popupVisible, setPopupVisible] = useState(false)
   const [selectedConfig, setSelectedConfig] = useState(null)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
   const navigate = useNavigate()
   const mediaRecorderRef = useRef(null)
 
@@ -324,6 +326,7 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
     setPopupVisible(false) // Hide the popup
   }
 
+  // Create config first, then upload questions one by one
   const handleRegisterConfig = async () => {
     if (!id) {
       toast.error("Please enter a name for the set")
@@ -337,68 +340,94 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
       toast.error("Please record at least one question")
       return
     }
+
     try {
-      const formData = new FormData()
-      for (let i = 0; i < questions.length; i++) {
-        const res = await fetch(questions[i])
-        const blob = await res.blob()
-        formData.append(`question${i}`, blob, `question${i}.webm`)
-      }
+      setIsUploading(true)
+      setUploadProgress(0)
 
-      await cuteAlert({
-        type: "info",
-        title: "Debug info",
-        description: "We have detected " + questions.length + " questions",
-        primaryButtonText: "OK",
-      })
-
+      // First, create the config
       const rubricString = `${pointValues.join("|,,|")}|^^^|${categories
         .map((category) => {
           return `${category.name}|:::|${category.descriptions.map((description) => description || "").join("|,,|")}`
         })
         .join("|;;|")}`
 
-      const res = await fetch(
-        `https://www.server.speakeval.org/registerconfig?id=${id}&pin=${userId}&length=${
-          questions.length
-        }&rubric=${rubricString}&limit=${maxTime}&language=${
-          selectedLanguage === "Other" ? otherLanguage : selectedLanguage
-        }`,
+      const language = selectedLanguage === "Other" ? otherLanguage : selectedLanguage
+
+      // Create config first
+      const configResponse = await fetch(
+        `https://www.server.speakeval.org/createconfig?pin=${userId}&id=${id}&rubric=${encodeURIComponent(rubricString)}&limit=${maxTime}&language=${language}`,
         {
-          method: "POST",
-          body: formData,
-        },
+        method: "POST",
+        }
       )
 
-      const response = await res.json()
+      const configResult = await configResponse.json()
 
-      if (res.ok && !response.error) {
-        cuteAlert({
-          type: "success",
-          title: "Success",
-          description: "Question set registered successfully",
-          primaryButtonText: "OK",
-        })
-        toast.success("Question set registered successfully")
-        setIsConfigRegistered(true) // Update isConfigRegistered state on success
-      } else {
-        cuteAlert({
-          type: "error",
-          title: "Error",
-          description: "Failed to register question set" + (response.error ? `: ${response.error}` : ""),
-          primaryButtonText: "OK",
-        })
-        toast.error("Failed to register question set" + (response.error ? `: ${response.error}` : ""))
+      if (!configResponse.ok || configResult.error) {
+        throw new Error(configResult.error || "Failed to create config")
       }
+
+      toast.success("Config created successfully, uploading questions...")
+
+      // Then upload each question individually
+      for (let i = 0; i < questions.length; i++) {
+        const res = await fetch(questions[i])
+        const blob = await res.blob()
+
+        // Convert blob to base64
+        const base64Audio = await new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.readAsDataURL(blob)
+          reader.onloadend = () => {
+            const base64data = reader.result
+            // Remove the data URL prefix (e.g., "data:audio/webm;base64,")
+            resolve(base64data.split(",")[1])
+          }
+        })
+
+        // Upload individual question
+        const questionResponse = await fetch(
+          `https://www.server.speakeval.org/uploadquestion?pin=${userId}&id=${id}&index=${i}&language=${language}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ audio: base64Audio }),
+          },
+        )
+
+        const questionResult = await questionResponse.json()
+
+        if (!questionResponse.ok || questionResult.error) {
+          throw new Error(questionResult.error || `Failed to upload question ${i + 1}`)
+        }
+
+        // Update progress
+        setUploadProgress(Math.round(((i + 1) / questions.length) * 100))
+      }
+
+      cuteAlert({
+        type: "success",
+        title: "Success",
+        description: "Question set registered successfully",
+        primaryButtonText: "OK",
+      })
+
+      toast.success("Question set registered successfully")
+      setIsConfigRegistered(true)
+      setIsUploading(false)
     } catch (err) {
       console.error("Error registering question set", err)
-      toast.error("Error registering question set")
+      toast.error(`Error: ${err.message || "Failed to register question set"}`)
+      setIsUploading(false)
     }
   }
 
   return (
     <DndProvider backend={HTML5Backend}>
-      {!isConfigRegistered && ( // Added warning banner
+      {!isConfigRegistered && (
         <div className="fixed top-20 left-0 right-0 bg-amber-500/90 border-l-4 border-amber-700 text-white p-4 rounded-md mb-6 shadow-md z-50">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -417,8 +446,8 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium">
-                <strong>Warning:</strong> Your question set has not been saved yet. Click "Register Question Set"
-                at the bottom of the page to save your work.
+                <strong>Warning:</strong> Your question set has not been saved yet. Click "Register Question Set" at the
+                bottom of the page to save your work.
               </p>
             </div>
           </div>
@@ -626,17 +655,34 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
         <Card color="pink">
           <h2 className="text-2xl font-bold text-white mb-4">Register Question Set</h2>
           <div className="space-y-4">
+            {isUploading && (
+              <div className="mb-4">
+                <div className="flex justify-between mb-1">
+                  <span className="text-white">Uploading questions...</span>
+                  <span className="text-white">{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2.5">
+                  <div
+                    className="bg-gradient-to-r from-pink-500 to-purple-600 h-2.5 rounded-full"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
             <button
               onClick={handleRegisterConfig}
               onMouseEnter={() => setHoverButton(true)}
               onMouseLeave={() => setHoverButton(false)}
+              disabled={isUploading}
               className={`w-full relative overflow-hidden text-white text-base rounded-md px-5 py-3 transition-all duration-300 ${
-                hoverButton
-                  ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
-                  : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
+                isUploading
+                  ? "bg-gray-600 cursor-not-allowed"
+                  : hoverButton
+                    ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
+                    : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
               }`}
             >
-              <span className="relative z-10">Register Question Set</span>
+              <span className="relative z-10">{isUploading ? "Uploading..." : "Register Question Set"}</span>
             </button>
           </div>
         </Card>
@@ -683,4 +729,3 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
 }
 
 export default Configure
-
