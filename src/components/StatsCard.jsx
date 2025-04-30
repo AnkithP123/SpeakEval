@@ -322,9 +322,18 @@ function ProfileCard({
       );
     }
     try {
-      const response = await fetch(
-        `https://www.server.speakeval.org/getgrade?transcription=${effectiveText}&rubric=${rubric}&code=${effectiveCode}&index=${index}`
-      );
+      const response = await fetch(`https://www.server.speakeval.org/getgrade`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          transcription: effectiveText,
+          rubric: rubric,
+          code: effectiveCode,
+          index: index,
+        }),
+      });
       const data = await response.json();
 
       if (!data.grades)
