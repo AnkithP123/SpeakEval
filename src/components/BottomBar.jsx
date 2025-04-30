@@ -44,7 +44,7 @@ function BottomBar() {
             <div className="flex flex-wrap justify-center gap-4">
               <div className="text-center md:text-center">
                 <p className="text-cyan-200 text-sm">
-                  Created by Ankith Prabhakar with Nikunj Bafna
+                  Created by Ankith P with Nikunj B
                 </p>
                 <p className="text-cyan-300/70 text-xs mt-1">
                   © {year} SpeakEval. All rights reserved.
