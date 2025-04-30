@@ -323,7 +323,7 @@ function ProfileCard({
     }
     try {
       const response = await fetch(`https://www.server.speakeval.org/getgrade`, {
-        method: "POST",
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
