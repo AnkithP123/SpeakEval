@@ -21,7 +21,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
   const [audioBlobURL, setAudioBlobURL] = useState(null);
   const countdownRef = useRef(0); // Use ref for countdown
   const [countdownDisplay, setCountdownDisplay] = useState(0); // State for displaying countdown
-  const timer = useRef(0); // New ref for timer
+  const timer = useRef(-1); // New ref for timer
   const statusInterval = useRef(null);
   const mediaRecorder = useRef(null);
   const screenRecorder = useRef(null);
@@ -34,6 +34,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
   const [thinkingTime, setThinkingTime] = useState(5);
   const [allowRepeat, setAllowRepeat] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [finishedRecording, setFinishedRecording] = useState(false);
   let questionIndex;
 
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     
 
     const onFullscreenChange = () => {
-      if (!document.fullscreenElement) {
+      if (!document.fullscreenElement && !(finishedRecording)) {
         alert("Exiting fullscreen is not allowed. This will be reported to your teacher.");
         fetch(`https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`, {
           method: 'POST',
@@ -73,7 +74,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     };
 
     const onVisibilityChange = () => {
-      if (document.hidden) {
+      if (document.hidden && !(finishedRecording)) {
         alert("You switched tabs or went out of the window. This will be reported to your teacher.");
         fetch(`https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`, {
           method: 'POST',
@@ -501,6 +502,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
           body: formData
         });
         if (retryResponse.ok) {
+          setFinishedRecording(true);
           clearInterval(retryInterval);
           const data = await response.json();
 
@@ -710,7 +712,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'background-color 0.3s',
-              animation: 'none', // Disable animation when not recording
+              animation: 'none',
             }}
           >
             {isRecording ? null : <Play size={24} color="white" fill="white" />}
