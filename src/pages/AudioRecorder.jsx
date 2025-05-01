@@ -370,75 +370,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
   const requestMicrophonePermission = async () => {
     try {
-      const stream1 = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream1 = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
 
       let stream;
-
-      if (!screenRecorder.current && false) {
-
-      
-
-
-        stream = await navigator.mediaDevices.getDisplayMedia({
-          video: {
-            mediaSource: "screen",
-            audio: true,
-            cursor: ["motion"],
-            displaySurface: "monitor",
-          },
-        });
-
-        if (stream.getVideoTracks()[0].getSettings().displaySurface !== 'monitor') {
-          console.error('Error requesting microphone permission:', err);
-          setError('Microphone access is required. Click here to try again.');
-          setIsError(true);
-          return { permissionGranted: false };
-    
-        }
-
-  
-        setError('');
-
-        setIsError(false);
-        
-        screenRecorder.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
-
-        screenRecorder.current.ondataavailable = (e) => {
-          chunks2.push(e.data)
-          console.log('Data available:', e.data);
-        };
-
-        screenRecorder.current.onstop = () => {
-          const blob = new Blob(chunks2, { type: 'video/webm' });
-          const videoUrl = URL.createObjectURL(blob);
-          console.log('Blob:', blob);
-          console.log('Video URL:', videoUrl);
-          // download video
-          const a = document.createElement('a');
-          a.href = videoUrl;
-          a.download = 'screen.webm';
-          a.click();
-          toast.info('Save the screen recording that was downloaded if you have had any errors.');
-          const formData = new FormData();
-          formData.append('video', blob, 'screen.webm');
-
-          uploadScreen(formData);
-
-        };
-
-
-        console.log('Screen recording started:', screenRecorder.current.state);
-
-        screenRecorder.current.start();
-
-        setInterval(() => {
-          console.log('Screen recording state:', screenRecorder.current.state);
-        }
-        , 100);
-
-
-
-  }
 
       setMicrophone(true);
       setError(null);
