@@ -28,6 +28,8 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
         return;
       }
       setParticipants(data.members);
+      console.log('Data: ', data.cheaters.length);
+      console.log('Cheaters: ', cheaters.length);
       if (data.cheaters.length > cheaters.length) {
         const newCheaters = data.cheaters.filter((cheater) => !cheaters.includes(cheater));
         toast.error("Some participants broke test integrity: " + newCheaters.join(", "));
