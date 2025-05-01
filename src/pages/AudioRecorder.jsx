@@ -33,9 +33,74 @@ export default function AudioRecorder({ code, participant, uuid }) {
   const [premium, setPremium] = useState(false);
   const [thinkingTime, setThinkingTime] = useState(5);
   const [allowRepeat, setAllowRepeat] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   let questionIndex;
 
   const navigate = useNavigate();
+
+  const enterFullscreen = () => {
+      const el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen();
+      cuteAlert({
+        type: "info",
+        title: "Fullscreen",
+        description: "You are now in fullscreen mdode. You may not exit or switch to any other tabs, or this will be reported to your teacher and they may choose to administer a zero.",
+        primaryButtonText: "Understood"
+      });
+    };
+  useEffect(() => {
+    
+
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        alert("Exiting fullscreen is not allowed. This will be reported to your teacher.");
+        fetch(`https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: 'Fullscreen exit detected' }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              console.error('Failed to notify server about fullscreen exit');
+            }
+          })
+          .catch((error) => {
+            console.error('Error notifying server about fullscreen exit:', error);
+          });
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        alert("You switched tabs or went out of the window. This will be reported to your teacher.");
+        fetch(`https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: 'Tab switch detected' }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              console.error('Failed to notify server about tab switch');
+            }
+          })
+          .catch((error) => {
+            console.error('Error notifying server about tab switch:', error);
+          });
+      }
+    };
+
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
 
   // set the status interval
   useEffect(() => {
@@ -476,7 +541,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
         cuteAlert({
           type: "question",
           title: "Feedback",
-          description: "Could you quickly rate your experience with the oral exam assistant? This would open in a new tab.",
+          description: "Could you quickly rate your experience with SpeakEval? This would open in a new tab.",
           primaryButtonText: "Sure!",
           secondaryButtonText: "No",
           showCloseButton: true,
@@ -689,7 +754,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
         }}>
           Oral Exam Assistant
         </h1>
-        {stopped || countdownRef.current > 0 ? (null) : (
+        {!isFullscreen || (stopped || countdownRef.current > 0) ? (null) : (
           <PulseButton
             onClick={() => {
               if (isRecording) {
@@ -718,7 +783,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
           </PulseButton>
         )}
 
-        {countdownDisplay > 0 && allowRepeat && (
+        {countdownDisplay > 0 && isFullscreen && allowRepeat && (
             <p style={{
                 marginTop: '16px',
                 fontSize: '18px',
@@ -730,7 +795,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
         )}
 
         {/* Audio Player */}
-        {audioBlobURL && !isRecording && (
+        {isFullscreen && audioBlobURL && !isRecording && (
           <div style={{
             width: '100%',
             marginTop: '20px',
@@ -806,6 +871,43 @@ export default function AudioRecorder({ code, participant, uuid }) {
               {/* <source src={audioBlobURL} type="audio/wav" /> */}
               Your browser does not support the audio element.
             </audio>
+          </div>
+        )}
+
+        {!isFullscreen && (
+          <div style={{
+            marginTop: '16px',
+            textAlign: 'center',
+          }}>
+            <p style={{
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: '#374151',
+              marginBottom: '8px',
+            }}>
+              Please enter fullscreen mode by clicking this button to continue.
+            </p>
+            <button
+              onClick={() => {
+          enterFullscreen();
+          setIsFullscreen(true);
+              }}
+              style={{
+          padding: '12px 24px',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          color: 'white',
+          backgroundColor: '#2563EB',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          transition: 'background-color 0.3s',
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#1D4ED8'}
+              onMouseOut={(e) => e.target.style.backgroundColor = '#2563EB'}
+            >
+              Enter Fullscreen
+            </button>
           </div>
         )}
 
