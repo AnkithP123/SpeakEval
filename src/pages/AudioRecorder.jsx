@@ -54,6 +54,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
     const onFullscreenChange = () => {
       console.log(isFullscreen);
+      console.log('finished: ', finishedRecording)
       if (!document.fullscreenElement && !(finishedRecording) && isFullscreen) {
         alert("Exiting fullscreen is not allowed. This will be reported to your teacher.");
         fetch(`https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`, {
@@ -103,7 +104,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
       document.removeEventListener("fullscreenchange", onFullscreenChange);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, []);
+  }, [finishedRecording, isFullscreen]);
 
   // set the status interval
   useEffect(() => {
@@ -373,13 +374,15 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
   const requestMicrophonePermission = async () => {
     try {
-      const stream1 = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      const stream1 = await navigator.mediaDevices.getUserMedia({ audio: true});
+
+      const stream2 = await navigator.mediaDevices.getUserMedia({ video: true });
 
       let stream;
 
       setMicrophone(true);
       setError(null);
-      return {permissionGranted: true, audio: stream1, video: stream};
+      return {permissionGranted: true, audio: stream1, video: stream2};
     } catch (err) {
       console.error('Error requesting microphone permission:', err);
       setError('Microphone access is required. Click here to try again.');
@@ -411,18 +414,6 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
 
 
-    interval = setInterval(() => {
-    // Only decrement if the current timer is greater than zero
-    if (timer.current > 0) {
-        timer.current -= 1000;  // Decrease by 1 second
-        setDisplayTime(formatTime(timer.current));
-    }
-    // Display default if timer hits zero
-    if (timer.current <= 0) {
-        setDisplayTime('xx:xx');
-        clearInterval(interval);
-    }
-    }, 1000);
 
     const mimeType = getSupportedMimeType();
     if (!mimeType) {
@@ -455,6 +446,19 @@ export default function AudioRecorder({ code, participant, uuid }) {
       await sendStatus();
       
       mediaRecorder.current.start();
+
+      interval = setInterval(() => {
+        // Only decrement if the current timer is greater than zero
+        if (timer.current > 0) {
+            timer.current -= 1000;  // Decrease by 1 second
+            setDisplayTime(formatTime(timer.current));
+        }
+        // Display default if timer hits zero
+        if (timer.current <= 0) {
+            setDisplayTime('xx:xx');
+            clearInterval(interval);
+        }
+        }, 1000);    
 
       await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`); //TODO add a check here
 
