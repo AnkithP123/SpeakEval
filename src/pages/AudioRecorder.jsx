@@ -53,7 +53,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     
 
     const onFullscreenChange = () => {
-      if (!document.fullscreenElement && !(finishedRecording)) {
+      if (!document.fullscreenElement && !(finishedRecording) && isFullscreen) {
         alert("Exiting fullscreen is not allowed. This will be reported to your teacher.");
         fetch(`https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`, {
           method: 'POST',
@@ -74,7 +74,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     };
 
     const onVisibilityChange = () => {
-      if (document.hidden && !(finishedRecording)) {
+      if (document.hidden && !(finishedRecording) && isFullscreen) {
         alert("You switched tabs or went out of the window. This will be reported to your teacher.");
         fetch(`https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`, {
           method: 'POST',
