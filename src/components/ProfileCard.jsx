@@ -1,8 +1,8 @@
 import React from 'react'
 import { toast } from 'react-toastify'
-import { FaTimes, FaCheck } from 'react-icons/fa'
+import { FaTimes, FaCheck, FaExclamationTriangle } from 'react-icons/fa'
 
-function ProfileCard({ name, code, onParticipantRemoved, userId, completed }) {
+function ProfileCard({ name, code, onParticipantRemoved, userId, completed, cheater }) {
   const handleRemove = async () => {
     try {
       const response = await fetch(`https://www.server.speakeval.org/kick?code=${code}&participant=${name}&pin=${userId}`)
@@ -22,7 +22,15 @@ function ProfileCard({ name, code, onParticipantRemoved, userId, completed }) {
           : 'bg-gradient-to-r from-gray-700/20 to-gray-900/20 border border-gray-500/30'
       }`}
     >
-      <span className="text-lg text-white">{name}</span>
+      {cheater && (
+        <div className="relative group mr-2">
+          <FaExclamationTriangle className="text-red-500" size={20} />
+          <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block bg-black text-white text-xs rounded px-2 py-1">
+            Exited the testing space
+          </div>
+        </div>
+      )}
+      <span className={`text-lg ${cheater ? 'text-red-500' : 'text-white'}`}>{name}</span>
       {!completed ? (
         <button
           className="text-red-500 hover:text-red-400 transition-colors"

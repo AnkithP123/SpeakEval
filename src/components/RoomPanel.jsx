@@ -12,6 +12,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
   const [participants, setParticipants] = useState([]);
   const [roomStarted, setRoomStarted] = useState(false);
   const [completedParticipants, setCompletedParticipants] = useState([]);
+  const [cheaters, setCheaters] = useState([]);
   const [displayName, setDisplayName] = useState("");
   const [showDisplayNameInput, setShowDisplayNameInput] = useState(false);
   const navigate = useNavigate();
@@ -27,6 +28,11 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
         return;
       }
       setParticipants(data.members);
+      if (data.cheaters.length > cheaters.length) {
+        const newCheaters = data.cheaters.filter((cheater) => !cheaters.includes(cheater));
+        toast.error("Some participants broke test integrity: " + newCheaters.join(", "));
+      }
+      setCheaters(data.cheaters);
     } catch (error) {
       console.error("Error fetching participants:", error);
       toast.error("Error fetching participants");
@@ -183,9 +189,23 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
 
         <div className="min-h-60">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {completedParticipants.map((participant, index) => (
+            {cheaters.map((cheater, index) => (
               <ProfileCard
-                key={index}
+                key={`cheater-${index}`}
+                name={cheater}
+                code={roomCode}
+                onParticipantRemoved={fetchParticipants}
+                userId={userId}
+                completed={completedParticipants.includes(cheater)}
+                cheater={true} // Pass a prop to indicate cheating
+              />
+            ))}
+            {completedParticipants.filter(
+              (participant) =>
+                !cheaters.includes(participant)
+            ).map((participant, index) => (
+              <ProfileCard
+                key={`completed-${index}`}
                 name={participant}
                 code={roomCode}
                 onParticipantRemoved={fetchParticipants}
@@ -195,11 +215,13 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
             ))}
             {participants
               .filter(
-                (participant) => !completedParticipants.includes(participant)
+                (participant) =>
+                  !completedParticipants.includes(participant) &&
+                  !cheaters.includes(participant)
               )
               .map((participant, index) => (
                 <ProfileCard
-                  key={index}
+                  key={`participant-${index}`}
                   name={participant}
                   code={roomCode}
                   onParticipantRemoved={fetchParticipants}
