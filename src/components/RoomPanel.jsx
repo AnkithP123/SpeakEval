@@ -30,11 +30,11 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
       setParticipants(data.members);
       console.log('Data: ', data.cheaters.length);
       console.log('Cheaters: ', cheaters.length);
-      if (data.cheaters.length > cheaters.length) {
+      if (data.cheaters && data.cheaters.length > cheaters.length) {
         const newCheaters = data.cheaters.filter((cheater) => !cheaters.includes(cheater));
         toast.error("Some participants broke test integrity: " + newCheaters.join(", "));
       }
-      setCheaters(data.cheaters);
+      setCheaters(new Set(data.cheaters));
     } catch (error) {
       console.error("Error fetching participants:", error);
       toast.error("Error fetching participants");
