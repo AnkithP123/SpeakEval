@@ -18,7 +18,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
   const navigate = useNavigate();
   const displayNameInputRef = useRef(null);
 
-  const fetchParticipants = async () => {
+  let fetchParticipants2 = async () => {
     try {
       const response = await fetch(
         `https://www.server.speakeval.org/checkjoined?code=${roomCode}&pin=${userId}`
@@ -28,13 +28,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
         return;
       }
       setParticipants(data.members);
-      console.log('Data: ', data.cheaters ? data.cheaters.length : "None");
-      console.log('Cheaters: ', cheaters ? cheaters.length : "None");
-      if (data.cheaters && data.cheaters.length > cheaters.length) {
-        const newCheaters = data.cheaters.filter((cheater) => !cheaters.includes(cheater));
-        toast.error("Some participants broke test integrity: " + newCheaters.join(", "));
-      }
-      setCheaters(new Set(data.cheaters));
+
     } catch (error) {
       console.error("Error fetching participants:", error);
       toast.error("Error fetching participants");
@@ -55,10 +49,49 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
   };
 
   useEffect(() => {
+    const fetchParticipants = async () => {
+      try {
+        const response = await fetch(
+          `https://www.server.speakeval.org/checkjoined?code=${roomCode}&pin=${userId}`
+        );
+        const data = await response.json();
+        if (data.error) {
+          return;
+        }
+        setParticipants(data.members);
+        console.log('Data: ', data.cheaters ? data.cheaters.length : "None");
+        console.log('Cheaters: ', cheaters ? cheaters.length : "None");
+        const newCheaters = data.cheaters ? data.cheaters.filter((cheater) => !cheaters.includes(cheater)) : [];
+        if (newCheaters.length > 0) {
+          toast.error("Some participants broke test integrity: " + newCheaters.join(", "));
+        }
+        if (data.cheaters && data.cheaters.length > 0 && newCheaters.length > 0) {
+          setCheaters((prevCheaters) => [
+            ...new Set([...prevCheaters, ...data.cheaters]),
+          ]);
+        }
+      } catch (error) {
+        console.error("Error fetching participants:", error);
+        toast.error("Error fetching participants");
+      }
+      try {
+        const response = await fetch(
+          `https://www.server.speakeval.org/checkcompleted?code=${roomCode}&pin=${userId}`
+        );
+        const data = await response.json();
+        if (data.error) {
+          return;
+        }
+        setCompletedParticipants(data.members);
+      } catch (error) {
+        console.error("Error fetching completed participants:", error);
+        toast.error("Error fetching completed participants");
+      }
+    };  
     fetchParticipants();
     const intervalId = setInterval(fetchParticipants, 3000);
     return () => clearInterval(intervalId);
-  }, [roomCode, userId]);
+  }, [roomCode, userId, cheaters]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -196,7 +229,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
                 key={`cheater-${index}`}
                 name={cheater}
                 code={roomCode}
-                onParticipantRemoved={fetchParticipants}
+                onParticipantRemoved={fetchParticipants2}
                 userId={userId}
                 completed={completedParticipants.includes(cheater)}
                 cheater={true} // Pass a prop to indicate cheating
@@ -210,7 +243,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
                 key={`completed-${index}`}
                 name={participant}
                 code={roomCode}
-                onParticipantRemoved={fetchParticipants}
+                onParticipantRemoved={fetchParticipants2}
                 userId={userId}
                 completed={true}
               />
@@ -226,7 +259,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
                   key={`participant-${index}`}
                   name={participant}
                   code={roomCode}
-                  onParticipantRemoved={fetchParticipants}
+                  onParticipantRemoved={fetchParticipants2}
                   userId={userId}
                   completed={false}
                 />
