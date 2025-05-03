@@ -1,47 +1,47 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { useReactMediaRecorder } from "react-media-recorder"
-import { Play } from "lucide-react"
-import * as Tone from "tone"
-import styled, { css, keyframes } from "styled-components"
-import { cuteAlert, cuteToast } from "cute-alert"
-import { toast } from "react-toastify"
-import { useNavigate } from "react-router-dom"
+import { useState, useRef, useEffect } from "react";
+import { useReactMediaRecorder } from "react-media-recorder";
+import { Play } from "lucide-react";
+import * as Tone from "tone";
+import styled, { css, keyframes } from "styled-components";
+import { cuteAlert, cuteToast } from "cute-alert";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 export default function AudioRecorder({ code, participant, uuid }) {
-  const [isRecording, setIsRecording] = useState(false)
-  const [error, setError] = useState(null)
-  const [isError, setIsError] = useState(true)
-  const [audioURL, setAudioURL] = useState(null)
-  const [finished, setFinished] = useState(false)
-  const [stopped, setStopped] = useState(false)
-  const [playing, setPlaying] = useState(false)
-  const [hasPlayed, setHasPlayed] = useState(false)
-  const [audioBlobURL, setAudioBlobURL] = useState(null)
-  const countdownRef = useRef(0)
-  const [countdownDisplay, setCountdownDisplay] = useState(0)
-  const timer = useRef(-1)
-  const statusInterval = useRef(null)
-  const audioRef = useRef(null)
-  const [displayTime, setDisplayTime] = useState("xx:xx")
-  const [obtainedAudio, setObtainedAudio] = useState(false)
-  const [fetching, setFetching] = useState(false)
-  const [waiting, setWaiting] = useState(false)
-  const [premium, setPremium] = useState(false)
-  const [thinkingTime, setThinkingTime] = useState(5)
-  const [allowRepeat, setAllowRepeat] = useState(true)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [finishedRecording, setFinishedRecording] = useState(false)
-  const [hasScreenPermission, setHasScreenPermission] = useState(false)
-  const [hasPermissions, setHasPermissions] = useState(false)
-  const [isWholeScreen, setIsWholeScreen] = useState(false)
-  const [screenStream, setScreenStream] = useState(null)
-  const [questionAudioReady, setQuestionAudioReady] = useState(false)
-  let questionIndex
-  let played = false
+  const [isRecording, setIsRecording] = useState(false);
+  const [error, setError] = useState(null);
+  const [isError, setIsError] = useState(true);
+  const [audioURL, setAudioURL] = useState(null);
+  const [finished, setFinished] = useState(false);
+  const [stopped, setStopped] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [hasPlayed, setHasPlayed] = useState(false);
+  const [audioBlobURL, setAudioBlobURL] = useState(null);
+  const countdownRef = useRef(0);
+  const [countdownDisplay, setCountdownDisplay] = useState(0);
+  const timer = useRef(-1);
+  const statusInterval = useRef(null);
+  const audioRef = useRef(null);
+  const [displayTime, setDisplayTime] = useState("xx:xx");
+  const [obtainedAudio, setObtainedAudio] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [waiting, setWaiting] = useState(false);
+  const [premium, setPremium] = useState(false);
+  const [thinkingTime, setThinkingTime] = useState(5);
+  const [allowRepeat, setAllowRepeat] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [finishedRecording, setFinishedRecording] = useState(false);
+  const [hasScreenPermission, setHasScreenPermission] = useState(false);
+  const [hasPermissions, setHasPermissions] = useState(false);
+  const [isWholeScreen, setIsWholeScreen] = useState(false);
+  const [screenStream, setScreenStream] = useState(null);
+  const [questionAudioReady, setQuestionAudioReady] = useState(false);
+  let questionIndex;
+  let played = false;
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   // Media recorder setup - using askPermissionOnMount to request mic/camera on load
   const {
@@ -55,7 +55,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     video: true,
     askPermissionOnMount: true, // Request permissions on component mount
     onStop: (blobUrl, blob) => handleAudioStop(blobUrl, blob),
-  })
+  });
 
   const {
     status: screenStatus,
@@ -68,47 +68,52 @@ export default function AudioRecorder({ code, participant, uuid }) {
     audio: false,
     askPermissionOnMount: false, // We'll handle screen permissions separately
     onStop: (blobUrl, blob) => handleScreenStop(blobUrl, blob),
-  })
+  });
 
   const requestPermissions = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
-      const audioTracks = stream.getAudioTracks()
-      const videoTracks = stream.getVideoTracks()
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      const audioTracks = stream.getAudioTracks();
+      const videoTracks = stream.getVideoTracks();
       if (audioTracks.length > 0) {
-        audioTracks[0].enabled = true
+        audioTracks[0].enabled = true;
       }
       if (videoTracks.length > 0) {
-        videoTracks[0].enabled = true
+        videoTracks[0].enabled = true;
       }
-      setHasPermissions(true)
-      setError(null) // Clear error when permissions are granted
-      setIsError(false)
-      return { permissionGranted: true, stream }
+      setHasPermissions(true);
+      setError(null); // Clear error when permissions are granted
+      setIsError(false);
+      return { permissionGranted: true, stream };
     } catch (err) {
-      console.error("Error requesting microphone permission:", err)
-      setError("Microphone and camera access is required first. Click here to try again.")
-      setIsError(true)
-      return { permissionGranted: false }
+      console.error("Error requesting microphone permission:", err);
+      setError(
+        "Microphone and camera access is required first. Click here to try again."
+      );
+      setIsError(true);
+      return { permissionGranted: false };
     }
-  }
+  };
 
   const handleAudioStop = async (blobUrl, blob) => {
-    const formData = new FormData()
-    formData.append("audio", blob, "audio.wav")
-    upload(formData)
-    setAudioURL(blobUrl)
-    setIsRecording(false)
+    const formData = new FormData();
+    formData.append("audio", blob, "audio.wav");
+    upload(formData);
+    setAudioURL(blobUrl);
+    setIsRecording(false);
     if (audioRef.current) {
-      audioRef.current.src = blobUrl
+      audioRef.current.src = blobUrl;
     }
-  }
+  };
 
   const handleScreenStop = async (blobUrl, blob) => {
-    const formData = new FormData()
-    formData.append("screen", blob, "screen.webm")
-    uploadScreen(formData)
-  }
+    const formData = new FormData();
+    formData.append("screen", blob, "screen.webm");
+    uploadScreen(formData);
+  };
 
   // Request screen sharing permission
   const requestScreenPermission = async () => {
@@ -118,44 +123,51 @@ export default function AudioRecorder({ code, participant, uuid }) {
           displaySurface: "monitor",
           cursor: "always",
         },
-      })
+      });
 
       // Check if user selected the entire screen
-      const tracks = stream.getVideoTracks()
+      const tracks = stream.getVideoTracks();
       if (tracks.length > 0) {
-        const settings = tracks[0].getSettings()
+        const settings = tracks[0].getSettings();
         // displaySurface will be "monitor" if the entire screen was selected
-        console.log("Display surface: ", settings.displaySurface)
-        if (settings.displaySurface != "window" && settings.displaySurface != "application" && settings.displaySurface != "browser" && settings.displaySurface != "tab") {
-          setIsWholeScreen(true)
-          setScreenStream(stream)
-          setHasScreenPermission(true)
-          setError(null) // Clear error when screen permission is granted
-          setIsError(false)
-          return { permissionGranted: true, stream }
+        console.log("Display surface: ", settings.displaySurface);
+        if (
+          settings.displaySurface != "window" &&
+          settings.displaySurface != "application" &&
+          settings.displaySurface != "browser" &&
+          settings.displaySurface != "tab"
+        ) {
+          setIsWholeScreen(true);
+          setScreenStream(stream);
+          setHasScreenPermission(true);
+          setError(null); // Clear error when screen permission is granted
+          setIsError(false);
+          return { permissionGranted: true, stream };
         } else {
           // If not the entire screen, stop the stream and ask again
-          tracks.forEach((track) => track.stop())
-          setError("Please select your entire screen, not just a window or tab.")
-          setIsError(true)
-          return { permissionGranted: false }
+          tracks.forEach((track) => track.stop());
+          setError(
+            "Please select your entire screen, not just a window or tab."
+          );
+          setIsError(true);
+          return { permissionGranted: false };
         }
       }
-      return { permissionGranted: false }
+      return { permissionGranted: false };
     } catch (err) {
-      console.error("Error requesting screen permission:", err)
-      setError("Screen sharing access is required. Click here to try again.")
-      setIsError(true)
-      return { permissionGranted: false }
+      console.error("Error requesting screen permission:", err);
+      setError("Screen sharing access is required. Click here to try again.");
+      setIsError(true);
+      return { permissionGranted: false };
     }
-  }
+  };
 
   // Initialize setup on component mount
   useEffect(() => {
-    document.documentElement.style.setProperty("--cute-alert-max-width", "40%")
+    document.documentElement.style.setProperty("--cute-alert-max-width", "40%");
 
     // Start fetching the question audio immediately
-    getAudio()
+    getAudio();
 
     // Show initial instructions
     cuteAlert({
@@ -164,119 +176,125 @@ export default function AudioRecorder({ code, participant, uuid }) {
       description:
         "It's time to record your response. First, we'll need to set up your screen sharing permissions. After that, you'll enter fullscreen mode and can listen to the question. If your teacher has allowed it, it will then count down for a few seconds before beginning recording, during which you think about your answer, or replay the question once (if allowed), and THEN begin recording. Speak clearly, confidently, and loudly, so that your microphone picks up your audio well. If you are not currently wearing headphones, please do so now if possible.",
       primaryButtonText: "Got it",
-    })
-  }, [])
+    });
+  }, []);
 
   // Monitor audio status changes
   useEffect(() => {
     if (audioStatus === "granted") {
       // Microphone and camera permissions have been granted
-      console.log("Microphone and camera permissions granted")
+      console.log("Microphone and camera permissions granted");
     }
-  }, [audioStatus])
+  }, [audioStatus]);
 
   // Set up status interval
   useEffect(() => {
-    statusInterval.current = setInterval(sendStatus, 3000)
-    return () => clearInterval(statusInterval.current)
-  }, [])
+    statusInterval.current = setInterval(sendStatus, 3000);
+    return () => clearInterval(statusInterval.current);
+  }, []);
 
   // Monitor fullscreen state and prevent suspicious activities
   useEffect(() => {
-    const onFullscreenChange = () => {
-      if (!document.fullscreenElement && !finishedRecording && isFullscreen) {
+    const makePostRequestWithRetry = (endpoint, messageText) => {
+      const sendRequest = () => {
         fetch(
-          `https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`,
+          `https://www.server.speakeval.org/${endpoint}?code=${code}&participant=${participant}&uuid=${uuid}`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ message: "Fullscreen exit detected" }),
-          },
-        ).catch((error) => {
-          console.error("Error notifying server about fullscreen exit:", error)
-        })
-        alert("Exiting fullscreen is not allowed. This will be reported to your teacher.")
+            body: JSON.stringify({ message: messageText }),
+          }
+        )
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response;
+          })
+          .catch((error) => {
+            console.error(
+              `Error notifying server about ${messageText}:`,
+              error
+            );
+            setTimeout(sendRequest, 1000);
+          });
+      };
+      sendRequest();
+    };
+
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement && !finishedRecording && isFullscreen) {
+        makePostRequestWithRetry(
+          "cheating_detected",
+          "Fullscreen exit detected"
+        );
+        alert(
+          "Exiting fullscreen is not allowed. This will be reported to your teacher."
+        );
       }
-    }
+    };
 
     const onVisibilityChange = () => {
       if (document.hidden && !finishedRecording && isFullscreen) {
-        fetch(
-          `https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ message: "Tab switch detected" }),
-          },
-        ).catch((error) => {
-          console.error("Error notifying server about tab switch:", error)
-        })
-        alert("You switched tabs or went out of the window. This will be reported to your teacher.")
+        makePostRequestWithRetry("cheating_detected", "Tab switch detected");
+        alert(
+          "You switched tabs or went out of the window. This will be reported to your teacher."
+        );
       }
-    }
+    };
 
     const preventKeyShortcuts = (e) => {
       if (
         (e.ctrlKey && e.shiftKey && e.key === "I") || // Prevent DevTools (Ctrl+Shift+I)
         (e.ctrlKey && e.shiftKey && e.key === "J") || // Prevent DevTools (Ctrl+Shift+J)
         (e.ctrlKey && e.key === "U") || // Prevent View Source (Ctrl+U)
-        (e.key === "F12") || // Prevent F12
+        e.key === "F12" || // Prevent F12
         (e.key === "Escape" && isFullscreen) // Prevent Escape in fullscreen
       ) {
-        e.preventDefault()
+        e.preventDefault();
       }
-    }
+    };
 
     const preventContextMenu = (e) => {
-      e.preventDefault() // Disable right-click context menu
-    }
-
-    let focusCheckInterval
+      e.preventDefault(); // Disable right-click context menu
+    };
 
     const checkFocusAndFullscreen = () => {
       if (
-        (!document.fullscreenElement || document.hidden || document.hasFocus() === false) &&
+        (!document.fullscreenElement ||
+          document.hidden ||
+          document.hasFocus() === false) &&
         !finishedRecording &&
         isFullscreen
       ) {
-        fetch(
-          `https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ message: "Focus or fullscreen lost" }),
-          },
-        ).catch((error) => {
-          console.error("Error notifying server about focus or fullscreen loss:", error)
-        })
-        alert("You lost focus to another app or page, or exited fullscreen. This will be reported to your teacher.")
-        clearInterval(focusCheckInterval)
+        makePostRequestWithRetry(
+          "cheating_detected",
+          "Focus or fullscreen lost"
+        );
+        alert(
+          "You lost focus or exited fullscreen. This will be reported to your teacher."
+        );
       }
-    }
+    };
 
-    focusCheckInterval = setInterval(() => {
-      checkFocusAndFullscreen()
-    }, 1000)
+    const focusCheckInterval = setInterval(checkFocusAndFullscreen, 1000);
 
-    document.addEventListener("fullscreenchange", onFullscreenChange)
-    document.addEventListener("visibilitychange", onVisibilityChange)
-    document.addEventListener("keydown", preventKeyShortcuts)
-    document.addEventListener("contextmenu", preventContextMenu)
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    document.addEventListener("keydown", preventKeyShortcuts);
+    document.addEventListener("contextmenu", preventContextMenu);
 
     return () => {
-      clearInterval(focusCheckInterval)
-      document.removeEventListener("fullscreenchange", onFullscreenChange)
-      document.removeEventListener("visibilitychange", onVisibilityChange)
-      document.removeEventListener("keydown", preventKeyShortcuts)
-      document.removeEventListener("contextmenu", preventContextMenu)
-    }
-  }, [finishedRecording, isFullscreen, code, participant, uuid])
+      clearInterval(focusCheckInterval);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      document.removeEventListener("keydown", preventKeyShortcuts);
+      document.removeEventListener("contextmenu", preventContextMenu);
+    };
+  }, [finishedRecording, isFullscreen, code, participant, uuid]);
+
   const pulse = keyframes`
     0% {
       transform: scale(1);
@@ -287,15 +305,16 @@ export default function AudioRecorder({ code, participant, uuid }) {
     100% {
       transform: scale(1);
     }
-  `
+  `;
 
   const animation = (props) => css`
     ${pulse} 1.1s infinite;
-  `
+  `;
 
   const recordStyle = {
     background: "radial-gradient(circle at bottom, #ff0000 0%, #b20000 70%)",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.2)",
+    boxShadow:
+      "0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.2)",
     borderRadius: "50%",
     width: "80px",
     height: "80px",
@@ -307,179 +326,196 @@ export default function AudioRecorder({ code, participant, uuid }) {
     position: "relative",
     transition: "background 0.3s ease",
     animation: `${animation}`,
-  }
+  };
 
   const PulseButton = styled.button`
     animation: ${animation};
-  `
+  `;
 
   const playBeep = () => {
-    const synth = new Tone.Synth().toDestination()
-    synth.triggerAttackRelease("C5", "8n")
-  }
+    const synth = new Tone.Synth().toDestination();
+    synth.triggerAttackRelease("C5", "8n");
+  };
 
   const playRecordingStarted = () => {
-    const synth = new Tone.Synth().toDestination()
-    synth.triggerAttackRelease("C6", "4n")
-  }
+    const synth = new Tone.Synth().toDestination();
+    synth.triggerAttackRelease("C6", "4n");
+  };
 
   async function sendStatus() {
-    console.log(timer.current)
+    console.log(timer.current);
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/check_status?code=${code}&participant=${participant}&uuid=${uuid}`,
-      )
+        `https://www.server.speakeval.org/check_status?code=${code}&participant=${participant}&uuid=${uuid}`
+      );
       if (!response.ok) {
-        setError("Failed to fetch status")
-        setIsError(true)
-        return
+        setError("Failed to fetch status");
+        setIsError(true);
+        return;
       }
 
-      const data = await response.json()
-      const responseCode = data.code
+      const data = await response.json();
+      const responseCode = data.code;
 
       if (responseCode === 7) {
-        window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`
+        window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`;
       }
 
       if (data.started && data.limit) {
-        updateTimer(data.limit - (Date.now() - data.started))
+        updateTimer(data.limit - (Date.now() - data.started));
       }
 
       switch (responseCode) {
         case 1:
-          navigate('/join-room');
+          navigate("/join-room");
           break;
         case 2:
           toast.error("You are not in the room");
-          navigate('/join-room');
+          navigate("/join-room");
           break;
         case 3:
           break;
         case 4:
-          navigate('/join-room');
+          navigate("/join-room");
           break;
         case 5:
-          if (error === "Reaching time limit. Please finish your response in the next 5 seconds. ") {
+          if (
+            error ===
+            "Reaching time limit. Please finish your response in the next 5 seconds. "
+          ) {
             setError(
               "You reached the time limit and your audio was stopped and uploaded automatically. " +
                 (premium
                   ? "Your audio will be processed faster, but may still take a little bit of time"
-                  : "It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."),
-            )
-            setIsError(false)
+                  : "It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.")
+            );
+            setIsError(false);
           }
-          stopRecording()
-          break
+          stopRecording();
+          break;
         case 6:
-          if (!error || (!error.includes("Processing...") && !error.includes("Uploaded to server successfully."))) {
-            setError("Reaching time limit. Please finish your response in the next 5 seconds. ")
-            setIsError(true)
+          if (
+            !error ||
+            (!error.includes("Processing...") &&
+              !error.includes("Uploaded to server successfully."))
+          ) {
+            setError(
+              "Reaching time limit. Please finish your response in the next 5 seconds. "
+            );
+            setIsError(true);
           }
-          break
+          break;
       }
     } catch (error) {
-      console.error("Error in sendStatus:", error)
+      console.error("Error in sendStatus:", error);
     }
   }
 
   const makeResponse = async () => {
-    setFetching(true)
+    setFetching(true);
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${participant}&number=1`,
-      )
+        `https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${participant}&number=1`
+      );
       if (!response.ok) {
-        setError("Failed to fetch audio")
-        setIsError(true)
-        return
+        setError("Failed to fetch audio");
+        setIsError(true);
+        return;
       }
 
-      const receivedData = await response.json()
-      const audios = receivedData.audios
+      const receivedData = await response.json();
+      const audios = receivedData.audios;
 
       if (receivedData.subscribed) {
-        setPremium(true)
+        setPremium(true);
       }
 
       if (receivedData.thinkingTime) {
-        setThinkingTime(receivedData.thinkingTime)
+        setThinkingTime(receivedData.thinkingTime);
       }
 
       if (receivedData.allowRepeat !== undefined) {
-        setAllowRepeat(receivedData.allowRepeat)
+        setAllowRepeat(receivedData.allowRepeat);
       }
 
       for (const data of audios) {
-        const audioData = Uint8Array.from(atob(data), (c) => c.charCodeAt(0))
-        const audioBlob = new Blob([audioData], { type: "audio/wav" })
-        const audioUrl = URL.createObjectURL(audioBlob)
-        setAudioBlobURL(audioUrl)
-        questionIndex = receivedData.questionIndex
+        const audioData = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+        const audioBlob = new Blob([audioData], { type: "audio/wav" });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setAudioBlobURL(audioUrl);
+        questionIndex = receivedData.questionIndex;
       }
 
-      setQuestionAudioReady(true)
+      setQuestionAudioReady(true);
     } catch (err) {
-      console.error("Error fetching audio:", err)
-      setError("An error occurred while fetching the audio. Try reloading the page.")
-      setIsError(true)
+      console.error("Error fetching audio:", err);
+      setError(
+        "An error occurred while fetching the audio. Try reloading the page."
+      );
+      setIsError(true);
     } finally {
-      setFetching(false)
+      setFetching(false);
     }
-  }
+  };
 
   const getAudio = async () => {
     if (!audioBlobURL) {
       try {
-        await makeResponse()
+        await makeResponse();
       } catch (err) {
-        console.error("Error fetching audio:", err)
-        setError("An error occurred while fetching the audio. Try reloading the page.")
-        setIsError(true)
+        console.error("Error fetching audio:", err);
+        setError(
+          "An error occurred while fetching the audio. Try reloading the page."
+        );
+        setIsError(true);
       }
-      setObtainedAudio(true)
+      setObtainedAudio(true);
     }
-  }
+  };
 
-  let interval = null
+  let interval = null;
 
   const startRecording = async () => {
-    setIsRecording(true)
-    setAudioURL(null)
+    setIsRecording(true);
+    setAudioURL(null);
 
     try {
       // Start both recordings
-      startAudioRecording()
+      startAudioRecording();
 
-      await sendStatus()
+      await sendStatus();
 
       interval = setInterval(() => {
         if (timer.current > 0) {
-          timer.current -= 1000
-          setDisplayTime(formatTime(timer.current))
+          timer.current -= 1000;
+          setDisplayTime(formatTime(timer.current));
         }
         if (timer.current <= 0) {
-          setDisplayTime("xx:xx")
-          clearInterval(interval)
+          setDisplayTime("xx:xx");
+          clearInterval(interval);
         }
-      }, 1000)
+      }, 1000);
 
-      await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`)
+      await fetch(
+        `https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`
+      );
     } catch (err) {
-      console.error("Error starting recording:", err)
-      setError("An error occurred while starting the recording. Please try again. Perhaps reload the page.")
-      setIsError(true)
+      console.error("Error starting recording:", err);
+      setError(
+        "An error occurred while starting the recording. Please try again. Perhaps reload the page."
+      );
+      setIsError(true);
     }
-  }
+  };
 
   const upload = async (formData) => {
     setError(
       "Processing... " +
         (premium
           ? "Your audio will be processed faster, but may still take a little bit of time"
-          : "It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."),
-    )
-    setIsError(false)
+          : "It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.")
+    );
+    setIsError(false);
 
     try {
       const response = await fetch(
@@ -487,8 +523,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
         {
           method: "POST",
           body: formData,
-        },
-      )
+        }
+      );
 
       if (!response.ok) {
         const retryInterval = setInterval(async () => {
@@ -497,35 +533,41 @@ export default function AudioRecorder({ code, participant, uuid }) {
             {
               method: "POST",
               body: formData,
-            },
-          )
+            }
+          );
           if (retryResponse.ok) {
-            setFinishedRecording(true)
-            clearInterval(retryInterval)
-            const data = await retryResponse.json()
-            setError("Uploaded to server successfully. We think you might have said: " + data.transcription)
-            setDisplayTime("xx:xx")
+            setFinishedRecording(true);
+            clearInterval(retryInterval);
+            const data = await retryResponse.json();
+            setError(
+              "Uploaded to server successfully. We think you might have said: " +
+                data.transcription
+            );
+            setDisplayTime("xx:xx");
           }
-        }, 10000)
+        }, 10000);
       } else {
-        setFinishedRecording(true)
-        const data = await response.json()
+        setFinishedRecording(true);
+        const data = await response.json();
 
         if (data.error) {
-          setError(data.error)
-          setIsError(true)
-          return
+          setError(data.error);
+          setIsError(true);
+          return;
         }
 
-        setError("Uploaded to server successfully. We think you might have said: " + data.transcription)
-        setIsError(false)
+        setError(
+          "Uploaded to server successfully. We think you might have said: " +
+            data.transcription
+        );
+        setIsError(false);
       }
     } catch (error) {
-      console.error("Error uploading audio:", error)
-      setError("Failed to upload audio. Please try again.")
-      setIsError(true)
+      console.error("Error uploading audio:", error);
+      setError("Failed to upload audio. Please try again.");
+      setIsError(true);
     }
-  }
+  };
 
   const uploadScreen = async (formData) => {
     try {
@@ -534,68 +576,70 @@ export default function AudioRecorder({ code, participant, uuid }) {
         {
           method: "POST",
           body: formData,
-        },
-      )
+        }
+      );
     } catch (err) {
-      console.error("Error uploading screen recording:", err)
+      console.error("Error uploading screen recording:", err);
     }
-  }
+  };
 
   const playRecording = async () => {
-    if (playing || waiting || played) return
+    if (playing || waiting || played) return;
 
-    setPlaying(true)
-    setHasPlayed(true)
+    setPlaying(true);
+    setHasPlayed(true);
     played = true;
 
     const playAudio = () => {
       if (audioRef.current) {
-        audioRef.current.currentTime = 0
-        audioRef.current.play()
+        audioRef.current.currentTime = 0;
+        audioRef.current.play();
       } else {
-        setTimeout(playAudio, 100)
+        setTimeout(playAudio, 100);
       }
-    }
-    playAudio()
-  }
+    };
+    playAudio();
+  };
 
   const stopRecording = () => {
-    setStopped(true)
-    setIsRecording(false)
+    setStopped(true);
+    setIsRecording(false);
 
-    stopAudioRecording()
-    stopScreenRecording()
+    stopAudioRecording();
+    stopScreenRecording();
 
-    clearInterval(interval)
-  }
+    clearInterval(interval);
+  };
 
   const updateTimer = (time) => {
-    timer.current = time
-    setDisplayTime(formatTime(time))
-    if (time < 0) setDisplayTime("xx:xx")
-  }
+    timer.current = time;
+    setDisplayTime(formatTime(time));
+    if (time < 0) setDisplayTime("xx:xx");
+  };
 
   const formatTime = (time) => {
-    if (time === 0) return "xx:xx"
-    const minutes = Math.floor(time / 60000)
-    const seconds = Math.round((time % 60000) / 1000)
+    if (time === 0) return "xx:xx";
+    const minutes = Math.floor(time / 60000);
+    const seconds = Math.round((time % 60000) / 1000);
 
-    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-  }
+    return `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   const enterFullscreen = () => {
-    const el = document.documentElement
-    if (el.requestFullscreen) el.requestFullscreen()
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
     cuteAlert({
       type: "info",
       title: "Fullscreen",
       description:
         "You are now in fullscreen mode. You may not exit or switch to any other tabs, or this will be reported to your teacher and they may choose to administer a zero.",
       primaryButtonText: "Understood",
-    })
-  }
+    });
+  };
 
-  let countdownInterval
+  let countdownInterval;
 
   return (
     <div
@@ -616,7 +660,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
           top: "80px",
           fontSize: "48px",
           fontWeight: "bold",
-          color: timer.current < 5000 && timer.current !== 0 ? "red" : "#374151",
+          color:
+            timer.current < 5000 && timer.current !== 0 ? "red" : "#374151",
         }}
       >
         {displayTime}
@@ -664,16 +709,19 @@ export default function AudioRecorder({ code, participant, uuid }) {
                 marginBottom: "8px",
               }}
             >
-              Please share your entire screen (not just a window or tab) to continue.
+              Please share your entire screen (not just a window or tab) to
+              continue.
             </p>
             <button
               onClick={async () => {
-                const perms = await requestPermissions()
-                console.log(perms)
+                const perms = await requestPermissions();
+                console.log(perms);
                 if (!perms.permissionGranted) {
-                  setError("Microphone and camera access is required first. Click here to try again.")
-                  setIsError(true)
-                  return
+                  setError(
+                    "Microphone and camera access is required first. Click here to try again."
+                  );
+                  setIsError(true);
+                  return;
                 }
                 requestScreenPermission();
               }}
@@ -718,10 +766,10 @@ export default function AudioRecorder({ code, participant, uuid }) {
             {questionAudioReady && (
               <button
                 onClick={async () => {
-                  enterFullscreen()
-                  setIsFullscreen(true)
+                  enterFullscreen();
+                  setIsFullscreen(true);
                   // Initialize Tone.js here to ensure it's ready when needed
-                  Tone.start()
+                  Tone.start();
                 }}
                 style={{
                   padding: "12px 24px",
@@ -734,7 +782,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
                   cursor: "pointer",
                   transition: "background-color 0.3s",
                 }}
-                onMouseOver={(e) => (e.target.style.backgroundColor = "#1D4ED8")}
+                onMouseOver={(e) =>
+                  (e.target.style.backgroundColor = "#1D4ED8")
+                }
                 onMouseOut={(e) => (e.target.style.backgroundColor = "#2563EB")}
               >
                 Enter Fullscreen
@@ -767,7 +817,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
         {isFullscreen && isRecording && (
           <PulseButton
             onClick={() => {
-              stopRecording()
+              stopRecording();
             }}
             style={recordStyle}
           />
@@ -782,8 +832,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
               color: "#374151",
             }}
           >
-            If you couldn't hear or understand the question, you can use this time to replay it using the audio
-            component below.
+            If you couldn't hear or understand the question, you can use this
+            time to replay it using the audio component below.
           </p>
         )}
 
@@ -797,9 +847,14 @@ export default function AudioRecorder({ code, participant, uuid }) {
             }}
           >
             <audio
-              controls={hasPlayed && allowRepeat && !playing && (!audioRef.current || audioRef.current.paused)}
+              controls={
+                hasPlayed &&
+                allowRepeat &&
+                !playing &&
+                (!audioRef.current || audioRef.current.paused)
+              }
               ref={(input) => {
-                audioRef.current = input
+                audioRef.current = input;
               }}
               style={{
                 width: "100%",
@@ -810,7 +865,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
               src={audioBlobURL}
               onPlay={() => {
                 if (!playing) {
-                  countdownRef.current = audioRef.current.duration + 1
+                  countdownRef.current = audioRef.current.duration + 1;
                 }
               }}
               onEnded={() => {
@@ -821,32 +876,33 @@ export default function AudioRecorder({ code, participant, uuid }) {
                       title: "Recording will start after countdown ends",
                       description: `Recording will start in ${thinkingTime} seconds. Please think about your answer. Recording has NOT YET STARTED`,
                       timer: 5000,
-                    })
+                    });
                   }
-                  setPlaying(false)
-                  setFinished(true)
+                  setPlaying(false);
+                  setFinished(true);
 
-                  countdownRef.current = thinkingTime
-                  setCountdownDisplay(countdownRef.current)
+                  countdownRef.current = thinkingTime;
+                  setCountdownDisplay(countdownRef.current);
 
                   countdownInterval = setInterval(() => {
-                    countdownRef.current -= 1
-                    setCountdownDisplay(countdownRef.current)
+                    countdownRef.current -= 1;
+                    setCountdownDisplay(countdownRef.current);
                     if (countdownRef.current <= 0) {
-                      clearInterval(countdownInterval)
-                      startRecording()
+                      clearInterval(countdownInterval);
+                      startRecording();
                     }
 
                     if (countdownRef.current <= -2) {
                       // Do nothing
                     } else if (countdownRef.current <= 0) {
-                      if (audioRef.current && !audioRef.current.paused) audioRef.current.pause()
-                      playRecordingStarted()
+                      if (audioRef.current && !audioRef.current.paused)
+                        audioRef.current.pause();
+                      playRecordingStarted();
                     }
-                  }, 1000)
+                  }, 1000);
                 } else {
-                  countdownRef.current = -1
-                  setCountdownDisplay(-1)
+                  countdownRef.current = -1;
+                  setCountdownDisplay(-1);
                 }
               }}
             >
@@ -877,7 +933,11 @@ export default function AudioRecorder({ code, participant, uuid }) {
               color: "#28a745",
             }}
           >
-            {fetching ? "Downloading question..." : waiting ? "Loading..." : "Playing..."}
+            {fetching
+              ? "Downloading question..."
+              : waiting
+              ? "Loading..."
+              : "Playing..."}
           </p>
         )}
 
@@ -890,8 +950,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
               color: "#FF0000",
             }}
           >
-            If this is taking too long, please ensure you have allowed microphone and screen sharing permissions. If it
-            still doesn't work, try switching to another browser.
+            If this is taking too long, please ensure you have allowed
+            microphone and screen sharing permissions. If it still doesn't work,
+            try switching to another browser.
           </p>
         )}
 
@@ -912,7 +973,13 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
         {error && (
           <div
-            onClick={!hasPermissions ? requestPermissions : hasScreenPermission ? null : requestScreenPermission}
+            onClick={
+              !hasPermissions
+                ? requestPermissions
+                : hasScreenPermission
+                ? null
+                : requestScreenPermission
+            }
             style={
               isError
                 ? {
@@ -956,9 +1023,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
                 textDecoration: "underline",
               }}
               onClick={() => {
-                setHasScreenPermission(true)
-                setError(null)
-                setIsError(false)
+                setHasScreenPermission(true);
+                setError(null);
+                setIsError(false);
               }}
             >
               Not working? Click here.
@@ -967,5 +1034,5 @@ export default function AudioRecorder({ code, participant, uuid }) {
         )}
       </div>
     </div>
-  )
+  );
 }
