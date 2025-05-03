@@ -39,6 +39,9 @@ function Room() {
       toast.error("Room doesn't exist");
       return navigate("/join-room");
     }
+    if (parsedData.code === 7) {
+      window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`
+    }
     if (parsedData.code === 9) {
       toast.error(
         "The IP this user joined from is different than your current IP. If this is a mistake, tell your teacher to remove you and rejoin with the same name."
