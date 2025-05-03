@@ -534,6 +534,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
         }
       }, 10000);
+    } else {
+      setFinishedRecording(true);
     }
 
     const data = await response.json();
