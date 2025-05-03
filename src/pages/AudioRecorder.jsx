@@ -257,7 +257,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
       }
     }
 
-    const focusCheckInterval = setInterval(checkFocusAndFullscreen, 1000)
+    const focusCheckInterval = setInterval(() => {
+      checkFocusAndFullscreen()
+    }, 1000)
 
     document.addEventListener("fullscreenchange", onFullscreenChange)
     document.addEventListener("visibilitychange", onVisibilityChange)
@@ -272,7 +274,6 @@ export default function AudioRecorder({ code, participant, uuid }) {
       document.removeEventListener("contextmenu", preventContextMenu)
     }
   }, [finishedRecording, isFullscreen, code, participant, uuid])
-
   const pulse = keyframes`
     0% {
       transform: scale(1);
