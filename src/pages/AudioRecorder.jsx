@@ -6,6 +6,8 @@ import { Play } from "lucide-react"
 import * as Tone from "tone"
 import styled, { css, keyframes } from "styled-components"
 import { cuteAlert, cuteToast } from "cute-alert"
+import { toast } from "react-toastify"
+import { useNavigate } from "react-router-dom"
 
 export default function AudioRecorder({ code, participant, uuid }) {
   const [isRecording, setIsRecording] = useState(false)
@@ -38,6 +40,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
   const [questionAudioReady, setQuestionAudioReady] = useState(false)
   let questionIndex
   let played = false
+
+  const navigate = useNavigate()
 
   // Media recorder setup - using askPermissionOnMount to request mic/camera on load
   const {
