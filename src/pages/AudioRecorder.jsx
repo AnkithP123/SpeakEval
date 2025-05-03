@@ -36,6 +36,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
   const [hasScreenPermission, setHasScreenPermission] = useState(false);
   const [hasPermissions, setHasPermissions] = useState(false);
   const [isWholeScreen, setIsWholeScreen] = useState(false);
+  const [fullscreenViolationReported, setFullscreenViolationReported] =
+    useState(false);
   const [screenStream, setScreenStream] = useState(null);
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
   let questionIndex;
@@ -218,14 +220,20 @@ export default function AudioRecorder({ code, participant, uuid }) {
               `Error notifying server about ${messageText}:`,
               error
             );
-            setTimeout(sendRequest, 1000);
+            setTimeout(sendRequest, 3000);
           });
       };
       sendRequest();
     };
 
     const onFullscreenChange = () => {
-      if (!document.fullscreenElement && !finishedRecording && isFullscreen) {
+      if (
+        !document.fullscreenElement &&
+        !finishedRecording &&
+        isFullscreen &&
+        !fullscreenViolationReported
+      ) {
+        setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
         makePostRequestWithRetry(
           "cheating_detected",
           "Fullscreen exit detected"
@@ -237,7 +245,13 @@ export default function AudioRecorder({ code, participant, uuid }) {
     };
 
     const onVisibilityChange = () => {
-      if (document.hidden && !finishedRecording && isFullscreen) {
+      if (
+        document.hidden &&
+        !finishedRecording &&
+        isFullscreen &&
+        !fullscreenViolationReported
+      ) {
+        setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
         makePostRequestWithRetry("cheating_detected", "Tab switch detected");
         alert(
           "You switched tabs or went out of the window. This will be reported to your teacher."
@@ -267,8 +281,10 @@ export default function AudioRecorder({ code, participant, uuid }) {
           document.hidden ||
           document.hasFocus() === false) &&
         !finishedRecording &&
-        isFullscreen
+        isFullscreen &&
+        !fullscreenViolationReported
       ) {
+        setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
         makePostRequestWithRetry(
           "cheating_detected",
           "Focus or fullscreen lost"
