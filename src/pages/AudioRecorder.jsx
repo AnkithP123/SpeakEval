@@ -294,6 +294,18 @@ export default function AudioRecorder({ code, participant, uuid }) {
       }
 
       switch (responseCode) {
+        case 1:
+          navigate('/join-room');
+          break;
+        case 2:
+          toast.error("You are not in the room");
+          navigate('/join-room');
+          break;
+        case 3:
+          break;
+        case 4:
+          navigate('/join-room');
+          break;
         case 5:
           if (error === "Reaching time limit. Please finish your response in the next 5 seconds. ") {
             setError(
@@ -873,6 +885,31 @@ export default function AudioRecorder({ code, participant, uuid }) {
             }
           >
             <p style={{ margin: "5px" }}>{error}</p>
+          </div>
+        )}
+        {isError && hasPermissions && !hasScreenPermission && (
+          <div
+            style={{
+              marginTop: "16px",
+              textAlign: "center",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "18px",
+                fontWeight: "bold",
+                color: "#2563EB",
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+              onClick={() => {
+                setHasScreenPermission(true)
+                setError(null)
+                setIsError(false)
+              }}
+            >
+              Not working? Click here.
+            </p>
           </div>
         )}
       </div>
