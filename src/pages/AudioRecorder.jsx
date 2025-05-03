@@ -380,8 +380,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
       const stream2 = await navigator.mediaDevices.getUserMedia({ video: true });
 
-      let stream;
-
+      const stream3 = await navigator.mediaDevices.getDisplayMedia({ video: true });
       setMicrophone(true);
       setError(null);
       return {permissionGranted: true, audio: stream1, video: stream2};
