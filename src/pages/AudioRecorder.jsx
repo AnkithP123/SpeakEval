@@ -181,7 +181,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     return () => clearInterval(statusInterval.current)
   }, [])
 
-  // Monitor fullscreen state
+  // Monitor fullscreen state and prevent suspicious activities
   useEffect(() => {
     const onFullscreenChange = () => {
       if (!document.fullscreenElement && !finishedRecording && isFullscreen) {
@@ -219,12 +219,32 @@ export default function AudioRecorder({ code, participant, uuid }) {
       }
     }
 
+    const preventKeyShortcuts = (e) => {
+      if (
+        (e.ctrlKey && e.shiftKey && e.key === "I") || // Prevent DevTools (Ctrl+Shift+I)
+        (e.ctrlKey && e.shiftKey && e.key === "J") || // Prevent DevTools (Ctrl+Shift+J)
+        (e.ctrlKey && e.key === "U") || // Prevent View Source (Ctrl+U)
+        (e.key === "F12") || // Prevent F12
+        (e.key === "Escape" && isFullscreen) // Prevent Escape in fullscreen
+      ) {
+        e.preventDefault()
+      }
+    }
+
+    const preventContextMenu = (e) => {
+      e.preventDefault() // Disable right-click context menu
+    }
+
     document.addEventListener("fullscreenchange", onFullscreenChange)
     document.addEventListener("visibilitychange", onVisibilityChange)
+    document.addEventListener("keydown", preventKeyShortcuts)
+    document.addEventListener("contextmenu", preventContextMenu)
 
     return () => {
       document.removeEventListener("fullscreenchange", onFullscreenChange)
       document.removeEventListener("visibilitychange", onVisibilityChange)
+      document.removeEventListener("keydown", preventKeyShortcuts)
+      document.removeEventListener("contextmenu", preventContextMenu)
     }
   }, [finishedRecording, isFullscreen, code, participant, uuid])
 
