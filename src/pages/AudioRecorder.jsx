@@ -121,6 +121,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
       if (tracks.length > 0) {
         const settings = tracks[0].getSettings()
         // displaySurface will be "monitor" if the entire screen was selected
+        console.log("Display surface: ", settings.displaySurface)
         if (settings.displaySurface === "monitor") {
           setIsWholeScreen(true)
           setScreenStream(stream)
