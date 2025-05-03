@@ -270,7 +270,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
   }
 
   async function sendStatus() {
-    console.log(audioStatus)
+    console.log(timer.current)
     try {
       const response = await fetch(
         `https://www.server.speakeval.org/check_status?code=${code}&participant=${participant}&uuid=${uuid}`,
@@ -286,12 +286,6 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
       if (responseCode === 7) {
         window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`
-      }
-
-      if (!playing && !isRecording) {
-        timer.current = 0
-        setDisplayTime("xx:xx")
-        return
       }
 
       if (data.started && data.limit) {
