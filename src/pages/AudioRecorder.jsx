@@ -380,10 +380,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
       const stream2 = await navigator.mediaDevices.getUserMedia({ video: true });
 
-      const stream3 = await navigator.mediaDevices.getDisplayMedia({ video: true });
       setMicrophone(true);
       setError(null);
-      return {permissionGranted: true, audio: stream1, video: stream2, screen: stream3};
+      return {permissionGranted: true, audio: stream1, video: stream2};
     } catch (err) {
       console.error('Error requesting microphone permission:', err);
       setError('Microphone access is required. Click here to try again.');
@@ -586,7 +585,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
     const {permissionGranted} = await requestMicrophonePermission();
     if (!permissionGranted) {
-      setError('Granting access is required. Click here to try again, or manually adjust your settings.');
+      setError('Microphone and camera access is required. Click here to try again.');
       return;
     }
 
@@ -834,11 +833,6 @@ export default function AudioRecorder({ code, participant, uuid }) {
             </p>
             <button
               onClick={() => {
-                const {permissionGranted} = await requestMicrophonePermission();
-          if (!permissionGranted) {
-            setError('Granting access is required. Click here to try again, or manually adjust your settings.');
-            return;
-          }
           enterFullscreen();
           setIsFullscreen(true);
               }}
