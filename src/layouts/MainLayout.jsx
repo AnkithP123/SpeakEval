@@ -1,9 +1,39 @@
-import { Outlet } from "react-router-dom"
-import Navbar from "../components/Navbar"
-import { ToastContainer } from "react-toastify"
-import { Analytics } from "@vercel/analytics/react"
-import BottomBar from "../components/BottomBar"
-import "react-toastify/dist/ReactToastify.css"
+import { Outlet } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import { ToastContainer } from "react-toastify";
+import { Analytics } from "@vercel/analytics/react";
+import BottomBar from "../components/BottomBar";
+import "react-toastify/dist/ReactToastify.css";
+import { cuteAlert } from "cute-alert";
+
+function isMobileDevice() {
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+  const mobileRegex =
+    /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+  console.log(
+    "Mobile device check:",
+    mobileRegex.test(userAgent.toLowerCase())
+  );
+  return mobileRegex.test(userAgent.toLowerCase());
+}
+
+const isMobile = isMobileDevice();
+if (isMobile) {
+  document.documentElement.style.setProperty(
+    "--cute-alert-max-width",
+    document.documentElement.style.getPropertyValue("--cute-alert-min-width") ||
+      "20%"
+  );
+  cuteAlert({
+    type: "warning",
+    id: "cute-alert-mobile",
+    title: "Mobile Device Detected",
+    description:
+      "This application is not optimized for mobile devices. The experience may be unstable or limited on phones. For the best experience, please use a laptop or desktop computer.",
+    primaryButtonText: "OK",
+  });
+}
 
 function MainLayout({ set, set2, set3, set4 }) {
   return (
@@ -34,25 +64,24 @@ function MainLayout({ set, set2, set3, set4 }) {
       />
       <BottomBar className="mt-auto" />
       <style jsx>{`
-          .custom-scrollbar::-webkit-scrollbar {
-    width: 0.5rem;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #4fd1c5; /* Change this color to match your theme */
-    border-radius: 0.25rem;
-    border: 3px solid transparent;
-  }
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #4fd1c5 transparent;
-  }
-        `}</style>
-
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 0.5rem;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #4fd1c5; /* Change this color to match your theme */
+          border-radius: 0.25rem;
+          border: 3px solid transparent;
+        }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #4fd1c5 transparent;
+        }
+      `}</style>
     </div>
-  )
+  );
 }
 
-export default MainLayout
+export default MainLayout;
