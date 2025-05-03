@@ -213,6 +213,10 @@ export default function AudioRecorder({ code, participant, uuid }) {
             if (!response.ok) {
               throw new Error(`HTTP error! Status: ${response.status}`);
             }
+            console.log("Request sent successfully:", messageText);
+            if (messageText === "Fullscreen exit detected") {
+              setFullscreenViolationReported(true);
+            }
             return response;
           })
           .catch((error) => {
@@ -309,7 +313,14 @@ export default function AudioRecorder({ code, participant, uuid }) {
       document.removeEventListener("keydown", preventKeyShortcuts);
       document.removeEventListener("contextmenu", preventContextMenu);
     };
-  }, [finishedRecording, isFullscreen, code, participant, uuid]);
+  }, [
+    finishedRecording,
+    fullscreenViolationReported,
+    isFullscreen,
+    code,
+    participant,
+    uuid,
+  ]);
 
   const pulse = keyframes`
     0% {
