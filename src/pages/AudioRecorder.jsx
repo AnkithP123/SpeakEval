@@ -235,12 +235,37 @@ export default function AudioRecorder({ code, participant, uuid }) {
       e.preventDefault() // Disable right-click context menu
     }
 
+    const checkFocusAndFullscreen = () => {
+      if (
+        (!document.fullscreenElement || document.hidden || document.hasFocus() === false) &&
+        !finishedRecording &&
+        isFullscreen
+      ) {
+        fetch(
+          `https://www.server.speakeval.org/cheating_detected?code=${code}&participant=${participant}&uuid=${uuid}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ message: "Focus or fullscreen lost" }),
+          },
+        ).catch((error) => {
+          console.error("Error notifying server about focus or fullscreen loss:", error)
+        })
+        alert("You lost focus or exited fullscreen. This will be reported to your teacher.")
+      }
+    }
+
+    const focusCheckInterval = setInterval(checkFocusAndFullscreen, 1000)
+
     document.addEventListener("fullscreenchange", onFullscreenChange)
     document.addEventListener("visibilitychange", onVisibilityChange)
     document.addEventListener("keydown", preventKeyShortcuts)
     document.addEventListener("contextmenu", preventContextMenu)
 
     return () => {
+      clearInterval(focusCheckInterval)
       document.removeEventListener("fullscreenchange", onFullscreenChange)
       document.removeEventListener("visibilitychange", onVisibilityChange)
       document.removeEventListener("keydown", preventKeyShortcuts)
