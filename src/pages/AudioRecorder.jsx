@@ -235,6 +235,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
       e.preventDefault() // Disable right-click context menu
     }
 
+    let focusCheckInterval
+
     const checkFocusAndFullscreen = () => {
       if (
         (!document.fullscreenElement || document.hidden || document.hasFocus() === false) &&
@@ -253,11 +255,12 @@ export default function AudioRecorder({ code, participant, uuid }) {
         ).catch((error) => {
           console.error("Error notifying server about focus or fullscreen loss:", error)
         })
-        alert("You lost focus or exited fullscreen. This will be reported to your teacher.")
+        alert("You lost focus to another app or page, or exited fullscreen. This will be reported to your teacher.")
+        clearInterval(focusCheckInterval)
       }
     }
 
-    const focusCheckInterval = setInterval(() => {
+    focusCheckInterval = setInterval(() => {
       checkFocusAndFullscreen()
     }, 1000)
 
