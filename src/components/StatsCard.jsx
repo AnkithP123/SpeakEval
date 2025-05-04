@@ -568,7 +568,7 @@ Teacher's Comment: ${comment}`
     <div className={`relative `}>
       {/* Cheating indicator with integrated button */}
       {hasCheated && (
-        <div className="absolute top-3 right-4 z-[5] pointer-events-none">
+        <div className="absolute top-3 right-[55px] z-[5] pointer-events-none">
           <div className="group pointer-events-auto">
             <FaExclamationTriangle className="text-red-500 text-xl animate-pulse" />
             <div className="absolute hidden group-hover:block right-0 w-64 p-2 mt-2 bg-black/90 text-white text-sm rounded-md border border-red-500 z-20">
@@ -589,7 +589,7 @@ Teacher's Comment: ${comment}`
 
       {/* Separate the button from the indicator to avoid blocking other elements */}
       {hasCheated && (
-        <div className="absolute mt-[52px] top-[35px] right-8 z-[1] pointer-events-auto">
+        <div className="absolute mt-[52px] top-[35px] right-[75px] z-[1] pointer-events-auto">
           <button
             onClick={() => setShowInfractionsModal(true)}
             className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs rounded-md shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 flex items-center"
