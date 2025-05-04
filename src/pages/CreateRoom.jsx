@@ -1,139 +1,149 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { toast } from "react-toastify"
-import RoomPanel from "../components/RoomPanel"
-import { useNavigate } from "react-router-dom"
-import "./CreateRoom.css"
-import { FaInfoCircle } from "react-icons/fa"
-import Card from "../components/Card"
+import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import RoomPanel from "../components/RoomPanel";
+import { useNavigate } from "react-router-dom";
+import "./CreateRoom.css";
+import { FaInfoCircle } from "react-icons/fa";
+import Card from "../components/Card";
 
 function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
-  const [userId, setUserId] = useState(getPin())
-  const [loggedIn, setLoggedIn] = useState(userId)
-  const [roomCode, setRoomCode] = useState("")
-  const [shake, setShake] = useState(false)
-  const [configId, setConfigId] = useState("")
-  const [isConfigEntered, setIsConfigEntered] = useState(false)
-  const [configs, setConfigs] = useState([])
-  const navigate = useNavigate()
-  const [timeLimit, setTimeLimit] = useState(30)
-  const [thinkingTime, setThinkingTime] = useState(5)
-  const [canRelisten, setCanRelisten] = useState(true)
-  const [hoveredInfo, setHoveredInfo] = useState(null)
-  const [requireGoogleSignIn, setRequireGoogleSignIn] = useState(false)
-  const [emailEnding, setEmailEnding] = useState("")
-  const [hoverButton, setHoverButton] = useState(false)
+  const [userId, setUserId] = useState(getPin());
+  const [loggedIn, setLoggedIn] = useState(userId);
+  const [roomCode, setRoomCode] = useState("");
+  const [shake, setShake] = useState(false);
+  const [configId, setConfigId] = useState("");
+  const [isConfigEntered, setIsConfigEntered] = useState(false);
+  const [configs, setConfigs] = useState([]);
+  const navigate = useNavigate();
+  const [timeLimit, setTimeLimit] = useState(30);
+  const [thinkingTime, setThinkingTime] = useState(5);
+  const [canRelisten, setCanRelisten] = useState(true);
+  const [hoveredInfo, setHoveredInfo] = useState(null);
+  const [requireGoogleSignIn, setRequireGoogleSignIn] = useState(false);
+  const [shuffleQuestions, setShuffleQuestions] = useState(true);
+  const [emailEnding, setEmailEnding] = useState("");
+  const [hoverButton, setHoverButton] = useState(false);
 
   useEffect(() => {
     const fetchConfigs = async () => {
-      console.log("Fetching Configs")
+      console.log("Fetching Configs");
       try {
-        const res = await fetch(`https://www.server.speakeval.org/getconfigs?pin=${userId}`)
-        const parsedData = await res.json()
-        setConfigs(parsedData)
-        console.log(configs)
+        const res = await fetch(
+          `https://www.server.speakeval.org/getconfigs?pin=${userId}`
+        );
+        const parsedData = await res.json();
+        setConfigs(parsedData);
+        console.log(configs);
       } catch (err) {
-        console.error("Error Loading Configs", err)
-        toast.error("Error Loading Configs")
+        console.error("Error Loading Configs", err);
+        toast.error("Error Loading Configs");
       }
-    }
+    };
 
     if (loggedIn) {
-      fetchConfigs()
+      fetchConfigs();
     }
-  }, [loggedIn, userId])
+  }, [loggedIn, userId]);
 
   useEffect(() => {
     if (!loggedIn) {
-      navigate("/login?redirect=/create-room")
+      navigate("/login?redirect=/create-room");
     }
-  }, [loggedIn, navigate])
+  }, [loggedIn, navigate]);
 
   const handleInputChange = async (e) => {
-    const input = e.target.value
-    setUserId(input.toUpperCase())
-  }
+    const input = e.target.value;
+    setUserId(input.toUpperCase());
+  };
 
   const handleConfigChange = (e) => {
-    setConfigId(e.target.value)
-  }
+    setConfigId(e.target.value);
+  };
 
   const checkUserId = async (userId) => {
-    let parsedData
+    let parsedData;
     try {
-      const res = await fetch(`https://www.server.speakeval.org/teacherpin?pin=${userId}`)
-      parsedData = await res.json()
+      const res = await fetch(
+        `https://www.server.speakeval.org/teacherpin?pin=${userId}`
+      );
+      parsedData = await res.json();
 
       if (parsedData.code === 401) {
-        console.error(parsedData)
-        toast.error("Incorrect Teacher Pin")
-        setShake(true)
-        setTimeout(() => setShake(false), 500)
-        return setUserId("")
+        console.error(parsedData);
+        toast.error("Incorrect Teacher Pin");
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+        return setUserId("");
       }
       if (parsedData.code === 200) {
-        setLoggedIn(true)
-        setIsConfigEntered(false)
+        setLoggedIn(true);
+        setIsConfigEntered(false);
       }
       if (parsedData.subscription) {
-        set(parsedData.subscription !== "free")
-        setUltimate(parsedData.subscription === "Ultimate")
+        set(parsedData.subscription !== "free");
+        setUltimate(parsedData.subscription === "Ultimate");
       }
     } catch (err) {
-      console.error("Error Loading Data", err)
-      toast.error("Error Loading Data")
-      setShake(true)
-      setTimeout(() => setShake(false), 500)
-      return setUserId("")
+      console.error("Error Loading Data", err);
+      toast.error("Error Loading Data");
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return setUserId("");
     }
-  }
+  };
 
   const handleGoClick = () => {
-    checkUserId(userId)
-  }
+    checkUserId(userId);
+  };
 
   const handleConfigSubmit = async () => {
     if (configId === "") {
       return toast.error(
         "Please enter a config name into the box or click one of your saved configs before creating the room!"
-      )
+      );
     }
-    try {
-      const res = await fetch(`https://www.server.speakeval.org/verifyconfig?name=${configId}`)
-      const parsedData = await res.json()
-      if (parsedData.valid) {
-        setTimeLimit(configs.find((c) => c.name === configId)?.timeLimit || 30)
-        setIsConfigEntered(true)
-      } else {
-        toast.error("The config name you entered is invalid. Please enter a valid config name.")
-      }
-    } catch (err) {
-      console.error("Error Verifying Config Existence", err)
-      toast.error("Error Verifying Config Existence")
-    }
-  }
-
-  const handleFinalRoomCreation = async () => {
-    let time = Date.now()
-    time = Math.floor(Math.random() * 5) + 1 + time.toString().slice(-7) + "001"
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/create_room?code=${time}&pin=${userId}&config=${configId}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&google=${requireGoogleSignIn}&ending=${emailEnding}`
-      )
-      const parsedData = await res.json()
-      if (parsedData.code === 400) {
-        toast.error(parsedData.message)
-        setIsConfigEntered(false)
-        return navigate("/create-room")
+        `https://www.server.speakeval.org/verifyconfig?name=${configId}`
+      );
+      const parsedData = await res.json();
+      if (parsedData.valid) {
+        setTimeLimit(configs.find((c) => c.name === configId)?.timeLimit || 30);
+        setIsConfigEntered(true);
+      } else {
+        toast.error(
+          "The config name you entered is invalid. Please enter a valid config name."
+        );
       }
-      setRoomCode(time)
     } catch (err) {
-      console.error("Error Creating Room", err)
-      toast.error("Error Creating Room")
-      setIsConfigEntered(false)
+      console.error("Error Verifying Config Existence", err);
+      toast.error("Error Verifying Config Existence");
     }
-  }
+  };
+
+  const handleFinalRoomCreation = async () => {
+    let time = Date.now();
+    time =
+      Math.floor(Math.random() * 5) + 1 + time.toString().slice(-7) + "001";
+    try {
+      const res = await fetch(
+        `https://www.server.speakeval.org/create_room?code=${time}&pin=${userId}&config=${configId}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&shuffle=${shuffleQuestions}&google=${requireGoogleSignIn}&ending=${emailEnding}`
+      );
+      const parsedData = await res.json();
+      if (parsedData.code === 400) {
+        toast.error(parsedData.message);
+        setIsConfigEntered(false);
+        return navigate("/create-room");
+      }
+      setRoomCode(time);
+    } catch (err) {
+      console.error("Error Creating Room", err);
+      toast.error("Error Creating Room");
+      setIsConfigEntered(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -143,7 +153,9 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
           <Card color="cyan" className="w-full">
             {!isConfigEntered ? (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-white text-center mb-6">Create Room</h2>
+                <h2 className="text-2xl font-bold text-white text-center mb-6">
+                  Create Room
+                </h2>
                 {configs.length > 0 ? (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {configs.map(
@@ -162,7 +174,8 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                 ) : (
                   <div className="text-center">
                     <p className="text-lg text-white mb-2">
-                      No configurations found. Go to the configurations page to make one.
+                      No configurations found. Go to the configurations page to
+                      make one.
                     </p>
                     <div className="w-full h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent my-4"></div>
                   </div>
@@ -175,7 +188,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                     className="w-full px-4 py-3 bg-black/30 border border-cyan-500/30 rounded-lg text-white placeholder-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                     placeholder="Enter Name of Set"
                     onKeyUp={(e) => {
-                      if (e.key === "Enter") handleConfigSubmit()
+                      if (e.key === "Enter") handleConfigSubmit();
                     }}
                   />
                   <button
@@ -194,7 +207,9 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
               </div>
             ) : !roomCode ? (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-white text-center mb-6">Room Settings</h2>
+                <h2 className="text-2xl font-bold text-white text-center mb-6">
+                  Room Settings
+                </h2>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-white">
@@ -216,11 +231,12 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                       type="text"
                       value={timeLimit}
                       onChange={(e) => {
-                        const value = e.target.value === "" ? "" : Number(e.target.value)
-                        setTimeLimit(value)
+                        const value =
+                          e.target.value === "" ? "" : Number(e.target.value);
+                        setTimeLimit(value);
                       }}
                       onBlur={() => {
-                        if (timeLimit === "") setTimeLimit(0)
+                        if (timeLimit === "") setTimeLimit(0);
                       }}
                       className="w-24 px-3 py-2 bg-black/30 border border-cyan-500/30 rounded-lg text-white text-right focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                     />
@@ -246,11 +262,12 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                       type="text"
                       value={thinkingTime}
                       onChange={(e) => {
-                        const value = e.target.value === "" ? "" : Number(e.target.value)
-                        setThinkingTime(value)
+                        const value =
+                          e.target.value === "" ? "" : Number(e.target.value);
+                        setThinkingTime(value);
                       }}
                       onBlur={() => {
-                        if (thinkingTime === "") setThinkingTime(0)
+                        if (thinkingTime === "") setThinkingTime(0);
                       }}
                       className="w-24 px-3 py-2 bg-black/30 border border-cyan-500/30 rounded-lg text-white text-right focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                     />
@@ -267,13 +284,44 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                         />
                         {hoveredInfo === "relisten" && (
                           <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
-                            Allow students to listen to the question again during thinking time
+                            Allow students to listen to the question again
+                            during thinking time
                           </div>
                         )}
                       </div>
                     </div>
                     <label className="switch">
-                      <input type="checkbox" checked={canRelisten} onChange={(e) => setCanRelisten(e.target.checked)} />
+                      <input
+                        type="checkbox"
+                        checked={canRelisten}
+                        onChange={(e) => setCanRelisten(e.target.checked)}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-white">
+                      Shuffle Question (s)
+                      <div className="relative ml-2">
+                        <FaInfoCircle
+                          className="text-cyan-400 cursor-help"
+                          onMouseEnter={() => setHoveredInfo("shuffle")}
+                          onMouseLeave={() => setHoveredInfo(null)}
+                        />
+                        {hoveredInfo === "shuffle" && (
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
+                            Give each student a different order of questions
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={shuffleQuestions}
+                        onChange={(e) => setShuffleQuestions(e.target.checked)}
+                      />
                       <span className="slider round"></span>
                     </label>
                   </div>
@@ -289,7 +337,8 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                         />
                         {hoveredInfo === "googleSignIn" && (
                           <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
-                            Require students to sign in with their school Google account to join the room
+                            Require students to sign in with their school Google
+                            account to join the room
                           </div>
                         )}
                       </div>
@@ -298,7 +347,9 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                       <input
                         type="checkbox"
                         checked={requireGoogleSignIn}
-                        onChange={(e) => setRequireGoogleSignIn(e.target.checked)}
+                        onChange={(e) =>
+                          setRequireGoogleSignIn(e.target.checked)
+                        }
                       />
                       <span className="slider round"></span>
                     </label>
@@ -316,7 +367,8 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                           />
                           {hoveredInfo === "emailEnding" && (
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
-                              Specify the email domain students must use to sign in (e.g., student.fuhsd.org)
+                              Specify the email domain students must use to sign
+                              in (e.g., student.fuhsd.org)
                             </div>
                           )}
                         </div>
@@ -351,9 +403,15 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
           </Card>
         </div>
       )}
-      {roomCode && isConfigEntered && <RoomPanel roomCode={roomCode} userId={userId} setRoomCodes={setRoomCode} />}
+      {roomCode && isConfigEntered && (
+        <RoomPanel
+          roomCode={roomCode}
+          userId={userId}
+          setRoomCodes={setRoomCode}
+        />
+      )}
     </div>
-  )
+  );
 }
 
-export default CreateRoom
+export default CreateRoom;
