@@ -507,37 +507,48 @@ export default function AudioRecorder({ code, participant, uuid }) {
   let interval = null;
 
   const startRecording = async () => {
-    setIsRecording(true);
-    setAudioURL(null);
+    const currentTime = Date.now()
+    setIsRecording(true)
+    setAudioURL(null)
 
     try {
       // Start both recordings
-      startAudioRecording();
+      startAudioRecording()
 
-      await sendStatus();
+      await sendStatus()
 
       interval = setInterval(() => {
         if (timer.current > 0) {
-          timer.current -= 1000;
-          setDisplayTime(formatTime(timer.current));
+          timer.current -= 1000
+          setDisplayTime(formatTime(timer.current))
         }
         if (timer.current <= 0) {
-          setDisplayTime("xx:xx");
-          clearInterval(interval);
+          setDisplayTime("xx:xx")
+          clearInterval(interval)
         }
-      }, 1000);
+      }, 1000)
 
-      await fetch(
-        `https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}`
-      );
     } catch (err) {
-      console.error("Error starting recording:", err);
-      setError(
-        "An error occurred while starting the recording. Please try again. Perhaps reload the page."
-      );
-      setIsError(true);
+      console.error("Error starting recording:", err)
+      setError("An error occurred while starting the recording. Please try again. Perhaps reload the page.")
+      setIsError(true)
     }
-  };
+    let success = false;
+    while (!success) {
+      try {
+      const response = await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}&time=${currentTime}`);
+      if (response.message) {
+        success = true;
+      } else {
+        console.error("Failed to notify server. Retrying...");
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+      }
+      } catch (error) {
+      console.error("Error notifying server. Retrying...", error);
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+      }
+    }
+  }
 
   const upload = async (formData) => {
     setError(
