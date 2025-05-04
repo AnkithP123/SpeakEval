@@ -8,9 +8,8 @@ import jsPDF from "jspdf";
 import { FaArrowUp, FaArrowDown, FaEnvelope, FaSpinner } from "react-icons/fa"; // Import arrow icons
 
 function TeacherPortalRoom({ initialRoomCode, pin }) {
-  const [roomCode, setRoomCode] = useState(
-    initialRoomCode || useParams().roomCode
-  ); // Track the room code as state
+  const { roomCode: paramRoomCode } = useParams();
+  const [roomCode, setRoomCode] = useState(initialRoomCode || paramRoomCode); // Track the room code as state
   const [participants, setParticipants] = useState([]);
   const [gradesReport, setGradesReport] = useState(""); // For storing the report data
   const [reportOption, setReportOption] = useState(""); // For managing the dropdown selection
@@ -59,6 +58,56 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     includeResponseLink: true,
     emailSubject: "SpeakEval Exam Result",
   });
+
+  // Store cheating data by question code
+  const [cheatersByQuestion, setCheatersByQuestion] = useState({});
+
+  // Fetch cheating data for a specific question code
+  const fetchCheatingData = async (questionCode) => {
+    try {
+      const response = await fetch(
+        `https://www.server.speakeval.org/get_cheaters?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImJhZm5hLm5pa3VuakBnbWFpbC5jb20iLCJ1c2VybmFtZSI6Ik5pa3VuaiIsImlhdCI6MTc0NTUxMzQ5NCwiZXhwIjoxNzQ4MTA1NDk0fQ.4yAJKjySEC8UbULgSyLr8iMrnl8KmNyH0frK8PKoiuQ&code=${questionCode}`
+      );
+      const data = await response.json();
+      if (data.cheaters) {
+        console.log(
+          `Cheating data loaded for question ${questionCode}:`,
+          data.cheaters
+        );
+        return data.cheaters;
+      } else {
+        console.log(`No cheating data found for question ${questionCode}`);
+        return [];
+      }
+    } catch (error) {
+      console.error(
+        `Error fetching cheating data for question ${questionCode}:`,
+        error
+      );
+      return [];
+    }
+  };
+
+  // Fetch cheating data for all questions
+  const fetchAllCheatingData = async () => {
+    if (!showByPerson) {
+      // In "Show by Question" mode, just fetch for the current question
+      const cheaters = await fetchCheatingData(roomCode);
+      setCheatersByQuestion({ [roomCode]: cheaters });
+    } else {
+      // In "Show by Person" mode, fetch for all questions
+      const allCheaters = {};
+      for (const qCode of questionData.questions) {
+        const cheaters = await fetchCheatingData(qCode);
+        allCheaters[qCode] = cheaters;
+      }
+      setCheatersByQuestion(allCheaters);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllCheatingData();
+  }, [roomCode, showByPerson, questionData.questions]);
 
   useEffect(() => {
     localStorage.setItem("descriptions", JSON.stringify(descriptions));
@@ -850,6 +899,12 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     }
   };
 
+  // Get cheating data for a specific participant and question
+  const getCheatingData = (participantName, questionCode) => {
+    const questionCheaters = cheatersByQuestion[questionCode] || [];
+    return questionCheaters.filter((c) => c.name === participantName);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900">
       {/* Display name modal */}
@@ -946,7 +1001,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 <option value="print">Print</option>
               </select>
               <button
-                onClick={() => setShowBulkEmailModal(true)}
+                onClick={async () => {
+                  setShowBulkEmailModal(true);
+                }}
                 className="px-4 py-2 bg-gradient-to-r from-sky-500 to-cyan-600 text-white rounded-lg shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50 transition-all duration-300 flex items-center"
                 disabled={isEmailSending}
               >
@@ -1030,6 +1087,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                               const questionData = participant.questionData
                                 ? participant.questionData.get(questionCode)
                                 : null;
+                              const cheatingData = getCheatingData(
+                                participant.name,
+                                questionCode
+                              );
                               return (
                                 <td key={qIndex} className="py-4 px-6">
                                   {questionData ? (
@@ -1049,6 +1110,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       onShowEmailModal={
                                         handleShowSingleEmailModal
                                       }
+                                      cheatingData={cheatingData}
                                     />
                                   ) : (
                                     <div className="text-gray-400">
@@ -1067,23 +1129,30 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sortParticipants().map((participant, index) => (
-                  <ProfileCard
-                    key={index}
-                    text={participant.transcription}
-                    rubric={rubric}
-                    rubric2={rubric2}
-                    audio={participant.audio}
-                    question={participant.questionText}
-                    questionBase64={participant.question}
-                    index={participant.index}
-                    name={participant.name}
-                    code={roomCode}
-                    onGradeUpdate={handleGradeUpdate}
-                    isRed={failedEmails.has(participant.name)}
-                    onShowEmailModal={handleShowSingleEmailModal}
-                  />
-                ))}
+                {sortParticipants().map((participant, index) => {
+                  const cheatingData = getCheatingData(
+                    participant.name,
+                    roomCode
+                  );
+                  return (
+                    <ProfileCard
+                      key={index}
+                      text={participant.transcription}
+                      rubric={rubric}
+                      rubric2={rubric2}
+                      audio={participant.audio}
+                      question={participant.questionText}
+                      questionBase64={participant.question}
+                      index={participant.index}
+                      name={participant.name}
+                      code={roomCode}
+                      onGradeUpdate={handleGradeUpdate}
+                      isRed={failedEmails.has(participant.name)}
+                      onShowEmailModal={handleShowSingleEmailModal}
+                      cheatingData={cheatingData}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>

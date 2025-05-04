@@ -11,6 +11,7 @@ import {
   FaClipboard,
   FaSpinner,
   FaEnvelope,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 
 function ProfileCard({
@@ -28,7 +29,8 @@ function ProfileCard({
   tokenProvided = false,
   participantPass = null,
   isRed = false,
-  onShowEmailModal = () => {}, // Add this new prop
+  onShowEmailModal = () => {},
+  cheatingData = [],
 }) {
   // States used in both modes
   const [completed, setCompleted] = useState(false);
@@ -51,6 +53,7 @@ function ProfileCard({
   const [baseEmailBody, setBaseEmailBody] = useState("");
   const [includeResponseLink, setIncludeResponseLink] = useState(false);
   const [emailSubject, setEmailSubject] = useState("SpeakEval Exam Result");
+  const [showInfractionsModal, setShowInfractionsModal] = useState(false);
 
   const [error, setError] = useState(false);
 
@@ -548,8 +551,54 @@ Teacher's Comment: ${comment}`
     );
   }
 
+  const hasCheated = cheatingData && cheatingData.length > 0;
+
+  // Group cheating incidents by type for the tooltip
+  const cheatingIncidents = hasCheated
+    ? cheatingData.reduce((acc, incident) => {
+        if (!acc[incident.message]) {
+          acc[incident.message] = 0;
+        }
+        acc[incident.message]++;
+        return acc;
+      }, {})
+    : {};
+
   return (
-    <>
+    <div className={`relative `}>
+      {/* Cheating indicator with integrated button */}
+      {hasCheated && (
+        <div className="absolute top-3 right-4 z-[1] pointer-events-none">
+          <div className="group pointer-events-auto">
+            <FaExclamationTriangle className="text-red-500 text-xl animate-pulse" />
+            <div className="absolute hidden group-hover:block right-0 w-64 p-2 mt-2 bg-black/90 text-white text-sm rounded-md border border-red-500 z-20">
+              <p className="font-bold text-red-400 mb-1">Cheating Detected:</p>
+              <ul className="list-disc pl-4">
+                {Object.entries(cheatingIncidents).map(
+                  ([type, count], index) => (
+                    <li key={index}>
+                      {type} ({count}x)
+                    </li>
+                  )
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Separate the button from the indicator to avoid blocking other elements */}
+      {hasCheated && (
+        <div className="absolute mt-[52px] top-[35px] right-8 z-[1] pointer-events-auto">
+          <button
+            onClick={() => setShowInfractionsModal(true)}
+            className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs rounded-md shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 flex items-center"
+          >
+            <FaInfoCircle className="mr-1.5" /> View Infractions
+          </button>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes shake {
           0% {
@@ -625,9 +674,11 @@ Teacher's Comment: ${comment}`
         >
           <div className="flex items-center w-full mb-4">
             <span
-              className={`mr-2 text-2xl font-bold truncate bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 ${
-                isRed ? "text-red-500" : ""
-              }`}
+              className={`mr-2 text-2xl font-bold truncate bg-clip-text text-transparent bg-gradient-to-r ${
+                hasCheated
+                  ? "from-red-400 to-red-600"
+                  : "from-cyan-400 to-blue-500"
+              } ${isRed ? "text-red-500" : ""}`}
             >
               {effectiveCustomName || effectiveName}
             </span>
@@ -770,8 +821,63 @@ Teacher's Comment: ${comment}`
           <audio id={`questionAudioPlayer-${effectiveName}-${effectiveCode}`} />
         </div>
       </div>
-      {/* Email modal is now rendered in the parent component */}
-    </>
+      {showInfractionsModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="relative bg-black/60 rounded-2xl p-8 shadow-xl border border-red-500/70 w-11/12 md:w-1/2 max-w-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-purple-500/10 pointer-events-none rounded-2xl" />
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white flex items-center">
+                <FaExclamationTriangle className="text-red-500 mr-2" />
+                Cheating Infractions: {name}
+              </h2>
+              <button
+                onClick={() => setShowInfractionsModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full text-left text-white">
+                <thead className="bg-gray-800 text-gray-300 text-sm uppercase">
+                  <tr>
+                    <th className="py-3 px-4">Type</th>
+                    <th className="py-3 px-4">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cheatingData.map((infraction, index) => (
+                    <tr
+                      key={index}
+                      className={
+                        index % 2 === 0 ? "bg-gray-800/50" : "bg-gray-900/50"
+                      }
+                    >
+                      <td className="py-3 px-4 border-t border-gray-700">
+                        {infraction.message}
+                      </td>
+                      <td className="py-3 px-4 border-t border-gray-700">
+                        {new Date(infraction.timestamp).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowInfractionsModal(false)}
+                className="px-6 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
