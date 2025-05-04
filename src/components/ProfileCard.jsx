@@ -34,7 +34,7 @@ function ProfileCard({
       {cheater && (
         <div className="relative group mr-2">
           <FaExclamationTriangle className="text-red-500" size={20} />
-          <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block bg-black text-white text-xs rounded px-2 py-1">
+          <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block bg-black text-white text-xs rounded px-2 py-1 w-64">
             Flagged by Anti-Cheat System for trying to exit the testing space
           </div>
         </div>

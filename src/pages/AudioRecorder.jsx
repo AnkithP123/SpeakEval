@@ -38,6 +38,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
   const [isWholeScreen, setIsWholeScreen] = useState(false);
   const [fullscreenViolationReported, setFullscreenViolationReported] =
     useState(false);
+  const [tabSwitchReported, setTabSwitchReported] = useState(false);
   const [screenStream, setScreenStream] = useState(null);
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
   let questionIndex;
@@ -216,6 +217,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
             console.log("Request sent successfully:", messageText);
             if (messageText === "Fullscreen exit detected") {
               setFullscreenViolationReported(true);
+            } else if (messageText === "Tab switch detected") {
+              setTabSwitchReported(true);
             }
             return response;
           })
@@ -253,7 +256,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
         document.hidden &&
         !finishedRecording &&
         isFullscreen &&
-        !fullscreenViolationReported
+        !tabSwitchReported
       ) {
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
         makePostRequestWithRetry("cheating_detected", "Tab switch detected");
@@ -316,6 +319,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
   }, [
     finishedRecording,
     fullscreenViolationReported,
+    tabSwitchReported,
     isFullscreen,
     code,
     participant,
