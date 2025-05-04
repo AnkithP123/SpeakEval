@@ -568,12 +568,12 @@ Teacher's Comment: ${comment}`
     <div className={`relative `}>
       {/* Cheating indicator with integrated button */}
       {hasCheated && (
-        <div className="absolute top-3 right-4 z-[1] pointer-events-none">
+        <div className="absolute top-3 right-4 z-[5] pointer-events-none">
           <div className="group pointer-events-auto">
             <FaExclamationTriangle className="text-red-500 text-xl animate-pulse" />
             <div className="absolute hidden group-hover:block right-0 w-64 p-2 mt-2 bg-black/90 text-white text-sm rounded-md border border-red-500 z-20">
               <p className="font-bold text-red-400 mb-1">Cheating Detected:</p>
-              <ul className="list-disc pl-4">
+              <ul className="list-disc pl-4 z-[5]">
                 {Object.entries(cheatingIncidents).map(
                   ([type, count], index) => (
                     <li key={index}>
