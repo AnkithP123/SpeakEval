@@ -565,40 +565,7 @@ Teacher's Comment: ${comment}`
     : {};
 
   return (
-    <div className={`relative `}>
-      {/* Cheating indicator with integrated button */}
-      {hasCheated && (
-        <div className="absolute top-3 right-[55px] z-[5] pointer-events-none">
-          <div className="group pointer-events-auto">
-            <FaExclamationTriangle className="text-red-500 text-xl animate-pulse" />
-            <div className="absolute hidden group-hover:block right-0 w-64 p-2 mt-2 bg-black/90 text-white text-sm rounded-md border border-red-500 z-20">
-              <p className="font-bold text-red-400 mb-1">Cheating Detected:</p>
-              <ul className="list-disc pl-4 z-[5]">
-                {Object.entries(cheatingIncidents).map(
-                  ([type, count], index) => (
-                    <li key={index}>
-                      {type} ({count}x)
-                    </li>
-                  )
-                )}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Separate the button from the indicator to avoid blocking other elements */}
-      {hasCheated && (
-        <div className="absolute mt-[52px] top-[35px] right-[75px] z-[1] pointer-events-auto">
-          <button
-            onClick={() => setShowInfractionsModal(true)}
-            className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs rounded-md shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 flex items-center"
-          >
-            <FaInfoCircle className="mr-1.5" /> View Infractions
-          </button>
-        </div>
-      )}
-
+    <div className="relative">
       <style jsx>{`
         @keyframes shake {
           0% {
@@ -672,6 +639,41 @@ Teacher's Comment: ${comment}`
             isRed ? "border-2 border-red-500" : ""
           } shadow-lg shadow-cyan-500/20 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/30`}
         >
+          {/* Cheating indicator and button - Now inside the card that gets the hover effect */}
+          {hasCheated && (
+            <>
+              {/* Cheating indicator */}
+              <div className="absolute top-[5px] right-2 z-11">
+                <div className="group">
+                  <FaExclamationTriangle className="text-red-500 text-xl animate-pulse" />
+                  <div className="absolute hidden group-hover:block right-0 w-64 p-2 mt-2 bg-black/90 text-white text-sm rounded-md border border-red-500 z-20">
+                    <p className="font-bold text-red-400 mb-1">
+                      Cheating Detected:
+                    </p>
+                    <ul className="list-disc pl-4">
+                      {Object.entries(cheatingIncidents).map(
+                        ([type, count], index) => (
+                          <li key={index}>
+                            {type} ({count}x)
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* View Infractions button */}
+              <div className="absolute top-20 right-6 z-10">
+                <button
+                  onClick={() => setShowInfractionsModal(true)}
+                  className="ml-2 px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs rounded-md shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 flex items-center"
+                >
+                  <FaInfoCircle className="mr-1.5" /> View Infractions
+                </button>
+              </div>
+            </>
+          )}
           <div className="flex items-center w-full mb-4">
             <span
               className={`mr-2 text-2xl font-bold truncate bg-clip-text text-transparent bg-gradient-to-r ${
@@ -823,7 +825,7 @@ Teacher's Comment: ${comment}`
       </div>
       {showInfractionsModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="relative bg-black/60 rounded-2xl p-8 shadow-xl border border-red-500/70 w-11/12 md:w-1/2 max-w-2xl">
+          <div className="relative bg-black/60k/60 rounded-2xl p-8 shadow-xl border border-red-500/70 w-11/12 md:w-1/2 max-w-2xl">
             <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-purple-500/10 pointer-events-none rounded-2xl" />
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-white flex items-center">
