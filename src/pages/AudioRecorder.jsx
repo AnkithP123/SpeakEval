@@ -537,7 +537,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
     while (!success) {
       try {
       const response = await fetch(`https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}&time=${currentTime}`);
-      if (response.message) {
+      const data = await response.json();
+      if (data.message) {
         success = true;
       } else {
         console.error("Failed to notify server. Retrying...");
