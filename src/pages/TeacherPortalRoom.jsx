@@ -66,7 +66,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   const fetchCheatingData = async (questionCode) => {
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/get_cheaters?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImJhZm5hLm5pa3VuakBnbWFpbC5jb20iLCJ1c2VybmFtZSI6Ik5pa3VuaiIsImlhdCI6MTc0NTUxMzQ5NCwiZXhwIjoxNzQ4MTA1NDk0fQ.4yAJKjySEC8UbULgSyLr8iMrnl8KmNyH0frK8PKoiuQ&code=${questionCode}`
+        `https://www.server.speakeval.org/get_cheaters?token=${localStorage.getItem(
+          "token"
+        )}&code=${questionCode}`
       );
       const data = await response.json();
       if (data.cheaters) {
