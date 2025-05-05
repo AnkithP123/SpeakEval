@@ -64,14 +64,7 @@ function BottomBar() {
                 <Mail className="h-5 w-5" />
               </a>
               <a
-                href="https://github.com/AnkithP123/SpeakEval"
-                className="text-cyan-200 hover:text-cyan-400 transition-all transform hover:scale-110"
-                aria-label="GitHub"
-              >
-                <Github className="h-5 w-5" />
-              </a>
-              <a
-                href="#discord-sever" //idk
+                href="https://discord.com/users/979875479425261580" //idk
                 className="text-cyan-200 hover:text-cyan-400 transition-all transform hover:scale-110"
                 aria-label="discord"
               >
