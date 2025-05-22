@@ -31,6 +31,8 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
         setUsername(tokenExpiredJson.decoded.username);
         navigate(redirect || "/");
       }
+    } else {
+      localStorage.removeItem("username");
     }
   }, [navigate, redirect, setUsername]);
 
