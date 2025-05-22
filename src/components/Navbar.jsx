@@ -21,6 +21,7 @@ const checkTokenExpiry = async () => {
     let tokenExpiredJson = await tokenExpired.json();
     if (tokenExpiredJson.expired) {
       localStorage.removeItem("username");
+      localStorage.removeItem("token");
       setUserName(null);
     } else {
       setUserName(tokenExpiredJson.decoded.username);
