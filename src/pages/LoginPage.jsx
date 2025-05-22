@@ -17,23 +17,34 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect");
 
-  useEffect(async () => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      let tokenExpired = await fetch(
-        "https://www.server.speakeval.org/expired-token?token=" + storedToken
-      );
-      let tokenExpiredJson = await tokenExpired.json();
-      if (tokenExpiredJson.expired) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("username");
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const response = await fetch(
+            "https://www.server.speakeval.org/expired-token?token=" + token
+          );
+          const tokenExpiredJson = await response.json();
+
+          if (tokenExpiredJson.expired) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("username");
+          } else {
+            setUsername(tokenExpiredJson.decoded.username);
+            navigate(redirect || "/");
+          }
+        } catch (error) {
+          console.error("Token check failed:", error);
+          localStorage.removeItem("token");
+          localStorage.removeItem("username");
+        }
       } else {
-        setUsername(tokenExpiredJson.decoded.username);
-        navigate(redirect || "/");
+        localStorage.removeItem("username");
       }
-    } else {
-      localStorage.removeItem("username");
-    }
+    };
+
+    checkToken();
   }, [navigate, redirect, setUsername]);
 
   const handleLogin = async (e) => {
