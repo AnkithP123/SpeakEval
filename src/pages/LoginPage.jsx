@@ -17,14 +17,20 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect");
 
-  useEffect(() => {
+  useEffect(async () => {
     const token = localStorage.getItem("token");
     if (token) {
-      const storedUsername = localStorage.getItem("username");
-      if (storedUsername) {
-        setUsername(storedUsername);
+      let tokenExpired = await fetch(
+        "https://www.server.speakeval.org/expired-token?token=" + storedToken
+      );
+      let tokenExpiredJson = await tokenExpired.json();
+      if (tokenExpiredJson.expired) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+      } else {
+        setUsername(tokenExpiredJson.decoded.username);
+        navigate(redirect || "/");
       }
-      navigate(redirect || "/");
     }
   }, [navigate, redirect, setUsername]);
 
