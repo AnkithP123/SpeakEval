@@ -33,7 +33,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
   const [allowRepeat, setAllowRepeat] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [finishedRecording, setFinishedRecording] = useState(false);
-  const [hasScreenPermission, setHasScreenPermission] = useState(false);
+  const [hasScreenPermission, setHasScreenPermission] = useState(true); // temporarily set to true
   const [hasPermissions, setHasPermissions] = useState(false);
   const [isWholeScreen, setIsWholeScreen] = useState(false);
   const [fullscreenViolationReported, setFullscreenViolationReported] =
