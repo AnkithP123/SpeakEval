@@ -467,6 +467,8 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server Error Response:", errorText);
         throw new Error(`Server error: ${response.status}`);
       }
 
@@ -477,52 +479,118 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
       if (result.audio && Array.isArray(result.audio) && result.complete) {
         const audioUrls = result.audio
           .map((audioDataFromServer, index) => {
-            // Renamed for clarity
             try {
-              // audioDataFromServer is expected to be an object like:
-              // { type: "Buffer", data: [byte1, byte2, ...] }
-              // as serialized by Node.js server when sending a Buffer in JSON.
-
+              // Validate audio data structure
               if (
                 !audioDataFromServer ||
                 !audioDataFromServer.data ||
-                !Array.isArray(audioDataFromServer.data)
+                !Array.isArray(audioDataFromServer.data) ||
+                !result.mimeType
               ) {
                 console.error(
-                  `Error processing audio ${index}: Invalid audio data structure received from server.`,
+                  `Error processing audio ${index}: Invalid audio data structure or missing mimeType received from server.`,
                   audioDataFromServer
                 );
                 return null;
               }
 
-              // Convert the array of byte values (audioDataFromServer.data) into a Uint8Array.
               const uint8Array = new Uint8Array(audioDataFromServer.data);
 
-              // Create a blob from the audio data.
-              // The server's code suggests WAV format (out-${Date.now()}.wav).
-              const blob = new Blob([uint8Array], { type: "audio/wav" });
+              // Check if the data is empty
+              if (uint8Array.length === 0) {
+                console.warn(`Audio data for item ${index} is empty.`);
+                return null;
+              }
 
-              // Create an object URL for the blob.
+              let blob;
+
+              // Handle PCM audio (L16) - convert to WAV
+              if (
+                result.mimeType.includes("audio/L16") ||
+                result.mimeType.includes("pcm")
+              ) {
+                // Create WAV header for PCM data
+                const wavHeader = createWavHeader(
+                  uint8Array.length,
+                  24000,
+                  16,
+                  1
+                ); // 24kHz, 16-bit, mono
+                const wavData = new Uint8Array(
+                  wavHeader.length + uint8Array.length
+                );
+                wavData.set(wavHeader, 0);
+                wavData.set(uint8Array, wavHeader.length);
+
+                blob = new Blob([wavData], { type: "audio/wav" });
+              } else {
+                // For other audio formats, use as-is
+                blob = new Blob([uint8Array], { type: result.mimeType });
+              }
+
+              // Create an object URL for the blob
               return URL.createObjectURL(blob);
             } catch (error) {
               console.error(`Error processing audio ${index}:`, error);
               return null;
             }
           })
-          .filter((url) => url !== null); // Filter out any failed conversions
+          .filter((url) => url !== null);
 
-        setQuestions((prevQuestions) => [...prevQuestions, ...audioUrls]);
-        toast.success(`Successfully added ${audioUrls.length} audio questions`);
-        closeImportModal();
+        console.log("Generated audio URLs:", audioUrls);
+
+        if (audioUrls.length > 0) {
+          setQuestions((prevQuestions) => [...prevQuestions, ...audioUrls]);
+          toast.success(
+            `Successfully added ${audioUrls.length} audio questions`
+          );
+          closeImportModal();
+        } else {
+          toast.warn("No valid audio data was generated or processed.");
+        }
       } else {
+        console.error(
+          "Invalid response format or incomplete processing:",
+          result
+        );
         throw new Error("Invalid response format or incomplete processing");
       }
     } catch (error) {
       console.error("Confirm error:", error);
-      toast.error(`Failed to process audio: ${error.message}`);
+      const errorMessage = error.message.includes("Server error")
+        ? error.message
+        : `Failed to process audio: ${error.message}`;
+      toast.error(errorMessage);
     } finally {
       setIsConfirming(false);
     }
+  };
+
+  // Helper function to create WAV header for PCM data
+  const createWavHeader = (dataLength, sampleRate, bitsPerSample, channels) => {
+    const header = new ArrayBuffer(44);
+    const view = new DataView(header);
+
+    // RIFF header
+    view.setUint32(0, 0x52494646, false); // "RIFF"
+    view.setUint32(4, 36 + dataLength, true); // File size - 8
+    view.setUint32(8, 0x57415645, false); // "WAVE"
+
+    // fmt chunk
+    view.setUint32(12, 0x666d7420, false); // "fmt "
+    view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+    view.setUint16(20, 1, true); // AudioFormat (1 for PCM)
+    view.setUint16(22, channels, true); // NumChannels
+    view.setUint32(24, sampleRate, true); // SampleRate
+    view.setUint32(28, (sampleRate * channels * bitsPerSample) / 8, true); // ByteRate
+    view.setUint16(32, (channels * bitsPerSample) / 8, true); // BlockAlign
+    view.setUint16(34, bitsPerSample, true); // BitsPerSample
+
+    // data chunk
+    view.setUint32(36, 0x64617461, false); // "data"
+    view.setUint32(40, dataLength, true); // Subchunk2Size
+
+    return new Uint8Array(header);
   };
 
   const closeImportModal = () => {
