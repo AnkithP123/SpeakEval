@@ -97,8 +97,14 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
   const [selectedConfig, setSelectedConfig] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [fileBase64, setFileBase64] = useState("");
   const navigate = useNavigate();
   const mediaRecorderRef = useRef(null);
+  const [processedStrings, setProcessedStrings] = useState(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
     if (!loggedIn) {
@@ -322,7 +328,167 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
   };
 
   const handleImportClick = () => {
-    console.log("Import clicked");
+    setShowImportModal(true);
+  };
+
+  const handleFileUpload = async (file) => {
+    // Check file type
+    const allowedTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+      "text/plain",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only PDF, DOCX, and TXT files are allowed");
+      return;
+    }
+
+    // Check file size (limit to 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    setUploadedFile(file);
+    setIsUploading(true);
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result;
+
+        try {
+          // Send to upload endpoint
+          const response = await fetch(
+            "https://www.server.speakeval.org/upload_file",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                file: base64,
+                type: file.type,
+                token: userId,
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+          }
+
+          const result = await response.json();
+          console.log(result);
+
+          if (Array.isArray(result)) {
+            setProcessedStrings(result);
+            toast.success("File processed successfully");
+          } else {
+            throw new Error("Invalid response format");
+          }
+        } catch (error) {
+          console.error("Upload error:", error);
+          toast.error(`Upload failed: ${error.message}`);
+          setUploadedFile(null);
+        } finally {
+          setIsUploading(false);
+        }
+      };
+
+      reader.onerror = () => {
+        toast.error("Error reading file");
+        setIsUploading(false);
+        setUploadedFile(null);
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("File processing error:", error);
+      toast.error("Error processing file");
+      setIsUploading(false);
+      setUploadedFile(null);
+    }
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileInputChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileUpload(e.target.files[0]);
+    }
+  };
+
+  const handleStringEdit = (index, value) => {
+    setProcessedStrings((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
+
+  const handleConfirmStrings = async () => {
+    setIsConfirming(true);
+
+    try {
+      const response = await fetch(
+        "https://www.server.speakeval.org/generate_audio",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            questionArr: processedStrings,
+            token: userId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(result);
+      toast.success("Changes confirmed successfully");
+      closeImportModal();
+    } catch (error) {
+      console.error("Confirm error:", error);
+      toast.error(`Failed to confirm changes: ${error.message}`);
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
+  const closeImportModal = () => {
+    setShowImportModal(false);
+    setUploadedFile(null);
+    setFileBase64("");
+    setDragActive(false);
+    setProcessedStrings(null);
+    setIsConfirming(false);
   };
 
   const handleConfigClick = (config) => {
@@ -805,6 +971,130 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
                 >
                   Close
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Import File Modal */}
+        {showImportModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+            <div className="relative overflow-hidden bg-black/60 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-md shadow-xl w-full max-w-lg mx-auto">
+              {/* Animated gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none" />
+
+              {/* Content */}
+              <div className="relative z-10">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+                    Import File
+                  </h2>
+                  <button
+                    onClick={closeImportModal}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <FaTimes size={20} />
+                  </button>
+                </div>
+
+                {!uploadedFile && !isUploading && !processedStrings && (
+                  <>
+                    {/* Drag and Drop Area */}
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
+                        dragActive
+                          ? "border-cyan-400 bg-cyan-500/10"
+                          : "border-gray-500 hover:border-cyan-500"
+                      }`}
+                      onDragEnter={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDragOver={handleDrag}
+                      onDrop={handleDrop}
+                    >
+                      <div className="space-y-4">
+                        <div className="text-4xl text-gray-400">📁</div>
+                        <div>
+                          <p className="text-white text-lg font-medium">
+                            Drag and drop your file here
+                          </p>
+                          <p className="text-gray-400 text-sm mt-2">
+                            Supported formats: PDF, DOCX, TXT (Max 10MB)
+                          </p>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept=".pdf,.docx,.doc,.txt"
+                            onChange={handleFileInputChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                          <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 font-medium">
+                            Choose File
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Uploading Animation */}
+                {isUploading && (
+                  <div className="text-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mb-4"></div>
+                    <p className="text-white text-lg font-medium">
+                      Processing your file...
+                    </p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      Please wait while we extract the content
+                    </p>
+                  </div>
+                )}
+
+                {/* Editable Strings Display */}
+                {processedStrings && (
+                  <div className="space-y-4">
+                    <p className="text-white text-lg font-medium">
+                      Edit the extracted content:
+                    </p>
+                    <div className="max-h-96 overflow-y-auto space-y-3">
+                      {processedStrings.map((str, index) => (
+                        <div key={index} className="space-y-2">
+                          <label className="text-gray-300 text-sm">
+                            Question {index + 1}:
+                          </label>
+                          <textarea
+                            value={str}
+                            onChange={(e) =>
+                              handleStringEdit(index, e.target.value)
+                            }
+                            className="w-full h-[50px] bg-black/30 border border-cyan-500/30 rounded p-3 text-white resize-none"
+                            rows={3}
+                            placeholder={`Content ${index + 1}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex space-x-4 mt-6">
+                      <button
+                        onClick={closeImportModal}
+                        className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleConfirmStrings}
+                        disabled={isConfirming}
+                        className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                          isConfirming
+                            ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                            : "bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
+                        }`}
+                      >
+                        {isConfirming ? "Confirming..." : "Confirm Changes"}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
