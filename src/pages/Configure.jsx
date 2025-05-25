@@ -189,7 +189,7 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
   const handleAddCategory = () => {
     setCategories((prevCategories) => [
       ...prevCategories,
-      { name: "", descriptions: Array(pointValues.length).fill("") },
+      { name: "", descriptions: Array(5).fill("") },
     ]);
   };
 
@@ -471,12 +471,55 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
       }
 
       const result = await response.json();
-      console.log(result);
-      toast.success("Changes confirmed successfully");
-      closeImportModal();
+      console.log("TTS Result:", result);
+
+      // Check if the response has the expected format
+      if (result.audio && Array.isArray(result.audio) && result.complete) {
+        const audioUrls = result.audio
+          .map((audioDataFromServer, index) => {
+            // Renamed for clarity
+            try {
+              // audioDataFromServer is expected to be an object like:
+              // { type: "Buffer", data: [byte1, byte2, ...] }
+              // as serialized by Node.js server when sending a Buffer in JSON.
+
+              if (
+                !audioDataFromServer ||
+                !audioDataFromServer.data ||
+                !Array.isArray(audioDataFromServer.data)
+              ) {
+                console.error(
+                  `Error processing audio ${index}: Invalid audio data structure received from server.`,
+                  audioDataFromServer
+                );
+                return null;
+              }
+
+              // Convert the array of byte values (audioDataFromServer.data) into a Uint8Array.
+              const uint8Array = new Uint8Array(audioDataFromServer.data);
+
+              // Create a blob from the audio data.
+              // The server's code suggests WAV format (out-${Date.now()}.wav).
+              const blob = new Blob([uint8Array], { type: "audio/wav" });
+
+              // Create an object URL for the blob.
+              return URL.createObjectURL(blob);
+            } catch (error) {
+              console.error(`Error processing audio ${index}:`, error);
+              return null;
+            }
+          })
+          .filter((url) => url !== null); // Filter out any failed conversions
+
+        setQuestions((prevQuestions) => [...prevQuestions, ...audioUrls]);
+        toast.success(`Successfully added ${audioUrls.length} audio questions`);
+        closeImportModal();
+      } else {
+        throw new Error("Invalid response format or incomplete processing");
+      }
     } catch (error) {
       console.error("Confirm error:", error);
-      toast.error(`Failed to confirm changes: ${error.message}`);
+      toast.error(`Failed to process audio: ${error.message}`);
     } finally {
       setIsConfirming(false);
     }
@@ -1049,6 +1092,19 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
                   </div>
                 )}
 
+                {/* TTS Processing Animation */}
+                {isConfirming && processedStrings && (
+                  <div className="text-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mb-4"></div>
+                    <p className="text-white text-lg font-medium">
+                      Converting text to speech...
+                    </p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      Generating audio for {processedStrings.length} questions
+                    </p>
+                  </div>
+                )}
+
                 {/* Editable Strings Display */}
                 {processedStrings && (
                   <div className="space-y-4">
@@ -1090,7 +1146,14 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
                             : "bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
                         }`}
                       >
-                        {isConfirming ? "Confirming..." : "Confirm Changes"}
+                        {isConfirming ? (
+                          <div className="flex items-center justify-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Generating Audio...</span>
+                          </div>
+                        ) : (
+                          "Confirm Changes"
+                        )}
                       </button>
                     </div>
                   </div>
