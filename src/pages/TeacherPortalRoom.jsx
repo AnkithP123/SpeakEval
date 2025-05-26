@@ -1,310 +1,328 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
-import ProfileCard from "../components/StatsCard";
-import { toast } from "react-toastify";
-import jsPDF from "jspdf";
-import { FaArrowUp, FaArrowDown, FaEnvelope, FaSpinner } from "react-icons/fa"; // Import arrow icons
+import { useState, useEffect, useRef } from "react"
+import { useParams } from "react-router-dom"
+import ProfileCard from "../components/StatsCard"
+import { toast } from "react-toastify"
+import jsPDF from "jspdf"
+import { FaArrowUp, FaArrowDown, FaEnvelope, FaSpinner } from "react-icons/fa"
 
 function TeacherPortalRoom({ initialRoomCode, pin }) {
-  const { roomCode: paramRoomCode } = useParams();
-  const [roomCode, setRoomCode] = useState(initialRoomCode || paramRoomCode); // Track the room code as state
-  const [participants, setParticipants] = useState([]);
-  const [gradesReport, setGradesReport] = useState(""); // For storing the report data
-  const [reportOption, setReportOption] = useState(""); // For managing the dropdown selection
-  const [sortOption, setSortOption] = useState("name"); // New state for sorting options
-  const [sortOrder, setSortOrder] = useState("asc"); // New state for sorting order (ascending/descending)
-  const [showByPerson, setShowByPerson] = useState(false); // New state for 'Show by person' toggle
-  const [allQuestions, setAllQuestions] = useState([]); // State to store all questions
-  const [showRubricModal, setShowRubricModal] = useState(false); // New state for rubric modal visibility
-  const [rubricContent, setRubricContent] = useState(null); // New state for rubric content
-  const [rubric, setRubric] = useState(""); // New state for rubric
-  const [rubric2, setRubric2] = useState(""); // New state for rubric2
-  const [pointValues, setPointValues] = useState([1, 2, 3, 4, 5]); // New state for point values
-  const [fetched, setFetched] = useState(false); // New state for fetched data
-  const [showDisplayNameInput, setShowDisplayNameInput] = useState(false);
-  const [displayName, setDisplayName] = useState("");
-  const [nextRoomCode, setNextRoomCode] = useState(null);
-  const [previousRoomCode, setPreviousRoomCode] = useState(null);
-  const [failedEmails, setFailedEmails] = useState(new Set());
-  const [categories, setCategories] = useState([]); // New state for categories
+  const { roomCode: paramRoomCode } = useParams()
+  const [roomCode, setRoomCode] = useState(initialRoomCode || paramRoomCode)
+  const [participants, setParticipants] = useState([])
+  const [gradesReport, setGradesReport] = useState("")
+  const [reportOption, setReportOption] = useState("")
+  const [sortOption, setSortOption] = useState("name")
+  const [sortOrder, setSortOrder] = useState("asc")
+  const [showByPerson, setShowByPerson] = useState(true)
+  const [allQuestions, setAllQuestions] = useState([])
+  const [showRubricModal, setShowRubricModal] = useState(false)
+  const [rubricContent, setRubricContent] = useState(null)
+  const [rubric, setRubric] = useState("")
+  const [rubric2, setRubric2] = useState("")
+  const [pointValues, setPointValues] = useState([1, 2, 3, 4, 5])
+  const [fetched, setFetched] = useState(false)
+  const [showDisplayNameInput, setShowDisplayNameInput] = useState(false)
+  const [displayName, setDisplayName] = useState("")
+  const [nextRoomCode, setNextRoomCode] = useState(null)
+  const [previousRoomCode, setPreviousRoomCode] = useState(null)
+  const [failedEmails, setFailedEmails] = useState(new Set())
+  const [categories, setCategories] = useState([])
   const [descriptions, setDescriptions] = useState(() => {
-    const savedDescriptions = localStorage.getItem("descriptions");
-    return savedDescriptions ? JSON.parse(savedDescriptions) : [];
-  }); // New state for descriptions
+    const savedDescriptions = localStorage.getItem("descriptions")
+    return savedDescriptions ? JSON.parse(savedDescriptions) : []
+  })
   const [questionData, setQuestionData] = useState({
     currentIndex: 1,
     totalQuestions: 0,
     questions: [],
-  });
-  const [isLoading, setIsLoading] = useState(false); // New loading state
-  const displayNameInputRef = useRef(null);
+  })
+  const [isLoading, setIsLoading] = useState(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(true) // New state for initial data loading
+  const [allQuestionData, setAllQuestionData] = useState(new Map()) // Store all fetched data
+  const displayNameInputRef = useRef(null)
 
-  const [showBulkEmailModal, setShowBulkEmailModal] = useState(false);
-  const [selectedQuestionsToEmail, setSelectedQuestionsToEmail] = useState(
-    new Set()
-  );
-  const [includeResponseLink, setIncludeResponseLink] = useState(true);
-  const [emailSubject, setEmailSubject] = useState("SpeakEval Exam Results");
-  const [isEmailSending, setIsEmailSending] = useState(false);
+  const [showBulkEmailModal, setShowBulkEmailModal] = useState(false)
+  const [selectedQuestionsToEmail, setSelectedQuestionsToEmail] = useState(new Set())
+  const [includeResponseLink, setIncludeResponseLink] = useState(true)
+  const [emailSubject, setEmailSubject] = useState("SpeakEval Exam Results")
+  const [isEmailSending, setIsEmailSending] = useState(false)
 
-  // New state for the single email modal
-  const [showSingleEmailModal, setShowSingleEmailModal] = useState(false);
+  const [showSingleEmailModal, setShowSingleEmailModal] = useState(false)
   const [singleEmailData, setSingleEmailData] = useState({
     studentName: "",
     emailBody: "",
     code: "",
     includeResponseLink: true,
     emailSubject: "SpeakEval Exam Result",
-  });
+  })
 
-  // Store cheating data by question code
-  const [cheatersByQuestion, setCheatersByQuestion] = useState({});
+  const [cheatersByQuestion, setCheatersByQuestion] = useState({})
 
   // Fetch cheating data for a specific question code
   const fetchCheatingData = async (questionCode) => {
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/get_cheaters?token=${localStorage.getItem(
-          "token"
-        )}&code=${questionCode}`
-      );
-      const data = await response.json();
+        `https://www.server.speakeval.org/get_cheaters?token=${localStorage.getItem("token")}&code=${questionCode}`,
+      )
+      const data = await response.json()
       if (data.cheaters) {
-        console.log(
-          `Cheating data loaded for question ${questionCode}:`,
-          data.cheaters
-        );
-        return data.cheaters;
+        console.log(`Cheating data loaded for question ${questionCode}:`, data.cheaters)
+        return data.cheaters
       } else {
-        console.log(`No cheating data found for question ${questionCode}`);
-        return [];
+        console.log(`No cheating data found for question ${questionCode}`)
+        return []
       }
     } catch (error) {
-      console.error(
-        `Error fetching cheating data for question ${questionCode}:`,
-        error
-      );
-      return [];
+      console.error(`Error fetching cheating data for question ${questionCode}:`, error)
+      return []
     }
-  };
+  }
 
   // Fetch cheating data for all questions
   const fetchAllCheatingData = async () => {
     if (!showByPerson) {
-      // In "Show by Question" mode, just fetch for the current question
-      const cheaters = await fetchCheatingData(roomCode);
-      setCheatersByQuestion({ [roomCode]: cheaters });
+      const cheaters = await fetchCheatingData(roomCode)
+      setCheatersByQuestion({ [roomCode]: cheaters })
     } else {
-      // In "Show by Person" mode, fetch for all questions
-      const allCheaters = {};
+      const allCheaters = {}
       for (const qCode of questionData.questions) {
-        const cheaters = await fetchCheatingData(qCode);
-        allCheaters[qCode] = cheaters;
+        const cheaters = await fetchCheatingData(qCode)
+        allCheaters[qCode] = cheaters
       }
-      setCheatersByQuestion(allCheaters);
+      setCheatersByQuestion(allCheaters)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchAllCheatingData();
-  }, [roomCode, showByPerson, questionData.questions]);
+    localStorage.setItem("descriptions", JSON.stringify(descriptions))
+  }, [descriptions])
 
+  // Main initialization effect - fetch all data upfront
   useEffect(() => {
-    localStorage.setItem("descriptions", JSON.stringify(descriptions));
-  }, [descriptions]);
+    const initializeAllData = async () => {
+      setIsInitialLoading(true)
+      try {
+        // First, get the total number of questions
+        await fetchTotalQuestions()
+      } catch (error) {
+        console.error("Error during initialization:", error)
+        toast.error("Error initializing data")
+      }
+    }
 
+    initializeAllData()
+  }, [roomCode])
+
+  // Fetch all question data after we know the total questions
   useEffect(() => {
-    const initializeRoom = async () => {
-      await fetchTotalQuestions();
-      await fetchParticipants();
-    };
-    initializeRoom();
-  }, [roomCode]);
+    if (questionData.questions.length > 0) {
+      fetchAllQuestionData()
+    }
+  }, [questionData])
+
+  // Fetch cheating data after question data is loaded
+  useEffect(() => {
+    if (questionData.questions.length > 0 && allQuestionData.size > 0) {
+      fetchAllCheatingData()
+    }
+  }, [questionData.questions, allQuestionData, showByPerson])
 
   useEffect(() => {
     if (showBulkEmailModal || showSingleEmailModal) {
-      document.body.style.overflow = "hidden";
+      document.body.style.overflow = "hidden"
     } else {
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = "auto"
     }
-  }, [showBulkEmailModal, showSingleEmailModal]);
+  }, [showBulkEmailModal, showSingleEmailModal])
 
   const fetchTotalQuestions = async () => {
     try {
-      const response = await fetch(
-        `https://www.server.speakeval.org/get_num_questions?code=${roomCode}`
-      );
-      const data = await response.json();
+      const response = await fetch(`https://www.server.speakeval.org/get_num_questions?code=${roomCode}`)
+      const data = await response.json()
 
       if (data.error) {
-        toast.error(data.error);
-        return;
+        toast.error(data.error)
+        return
       }
 
-      const baseCode = roomCode.toString().slice(0, -3);
+      const baseCode = roomCode.toString().slice(0, -3)
       const questions = Array.from({ length: data.questions }, (_, i) =>
-        Number.parseInt(baseCode + (i + 1).toString().padStart(3, "0"))
-      );
+        Number.parseInt(baseCode + (i + 1).toString().padStart(3, "0")),
+      )
 
       setQuestionData({
         currentIndex: Number.parseInt(roomCode.toString().slice(-3)),
         totalQuestions: data.questions,
         questions,
-      });
+      })
     } catch (error) {
-      console.error("Error fetching total questions:", error);
-      toast.error("Error fetching question information");
+      console.error("Error fetching total questions:", error)
+      toast.error("Error fetching question information")
     }
-  };
+  }
 
-  const fetchParticipants = async () => {
-    setIsLoading(true);
-    setFetched(false);
+  // New function to fetch all question data at once
+  const fetchAllQuestionData = async () => {
+    setIsInitialLoading(true)
+    const allData = new Map()
+
     try {
-      const response = await fetch(
-        `https://www.server.speakeval.org/downloadall?code=${roomCode}`,
-        {
-          headers: {
-            "Cache-Control": "no-store",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
+      console.log("Fetching data for all questions:", questionData.questions)
+
+      // Fetch data for all questions in parallel
+      const fetchPromises = questionData.questions.map(async (questionCode) => {
+        try {
+          const response = await fetch(`https://www.server.speakeval.org/downloadall?code=${questionCode}`, {
+            headers: {
+              "Cache-Control": "no-store",
+              Pragma: "no-cache",
+              Expires: "0",
+            },
+          })
+
+          const data = await response.json()
+
+          if (data.error) {
+            console.error(`Error fetching data for question ${questionCode}:`, data.error)
+            return { questionCode, data: null }
+          }
+
+          return { questionCode, data }
+        } catch (error) {
+          console.error(`Error fetching data for question ${questionCode}:`, error)
+          return { questionCode, data: null }
         }
-      );
+      })
 
-      const data = await response.json();
+      const results = await Promise.all(fetchPromises)
 
-      if (data.error) {
-        toast.error(data.error);
-        return;
+      // Process results and store in allData map
+      results.forEach(({ questionCode, data }) => {
+        if (data) {
+          allData.set(questionCode, data)
+        }
+      })
+
+      // Set rubric data from the first available question
+      const firstQuestionData = results.find((r) => r.data)?.data
+      if (firstQuestionData) {
+        let rubric2 = firstQuestionData.rubric
+
+        if (rubric2 && rubric2.includes("|^^^|")) {
+          const pointValues = rubric2.split("|^^^|")[0].split("|,,|").map(Number)
+          setPointValues(pointValues)
+          rubric2 = rubric2.split("|^^^|")[1]
+        }
+
+        setRubric(firstQuestionData.rubric)
+        setRubric2(rubric2)
+
+        // Parse categories and descriptions
+        const [newCategories, newDescriptions] = rubric2
+          ? [
+              rubric2.split("|;;|").map((element) => element.split("|:::|")[0]),
+              rubric2.split("|;;|").map((element) => element.split("|:::|")[1].replace("|,,,|", "\n\n")),
+            ]
+          : [[], []]
+
+        setCategories(newCategories)
+        setDescriptions(newDescriptions)
       }
 
-      let rubric2 = data.rubric;
+      setAllQuestionData(allData)
 
-      if (rubric2 && rubric2.includes("|^^^|")) {
-        const pointValues = rubric2.split("|^^^|")[0].split("|,,|").map(Number);
-        console.log(pointValues);
-        setPointValues(pointValues);
-        rubric2 = rubric2.split("|^^^|")[1];
-      }
-
-      setRubric(data.rubric);
-
-      setRubric2(rubric2);
-
-      // Parse categories and descriptions
-      const [newCategories, newDescriptions] = rubric2
-        ? [
-            rubric2.split("|;;|").map((element) => element.split("|:::|")[0]),
-            rubric2
-              .split("|;;|")
-              .map((element) =>
-                element.split("|:::|")[1].replace("|,,,|", "\n\n")
-              ),
-          ]
-        : [[], []];
-
-      console.log("Rubric2:", rubric2);
-
-      console.log("New Categories:", newCategories);
-
-      setCategories(newCategories);
-      setDescriptions(newDescriptions);
-
-      // Remove duplicates and sort by name
-      const uniqueParticipants = data.participants
-        .filter(
-          (participant, index, self) =>
-            index === self.findIndex((p) => p.name === participant.name)
-        )
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-      setParticipants(uniqueParticipants);
-      setFetched(true);
-      setIsLoading(false);
+      // Now organize participants based on current view mode
+      organizeParticipantData(allData)
     } catch (error) {
-      if (error.name === "AbortError") {
-        toast.error("Request timed out");
+      console.error("Error fetching all question data:", error)
+      toast.error("Error fetching question data")
+    } finally {
+      setIsInitialLoading(false)
+      setFetched(true)
+    }
+  }
+
+  // New function to organize participant data based on view mode
+  const organizeParticipantData = (allData) => {
+    if (showByPerson) {
+      // Organize data by participant for "Show by Person" view
+      const participantMap = new Map()
+
+      allData.forEach((questionData, questionCode) => {
+        if (questionData && questionData.participants) {
+          questionData.participants.forEach((participant) => {
+            if (!participantMap.has(participant.name)) {
+              participantMap.set(participant.name, {
+                name: participant.name,
+                questionData: new Map(),
+              })
+            }
+            participantMap.get(participant.name).questionData.set(questionCode, participant)
+          })
+        }
+      })
+
+      const organizedParticipants = Array.from(participantMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+
+      setParticipants(organizedParticipants)
+    } else {
+      // For "Show by Question" view, get data for the current room code
+      const currentQuestionData = allData.get(roomCode)
+      if (currentQuestionData && currentQuestionData.participants) {
+        const uniqueParticipants = currentQuestionData.participants
+          .filter((participant, index, self) => index === self.findIndex((p) => p.name === participant.name))
+          .sort((a, b) => a.name.localeCompare(b.name))
+
+        setParticipants(uniqueParticipants)
       } else {
-        console.error("Error fetching participants:", error);
-        toast.error("Error fetching participants");
+        setParticipants([])
       }
-      setFetched(true);
     }
-
-    setIsLoading(false);
-  };
-
-  const fetchQuestionData = async (questionCode) => {
-    try {
-      const response = await fetch(
-        `https://www.server.speakeval.org/downloadall?code=${questionCode}`
-      );
-      const data = await response.json();
-
-      if (data.error) {
-        toast.error(data.error);
-        return null;
-      }
-
-      return data;
-    } catch (error) {
-      console.error("Error fetching question data:", error);
-      toast.error("Error fetching question data");
-      return null;
-    }
-  };
+  }
 
   const handleNavigateQuestion = async (direction) => {
-    if (showByPerson) return;
+    if (showByPerson) return
 
-    setIsLoading(true);
-    const currentIndex = questionData.currentIndex;
+    const currentIndex = questionData.currentIndex
     const newIndex =
-      direction === "next"
-        ? Math.min(currentIndex + 1, questionData.totalQuestions)
-        : Math.max(currentIndex - 1, 1);
+      direction === "next" ? Math.min(currentIndex + 1, questionData.totalQuestions) : Math.max(currentIndex - 1, 1)
 
     if (newIndex !== currentIndex) {
-      const baseCode = roomCode.toString().slice(0, -3);
-      const newCode = Number.parseInt(
-        baseCode + newIndex.toString().padStart(3, "0")
-      );
-      setRoomCode(newCode);
-      await fetchParticipants();
+      const baseCode = roomCode.toString().slice(0, -3)
+      const newCode = Number.parseInt(baseCode + newIndex.toString().padStart(3, "0"))
+      setRoomCode(newCode)
+
+      // Update question data index
+      setQuestionData((prev) => ({
+        ...prev,
+        currentIndex: newIndex,
+      }))
+
+      // Use stored data instead of fetching - just reorganize for the new question
+      organizeParticipantData(allQuestionData)
     } else {
-      toast.warn(`No ${direction} question available.`);
+      toast.warn(`No ${direction} question available.`)
     }
-    setIsLoading(false);
-  };
+  }
 
   const toggleRubricModal = (rubric) => {
-    setRubricContent(rubric2);
-    setShowRubricModal(!showRubricModal);
-  };
+    setRubricContent(rubric2)
+    setShowRubricModal(!showRubricModal)
+  }
 
-  const handleGradeUpdate = (
-    participantName,
-    customName,
-    grades,
-    totalScore,
-    comment,
-    categories
-  ) => {
-    const baseCode = roomCode.toString().slice(0, -3);
+  const handleGradeUpdate = (participantName, customName, grades, totalScore, comment, categories) => {
+    const baseCode = roomCode.toString().slice(0, -3)
     const questionCode = customName
-      ? Number.parseInt(
-          baseCode + customName.substring(1).toString().padStart(3, "0")
-        )
-      : roomCode;
+      ? Number.parseInt(baseCode + customName.substring(1).toString().padStart(3, "0"))
+      : roomCode
 
     if (customName) {
       setParticipants((prevParticipants) => {
         return prevParticipants.map((participant) => {
           if (participant.name === participantName) {
-            const updatedQuestionData = new Map(participant.questionData);
+            const updatedQuestionData = new Map(participant.questionData)
             if (updatedQuestionData.has(questionCode)) {
               updatedQuestionData.set(questionCode, {
                 ...updatedQuestionData.get(questionCode),
@@ -312,16 +330,16 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 totalScore,
                 teacherComment: comment,
                 categories,
-              });
+              })
             }
             return {
               ...participant,
               questionData: updatedQuestionData,
-            };
+            }
           }
-          return participant;
-        });
-      });
+          return participant
+        })
+      })
     } else {
       setParticipants((prevParticipants) => {
         return prevParticipants.map((participant) => {
@@ -332,425 +350,334 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
               totalScore,
               teacherComment: comment,
               categories,
-            };
+            }
           }
-          return participant;
-        });
-      });
+          return participant
+        })
+      })
     }
-  };
+  }
 
   // Sorting logic based on selected option and order
   const sortParticipants = () => {
     if (sortOption === "none") {
-      return participants;
+      return participants
     }
     return [...participants].sort((a, b) => {
       if (sortOption === "name") {
         return sortOrder === "asc"
           ? a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-          : b.name.localeCompare(a.name, undefined, { sensitivity: "base" });
+          : b.name.localeCompare(a.name, undefined, { sensitivity: "base" })
       }
       if (sortOption === "lastName") {
         const aLastName =
           (a.name.split(" ").length > 1
             ? a.name.split(" ").slice(-1)[0] || ""
             : sortOrder === "asc"
-            ? "zzzzzz"
-            : "aaaaaa") +
+              ? "zzzzzz"
+              : "aaaaaa") +
           " " +
-          a.name;
+          a.name
         const bLastName =
           (b.name.split(" ").length > 1
             ? b.name.split(" ").slice(-1)[0] || ""
             : sortOrder === "asc"
-            ? "zzzzzz"
-            : "aaaaaa") +
+              ? "zzzzzz"
+              : "aaaaaa") +
           " " +
-          b.name;
-        console.log("A:", aLastName);
-        console.log("B:", bLastName);
+          b.name
 
         if (!aLastName && !bLastName) {
           return a.name.localeCompare(b.name, undefined, {
             sensitivity: "base",
-          });
+          })
         }
-        if (!aLastName) return 1;
-        if (!bLastName) return -1;
+        if (!aLastName) return 1
+        if (!bLastName) return -1
         return sortOrder === "asc"
           ? aLastName.localeCompare(bLastName, undefined, {
               sensitivity: "base",
             })
           : bLastName.localeCompare(aLastName, undefined, {
               sensitivity: "base",
-            });
+            })
       }
       if (sortOption === "totalScore") {
-        console.log("Sorting by total score:", a, b);
-        return sortOrder === "asc"
-          ? a.totalScore - b.totalScore
-          : b.totalScore - a.totalScore;
+        return sortOrder === "asc" ? a.totalScore - b.totalScore : b.totalScore - a.totalScore
       }
       if (sortOption.startsWith("category")) {
-        const categoryIndex = Number.parseInt(sortOption.split("-")[1], 10);
+        const categoryIndex = Number.parseInt(sortOption.split("-")[1], 10)
         return sortOrder === "asc"
           ? (a.grades[categoryIndex] || 0) - (b.grades[categoryIndex] || 0)
-          : (b.grades[categoryIndex] || 0) - (a.grades[categoryIndex] || 0);
+          : (b.grades[categoryIndex] || 0) - (a.grades[categoryIndex] || 0)
       }
-      return 0;
-    });
-  };
+      return 0
+    })
+  }
 
   // Toggle sort order (flip-flop between ascending and descending)
   const toggleSortOrder = () => {
-    setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"));
-  };
+    setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"))
+  }
 
   // Download or print report based on user choice
   const handleDownloadReport = (reportOption) => {
     if (!participants.length) {
-      toast.error("No data available for report generation.");
-      return;
+      toast.error("No data available for report generation.")
+      return
     }
 
-    const doc = new jsPDF();
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("Grading Report", 105, 15, null, null, "center");
-    doc.setFontSize(12);
+    const doc = new jsPDF()
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(16)
+    doc.text("Grading Report", 105, 15, null, null, "center")
+    doc.setFontSize(12)
 
-    let yOffset = 25;
+    let yOffset = 25
 
     // Calculate column widths
-    const maxNameLength = Math.max(...participants.map((p) => p.name.length));
-    const nameColumnWidth = Math.max(25, maxNameLength * 2.5);
-    const startX = 15;
-    const startY = yOffset;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const remainingWidth = pageWidth - startX - nameColumnWidth - 15; // 15 for right margin
-    const cellWidth =
-      remainingWidth / (showByPerson ? questionData.questions.length + 1 : 1);
-    const cellHeight = 10;
+    const maxNameLength = Math.max(...participants.map((p) => p.name.length))
+    const nameColumnWidth = Math.max(25, maxNameLength * 2.5)
+    const startX = 15
+    const startY = yOffset
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const remainingWidth = pageWidth - startX - nameColumnWidth - 15
+    const cellWidth = remainingWidth / (showByPerson ? questionData.questions.length + 1 : 1)
+    const cellHeight = 10
 
     // Draw header row with questions
-    doc.setFont("helvetica", "bold");
+    doc.setFont("helvetica", "bold")
     doc.text("Student", startX, startY + cellHeight / 2, {
       baseline: "middle",
-    });
+    })
     if (showByPerson) {
-      questionData.questions.forEach((_, qIndex) => {
-        doc.text(
-          `Q${qIndex + 1}`,
-          startX + nameColumnWidth + (qIndex + 1) * cellWidth,
-          startY + cellHeight / 2,
-          {
-            baseline: "middle",
-            align: "center",
-          }
-        );
-      });
-    } else {
-      doc.text(
-        `Q${questionData.currentIndex}`,
-        startX + nameColumnWidth + cellWidth,
-        startY + cellHeight / 2,
-        {
+      questionData.questions.forEach((_, qIndex) =>
+        doc.text(`Q${qIndex + 1}`, startX + nameColumnWidth + (qIndex + 1) * cellWidth, startY + cellHeight / 2, {
           baseline: "middle",
           align: "center",
-        }
-      );
+        }),
+      )
+    } else {
+      doc.text(`Q${questionData.currentIndex}`, startX + nameColumnWidth + cellWidth, startY + cellHeight / 2, {
+        baseline: "middle",
+        align: "center",
+      })
     }
     if (showByPerson)
       doc.text(
         "Total",
-        startX +
-          nameColumnWidth +
-          (showByPerson ? questionData.questions.length + 1 : 1) * cellWidth,
+        startX + nameColumnWidth + (showByPerson ? questionData.questions.length + 1 : 1) * cellWidth,
         startY + cellHeight / 2,
-        { baseline: "middle", align: "center" }
-      );
+        { baseline: "middle", align: "center" },
+      )
 
-    doc.setFont("helvetica", "plain");
+    doc.setFont("helvetica", "plain")
     // Draw participant rows with grades
     sortParticipants().forEach((participant, pIndex) => {
-      const y = startY + (pIndex + 1) * cellHeight;
+      const y = startY + (pIndex + 1) * cellHeight
       doc.text(participant.name, startX, y + cellHeight / 2, {
         baseline: "middle",
-      });
+      })
 
       if (showByPerson) {
-        let totalScore = 0;
+        let totalScore = 0
         questionData.questions.forEach((questionCode, qIndex) => {
-          const questionDataEntry = participant.questionData
-            ? participant.questionData.get(questionCode)
-            : null;
+          const questionDataEntry = participant.questionData ? participant.questionData.get(questionCode) : null
           const score =
-            questionDataEntry &&
-            (questionDataEntry.totalScore || questionDataEntry.totalScore == 0)
+            questionDataEntry && (questionDataEntry.totalScore || questionDataEntry.totalScore == 0)
               ? questionDataEntry.totalScore
-              : "N/A";
-          if (score > 0) totalScore += score;
-          doc.text(
-            `${score}`,
-            startX + nameColumnWidth + (qIndex + 1) * cellWidth,
-            y + cellHeight / 2,
-            {
-              baseline: "middle",
-              align: "center",
-            }
-          );
-        });
-        doc.text(
-          `${totalScore}`,
-          startX +
-            nameColumnWidth +
-            (showByPerson ? questionData.questions.length + 1 : 1) * cellWidth,
-          y + cellHeight / 2,
-          { baseline: "middle", align: "center" }
-        );
-      } else {
-        const score =
-          participant.totalScore || participant.totalScore == 0
-            ? participant.totalScore
-            : "N/A";
-        doc.text(
-          `${score}`,
-          startX + nameColumnWidth + cellWidth,
-          y + cellHeight / 2,
-          {
+              : "N/A"
+          if (score > 0) totalScore += score
+          doc.text(`${score}`, startX + nameColumnWidth + (qIndex + 1) * cellWidth, y + cellHeight / 2, {
             baseline: "middle",
             align: "center",
-          }
-        );
+          })
+        })
+        doc.text(
+          `${totalScore}`,
+          startX + nameColumnWidth + (showByPerson ? questionData.questions.length + 1 : 1) * cellWidth,
+          y + cellHeight / 2,
+          { baseline: "middle", align: "center" },
+        )
+      } else {
+        const score = participant.totalScore || participant.totalScore == 0 ? participant.totalScore : "N/A"
+        doc.text(`${score}`, startX + nameColumnWidth + cellWidth, y + cellHeight / 2, {
+          baseline: "middle",
+          align: "center",
+        })
       }
-    });
+    })
 
-    yOffset += (participants.length + 1) * cellHeight + 10;
+    yOffset += (participants.length + 1) * cellHeight + 10
 
     // Add a page break after the roster
-    doc.addPage();
-    yOffset = 25;
+    doc.addPage()
+    yOffset = 25
 
     if (showByPerson) {
       sortParticipants().forEach((participant, pIndex) => {
-        doc.setFont("helvetica", "bold");
-        doc.text(`Student: ${participant.name}`, 15, yOffset);
-        yOffset += 6;
+        doc.setFont("helvetica", "bold")
+        doc.text(`Student: ${participant.name}`, 15, yOffset)
+        yOffset += 6
 
         questionData.questions.forEach((questionCode, qIndex) => {
-          const questionDataEntry = participant.questionData
-            ? participant.questionData.get(questionCode)
-            : null;
+          const questionDataEntry = participant.questionData ? participant.questionData.get(questionCode) : null
 
           if (questionDataEntry) {
-            doc.setFont("helvetica", "normal");
-            const questionText = `Q${qIndex + 1}: ${
-              questionDataEntry.questionText || "No question available"
-            }`;
-            const wrappedQuestionText = doc.splitTextToSize(questionText, 180);
-            doc.text(wrappedQuestionText, 15, yOffset);
-            yOffset += wrappedQuestionText.length * 5;
+            doc.setFont("helvetica", "normal")
+            const questionText = `Q${qIndex + 1}: ${questionDataEntry.questionText || "No question available"}`
+            const wrappedQuestionText = doc.splitTextToSize(questionText, 180)
+            doc.text(wrappedQuestionText, 15, yOffset)
+            yOffset += wrappedQuestionText.length * 5
 
             const splitText = doc.splitTextToSize(
-              `Transcript: ${
-                questionDataEntry.transcription || "No response available"
-              }`,
-              180
-            );
-            doc.text(splitText, 15, yOffset);
-            yOffset += splitText.length * 5;
+              `Transcript: ${questionDataEntry.transcription || "No response available"}`,
+              180,
+            )
+            doc.text(splitText, 15, yOffset)
+            yOffset += splitText.length * 5
 
-            doc.text(
-              `Score: ${questionDataEntry.totalScore || "N/A"}`,
-              15,
-              yOffset
-            );
-            yOffset += 5;
+            doc.text(`Score: ${questionDataEntry.totalScore || "N/A"}`, 15, yOffset)
+            yOffset += 5
 
             categories.forEach((category, cIndex) => {
-              const score = questionDataEntry.grades?.[cIndex] ?? "N/A";
-              doc.text(`${category}: ${score}`, 20, yOffset);
-              yOffset += 4;
-            });
+              const score = questionDataEntry.grades?.[cIndex] ?? "N/A"
+              doc.text(`${category}: ${score}`, 20, yOffset)
+              yOffset += 4
+            })
 
-            doc.text(
-              `Teacher Comment: ${
-                questionDataEntry.teacherComment || "No comment"
-              }`,
-              15,
-              yOffset
-            );
-            yOffset += 6;
+            doc.text(`Teacher Comment: ${questionDataEntry.teacherComment || "No comment"}`, 15, yOffset)
+            yOffset += 6
 
             if (yOffset > 270) {
-              doc.addPage();
-              yOffset = 25;
+              doc.addPage()
+              yOffset = 25
             }
           }
-        });
+        })
 
         if (pIndex < participants.length - 1) {
-          yOffset += 25;
+          yOffset += 25
           if (yOffset > 270) {
-            doc.addPage();
-            yOffset = 25;
+            doc.addPage()
+            yOffset = 25
           }
         }
-      });
+      })
     } else {
-      doc.setFont("helvetica", "bold");
-      doc.text(`Question #${questionData.currentIndex}`, 15, yOffset);
-      yOffset += 8;
+      doc.setFont("helvetica", "bold")
+      doc.text(`Question #${questionData.currentIndex}`, 15, yOffset)
+      yOffset += 8
 
       sortParticipants().forEach((participant, index) => {
-        doc.setFont("helvetica", "bold");
-        doc.text(`Student: ${participant.name}`, 15, yOffset);
-        yOffset += 6;
+        doc.setFont("helvetica", "bold")
+        doc.text(`Student: ${participant.name}`, 15, yOffset)
+        yOffset += 6
 
-        doc.setFont("helvetica", "normal");
+        doc.setFont("helvetica", "normal")
         doc.text(
-          `Score: ${
-            participant.totalScore || participant.totalScore == 0
-              ? participant.totalScore
-              : "N/A"
-          }`,
+          `Score: ${participant.totalScore || participant.totalScore == 0 ? participant.totalScore : "N/A"}`,
           15,
-          yOffset
-        );
-        yOffset += 5;
+          yOffset,
+        )
+        yOffset += 5
 
         categories.forEach((category, cIndex) => {
-          const score = participant.grades?.[cIndex] ?? "N/A";
-          doc.text(`${category}: ${score}`, 20, yOffset);
-          yOffset += 4;
-        });
+          const score = participant.grades?.[cIndex] ?? "N/A"
+          doc.text(`${category}: ${score}`, 20, yOffset)
+          yOffset += 4
+        })
 
-        doc.text(
-          `Teacher Comment: ${participant.teacherComment || "No comment"}`,
-          15,
-          yOffset
-        );
-        yOffset += 6;
+        doc.text(`Teacher Comment: ${participant.teacherComment || "No comment"}`, 15, yOffset)
+        yOffset += 6
 
         if (yOffset > 270 && index < participants.length - 1) {
-          doc.addPage();
-          yOffset = 25;
+          doc.addPage()
+          yOffset = 25
         }
-      });
+      })
     }
 
     if (reportOption === "download") {
-      doc.save("grading_report.pdf");
+      doc.save("grading_report.pdf")
     } else if (reportOption === "print") {
-      doc.autoPrint();
-      window.open(doc.output("bloburl"), "_blank");
+      doc.autoPrint()
+      window.open(doc.output("bloburl"), "_blank")
     } else {
-      toast.error('Invalid choice. Please select "download" or "print".');
+      toast.error('Invalid choice. Please select "download" or "print".')
     }
-  };
-
-  const fetchNextPrevious = async (code) => {
-    try {
-      const response = await fetch(
-        `https://www.server.speakeval.org/get_next_previous?code=${code}`
-      );
-      const data = await response.json();
-      if (data.error) {
-        toast.error(data.error);
-        return {};
-      }
-      setNextRoomCode(data.next);
-      setPreviousRoomCode(data.previous);
-    } catch (error) {
-      console.error("Error fetching next/previous question:", error);
-      toast.error("Could not fetch next or previous question.");
-      return {};
-    }
-  };
+  }
 
   const handleSendBulkEmail = async () => {
     if (selectedQuestionsToEmail.size === 0) {
-      toast.error("Please select at least one question to send");
-      return;
+      toast.error("Please select at least one question to send")
+      return
     }
 
     try {
-      setIsEmailSending(true);
-      setFailedEmails(new Set());
-      const baseExamCode = roomCode.toString().slice(0, -3);
+      setIsEmailSending(true)
+      setFailedEmails(new Set())
+      const baseExamCode = roomCode.toString().slice(0, -3)
 
       const emailData = participants.map((participant) => ({
         studentName: participant.name,
         grades: Array.from(selectedQuestionsToEmail).map((questionCode) => {
-          let gradeData;
+          let gradeData
           if (showByPerson) {
-            const questionData = participant.questionData?.get(
-              Number.parseInt(questionCode)
-            );
+            const questionData = participant.questionData?.get(Number.parseInt(questionCode))
             if (questionData) {
               gradeData = {
-                questionNumber: Number.parseInt(
-                  questionCode.toString().slice(-3)
-                ),
+                questionNumber: Number.parseInt(questionCode.toString().slice(-3)),
                 question: questionData.questionText || "Question not available",
-                transcription:
-                  questionData.transcription || "No transcription available",
+                transcription: questionData.transcription || "No transcription available",
                 totalScore: questionData.totalScore,
                 grades: questionData.grades,
                 categories: questionData.categories,
                 teacherComment: questionData.teacherComment,
-              };
+              }
             }
           } else {
             gradeData = {
               questionNumber: questionData.currentIndex,
               question: participant.questionText || "Question not available",
-              transcription:
-                participant.transcription || "No transcription available",
+              transcription: participant.transcription || "No transcription available",
               totalScore: participant.totalScore,
               grades: participant.grades,
               categories: participant.categories,
               teacherComment: participant.teacherComment,
-            };
+            }
           }
-          return gradeData;
+          return gradeData
         }),
-      }));
+      }))
 
-      const response = await fetch(
-        "https://www.server.speakeval.org/send_bulk_email",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            examCode: baseExamCode,
-            emailData,
-            includeResponseLink,
-            subject: emailSubject,
-            pin: localStorage.getItem("token"),
-          }),
-        }
-      );
+      const response = await fetch("https://www.server.speakeval.org/send_bulk_email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          examCode: baseExamCode,
+          emailData,
+          includeResponseLink,
+          subject: emailSubject,
+          pin: localStorage.getItem("token"),
+        }),
+      })
 
-      const data = await response.json();
+      const data = await response.json()
       if (data.error) {
-        throw new Error(data.error);
+        throw new Error(data.error)
       }
 
       // Handle failed emails
       if (data.results?.failed?.length > 0) {
-        const failedStudents = new Set(
-          data.results.failed.map((f) => f.student)
-        );
+        const failedStudents = new Set(data.results.failed.map((f) => f.student))
 
         setFailedEmails((prevFailedEmails) => {
-          const newFailedEmails = new Set(failedStudents);
-          console.log("Updating failed emails set:", newFailedEmails);
-          return newFailedEmails;
-        });
+          const newFailedEmails = new Set(failedStudents)
+          return newFailedEmails
+        })
 
         const errorToast = (
           <div>
@@ -763,44 +690,38 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
               ))}
             </div>
           </div>
-        );
+        )
 
         toast.error(errorToast, {
           autoClose: 5000,
-          onOpen: () => {
-            console.log("Current failed emails after update:", failedStudents);
-          },
-        });
+        })
       }
 
       if (data.summary.successful > 0) {
-        toast.success(`Successfully sent ${data.summary.successful} emails`);
+        toast.success(`Successfully sent ${data.summary.successful} emails`)
       }
 
-      // Show warning if no emails were sent
       if (data.summary.successful === 0 && data.summary.failed === 0) {
-        toast.warning("No emails were sent - no valid recipients found");
+        toast.warning("No emails were sent - no valid recipients found")
       }
 
       if (data.summary.failed === 0) {
-        setShowBulkEmailModal(false);
-        setSelectedQuestionsToEmail(new Set());
+        setShowBulkEmailModal(false)
+        setSelectedQuestionsToEmail(new Set())
       }
     } catch (error) {
-      console.error("Error sending emails:", error);
-      toast.error(`Failed to send emails: ${error.message}`);
+      console.error("Error sending emails:", error)
+      toast.error(`Failed to send emails: ${error.message}`)
     } finally {
-      setIsEmailSending(false);
+      setIsEmailSending(false)
     }
-  };
+  }
 
-  // New function to handle showing the single email modal
   const handleShowSingleEmailModal = (emailData) => {
-    setSingleEmailData(emailData);
-    setShowSingleEmailModal(true);
-  };
+    setSingleEmailData(emailData)
+    setShowSingleEmailModal(true)
+  }
 
-  // New function to handle sending a single email
   const handleSendSingleEmail = async () => {
     try {
       const queryParams = new URLSearchParams({
@@ -809,103 +730,90 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         participant: singleEmailData.studentName,
         subject: singleEmailData.emailSubject,
         pin: localStorage.getItem("token"),
-      });
-      queryParams.append("link", singleEmailData.includeResponseLink);
-      const response = await fetch(
-        `https://www.server.speakeval.org/send_email?${queryParams.toString()}`
-      );
-      const resp = await response.json();
+      })
+      queryParams.append("link", singleEmailData.includeResponseLink)
+      const response = await fetch(`https://www.server.speakeval.org/send_email?${queryParams.toString()}`)
+      const resp = await response.json()
       if (resp.success) {
-        toast.success("Email sent successfully");
-        setShowSingleEmailModal(false);
-        // Update failed emails set to remove this student if it was previously failed
+        toast.success("Email sent successfully")
+        setShowSingleEmailModal(false)
         setFailedEmails((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(singleEmailData.studentName);
-          return newSet;
-        });
+          const newSet = new Set(prev)
+          newSet.delete(singleEmailData.studentName)
+          return newSet
+        })
       } else {
-        toast.error(resp.error || "Failed to send email");
+        toast.error(resp.error || "Failed to send email")
       }
     } catch (error) {
-      console.error("Error sending email:", error);
-      toast.error("Error sending email");
+      console.error("Error sending email:", error)
+      toast.error("Error sending email")
     }
-  };
+  }
 
-  const handleNextQuestion = () => handleNavigateQuestion("next");
-  const handlePreviousQuestion = () => handleNavigateQuestion("previous");
+  const handleNextQuestion = () => handleNavigateQuestion("next")
+  const handlePreviousQuestion = () => handleNavigateQuestion("previous")
 
-  const toggleViewMode = async () => {
-    setIsLoading(true);
-    const newShowByPerson = !showByPerson;
-    setShowByPerson(newShowByPerson);
+  const toggleViewMode = () => {
+    const newShowByPerson = !showByPerson
+    setShowByPerson(newShowByPerson)
 
     if (newShowByPerson) {
-      const baseCode = roomCode.toString().slice(0, -3);
-      const firstQuestionCode = Number.parseInt(baseCode + "001");
-      setRoomCode(firstQuestionCode);
-
-      // Fetch data for all questions
-      const allData = await Promise.all(
-        questionData.questions.map(async (qCode) => {
-          const data = await fetchQuestionData(qCode);
-          return {
-            code: qCode,
-            participants: data ? data.participants : [],
-          };
-        })
-      );
-
-      // Organize data by participant
-      const participantMap = new Map();
-      allData.forEach(({ code, participants }) => {
-        participants.forEach((participant) => {
-          if (!participantMap.has(participant.name)) {
-            participantMap.set(participant.name, {
-              name: participant.name,
-              questionData: new Map(),
-            });
-          }
-          participantMap
-            .get(participant.name)
-            .questionData.set(code, participant);
-        });
-      });
-
-      setParticipants(Array.from(participantMap.values()));
-    } else {
-      await fetchParticipants();
+      const baseCode = roomCode.toString().slice(0, -3)
+      const firstQuestionCode = Number.parseInt(baseCode + "001")
+      setRoomCode(firstQuestionCode)
+      setQuestionData((prev) => ({
+        ...prev,
+        currentIndex: 1,
+      }))
     }
 
-    setIsLoading(false);
-
-    console.log("participants: ", participants);
-  };
+    // Reorganize participant data based on new view mode
+    organizeParticipantData(allQuestionData)
+  }
 
   const handleDisplayNameSubmit = async () => {
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/add_display?code=${roomCode}&pin=${pin}&display=${displayName}`
-      );
-      const data = await response.json();
+        `https://www.server.speakeval.org/add_display?code=${roomCode}&pin=${pin}&display=${displayName}`,
+      )
+      const data = await response.json()
       if (data.error) {
-        toast.error(data.error);
+        toast.error(data.error)
       } else {
-        toast.success(data.message ? data.message : "Display name was set");
-        setShowDisplayNameInput(false);
+        toast.success(data.message ? data.message : "Display name was set")
+        setShowDisplayNameInput(false)
       }
     } catch (error) {
-      console.error("Error setting display name:", error);
-      toast.error("Error setting display name");
+      console.error("Error setting display name:", error)
+      toast.error("Error setting display name")
     }
-  };
+  }
 
-  // Get cheating data for a specific participant and question
   const getCheatingData = (participantName, questionCode) => {
-    const questionCheaters = cheatersByQuestion[questionCode] || [];
-    return questionCheaters.filter((c) => c.name === participantName);
-  };
+    const questionCheaters = cheatersByQuestion[questionCode] || []
+    return questionCheaters.filter((c) => c.name === participantName)
+  }
+
+  // Show loading screen while initial data is being fetched
+  if (isInitialLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <div
+              className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-500 rounded-full animate-spin mx-auto"
+              style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
+            ></div>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Loading Exam Data</h2>
+          <p className="text-gray-300">Fetching all questions and student responses...</p>
+          <div className="mt-4 text-sm text-gray-400">This may take a moment for exams with many questions</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900">
@@ -917,9 +825,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             className="relative overflow-hidden bg-black/60 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-md shadow-xl"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none" />
-            <h2 className="text-2xl font-bold mb-6 text-center text-white">
-              Rename this exam
-            </h2>
+            <h2 className="text-2xl font-bold mb-6 text-center text-white">Rename this exam</h2>
             <input
               type="text"
               value={displayName}
@@ -930,8 +836,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             <div className="flex justify-center space-x-4 mt-6">
               <button
                 onClick={async () => {
-                  await handleDisplayNameSubmit();
-                  setShowDisplayNameInput(false);
+                  await handleDisplayNameSubmit()
+                  setShowDisplayNameInput(false)
                 }}
                 className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300"
               >
@@ -949,10 +855,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       )}
 
       {!showDisplayNameInput && (
-        <div
-          className="relative flex flex-col items-center min-h-screen"
-          style={{ fontFamily: "Montserrat" }}
-        >
+        <div className="relative flex flex-col items-center min-h-screen" style={{ fontFamily: "Montserrat" }}>
           {/* Header controls */}
           <div className="w-full px-6 py-4 bg-black/40 backdrop-blur-md border-b border-cyan-500/30">
             <div className="max-w-7xl mx-auto flex flex-wrap justify-center items-center gap-4">
@@ -995,7 +898,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 cursor-pointer"
                 value={reportOption}
                 onChange={(e) => {
-                  handleDownloadReport(e.target.value);
+                  handleDownloadReport(e.target.value)
                 }}
               >
                 <option value="">Grade Report</option>
@@ -1004,7 +907,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
               </select>
               <button
                 onClick={async () => {
-                  setShowBulkEmailModal(true);
+                  setShowBulkEmailModal(true)
                 }}
                 className="px-4 py-2 bg-gradient-to-r from-sky-500 to-cyan-600 text-white rounded-lg shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50 transition-all duration-300 flex items-center"
                 disabled={isEmailSending}
@@ -1018,8 +921,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           {/* Question navigation */}
           <div className="w-full text-center py-12">
             <h1 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600">
-              Grading: {roomCode.toString().slice(0, -3)} (Question #
-              {questionData.currentIndex})
+              Grading: {roomCode.toString().slice(0, -3)} (Question #{questionData.currentIndex})
             </h1>
             {!showByPerson && (
               <div className="flex justify-center space-x-4">
@@ -1036,9 +938,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 </button>
                 <button
                   onClick={() => handleNavigateQuestion("next")}
-                  disabled={
-                    questionData.currentIndex === questionData.totalQuestions
-                  }
+                  disabled={questionData.currentIndex === questionData.totalQuestions}
                   className={`px-6 py-2 rounded-lg shadow-lg transition-all duration-300 ${
                     questionData.currentIndex === questionData.totalQuestions
                       ? "bg-gray-600/50 cursor-not-allowed"
@@ -1055,9 +955,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           <div className="w-full px-6 pb-12">
             {isLoading ? (
               <div className="flex justify-center items-center min-h-[200px]">
-                <div className="text-xl font-semibold text-white">
-                  Loading...
-                </div>
+                <div className="text-xl font-semibold text-white">Loading...</div>
               </div>
             ) : showByPerson ? (
               <div className="overflow-x-auto">
@@ -1065,14 +963,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                   <table className="min-w-full">
                     <thead>
                       <tr className="border-b border-cyan-500/30">
-                        <th className="py-4 px-6 text-left text-sm font-semibold text-white">
-                          Student
-                        </th>
+                        <th className="py-4 px-6 text-left text-sm font-semibold text-white">Student</th>
                         {questionData.questions.map((_, index) => (
-                          <th
-                            key={index}
-                            className="py-4 px-6 text-left text-sm font-semibold text-white"
-                          >
+                          <th key={index} className="py-4 px-6 text-left text-sm font-semibold text-white">
                             Question {index + 1}
                           </th>
                         ))}
@@ -1081,48 +974,37 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                     <tbody>
                       {sortParticipants().map((participant, index) => (
                         <tr key={index} className="border-b border-cyan-500/10">
-                          <td className="py-4 px-6 text-white align-top">
-                            {participant.name}
-                          </td>
-                          {questionData.questions.map(
-                            (questionCode, qIndex) => {
-                              const questionData = participant.questionData
-                                ? participant.questionData.get(questionCode)
-                                : null;
-                              const cheatingData = getCheatingData(
-                                participant.name,
-                                questionCode
-                              );
-                              return (
-                                <td key={qIndex} className="py-4 px-6">
-                                  {questionData ? (
-                                    <ProfileCard
-                                      text={questionData.transcription}
-                                      rubric={rubric}
-                                      rubric2={rubric2}
-                                      audio={questionData.audio}
-                                      question={questionData.questionText}
-                                      questionBase64={questionData.question}
-                                      index={questionData.index}
-                                      name={participant.name}
-                                      code={questionCode}
-                                      onGradeUpdate={handleGradeUpdate}
-                                      customName={`Q${qIndex + 1}`}
-                                      isRed={failedEmails.has(participant.name)}
-                                      onShowEmailModal={
-                                        handleShowSingleEmailModal
-                                      }
-                                      cheatingData={cheatingData}
-                                    />
-                                  ) : (
-                                    <div className="text-gray-400">
-                                      No submission
-                                    </div>
-                                  )}
-                                </td>
-                              );
-                            }
-                          )}
+                          <td className="py-4 px-6 text-white align-top">{participant.name}</td>
+                          {questionData.questions.map((questionCode, qIndex) => {
+                            const questionData2 = participant.questionData
+                              ? participant.questionData.get(questionCode)
+                              : null
+                            const cheatingData = getCheatingData(participant.name, questionCode)
+                            return (
+                              <td key={qIndex} className="py-4 px-6">
+                                {questionData2 ? (
+                                  <ProfileCard
+                                    text={questionData2.transcription}
+                                    rubric={rubric}
+                                    rubric2={rubric2}
+                                    audio={questionData2.audio}
+                                    question={questionData2.questionText}
+                                    questionBase64={questionData2.question}
+                                    index={questionData2.index}
+                                    name={participant.name}
+                                    code={questionCode}
+                                    onGradeUpdate={handleGradeUpdate}
+                                    customName={`Q${qIndex + 1}`}
+                                    isRed={failedEmails.has(participant.name)}
+                                    onShowEmailModal={handleShowSingleEmailModal}
+                                    cheatingData={cheatingData}
+                                  />
+                                ) : (
+                                  <div className="text-gray-400">No submission</div>
+                                )}
+                              </td>
+                            )
+                          })}
                         </tr>
                       ))}
                     </tbody>
@@ -1132,10 +1014,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sortParticipants().map((participant, index) => {
-                  const cheatingData = getCheatingData(
-                    participant.name,
-                    roomCode
-                  );
+                  const cheatingData = getCheatingData(participant.name, roomCode)
                   return (
                     <ProfileCard
                       key={index}
@@ -1153,7 +1032,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                       onShowEmailModal={handleShowSingleEmailModal}
                       cheatingData={cheatingData}
                     />
-                  );
+                  )
                 })}
               </div>
             )}
@@ -1166,22 +1045,15 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
           <div className="relative bg-black/60 rounded-2xl p-8 shadow-xl border border-cyan-500/30 w-[90%] max-h-[90vh] overflow-y-auto">
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none rounded-2xl" />
-            <h2 className="text-2xl font-bold mb-6 text-white relative z-10">
-              Rubric
-            </h2>
+            <h2 className="text-2xl font-bold mb-6 text-white relative z-10">Rubric</h2>
             {participants.length > 0 ? (
               <div className="relative z-10 overflow-x-auto">
                 <table className="min-w-full border border-cyan-500/30 rounded-lg overflow-hidden">
                   <thead>
                     <tr className="bg-cyan-500/10">
-                      <th className="py-3 px-4 border-b border-cyan-500/30 text-white">
-                        Category
-                      </th>
+                      <th className="py-3 px-4 border-b border-cyan-500/30 text-white">Category</th>
                       {pointValues.map((value, index) => (
-                        <th
-                          key={index}
-                          className="py-3 px-4 border-b border-cyan-500/30 text-white"
-                        >
+                        <th key={index} className="py-3 px-4 border-b border-cyan-500/30 text-white">
                           {value}
                         </th>
                       ))}
@@ -1189,22 +1061,17 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                   </thead>
                   <tbody>
                     {categories.map((category, index) => {
-                      const descriptionParts = descriptions[index]
-                        ? descriptions[index].split("|,,|")
-                        : [];
+                      const descriptionParts = descriptions[index] ? descriptions[index].split("|,,|") : []
                       return (
                         <tr key={index} className="border-b border-cyan-500/30">
                           <td className="py-3 px-4 text-white">{category}</td>
                           {descriptionParts.map((part, partIndex) => (
-                            <td
-                              key={partIndex}
-                              className="py-3 px-4 text-gray-300"
-                            >
+                            <td key={partIndex} className="py-3 px-4 text-gray-300">
                               {part || "No description available"}
                             </td>
                           ))}
                         </tr>
-                      );
+                      )
                     })}
                   </tbody>
                 </table>
@@ -1228,14 +1095,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           <div className="relative bg-black/60 rounded-2xl p-8 shadow-xl border border-cyan-500/30 w-[90%] max-h-[90vh] overflow-y-auto">
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none rounded-2xl" />
             <div className="relative z-10">
-              <h2 className="text-2xl font-bold mb-6 text-white">
-                Send Grade Emails
-              </h2>
+              <h2 className="text-2xl font-bold mb-6 text-white">Send Grade Emails</h2>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-white mb-2">
-                  Email Subject
-                </label>
+                <label className="block text-sm font-medium text-white mb-2">Email Subject</label>
                 <input
                   type="text"
                   value={emailSubject}
@@ -1245,43 +1108,33 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-white mb-2">
-                  Select Questions to Include:
-                </label>
+                <label className="block text-sm font-medium text-white mb-2">Select Questions to Include:</label>
                 <div className="space-y-2 max-h-60 overflow-y-auto border border-cyan-500/30 rounded-lg p-4 bg-black/30">
                   {showByPerson ? (
                     questionData.questions.map((questionCode, index) => {
                       const isGraded = participants.some((p) => {
-                        const qData = p.questionData?.get(questionCode);
-                        return qData?.totalScore !== undefined;
-                      });
+                        const qData = p.questionData?.get(questionCode)
+                        return qData?.totalScore !== undefined
+                      })
 
                       return (
-                        <div
-                          key={questionCode}
-                          className="flex items-center space-x-3"
-                        >
+                        <div key={questionCode} className="flex items-center space-x-3">
                           <input
                             type="checkbox"
                             id={`question-${questionCode}`}
                             checked={selectedQuestionsToEmail.has(questionCode)}
                             onChange={(e) => {
-                              const newSelected = new Set(
-                                selectedQuestionsToEmail
-                              );
+                              const newSelected = new Set(selectedQuestionsToEmail)
                               if (e.target.checked) {
-                                newSelected.add(questionCode);
+                                newSelected.add(questionCode)
                               } else {
-                                newSelected.delete(questionCode);
+                                newSelected.delete(questionCode)
                               }
-                              setSelectedQuestionsToEmail(newSelected);
+                              setSelectedQuestionsToEmail(newSelected)
                             }}
                             className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
                           />
-                          <label
-                            htmlFor={`question-${questionCode}`}
-                            className="text-white"
-                          >
+                          <label htmlFor={`question-${questionCode}`} className="text-white">
                             Question {index + 1}
                             <span
                               className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
@@ -1294,7 +1147,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             </span>
                           </label>
                         </div>
-                      );
+                      )
                     })
                   ) : (
                     <div className="flex items-center space-x-3">
@@ -1303,20 +1156,17 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                         id={`question-${roomCode}`}
                         checked={selectedQuestionsToEmail.has(roomCode)}
                         onChange={(e) => {
-                          const newSelected = new Set(selectedQuestionsToEmail);
+                          const newSelected = new Set(selectedQuestionsToEmail)
                           if (e.target.checked) {
-                            newSelected.add(roomCode);
+                            newSelected.add(roomCode)
                           } else {
-                            newSelected.delete(roomCode);
+                            newSelected.delete(roomCode)
                           }
-                          setSelectedQuestionsToEmail(newSelected);
+                          setSelectedQuestionsToEmail(newSelected)
                         }}
                         className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
                       />
-                      <label
-                        htmlFor={`question-${roomCode}`}
-                        className="text-white"
-                      >
+                      <label htmlFor={`question-${roomCode}`} className="text-white">
                         Current Question (#{questionData.currentIndex})
                         <span
                           className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
@@ -1325,9 +1175,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                               : "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
                           }`}
                         >
-                          {participants.some((p) => p.totalScore !== undefined)
-                            ? "Graded"
-                            : "Not Graded"}
+                          {participants.some((p) => p.totalScore !== undefined) ? "Graded" : "Not Graded"}
                         </span>
                       </label>
                     </div>
@@ -1343,17 +1191,15 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                     onChange={(e) => setIncludeResponseLink(e.target.checked)}
                     className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
                   />
-                  <span className="text-sm text-white">
-                    Include links for students to review their responses
-                  </span>
+                  <span className="text-sm text-white">Include links for students to review their responses</span>
                 </label>
               </div>
 
               <div className="flex justify-end space-x-4">
                 <button
                   onClick={() => {
-                    setShowBulkEmailModal(false);
-                    setSelectedQuestionsToEmail(new Set());
+                    setShowBulkEmailModal(false)
+                    setSelectedQuestionsToEmail(new Set())
                   }}
                   className="px-6 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg shadow-lg hover:shadow-gray-500/30 transition-all duration-300"
                   disabled={isEmailSending}
@@ -1382,15 +1228,13 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         </div>
       )}
 
-      {/* Single Email Modal - Now rendered at the root level */}
+      {/* Single Email Modal */}
       {showSingleEmailModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg p-6 w-11/12 md:w-1/2 shadow-lg">
             <h2 className="text-xl font-bold mb-4 text-white">Edit Email</h2>
             <div className="mb-4">
-              <label className="block mb-2 font-semibold text-gray-300">
-                Email Subject
-              </label>
+              <label className="block mb-2 font-semibold text-gray-300">Email Subject</label>
               <input
                 type="text"
                 className="w-full p-2 border border-cyan-500/30 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300"
@@ -1425,12 +1269,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                     setSingleEmailData({
                       ...singleEmailData,
                       includeResponseLink: e.target.checked,
-                    });
+                    })
                   }}
                 />
-                <span>
-                  Include a link for the student to view their response
-                </span>
+                <span>Include a link for the student to view their response</span>
               </label>
             </div>
             <div className="flex justify-end mt-4">
@@ -1451,7 +1293,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         </div>
       )}
     </div>
-  );
+  )
 }
 
-export default TeacherPortalRoom;
+export default TeacherPortalRoom
