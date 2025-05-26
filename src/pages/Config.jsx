@@ -713,6 +713,7 @@ const Config = ({
 
   const handleConfigClick = (config) => {
     let rubric2 = config.rubric;
+    console.log("Config clicked:", config);
 
     if (autofillOptions.rubric) {
       if (config.rubric && config.rubric.includes("|^^^|")) {
@@ -760,6 +761,7 @@ const Config = ({
 
     setShowSelectiveAutofillModal(false);
     setSelected(true);
+    setId(config.name);
     setIsConfigSelection(false);
   };
 
@@ -782,7 +784,7 @@ const Config = ({
   };
 
   const handleRegisterConfig = async () => {
-    if (!isUpdate && !id) {
+    if (!id) {
       toast.error("Please enter a name for the set");
       return;
     }
