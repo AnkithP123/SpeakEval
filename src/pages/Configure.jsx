@@ -450,6 +450,10 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
     });
   };
 
+  const handleAddString = () => {
+    setProcessedStrings((prev) => [...prev, ""]);
+  };
+
   const handleConfirmStrings = async () => {
     setIsConfirming(true);
 
@@ -1098,7 +1102,7 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
               <div className="relative z-10">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
-                    Import File
+                    Import Files
                   </h2>
                   <button
                     onClick={closeImportModal}
@@ -1183,9 +1187,22 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
                     <div className="max-h-96 overflow-y-auto space-y-3">
                       {processedStrings.map((str, index) => (
                         <div key={index} className="space-y-2">
-                          <label className="text-gray-300 text-sm">
-                            Question {index + 1}:
-                          </label>
+                          <div className="flex justify-between items-center">
+                            <label className="text-gray-300 text-sm">
+                              Question {index + 1}:
+                            </label>
+                            <button
+                              onClick={() => {
+                                setProcessedStrings((prev) =>
+                                  prev.filter((_, i) => i !== index)
+                                );
+                              }}
+                              className="text-red-400 hover:text-red-300 transition-colors p-1"
+                              title="Delete question"
+                            >
+                              <FaTimes size={12} />
+                            </button>
+                          </div>
                           <textarea
                             value={str}
                             onChange={(e) =>
@@ -1193,10 +1210,20 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
                             }
                             className="w-full h-[50px] bg-black/30 border border-cyan-500/30 rounded p-3 text-white resize-none"
                             rows={3}
-                            placeholder={`Content ${index + 1}`}
+                            placeholder={`Enter question ${index + 1}`}
                           />
                         </div>
                       ))}
+                    </div>
+
+                    <div className="flex justify-center mt-4">
+                      <button
+                        onClick={handleAddString}
+                        className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg shadow-lg shadow-green-500/30 hover:shadow-green-500/50 transition-all duration-300 font-medium flex items-center space-x-2"
+                      >
+                        <FaPlus size={14} />
+                        <span>Add Question</span>
+                      </button>
                     </div>
 
                     <div className="flex space-x-4 mt-6">

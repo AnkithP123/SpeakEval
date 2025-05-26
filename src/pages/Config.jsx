@@ -1,18 +1,24 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { toast } from "react-toastify"
-import { cuteAlert } from "cute-alert"
-import { FaTimes, FaPlus, FaMicrophone, FaStop } from "react-icons/fa"
-import { DndProvider, useDrag, useDrop } from "react-dnd"
-import { HTML5Backend } from "react-dnd-html5-backend"
-import Card from "../components/Card"
-import Upgrade from "./Upgrade"
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { cuteAlert } from "cute-alert";
+import { FaTimes, FaPlus, FaMicrophone, FaStop } from "react-icons/fa";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import Card from "../components/Card";
+import Upgrade from "./Upgrade";
 
 // Draggable column component
-const DraggableColumn = ({ index, value, moveColumn, handlePointValueChange, handleDeletePointValue }) => {
-  const ref = useRef(null)
+const DraggableColumn = ({
+  index,
+  value,
+  moveColumn,
+  handlePointValueChange,
+  handleDeletePointValue,
+}) => {
+  const ref = useRef(null);
 
   const [{ isDragging }, drag] = useDrag({
     type: "COLUMN",
@@ -20,32 +26,34 @@ const DraggableColumn = ({ index, value, moveColumn, handlePointValueChange, han
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-  })
+  });
 
   const [, drop] = useDrop({
     accept: "COLUMN",
     hover(item, monitor) {
       if (!ref.current) {
-        return
+        return;
       }
-      const dragIndex = item.index
-      const hoverIndex = index
+      const dragIndex = item.index;
+      const hoverIndex = index;
 
       if (dragIndex === hoverIndex) {
-        return
+        return;
       }
 
-      moveColumn(dragIndex, hoverIndex)
-      item.index = hoverIndex
+      moveColumn(dragIndex, hoverIndex);
+      item.index = hoverIndex;
     },
-  })
+  });
 
-  drag(drop(ref))
+  drag(drop(ref));
 
   return (
     <th
       ref={ref}
-      className={`text-white text-center p-2 border-b border-purple-500/30 ${isDragging ? "opacity-50" : ""}`}
+      className={`text-white text-center p-2 border-b border-purple-500/30 ${
+        isDragging ? "opacity-50" : ""
+      }`}
       style={{ cursor: "move" }}
     >
       <div className="flex items-center justify-center space-x-2">
@@ -64,45 +72,55 @@ const DraggableColumn = ({ index, value, moveColumn, handlePointValueChange, han
         </button>
       </div>
     </th>
-  )
-}
+  );
+};
 
-const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSubscribed }) => {
-  const [userId, setUserId] = useState(getPin())
-  const [loggedIn, setLoggedIn] = useState(userId)
-  const [questions, setQuestions] = useState([])
-  const [recording, setRecording] = useState(false)
-  const [categories, setCategories] = useState([{ name: "", descriptions: Array(5).fill("") }])
-  const [pointValues, setPointValues] = useState([5, 4, 3, 2, 1])
-  const [maxTime, setMaxTime] = useState("")
-  const [selectedLanguage, setSelectedLanguage] = useState("")
-  const [otherLanguage, setOtherLanguage] = useState("")
-  const [id, setId] = useState("")
-  const [showUpgrade, setShowUpgrade] = useState(false)
-  const [showAutofillUpgrade, setShowAutofillUpgrade] = useState(false)
-  const [hoverButton, setHoverButton] = useState(false)
-  const [isConfigRegistered, setIsConfigRegistered] = useState(false)
-  const [button2Hover, setButton2Hover] = useState(false)
-  const [popupVisible, setPopupVisible] = useState(false)
-  const [selectedConfig, setSelectedConfig] = useState(null)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [isUploading, setIsUploading] = useState(false)
-  const [showImportModal, setShowImportModal] = useState(false)
-  const [dragActive, setDragActive] = useState(false)
-  const [uploadedFile, setUploadedFile] = useState(null)
-  const [configs, setConfigs] = useState([])
-  const [selected, setSelected] = useState(!isUpdate)
-  const [hoverIndex, setHoverIndex] = useState(null)
-  const [processedStrings, setProcessedStrings] = useState(null)
-  const [isConfirming, setIsConfirming] = useState(false)
-  const [showSelectiveAutofillModal, setShowSelectiveAutofillModal] = useState(false)
-  const [showPresetRubricsModal, setShowPresetRubricsModal] = useState(false)
+const Config = ({
+  isUpdate = false,
+  set,
+  setUltimate,
+  getPin,
+  subscribed,
+  setSubscribed,
+}) => {
+  const [userId, setUserId] = useState(getPin());
+  const [loggedIn, setLoggedIn] = useState(userId);
+  const [questions, setQuestions] = useState([]);
+  const [recording, setRecording] = useState(false);
+  const [categories, setCategories] = useState([
+    { name: "", descriptions: Array(5).fill("") },
+  ]);
+  const [pointValues, setPointValues] = useState([5, 4, 3, 2, 1]);
+  const [maxTime, setMaxTime] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [otherLanguage, setOtherLanguage] = useState("");
+  const [id, setId] = useState("");
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showAutofillUpgrade, setShowAutofillUpgrade] = useState(false);
+  const [hoverButton, setHoverButton] = useState(false);
+  const [isConfigRegistered, setIsConfigRegistered] = useState(false);
+  const [button2Hover, setButton2Hover] = useState(false);
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [selectedConfig, setSelectedConfig] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [configs, setConfigs] = useState([]);
+  const [selected, setSelected] = useState(!isUpdate);
+  const [hoverIndex, setHoverIndex] = useState(null);
+  const [processedStrings, setProcessedStrings] = useState(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [showSelectiveAutofillModal, setShowSelectiveAutofillModal] =
+    useState(false);
+  const [showPresetRubricsModal, setShowPresetRubricsModal] = useState(false);
   const [autofillOptions, setAutofillOptions] = useState({
     questions: true,
     rubric: true,
     timeLimit: true,
     language: true,
-  })
+  });
 
   const presetRubrics = {
     "AP Language Arts": {
@@ -198,233 +216,251 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
         },
       ],
     },
-  }
+  };
 
-  const navigate = useNavigate()
-  const mediaRecorderRef = useRef(null)
+  const navigate = useNavigate();
+  const mediaRecorderRef = useRef(null);
 
   // Fetch configs for update mode
   useEffect(() => {
     const fetchConfigs = async () => {
-      if (!isUpdate) return
+      if (!isUpdate) return;
 
       try {
-        const res = await fetch(`https://www.server.speakeval.org/getconfigs?pin=${userId}`)
-        const parsedData = await res.json()
-        setConfigs(parsedData)
+        const res = await fetch(
+          `https://www.server.speakeval.org/getconfigs?pin=${userId}`
+        );
+        const parsedData = await res.json();
+        setConfigs(parsedData);
       } catch (err) {
-        console.error("Error Loading Configs", err)
-        toast.error("Error Loading Configs")
+        console.error("Error Loading Configs", err);
+        toast.error("Error Loading Configs");
       }
-    }
+    };
 
     if (loggedIn && isUpdate) {
-      fetchConfigs()
+      fetchConfigs();
     }
-  }, [loggedIn, userId, isUpdate])
+  }, [loggedIn, userId, isUpdate]);
 
   useEffect(() => {
     if (!loggedIn) {
-      const redirectPath = isUpdate ? "/update" : "/configure"
-      navigate(`/login?redirect=${redirectPath}`)
+      const redirectPath = isUpdate ? "/update" : "/configure";
+      navigate(`/login?redirect=${redirectPath}`);
     }
-  }, [loggedIn, navigate, isUpdate])
+  }, [loggedIn, navigate, isUpdate]);
 
   const checkUserId = async (userId) => {
     try {
-      const res = await fetch(`https://www.server.speakeval.org/teacherpin?pin=${userId}`)
-      const parsedData = await res.json()
+      const res = await fetch(
+        `https://www.server.speakeval.org/teacherpin?pin=${userId}`
+      );
+      const parsedData = await res.json();
 
       if (parsedData.code === 401) {
-        toast.error("Incorrect Teacher Pin")
-        return setUserId("")
+        toast.error("Incorrect Teacher Pin");
+        return setUserId("");
       }
       if (parsedData.code === 200) {
-        setLoggedIn(true)
+        setLoggedIn(true);
       }
       if (parsedData.subscription) {
-        set(parsedData.subscription !== "free")
-        setUltimate(parsedData.subscription === "Ultimate")
+        set(parsedData.subscription !== "free");
+        setUltimate(parsedData.subscription === "Ultimate");
         if (parsedData.subscription !== "free") {
-          setSubscribed(true)
+          setSubscribed(true);
         }
       }
     } catch (err) {
-      console.error("Error Loading Data", err)
-      toast.error("Error Loading Data")
-      return setUserId("")
+      console.error("Error Loading Data", err);
+      toast.error("Error Loading Data");
+      return setUserId("");
     }
-  }
+  };
 
   const handleToggleRecording = () => {
     if (questions.length >= 60 && !subscribed) {
-      setShowUpgrade(true)
-      return
+      setShowUpgrade(true);
+      return;
     }
     if (navigator.mediaDevices.getUserMedia) {
       if (recording) {
-        mediaRecorderRef.current.stop()
-        setRecording(false)
+        mediaRecorderRef.current.stop();
+        setRecording(false);
       } else {
         navigator.mediaDevices
           .getUserMedia({ audio: true })
           .then((stream) => {
-            mediaRecorderRef.current = new MediaRecorder(stream)
-            mediaRecorderRef.current.start()
-            mediaRecorderRef.current.addEventListener("dataavailable", handleDataAvailable)
-            setRecording(true)
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            mediaRecorderRef.current.start();
+            mediaRecorderRef.current.addEventListener(
+              "dataavailable",
+              handleDataAvailable
+            );
+            setRecording(true);
           })
           .catch((err) => {
-            console.error("Error accessing microphone", err)
-            toast.error("Error accessing microphone")
-          })
+            console.error("Error accessing microphone", err);
+            toast.error("Error accessing microphone");
+          });
       }
     } else {
-      console.error("getUserMedia not supported")
-      toast.error("getUserMedia not supported")
+      console.error("getUserMedia not supported");
+      toast.error("getUserMedia not supported");
     }
-  }
+  };
 
   const handleDataAvailable = (event) => {
     if (event.data.size > 0) {
-      const recordedQuestion = URL.createObjectURL(event.data)
-      setQuestions((prevQuestions) => [...prevQuestions, recordedQuestion])
+      const recordedQuestion = URL.createObjectURL(event.data);
+      setQuestions((prevQuestions) => [...prevQuestions, recordedQuestion]);
     }
-  }
+  };
 
   const handleDeleteQuestion = (index) => {
-    setQuestions((prevQuestions) => prevQuestions.filter((_, i) => i !== index))
-    toast.success("Question deleted")
-  }
+    setQuestions((prevQuestions) =>
+      prevQuestions.filter((_, i) => i !== index)
+    );
+    toast.success("Question deleted");
+  };
 
   const handleAddCategory = () => {
     setCategories((prevCategories) => [
       ...prevCategories,
       { name: "", descriptions: Array(pointValues.length).fill("") },
-    ])
-  }
+    ]);
+  };
 
   const handleDeleteCategory = (index) => {
-    setCategories((prevCategories) => prevCategories.filter((_, i) => i !== index))
-  }
+    setCategories((prevCategories) =>
+      prevCategories.filter((_, i) => i !== index)
+    );
+  };
 
   const handleCategoryNameChange = (index, e) => {
-    const { value } = e.target
+    const { value } = e.target;
     setCategories((prevCategories) => {
-      const updatedCategories = [...prevCategories]
-      updatedCategories[index].name = value
-      return updatedCategories
-    })
-  }
+      const updatedCategories = [...prevCategories];
+      updatedCategories[index].name = value;
+      return updatedCategories;
+    });
+  };
 
   const handleCategoryDescriptionChange = (categoryIndex, pointIndex, e) => {
-    const { value } = e.target
+    const { value } = e.target;
     setCategories((prevCategories) => {
-      const updatedCategories = [...prevCategories]
-      updatedCategories[categoryIndex].descriptions[pointIndex] = value
-      return updatedCategories
-    })
-  }
+      const updatedCategories = [...prevCategories];
+      updatedCategories[categoryIndex].descriptions[pointIndex] = value;
+      return updatedCategories;
+    });
+  };
 
   const handleAddPointValueToStart = () => {
     const newPoint =
       pointValues.length > 1
         ? pointValues[0] + (pointValues[0] - pointValues[1])
         : pointValues.length === 1
-          ? pointValues[0] + 1
-          : 1
-    setPointValues((prevPointValues) => [newPoint, ...prevPointValues])
+        ? pointValues[0] + 1
+        : 1;
+    setPointValues((prevPointValues) => [newPoint, ...prevPointValues]);
     setCategories((prevCategories) =>
       prevCategories.map((category) => ({
         ...category,
         descriptions: ["", ...category.descriptions],
-      })),
-    )
-  }
+      }))
+    );
+  };
 
   const handleAddPointValueToEnd = () => {
     const newPoint =
       pointValues.length > 1
         ? pointValues[pointValues.length - 1] -
-          (pointValues[pointValues.length - 2] - pointValues[pointValues.length - 1])
+          (pointValues[pointValues.length - 2] -
+            pointValues[pointValues.length - 1])
         : pointValues.length === 1
-          ? pointValues[0] - 1
-          : 1
-    setPointValues((prevPointValues) => [...prevPointValues, newPoint])
+        ? pointValues[0] - 1
+        : 1;
+    setPointValues((prevPointValues) => [...prevPointValues, newPoint]);
     setCategories((prevCategories) =>
       prevCategories.map((category) => ({
         ...category,
         descriptions: [...category.descriptions, ""],
-      })),
-    )
-  }
+      }))
+    );
+  };
 
   const handleDeletePointValue = (index) => {
     if (pointValues.length > 1) {
-      setPointValues((prevPointValues) => prevPointValues.filter((_, i) => i !== index))
+      setPointValues((prevPointValues) =>
+        prevPointValues.filter((_, i) => i !== index)
+      );
       setCategories((prevCategories) =>
         prevCategories.map((category) => {
-          const updatedDescriptions = category.descriptions.filter((_, i) => i !== index)
-          return { ...category, descriptions: updatedDescriptions }
-        }),
-      )
+          const updatedDescriptions = category.descriptions.filter(
+            (_, i) => i !== index
+          );
+          return { ...category, descriptions: updatedDescriptions };
+        })
+      );
     } else {
-      toast.error("You must have at least one point value")
+      toast.error("You must have at least one point value");
     }
-  }
+  };
 
   const handlePointValueChange = (index, e) => {
-    const { value } = e.target
+    const { value } = e.target;
     setPointValues((prevPointValues) => {
-      const updatedValues = [...prevPointValues]
-      updatedValues[index] = Number.parseFloat(value) || 0
-      return updatedValues
-    })
-  }
+      const updatedValues = [...prevPointValues];
+      updatedValues[index] = Number.parseFloat(value) || 0;
+      return updatedValues;
+    });
+  };
 
   const moveColumn = (dragIndex, hoverIndex) => {
     setPointValues((prevPointValues) => {
-      const newPointValues = [...prevPointValues]
-      const draggedValue = newPointValues[dragIndex]
-      newPointValues.splice(dragIndex, 1)
-      newPointValues.splice(hoverIndex, 0, draggedValue)
-      return newPointValues
-    })
+      const newPointValues = [...prevPointValues];
+      const draggedValue = newPointValues[dragIndex];
+      newPointValues.splice(dragIndex, 1);
+      newPointValues.splice(hoverIndex, 0, draggedValue);
+      return newPointValues;
+    });
 
     setCategories((prevCategories) => {
       return prevCategories.map((category) => {
-        const newDescriptions = [...category.descriptions]
-        const draggedDescription = newDescriptions[dragIndex]
-        newDescriptions.splice(dragIndex, 1)
-        newDescriptions.splice(hoverIndex, 0, draggedDescription)
-        return { ...category, descriptions: newDescriptions }
-      })
-    })
-  }
+        const newDescriptions = [...category.descriptions];
+        const draggedDescription = newDescriptions[dragIndex];
+        newDescriptions.splice(dragIndex, 1);
+        newDescriptions.splice(hoverIndex, 0, draggedDescription);
+        return { ...category, descriptions: newDescriptions };
+      });
+    });
+  };
 
   const handleAutofillClick = () => {
-    setShowAutofillUpgrade(true)
-  }
+    setShowAutofillUpgrade(true);
+  };
 
   const handleSelectiveAutofillClick = async () => {
     try {
-      setShowSelectiveAutofillModal(true)
-      const configs = await fetch(`https://www.server.speakeval.org/getconfigs?pin=${userId}`)
-      const configsList = await configs.json()
-      setSelectedConfig(configsList)
+      setShowSelectiveAutofillModal(true);
+      const configs = await fetch(
+        `https://www.server.speakeval.org/getconfigs?pin=${userId}`
+      );
+      const configsList = await configs.json();
+      setSelectedConfig(configsList);
     } catch (error) {
-      console.error("Failed to fetch configs:", error)
-      toast.error("Failed to fetch question sets")
+      console.error("Failed to fetch configs:", error);
+      toast.error("Failed to fetch question sets");
     }
-  }
+  };
 
   const handlePresetRubricsClick = () => {
-    setShowPresetRubricsModal(true)
-  }
+    setShowPresetRubricsModal(true);
+  };
 
   const handleImportClick = () => {
-    setShowImportModal(true)
-  }
+    setShowImportModal(true);
+  };
 
   const handleFileUpload = async (file) => {
     const allowedTypes = [
@@ -432,131 +468,137 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "application/msword",
       "text/plain",
-    ]
+    ];
 
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Only PDF, DOCX, and TXT files are allowed")
-      return
+      toast.error("Only PDF, DOCX, and TXT files are allowed");
+      return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("File size must be less than 10MB")
-      return
+      toast.error("File size must be less than 10MB");
+      return;
     }
 
-    setUploadedFile(file)
-    setIsUploading(true)
+    setUploadedFile(file);
+    setIsUploading(true);
 
     try {
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = async (e) => {
-        const base64 = e.target.result
+        const base64 = e.target.result;
 
         try {
-          const response = await fetch("https://www.server.speakeval.org/upload_file", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              file: base64,
-              type: file.type,
-              token: userId,
-            }),
-          })
+          const response = await fetch(
+            "https://www.server.speakeval.org/upload_file",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                file: base64,
+                type: file.type,
+                token: userId,
+              }),
+            }
+          );
 
           if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`)
+            throw new Error(`Server error: ${response.status}`);
           }
 
-          const result = await response.json()
+          const result = await response.json();
 
           if (Array.isArray(result)) {
-            setProcessedStrings(result)
-            toast.success("File processed successfully")
+            setProcessedStrings(result);
+            toast.success("File processed successfully");
           } else {
-            throw new Error("Invalid response format")
+            throw new Error("Invalid response format");
           }
         } catch (error) {
-          console.error("Upload error:", error)
-          toast.error(`Upload failed: ${error.message}`)
-          setUploadedFile(null)
+          console.error("Upload error:", error);
+          toast.error(`Upload failed: ${error.message}`);
+          setUploadedFile(null);
         } finally {
-          setIsUploading(false)
+          setIsUploading(false);
         }
-      }
+      };
 
       reader.onerror = () => {
-        toast.error("Error reading file")
-        setIsUploading(false)
-        setUploadedFile(null)
-      }
+        toast.error("Error reading file");
+        setIsUploading(false);
+        setUploadedFile(null);
+      };
 
-      reader.readAsDataURL(file)
+      reader.readAsDataURL(file);
     } catch (error) {
-      console.error("File processing error:", error)
-      toast.error("Error processing file")
-      setIsUploading(false)
-      setUploadedFile(null)
+      console.error("File processing error:", error);
+      toast.error("Error processing file");
+      setIsUploading(false);
+      setUploadedFile(null);
     }
-  }
+  };
 
   const handleDrag = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true)
+      setDragActive(true);
     } else if (e.type === "dragleave") {
-      setDragActive(false)
+      setDragActive(false);
     }
-  }
+  };
 
   const handleDrop = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0])
+      handleFileUpload(e.dataTransfer.files[0]);
     }
-  }
+  };
 
   const handleFileInputChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      handleFileUpload(e.target.files[0])
+      handleFileUpload(e.target.files[0]);
     }
-  }
+  };
 
   const handleStringEdit = (index, value) => {
     setProcessedStrings((prev) => {
-      const updated = [...prev]
-      updated[index] = value
-      return updated
-    })
-  }
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
 
   const handleConfirmStrings = async () => {
-    setIsConfirming(true)
+    setIsConfirming(true);
 
     try {
-      const response = await fetch("https://www.server.speakeval.org/generate_audio", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          questionArr: processedStrings,
-          token: userId,
-        }),
-      })
+      const response = await fetch(
+        "https://www.server.speakeval.org/generate_audio",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            questionArr: processedStrings,
+            token: userId,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error("Server Error Response:", errorText)
-        throw new Error(`Server error: ${response.status}`)
+        const errorText = await response.text();
+        console.error("Server Error Response:", errorText);
+        throw new Error(`Server error: ${response.status}`);
       }
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.audio && Array.isArray(result.audio) && result.complete) {
         const audioUrls = result.audio
@@ -568,231 +610,265 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                 !Array.isArray(audioDataFromServer.data) ||
                 !result.mimeType
               ) {
-                console.error(`Error processing audio ${index}: Invalid audio data structure`)
-                return null
+                console.error(
+                  `Error processing audio ${index}: Invalid audio data structure`
+                );
+                return null;
               }
 
-              const uint8Array = new Uint8Array(audioDataFromServer.data)
+              const uint8Array = new Uint8Array(audioDataFromServer.data);
 
               if (uint8Array.length === 0) {
-                console.warn(`Audio data for item ${index} is empty.`)
-                return null
+                console.warn(`Audio data for item ${index} is empty.`);
+                return null;
               }
 
-              let blob
+              let blob;
 
-              if (result.mimeType.includes("audio/L16") || result.mimeType.includes("pcm")) {
-                const wavHeader = createWavHeader(uint8Array.length, 24000, 16, 1)
-                const wavData = new Uint8Array(wavHeader.length + uint8Array.length)
-                wavData.set(wavHeader, 0)
-                wavData.set(uint8Array, wavHeader.length)
+              if (
+                result.mimeType.includes("audio/L16") ||
+                result.mimeType.includes("pcm")
+              ) {
+                const wavHeader = createWavHeader(
+                  uint8Array.length,
+                  24000,
+                  16,
+                  1
+                );
+                const wavData = new Uint8Array(
+                  wavHeader.length + uint8Array.length
+                );
+                wavData.set(wavHeader, 0);
+                wavData.set(uint8Array, wavHeader.length);
 
-                blob = new Blob([wavData], { type: "audio/wav" })
+                blob = new Blob([wavData], { type: "audio/wav" });
               } else {
-                blob = new Blob([uint8Array], { type: result.mimeType })
+                blob = new Blob([uint8Array], { type: result.mimeType });
               }
 
-              return URL.createObjectURL(blob)
+              return URL.createObjectURL(blob);
             } catch (error) {
-              console.error(`Error processing audio ${index}:`, error)
-              return null
+              console.error(`Error processing audio ${index}:`, error);
+              return null;
             }
           })
-          .filter((url) => url !== null)
+          .filter((url) => url !== null);
 
         if (audioUrls.length > 0) {
-          setQuestions((prevQuestions) => [...prevQuestions, ...audioUrls])
-          toast.success(`Successfully added ${audioUrls.length} audio questions`)
-          closeImportModal()
+          setQuestions((prevQuestions) => [...prevQuestions, ...audioUrls]);
+          toast.success(
+            `Successfully added ${audioUrls.length} audio questions`
+          );
+          closeImportModal();
         } else {
-          toast.warn("No valid audio data was generated or processed.")
+          toast.warn("No valid audio data was generated or processed.");
         }
       } else {
-        throw new Error("Invalid response format or incomplete processing")
+        throw new Error("Invalid response format or incomplete processing");
       }
     } catch (error) {
-      console.error("Confirm error:", error)
+      console.error("Confirm error:", error);
       const errorMessage = error.message.includes("Server error")
         ? error.message
-        : `Failed to process audio: ${error.message}`
-      toast.error(errorMessage)
+        : `Failed to process audio: ${error.message}`;
+      toast.error(errorMessage);
     } finally {
-      setIsConfirming(false)
+      setIsConfirming(false);
     }
-  }
+  };
 
   const createWavHeader = (dataLength, sampleRate, bitsPerSample, channels) => {
-    const header = new ArrayBuffer(44)
-    const view = new DataView(header)
+    const header = new ArrayBuffer(44);
+    const view = new DataView(header);
 
-    view.setUint32(0, 0x52494646, false) // "RIFF"
-    view.setUint32(4, 36 + dataLength, true) // File size - 8
-    view.setUint32(8, 0x57415645, false) // "WAVE"
+    view.setUint32(0, 0x52494646, false); // "RIFF"
+    view.setUint32(4, 36 + dataLength, true); // File size - 8
+    view.setUint32(8, 0x57415645, false); // "WAVE"
 
-    view.setUint32(12, 0x666d7420, false) // "fmt "
-    view.setUint32(16, 16, true) // Subchunk1Size (16 for PCM)
-    view.setUint16(20, 1, true) // AudioFormat (1 for PCM)
-    view.setUint16(22, channels, true) // NumChannels
-    view.setUint32(24, sampleRate, true) // SampleRate
-    view.setUint32(28, (sampleRate * channels * bitsPerSample) / 8, true) // ByteRate
-    view.setUint16(32, (channels * bitsPerSample) / 8, true) // BlockAlign
-    view.setUint16(34, bitsPerSample, true) // BitsPerSample
+    view.setUint32(12, 0x666d7420, false); // "fmt "
+    view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+    view.setUint16(20, 1, true); // AudioFormat (1 for PCM)
+    view.setUint16(22, channels, true); // NumChannels
+    view.setUint32(24, sampleRate, true); // SampleRate
+    view.setUint32(28, (sampleRate * channels * bitsPerSample) / 8, true); // ByteRate
+    view.setUint16(32, (channels * bitsPerSample) / 8, true); // BlockAlign
+    view.setUint16(34, bitsPerSample, true); // BitsPerSample
 
-    view.setUint32(36, 0x64617461, false) // "data"
-    view.setUint32(40, dataLength, true) // Subchunk2Size
+    view.setUint32(36, 0x64617461, false); // "data"
+    view.setUint32(40, dataLength, true); // Subchunk2Size
 
-    return new Uint8Array(header)
-  }
+    return new Uint8Array(header);
+  };
 
   const closeImportModal = () => {
-    setShowImportModal(false)
-    setUploadedFile(null)
-    setDragActive(false)
-    setProcessedStrings(null)
-    setIsConfirming(false)
-  }
+    setShowImportModal(false);
+    setUploadedFile(null);
+    setDragActive(false);
+    setProcessedStrings(null);
+    setIsConfirming(false);
+  };
 
   const handleConfigClick = (config) => {
-    let rubric2 = config.rubric
+    let rubric2 = config.rubric;
 
     if (autofillOptions.rubric) {
       if (config.rubric && config.rubric.includes("|^^^|")) {
-        setPointValues(rubric2.split("|^^^|")[0].split("|,,|"))
-        rubric2 = rubric2.split("|^^^|")[1]
+        setPointValues(rubric2.split("|^^^|")[0].split("|,,|"));
+        rubric2 = rubric2.split("|^^^|")[1];
       }
 
       const categories = rubric2.split("|;;|").map((category) => {
-        const [name, descriptionsString] = category.split("|:::|")
-        const descriptions = descriptionsString ? descriptionsString.split("|,,|") : Array(5).fill("")
-        return { name, descriptions }
-      })
+        const [name, descriptionsString] = category.split("|:::|");
+        const descriptions = descriptionsString
+          ? descriptionsString.split("|,,|")
+          : Array(5).fill("");
+        return { name, descriptions };
+      });
 
-      setCategories(categories)
+      setCategories(categories);
     }
 
     if (autofillOptions.timeLimit) {
-      setMaxTime(config.timeLimit)
+      setMaxTime(config.timeLimit);
     }
 
     if (autofillOptions.language) {
-      if (["English", "Spanish", "French", "Chinese", "Japanese"].includes(config.language)) {
-        setSelectedLanguage(config.language)
+      if (
+        ["English", "Spanish", "French", "Chinese", "Japanese"].includes(
+          config.language
+        )
+      ) {
+        setSelectedLanguage(config.language);
       } else {
-        setSelectedLanguage("Other")
-        setOtherLanguage(config.language)
+        setSelectedLanguage("Other");
+        setOtherLanguage(config.language);
       }
     }
 
     if (autofillOptions.questions && config.questions) {
       config.questions.map(async (question) => {
-        const blob = await fetch(`data:audio/wav;base64,${question.audio}`).then((res) => res.blob())
-        const url = URL.createObjectURL(blob)
-        setQuestions((prevQuestions) => [...prevQuestions, url])
-      })
+        const blob = await fetch(
+          `data:audio/wav;base64,${question.audio}`
+        ).then((res) => res.blob());
+        const url = URL.createObjectURL(blob);
+        setQuestions((prevQuestions) => [...prevQuestions, url]);
+      });
     }
 
-    setShowSelectiveAutofillModal(false)
-    setSelected(true)
-  }
+    setShowSelectiveAutofillModal(false);
+    setSelected(true);
+  };
 
   const handlePresetRubricClick = (presetName) => {
-    const preset = presetRubrics[presetName]
-    setPointValues(preset.pointValues)
+    const preset = presetRubrics[presetName];
+    setPointValues(preset.pointValues);
     setCategories(
       preset.categories.map((cat) => ({
         ...cat,
         descriptions: [
           ...cat.descriptions,
-          ...Array(Math.max(0, preset.pointValues.length - cat.descriptions.length)).fill(""),
+          ...Array(
+            Math.max(0, preset.pointValues.length - cat.descriptions.length)
+          ).fill(""),
         ],
-      })),
-    )
-    setShowPresetRubricsModal(false)
-    toast.success(`Applied ${presetName} rubric`)
-  }
+      }))
+    );
+    setShowPresetRubricsModal(false);
+    toast.success(`Applied ${presetName} rubric`);
+  };
 
   const handleRegisterConfig = async () => {
     if (!id) {
-      toast.error("Please enter a name for the set")
-      return
+      toast.error("Please enter a name for the set");
+      return;
     }
     if (!userId) {
-      toast.error("Please log in")
-      return
+      toast.error("Please log in");
+      return;
     }
     if (questions.length === 0) {
-      toast.error("Please record at least one question")
-      return
+      toast.error("Please record at least one question");
+      return;
     }
 
     try {
-      setIsUploading(true)
-      setUploadProgress(0)
+      setIsUploading(true);
+      setUploadProgress(0);
 
       const rubricString = `${pointValues.join("|,,|")}|^^^|${categories
         .map((category) => {
-          return `${category.name}|:::|${category.descriptions.map((description) => description || "").join("|,,|")}`
+          return `${category.name}|:::|${category.descriptions
+            .map((description) => description || "")
+            .join("|,,|")}`;
         })
-        .join("|;;|")}`
+        .join("|;;|")}`;
 
-      const language = selectedLanguage === "Other" ? otherLanguage : selectedLanguage
+      const language =
+        selectedLanguage === "Other" ? otherLanguage : selectedLanguage;
 
       if (isUpdate) {
         // Update existing config
-        const formData = new FormData()
+        const formData = new FormData();
         for (let i = 0; i < questions.length; i++) {
-          const res = await fetch(questions[i])
-          const blob = await res.blob()
-          formData.append(`question${i}`, blob, `question${i}.webm`)
+          const res = await fetch(questions[i]);
+          const blob = await res.blob();
+          formData.append(`question${i}`, blob, `question${i}.webm`);
         }
 
         const res = await fetch(
-          `https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&length=${questions.length}&rubric=${encodeURIComponent(rubricString)}&limit=${maxTime}&language=${language}`,
+          `https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&length=${
+            questions.length
+          }&rubric=${encodeURIComponent(
+            rubricString
+          )}&limit=${maxTime}&language=${language}`,
           {
             method: "POST",
             body: formData,
-          },
-        )
+          }
+        );
 
-        const response = await res.json()
+        const response = await res.json();
 
         if (res.ok && !response.error) {
-          toast.success("Configuration updated successfully")
-          setIsConfigRegistered(true)
+          toast.success("Configuration updated successfully");
+          setIsConfigRegistered(true);
         } else {
-          toast.error("Failed to update configuration" + (response.error ? `: ${response.error}` : ""))
+          toast.error(
+            "Failed to update configuration" +
+              (response.error ? `: ${response.error}` : "")
+          );
         }
       } else {
         // Create new config
         const configResponse = await fetch(
           `https://www.server.speakeval.org/createconfig?pin=${userId}&id=${id}&rubric=${encodeURIComponent(
-            rubricString,
+            rubricString
           )}&limit=${maxTime}&language=${language}`,
           {
             method: "POST",
-          },
-        )
+          }
+        );
 
-        const configResult = await configResponse.json()
+        const configResult = await configResponse.json();
 
         if (!configResponse.ok || configResult.error) {
-          throw new Error(configResult.error || "Failed to create config")
+          throw new Error(configResult.error || "Failed to create config");
         }
 
-        toast.success("Config created successfully, uploading questions...")
+        toast.success("Config created successfully, uploading questions...");
 
         for (let i = 0; i < questions.length; i++) {
-          const res = await fetch(questions[i])
-          const blob = await res.blob()
+          const res = await fetch(questions[i]);
+          const blob = await res.blob();
 
           const base64Audio = await new Promise((resolve) => {
-            const reader = new FileReader()
-            reader.readAsDataURL(blob)
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
             reader.onloadend = () => {
-              const base64data = reader.result
-              resolve(base64data.split(",")[1])
-            }
-          })
+              const base64data = reader.result;
+              resolve(base64data.split(",")[1]);
+            };
+          });
 
           const questionResponse = await fetch(
             `https://www.server.speakeval.org/uploadquestion?pin=${userId}&id=${id}&index=${i}&language=${language}`,
@@ -802,16 +878,18 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({ audio: base64Audio }),
-            },
-          )
+            }
+          );
 
-          const questionResult = await questionResponse.json()
+          const questionResult = await questionResponse.json();
 
           if (!questionResponse.ok || questionResult.error) {
-            throw new Error(questionResult.error || `Failed to upload question ${i + 1}`)
+            throw new Error(
+              questionResult.error || `Failed to upload question ${i + 1}`
+            );
           }
 
-          setUploadProgress(Math.round(((i + 1) / questions.length) * 100))
+          setUploadProgress(Math.round(((i + 1) / questions.length) * 100));
         }
 
         cuteAlert({
@@ -819,23 +897,29 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
           title: "Success",
           description: "Question set registered successfully",
           primaryButtonText: "OK",
-        })
+        });
       }
 
-      toast.success(isUpdate ? "Configuration updated successfully" : "Question set registered successfully")
-      setIsConfigRegistered(true)
-      setIsUploading(false)
+      toast.success(
+        isUpdate
+          ? "Configuration updated successfully"
+          : "Question set registered successfully"
+      );
+      setIsConfigRegistered(true);
+      setIsUploading(false);
     } catch (err) {
-      console.error("Error with configuration", err)
-      toast.error(`Error: ${err.message || "Failed to process configuration"}`)
-      setIsUploading(false)
+      console.error("Error with configuration", err);
+      toast.error(`Error: ${err.message || "Failed to process configuration"}`);
+      setIsUploading(false);
     }
-  }
+  };
 
   return (
     <DndProvider backend={HTML5Backend}>
       {showUpgrade && <Upgrade onClose={() => setShowUpgrade(false)} />}
-      {showAutofillUpgrade && <Upgrade onClose={() => setShowAutofillUpgrade(false)} />}
+      {showAutofillUpgrade && (
+        <Upgrade onClose={() => setShowAutofillUpgrade(false)} />
+      )}
 
       {!isConfigRegistered && selected && (
         <div className="fixed top-20 left-0 right-0 bg-amber-500/90 border-l-4 border-amber-700 text-white p-4 rounded-md mb-6 shadow-md z-50">
@@ -857,8 +941,11 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
             <div className="ml-3">
               <p className="text-sm font-medium">
                 <strong>Warning:</strong> Your{" "}
-                {isUpdate ? "configuration has not been updated" : "question set has not been saved"} yet. Click "
-                {isUpdate ? "Update" : "Register Question Set"}" at the bottom of the page to save your work.
+                {isUpdate
+                  ? "configuration has not been updated"
+                  : "question set has not been saved"}{" "}
+                yet. Click "{isUpdate ? "Update" : "Register Question Set"}" at
+                the bottom of the page to save your work.
               </p>
             </div>
           </div>
@@ -878,15 +965,27 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                 onClick={handleSelectiveAutofillClick}
                 className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 shadow-lg shadow-yellow-500/30 hover:shadow-yellow-500/50 font-medium flex items-center space-x-2"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
                 </svg>
                 <span>Autofill from Existing</span>
               </button>
             </div>
 
             <Card color="pink">
-              <h2 className="text-2xl font-bold text-white mb-4">Question Set Name</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Question Set Name
+              </h2>
               <div className="space-y-4">
                 <div>
                   <input
@@ -903,7 +1002,9 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
             </Card>
 
             <Card color="cyan">
-              <h2 className="text-2xl font-bold text-white mb-4">Record Questions</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Record Questions
+              </h2>
               <button
                 onClick={handleImportClick}
                 className="fixed top-4 right-6 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
@@ -920,13 +1021,22 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                         : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
                     }`}
                   >
-                    {recording ? <FaStop className="mr-2" /> : <FaMicrophone className="mr-2" />}
-                    <span>{recording ? "Stop Recording" : "Start Recording"}</span>
+                    {recording ? (
+                      <FaStop className="mr-2" />
+                    ) : (
+                      <FaMicrophone className="mr-2" />
+                    )}
+                    <span>
+                      {recording ? "Stop Recording" : "Start Recording"}
+                    </span>
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {questions.map((question, index) => (
-                    <div key={index} className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30">
+                    <div
+                      key={index}
+                      className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30"
+                    >
                       <audio
                         controls
                         src={question}
@@ -956,7 +1066,12 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                   onClick={handlePresetRubricsClick}
                   className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center space-x-2"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -986,7 +1101,9 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                   <table className="w-full border-collapse">
                     <thead>
                       <tr>
-                        <th className="text-white text-left p-2 border-b border-purple-500/30">Category</th>
+                        <th className="text-white text-left p-2 border-b border-purple-500/30">
+                          Category
+                        </th>
                         {pointValues.map((value, index) => (
                           <DraggableColumn
                             key={index}
@@ -1005,7 +1122,9 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                           <td className="p-2 border-b border-purple-500/30">
                             <div className="flex items-center space-x-2">
                               <button
-                                onClick={() => handleDeleteCategory(categoryIndex)}
+                                onClick={() =>
+                                  handleDeleteCategory(categoryIndex)
+                                }
                                 className="text-red-400 hover:text-red-300 transition-colors"
                               >
                                 <FaTimes size={12} />
@@ -1013,18 +1132,29 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                               <input
                                 type="text"
                                 value={category.name}
-                                onChange={(e) => handleCategoryNameChange(categoryIndex, e)}
+                                onChange={(e) =>
+                                  handleCategoryNameChange(categoryIndex, e)
+                                }
                                 placeholder="Category Name"
                                 className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
                               />
                             </div>
                           </td>
                           {pointValues.map((_, pointIndex) => (
-                            <td key={pointIndex} className="p-2 border-b border-purple-500/30">
+                            <td
+                              key={pointIndex}
+                              className="p-2 border-b border-purple-500/30"
+                            >
                               <input
                                 type="text"
                                 value={category.descriptions[pointIndex]}
-                                onChange={(e) => handleCategoryDescriptionChange(categoryIndex, pointIndex, e)}
+                                onChange={(e) =>
+                                  handleCategoryDescriptionChange(
+                                    categoryIndex,
+                                    pointIndex,
+                                    e
+                                  )
+                                }
                                 placeholder={`Description for ${pointValues[pointIndex]} points`}
                                 className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
                               />
@@ -1045,10 +1175,14 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
             </Card>
 
             <Card color="blue">
-              <h2 className="text-2xl font-bold text-white mb-4">Additional Settings</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Additional Settings
+              </h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-white mb-2">Answer Time Limit (seconds)</label>
+                  <label className="block text-white mb-2">
+                    Answer Time Limit (seconds)
+                  </label>
                   <input
                     type="number"
                     value={maxTime}
@@ -1075,7 +1209,9 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                 </div>
                 {selectedLanguage === "Other" && (
                   <div>
-                    <label className="block text-white mb-2">Specify Language</label>
+                    <label className="block text-white mb-2">
+                      Specify Language
+                    </label>
                     <input
                       type="text"
                       value={otherLanguage}
@@ -1097,7 +1233,9 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                   <div className="mb-4">
                     <div className="flex justify-between mb-1">
                       <span className="text-white">
-                        {isUpdate ? "Updating configuration..." : "Uploading questions..."}
+                        {isUpdate
+                          ? "Updating configuration..."
+                          : "Uploading questions..."}
                       </span>
                       <span className="text-white">{uploadProgress}%</span>
                     </div>
@@ -1118,8 +1256,8 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                     isUploading
                       ? "bg-gray-600 cursor-not-allowed"
                       : hoverButton
-                        ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
-                        : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
+                      ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
+                      : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
                   }`}
                 >
                   <span className="relative z-10">
@@ -1128,8 +1266,8 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                         ? "Updating..."
                         : "Uploading..."
                       : isUpdate
-                        ? "Update"
-                        : "Register Question Set"}
+                      ? "Update"
+                      : "Register Question Set"}
                   </span>
                 </button>
               </div>
@@ -1159,7 +1297,9 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
 
                 {/* Autofill Options */}
                 <div className="mb-8">
-                  <h3 className="text-xl font-semibold text-white mb-4">Select what to autofill:</h3>
+                  <h3 className="text-xl font-semibold text-white mb-4">
+                    Select what to autofill:
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     {Object.entries(autofillOptions).map(([key, value]) => (
                       <label
@@ -1169,7 +1309,12 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                         <input
                           type="checkbox"
                           checked={value}
-                          onChange={(e) => setAutofillOptions((prev) => ({ ...prev, [key]: e.target.checked }))}
+                          onChange={(e) =>
+                            setAutofillOptions((prev) => ({
+                              ...prev,
+                              [key]: e.target.checked,
+                            }))
+                          }
                           className="w-5 h-5 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500 focus:ring-2"
                         />
                         <span className="text-white font-medium capitalize">
@@ -1182,7 +1327,9 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
 
                 {/* Configuration List */}
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-white mb-4">Choose a configuration:</h3>
+                  <h3 className="text-xl font-semibold text-white mb-4">
+                    Choose a configuration:
+                  </h3>
                   <div className="max-h-64 overflow-y-auto space-y-3">
                     {selectedConfig && selectedConfig.length > 0 ? (
                       selectedConfig.map((config, index) => (
@@ -1197,12 +1344,23 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                                 {config.name}
                               </h4>
                               <p className="text-gray-400 text-sm mt-1">
-                                {config.questions?.length || 0} questions • {config.language || "No language set"}
+                                {config.questions?.length || 0} questions •{" "}
+                                {config.language || "No language set"}
                               </p>
                             </div>
                             <div className="text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 5l7 7-7 7"
+                                />
                               </svg>
                             </div>
                           </div>
@@ -1210,8 +1368,12 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                       ))
                     ) : (
                       <div className="text-center py-8">
-                        <div className="text-gray-400 text-lg">No configurations found</div>
-                        <p className="text-gray-500 text-sm mt-2">Create a configuration first to use autofill</p>
+                        <div className="text-gray-400 text-lg">
+                          No configurations found
+                        </div>
+                        <p className="text-gray-500 text-sm mt-2">
+                          Create a configuration first to use autofill
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1261,7 +1423,8 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                             {name}
                           </h3>
                           <div className="text-gray-400 text-sm mb-3">
-                            {rubric.pointValues.length} point scale • {rubric.categories.length} categories
+                            {rubric.pointValues.length} point scale •{" "}
+                            {rubric.categories.length} categories
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {rubric.categories.map((category, idx) => (
@@ -1275,7 +1438,12 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                           </div>
                         </div>
                         <div className="text-purple-500 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg
+                            className="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -1310,7 +1478,10 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                   <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
                     Import File
                   </h2>
-                  <button onClick={closeImportModal} className="text-gray-400 hover:text-white transition-colors">
+                  <button
+                    onClick={closeImportModal}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
                     <FaTimes size={20} />
                   </button>
                 </div>
@@ -1318,7 +1489,9 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                 {!uploadedFile && !isUploading && !processedStrings && (
                   <div
                     className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
-                      dragActive ? "border-cyan-400 bg-cyan-500/10" : "border-gray-500 hover:border-cyan-500"
+                      dragActive
+                        ? "border-cyan-400 bg-cyan-500/10"
+                        : "border-gray-500 hover:border-cyan-500"
                     }`}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
@@ -1328,8 +1501,12 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                     <div className="space-y-4">
                       <div className="text-4xl text-gray-400">📁</div>
                       <div>
-                        <p className="text-white text-lg font-medium">Drag and drop your file here</p>
-                        <p className="text-gray-400 text-sm mt-2">Supported formats: PDF, DOCX, TXT (Max 10MB)</p>
+                        <p className="text-white text-lg font-medium">
+                          Drag and drop your file here
+                        </p>
+                        <p className="text-gray-400 text-sm mt-2">
+                          Supported formats: PDF, DOCX, TXT (Max 10MB)
+                        </p>
                       </div>
                       <div className="relative">
                         <input
@@ -1349,31 +1526,80 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                 {isUploading && (
                   <div className="text-center py-8">
                     <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mb-4"></div>
-                    <p className="text-white text-lg font-medium">Processing your file...</p>
-                    <p className="text-gray-400 text-sm mt-2">Please wait while we extract the content</p>
-                  </div>
-                )}
-
-                {isConfirming && processedStrings && (
-                  <div className="text-center py-8">
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mb-4"></div>
-                    <p className="text-white text-lg font-medium">Converting text to speech...</p>
+                    <p className="text-white text-lg font-medium">
+                      Processing your file...
+                    </p>
                     <p className="text-gray-400 text-sm mt-2">
-                      Generating audio for {processedStrings.length} questions
+                      Please wait while we extract the content
                     </p>
                   </div>
                 )}
 
-                {processedStrings && (
+                {isConfirming && (
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-purple-400 mb-6"></div>
+                    <p className="text-white text-xl font-medium mb-2">
+                      Converting text to speech...
+                    </p>
+                    <p className="text-gray-400 text-lg mb-4">
+                      Generating audio for {processedStrings.length} questions
+                    </p>
+                    <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600">
+                      <p className="text-cyan-400 text-lg font-semibold">
+                        Estimated time: 3m
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {processedStrings && !isConfirming && (
                   <div className="space-y-4">
-                    <p className="text-white text-lg font-medium">Edit the extracted content:</p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-white text-lg font-medium">
+                        Edit the extracted content:
+                      </p>
+                      <button
+                        onClick={() =>
+                          setProcessedStrings([...processedStrings, ""])
+                        }
+                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-2"
+                      >
+                        <FaPlus size={14} />
+                        <span>Add Question</span>
+                      </button>
+                    </div>
                     <div className="max-h-96 overflow-y-auto space-y-3">
                       {processedStrings.map((str, index) => (
                         <div key={index} className="space-y-2">
-                          <label className="text-gray-300 text-sm">Question {index + 1}:</label>
+                          <div className="flex justify-between items-center">
+                            <label className="text-gray-300 text-sm">
+                              Question {index + 1}:
+                            </label>
+                            <button
+                              onClick={() => {
+                                if (processedStrings.length > 1) {
+                                  setProcessedStrings(
+                                    processedStrings.filter(
+                                      (_, i) => i !== index
+                                    )
+                                  );
+                                } else {
+                                  toast.error(
+                                    "You must have at least one question"
+                                  );
+                                }
+                              }}
+                              className="text-red-400 hover:text-red-300 transition-colors p-1"
+                              title="Remove this question"
+                            >
+                              <FaTimes size={14} />
+                            </button>
+                          </div>
                           <textarea
                             value={str}
-                            onChange={(e) => handleStringEdit(index, e.target.value)}
+                            onChange={(e) =>
+                              handleStringEdit(index, e.target.value)
+                            }
                             className="w-full h-[50px] bg-black/30 border border-cyan-500/30 rounded p-3 text-white resize-none"
                             rows={3}
                             placeholder={`Content ${index + 1}`}
@@ -1398,14 +1624,7 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
                             : "bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
                         }`}
                       >
-                        {isConfirming ? (
-                          <div className="flex items-center justify-center space-x-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Generating Audio...</span>
-                          </div>
-                        ) : (
-                          "Confirm Changes"
-                        )}
+                        Confirm Changes
                       </button>
                     </div>
                   </div>
@@ -1416,7 +1635,7 @@ const Config = ({ isUpdate = false, set, setUltimate, getPin, subscribed, setSub
         )}
       </div>
     </DndProvider>
-  )
-}
+  );
+};
 
-export default Config
+export default Config;
