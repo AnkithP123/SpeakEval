@@ -395,7 +395,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
         window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`;
       }
 
-      if (data.started && data.limit) {
+      if (data.started && data.limit && !finishedRecording) {
         updateTimer(data.limit - (Date.now() - data.started));
       }
 
@@ -431,7 +431,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
           if (
             !error ||
             (!error.includes("Processing...") &&
-              !error.includes("Uploaded to server successfully."))
+              !error.includes("Uploaded to server successfully.")) && !finishedRecording
           ) {
             setError(
               "Reaching time limit. Please finish your response in the next 5 seconds. "
@@ -565,7 +565,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
           : "It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.")
     );
     setIsError(false);
-
+    setFinishedRecording(true);
     try {
       const response = await fetch(
         `https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`,
@@ -616,6 +616,13 @@ export default function AudioRecorder({ code, participant, uuid }) {
       setError("Failed to upload audio. Please try again.");
       setIsError(true);
     }
+
+    if (interval) {
+      clearInterval(interval);
+      updateTimer(0);
+    }
+    setFinishedRecording(true);
+    setDisplayTime("xx:xx");
   };
 
   const uploadScreen = async (formData) => {
