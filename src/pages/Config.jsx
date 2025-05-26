@@ -1549,7 +1549,8 @@ const Config = ({
                     </p>
                     <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600">
                       <p className="text-cyan-400 text-lg font-semibold">
-                        Estimated time: 3m
+                        Estimated time:{" "}
+                        {Math.ceil(processedStrings.length / 30)} minutes
                       </p>
                     </div>
                   </div>
