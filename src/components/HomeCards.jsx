@@ -5,7 +5,7 @@ function HomeCards() {
   const teacherCards = [
     {
       title: "Question Sets",
-      description: "For teacher use. Create a new set: configure rubric, settings and question bank.",
+      description: "For teacher use. Create a new set: configure rubric, settings, and question bank.",
       link: "/configure",
       buttonText: "Configure",
       color: "blue",
