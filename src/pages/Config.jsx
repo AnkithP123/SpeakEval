@@ -503,8 +503,9 @@ const Config = ({
               }),
             }
           );
-
-          if (!response.ok) {
+          if (response.error) {
+            toast.error(`Error: ${response.error}`);
+          } else if (!response.ok) {
             throw new Error(`Server error: ${response.status}`);
           }
 
@@ -591,9 +592,11 @@ const Config = ({
           }),
         }
       );
-
-      if (!response.ok) {
-        const errorText = await response.text();
+      if (response.error) {
+        console.error("Server Error:", response.error);
+        throw new Error(response.error);
+      } else if (!response.ok) {
+        const errorText = await response.error;
         console.error("Server Error Response:", errorText);
         throw new Error(`Server error: ${response.status}`);
       }
