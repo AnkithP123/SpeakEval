@@ -39,8 +39,19 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     questions: [],
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [isInitialLoading, setIsInitialLoading] = useState(true) // New state for initial data loading
-  const [allQuestionData, setAllQuestionData] = useState(new Map()) // Store all fetched data
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false)
+
+  // SINGLE CENTRALIZED DATA STORE - EVERYTHING GOES HERE
+  const [COMPLETE_DATA_STORE, setCOMPLETE_DATA_STORE] = useState({
+    questions: [], // Array of question codes
+    students: {}, // studentName -> complete student data across all questions
+    questionDetails: {}, // questionCode -> question metadata
+    cheatingData: {}, // questionCode -> array of cheaters
+    rubricData: null,
+    isFullyLoaded: false,
+  })
+
   const displayNameInputRef = useRef(null)
 
   const [showBulkEmailModal, setShowBulkEmailModal] = useState(false)
@@ -58,76 +69,38 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     emailSubject: "SpeakEval Exam Result",
   })
 
-  const [cheatersByQuestion, setCheatersByQuestion] = useState({})
-
-  // Fetch cheating data for a specific question code
-  const fetchCheatingData = async (questionCode) => {
-    try {
-      const response = await fetch(
-        `https://www.server.speakeval.org/get_cheaters?token=${localStorage.getItem("token")}&code=${questionCode}`,
-      )
-      const data = await response.json()
-      if (data.cheaters) {
-        console.log(`Cheating data loaded for question ${questionCode}:`, data.cheaters)
-        return data.cheaters
-      } else {
-        console.log(`No cheating data found for question ${questionCode}`)
-        return []
-      }
-    } catch (error) {
-      console.error(`Error fetching cheating data for question ${questionCode}:`, error)
-      return []
-    }
-  }
-
-  // Fetch cheating data for all questions
-  const fetchAllCheatingData = async () => {
-    if (!showByPerson) {
-      const cheaters = await fetchCheatingData(roomCode)
-      setCheatersByQuestion({ [roomCode]: cheaters })
-    } else {
-      const allCheaters = {}
-      for (const qCode of questionData.questions) {
-        const cheaters = await fetchCheatingData(qCode)
-        allCheaters[qCode] = cheaters
-      }
-      setCheatersByQuestion(allCheaters)
-    }
-  }
-
   useEffect(() => {
     localStorage.setItem("descriptions", JSON.stringify(descriptions))
   }, [descriptions])
 
-  // Main initialization effect - fetch all data upfront
+  // Main initialization effect - fetch ALL data upfront (only once per exam)
   useEffect(() => {
-    const initializeAllData = async () => {
-      setIsInitialLoading(true)
-      try {
-        // First, get the total number of questions
-        await fetchTotalQuestions()
-      } catch (error) {
-        console.error("Error during initialization:", error)
-        toast.error("Error initializing data")
+    const baseCode = roomCode.toString().slice(0, -3)
+    
+    // Only fetch if we haven't loaded this exam yet
+    if (!hasInitiallyLoaded) {
+      const initializeCompleteDataStore = async () => {
+        setIsInitialLoading(true)
+        try {
+          await fetchCompleteExamData()
+          setHasInitiallyLoaded(true)
+        } catch (error) {
+          console.error("Error during initialization:", error)
+          toast.error("Error initializing data")
+          setIsInitialLoading(false)
+        }
       }
+
+      initializeCompleteDataStore()
     }
+  }, [hasInitiallyLoaded]) // Only depend on hasInitiallyLoaded, not roomCode
 
-    initializeAllData()
-  }, [roomCode])
-
-  // Fetch all question data after we know the total questions
+  // Update participants when data store changes or view mode changes
   useEffect(() => {
-    if (questionData.questions.length > 0) {
-      fetchAllQuestionData()
+    if (COMPLETE_DATA_STORE.isFullyLoaded) {
+      organizeParticipantsFromCompleteStore()
     }
-  }, [questionData])
-
-  // Fetch cheating data after question data is loaded
-  useEffect(() => {
-    if (questionData.questions.length > 0 && allQuestionData.size > 0) {
-      fetchAllCheatingData()
-    }
-  }, [questionData.questions, allQuestionData, showByPerson])
+  }, [COMPLETE_DATA_STORE, showByPerson, roomCode])
 
   useEffect(() => {
     if (showBulkEmailModal || showSingleEmailModal) {
@@ -137,152 +110,217 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     }
   }, [showBulkEmailModal, showSingleEmailModal])
 
-  const fetchTotalQuestions = async () => {
+  // FETCH ALL DATA AND POPULATE COMPLETE STORE
+  const fetchCompleteExamData = async () => {
     try {
-      const response = await fetch(`https://www.server.speakeval.org/get_num_questions?code=${roomCode}`)
-      const data = await response.json()
+      console.log("🚀 Starting complete data fetch")
 
-      if (data.error) {
-        toast.error(data.error)
+      // Step 1: Get total questions (use the original roomCode for base calculation)
+      const originalRoomCode = initialRoomCode || paramRoomCode
+      const questionsResponse = await fetch(`https://www.server.speakeval.org/get_num_questions?code=${originalRoomCode}`)
+      const questionsData = await questionsResponse.json()
+
+      if (questionsData.error) {
+        toast.error(questionsData.error)
         return
       }
 
-      const baseCode = roomCode.toString().slice(0, -3)
-      const questions = Array.from({ length: data.questions }, (_, i) =>
+      const baseCode = originalRoomCode.toString().slice(0, -3)
+      const questionCodes = Array.from({ length: questionsData.questions }, (_, i) =>
         Number.parseInt(baseCode + (i + 1).toString().padStart(3, "0")),
       )
 
-      setQuestionData({
-        currentIndex: Number.parseInt(roomCode.toString().slice(-3)),
-        totalQuestions: data.questions,
-        questions,
-      })
-    } catch (error) {
-      console.error("Error fetching total questions:", error)
-      toast.error("Error fetching question information")
-    }
-  }
+      console.log("📋 Found", questionCodes.length, "questions")
 
-  // New function to fetch all question data at once
-  const fetchAllQuestionData = async () => {
-    setIsInitialLoading(true)
-    const allData = new Map()
+      // Step 2: Fetch ALL question data in parallel with progress tracking
+      let completedRequests = 0
+      const totalRequests = questionCodes.length * 2 // data + cheaters for each question
 
-    try {
-      console.log("Fetching data for all questions:", questionData.questions)
-
-      // Fetch data for all questions in parallel
-      const fetchPromises = questionData.questions.map(async (questionCode) => {
+      const allDataPromises = questionCodes.map(async (questionCode) => {
         try {
-          const response = await fetch(`https://www.server.speakeval.org/downloadall?code=${questionCode}`, {
-            headers: {
-              "Cache-Control": "no-store",
-              Pragma: "no-cache",
-              Expires: "0",
-            },
-          })
+          const [dataResponse, cheatersResponse] = await Promise.all([
+            fetch(`https://www.server.speakeval.org/downloadall?code=${questionCode}`, {
+              headers: {
+                "Cache-Control": "no-store",
+                Pragma: "no-cache",
+                Expires: "0",
+              },
+            }),
+            fetch(
+              `https://www.server.speakeval.org/get_cheaters?token=${localStorage.getItem("token")}&code=${questionCode}`,
+            ),
+          ])
 
-          const data = await response.json()
+          const [data, cheatersData] = await Promise.all([dataResponse.json(), cheatersResponse.json()])
+          
+          completedRequests += 2
+          console.log(`📦 Progress: ${completedRequests}/${totalRequests} requests completed`)
 
-          if (data.error) {
-            console.error(`Error fetching data for question ${questionCode}:`, data.error)
-            return { questionCode, data: null }
+          return {
+            questionCode,
+            data: data.error ? null : data,
+            cheaters: cheatersData.cheaters || [],
+          }
+        } catch (error) {
+          console.error(`❌ Error fetching data for question ${questionCode}:`, error)
+          completedRequests += 2
+          return {
+            questionCode,
+            data: null,
+            cheaters: [],
+          }
+        }
+      })
+
+      const allResults = await Promise.all(allDataPromises)
+      console.log("✅ All data fetched, building store...")
+
+      // Step 3: Build the complete data store
+      const completeStore = {
+        questions: questionCodes,
+        students: {},
+        questionDetails: {},
+        cheatingData: {},
+        rubricData: null,
+        isFullyLoaded: false,
+      }
+
+      // Process each question's data
+      allResults.forEach(({ questionCode, data, cheaters }) => {
+        // Store cheating data
+        completeStore.cheatingData[questionCode] = cheaters
+
+        if (data && data.participants) {
+          // Store question details
+          completeStore.questionDetails[questionCode] = {
+            questionText: data.participants[0]?.questionText || "No question available",
+            question: data.participants[0]?.question || "",
+            rubric: data.rubric,
+            rubric2: data.rubric2,
           }
 
-          return { questionCode, data }
-        } catch (error) {
-          console.error(`Error fetching data for question ${questionCode}:`, error)
-          return { questionCode, data: null }
-        }
-      })
+          // Set rubric data from first available question
+          if (!completeStore.rubricData && data.rubric) {
+            let rubric2 = data.rubric
 
-      const results = await Promise.all(fetchPromises)
-
-      // Process results and store in allData map
-      results.forEach(({ questionCode, data }) => {
-        if (data) {
-          allData.set(questionCode, data)
-        }
-      })
-
-      // Set rubric data from the first available question
-      const firstQuestionData = results.find((r) => r.data)?.data
-      if (firstQuestionData) {
-        let rubric2 = firstQuestionData.rubric
-
-        if (rubric2 && rubric2.includes("|^^^|")) {
-          const pointValues = rubric2.split("|^^^|")[0].split("|,,|").map(Number)
-          setPointValues(pointValues)
-          rubric2 = rubric2.split("|^^^|")[1]
-        }
-
-        setRubric(firstQuestionData.rubric)
-        setRubric2(rubric2)
-
-        // Parse categories and descriptions
-        const [newCategories, newDescriptions] = rubric2
-          ? [
-              rubric2.split("|;;|").map((element) => element.split("|:::|")[0]),
-              rubric2.split("|;;|").map((element) => element.split("|:::|")[1].replace("|,,,|", "\n\n")),
-            ]
-          : [[], []]
-
-        setCategories(newCategories)
-        setDescriptions(newDescriptions)
-      }
-
-      setAllQuestionData(allData)
-
-      // Now organize participants based on current view mode
-      organizeParticipantData(allData)
-    } catch (error) {
-      console.error("Error fetching all question data:", error)
-      toast.error("Error fetching question data")
-    } finally {
-      setIsInitialLoading(false)
-      setFetched(true)
-    }
-  }
-
-  // New function to organize participant data based on view mode
-  const organizeParticipantData = (allData) => {
-    if (showByPerson) {
-      // Organize data by participant for "Show by Person" view
-      const participantMap = new Map()
-
-      allData.forEach((questionData, questionCode) => {
-        if (questionData && questionData.participants) {
-          questionData.participants.forEach((participant) => {
-            if (!participantMap.has(participant.name)) {
-              participantMap.set(participant.name, {
-                name: participant.name,
-                questionData: new Map(),
-              })
+            if (rubric2 && rubric2.includes("|^^^|")) {
+              const pointValues = rubric2.split("|^^^|")[0].split("|,,|").map(Number)
+              setPointValues(pointValues)
+              rubric2 = rubric2.split("|^^^|")[1]
             }
-            participantMap.get(participant.name).questionData.set(questionCode, participant)
+
+            setRubric(data.rubric)
+            setRubric2(rubric2)
+
+          // Parse categories and descriptions
+          const [newCategories, newDescriptions] = rubric2
+            ? [
+                rubric2.split("|;;|").map((element) => element.split("|:::|")[0]),
+                rubric2.split("|;;|").map((element) => element.split("|:::|")[1].replace("|,,,|", "\n\n")),
+              ]
+            : [[], []]
+
+          setCategories(newCategories)
+          setDescriptions(newDescriptions)
+
+            completeStore.rubricData = {
+              rubric: data.rubric,
+              rubric2: rubric2,
+              categories: newCategories,
+              descriptions: newDescriptions,
+              pointValues: pointValues,
+            }
+          }
+
+          // Process each participant
+          data.participants.forEach((participant) => {
+            const studentName = participant.name
+
+            // Initialize student if not exists
+            if (!completeStore.students[studentName]) {
+              completeStore.students[studentName] = {
+                name: studentName,
+                responses: {}, // questionCode -> complete response data
+              }
+            }
+
+            // Store complete response data for this question
+            completeStore.students[studentName].responses[questionCode] = {
+              ...participant, // All original data
+              questionCode: questionCode,
+              studentName: studentName,
+              cheatingData: cheaters.filter((c) => c.name === studentName),
+            }
           })
         }
       })
 
-      const organizedParticipants = Array.from(participantMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+      // Mark as fully loaded
+      completeStore.isFullyLoaded = true
 
-      setParticipants(organizedParticipants)
-    } else {
-      // For "Show by Question" view, get data for the current room code
-      const currentQuestionData = allData.get(roomCode)
-      if (currentQuestionData && currentQuestionData.participants) {
-        const uniqueParticipants = currentQuestionData.participants
-          .filter((participant, index, self) => index === self.findIndex((p) => p.name === participant.name))
-          .sort((a, b) => a.name.localeCompare(b.name))
+      // Update question data
+      setQuestionData({
+        currentIndex: Number.parseInt(originalRoomCode.toString().slice(-3)),
+        totalQuestions: questionsData.questions,
+        questions: questionCodes,
+      })
 
-        setParticipants(uniqueParticipants)
-      } else {
-        setParticipants([])
-      }
+      // Set the complete store
+      setCOMPLETE_DATA_STORE(completeStore)
+
+      console.log("✅ Complete data store ready with", Object.keys(completeStore.students).length, "students")
+      setIsInitialLoading(false)
+      setFetched(true)
+    } catch (error) {
+      console.error("💥 Error in fetchCompleteExamData:", error)
+      toast.error("Error fetching exam data")
+      setIsInitialLoading(false)
     }
   }
 
-  const handleNavigateQuestion = async (direction) => {
+  // Organize participants from the complete data store
+  const organizeParticipantsFromCompleteStore = () => {
+    if (!COMPLETE_DATA_STORE.isFullyLoaded) {
+      console.log("⏳ Data not fully loaded yet, skipping organization")
+      return
+    }
+
+    console.log("🔄 Organizing participants, showByPerson:", showByPerson, "roomCode:", roomCode)
+
+    if (showByPerson) {
+      // Show by Person: Each row is a student, columns are questions
+      const organizedParticipants = Object.values(COMPLETE_DATA_STORE.students)
+        .map((student) => ({
+          name: student.name,
+          questionData: new Map(
+            Object.entries(student.responses).map(([questionCode, responseData]) => [
+              Number.parseInt(questionCode),
+              responseData,
+            ]),
+          ),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+      console.log("👥 Organized for Show by Person:", organizedParticipants.length, "students")
+      setParticipants(organizedParticipants)
+    } else {
+      // Show by Question: Show all students for current question
+      const currentQuestionParticipants = Object.values(COMPLETE_DATA_STORE.students)
+        .map((student) => student.responses[roomCode])
+        .filter((response) => response) // Only students who have responses for this question
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+      console.log(
+        "📝 Organized for Show by Question:",
+        currentQuestionParticipants.length,
+        "participants for question",
+        roomCode,
+      )
+      setParticipants(currentQuestionParticipants)
+    }
+  }
+
+  const handleNavigateQuestion = (direction) => {
     if (showByPerson) return
 
     const currentIndex = questionData.currentIndex
@@ -300,8 +338,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         currentIndex: newIndex,
       }))
 
-      // Use stored data instead of fetching - just reorganize for the new question
-      organizeParticipantData(allQuestionData)
+      // Participants will be reorganized automatically via useEffect
     } else {
       toast.warn(`No ${direction} question available.`)
     }
@@ -324,8 +361,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           if (participant.name === participantName) {
             const updatedQuestionData = new Map(participant.questionData)
             if (updatedQuestionData.has(questionCode)) {
+              const existingData = updatedQuestionData.get(questionCode)
               updatedQuestionData.set(questionCode, {
-                ...updatedQuestionData.get(questionCode),
+                ...existingData,
                 grades,
                 totalScore,
                 teacherComment: comment,
@@ -768,8 +806,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       }))
     }
 
-    // Reorganize participant data based on new view mode
-    organizeParticipantData(allQuestionData)
+    // Participants will be reorganized automatically via useEffect
   }
 
   const handleDisplayNameSubmit = async () => {
@@ -791,25 +828,26 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   }
 
   const getCheatingData = (participantName, questionCode) => {
-    const questionCheaters = cheatersByQuestion[questionCode] || []
-    return questionCheaters.filter((c) => c.name === participantName)
+    return COMPLETE_DATA_STORE.cheatingData[questionCode]?.filter((c) => c.name === participantName) || []
   }
 
   // Show loading screen while initial data is being fetched
-  if (isInitialLoading) {
+  if (isInitialLoading || !COMPLETE_DATA_STORE.isFullyLoaded) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="relative mb-8">
+            <div className="w-20 h-20 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto"></div>
             <div
-              className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-500 rounded-full animate-spin mx-auto"
+              className="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-purple-500 rounded-full animate-spin mx-auto"
               style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
             ></div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Loading Exam Data</h2>
-          <p className="text-gray-300">Fetching all questions and student responses...</p>
-          <div className="mt-4 text-sm text-gray-400">This may take a moment for exams with many questions</div>
+          <h2 className="text-3xl font-bold text-white mb-4">Loading Exam Data</h2>
+          <p className="text-gray-300 text-lg">Preparing all questions and responses...</p>
+          <div className="mt-6 w-64 mx-auto bg-gray-700 rounded-full h-2">
+            <div className="bg-gradient-to-r from-cyan-500 to-purple-500 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+          </div>
         </div>
       </div>
     )
@@ -953,11 +991,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
           {/* Profile cards grid */}
           <div className="w-full px-6 pb-12">
-            {isLoading ? (
-              <div className="flex justify-center items-center min-h-[200px]">
-                <div className="text-xl font-semibold text-white">Loading...</div>
-              </div>
-            ) : showByPerson ? (
+            {showByPerson ? (
               <div className="overflow-x-auto">
                 <div className="inline-block min-w-full bg-black/40 backdrop-blur-md rounded-xl border border-cyan-500/30 shadow-xl">
                   <table className="min-w-full">
@@ -976,21 +1010,22 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                         <tr key={index} className="border-b border-cyan-500/10">
                           <td className="py-4 px-6 text-white align-top">{participant.name}</td>
                           {questionData.questions.map((questionCode, qIndex) => {
-                            const questionData2 = participant.questionData
+                            const responseData = participant.questionData
                               ? participant.questionData.get(questionCode)
                               : null
                             const cheatingData = getCheatingData(participant.name, questionCode)
+
                             return (
                               <td key={qIndex} className="py-4 px-6">
-                                {questionData2 ? (
+                                {responseData ? (
                                   <ProfileCard
-                                    text={questionData2.transcription}
+                                    text={responseData.transcription}
                                     rubric={rubric}
                                     rubric2={rubric2}
-                                    audio={questionData2.audio}
-                                    question={questionData2.questionText}
-                                    questionBase64={questionData2.question}
-                                    index={questionData2.index}
+                                    audio={responseData.audio}
+                                    question={responseData.questionText}
+                                    questionBase64={responseData.question}
+                                    index={responseData.index}
                                     name={participant.name}
                                     code={questionCode}
                                     onGradeUpdate={handleGradeUpdate}
