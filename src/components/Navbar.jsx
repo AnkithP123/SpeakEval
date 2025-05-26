@@ -239,7 +239,7 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
                           Logout
                         </button>
                         <button
-                          onClick={() => navigate("/update")}
+                          onClick={() => window.location.href = "/update"}
                           className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
                         >
                           Manage Sets

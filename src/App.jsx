@@ -33,6 +33,7 @@ import PracticeExam from "./pages/PracticeExam";
 import RegisterPage from "./pages/RegisterPage";
 import GradeBotCreator from "./pages/GradeBotCreator";
 import ResetPasswordPage from "./pages/ResetPassword";
+import Config from "./pages/Config";
 
 function AudioRecorderRouteWrapper() {
   const location = useLocation();
@@ -102,11 +103,26 @@ function App() {
           <Route
             path="/configure"
             element={
-              <Configure
+              <Config
+                isUpdate={false}
                 set={setGold}
                 setUltimate={setUltimate}
                 getPin={getPin}
                 subscribed={gold || ultimate}
+                setSubscribed={setGold}
+              />
+            }
+          />
+          <Route
+            path="/update"
+            element={
+              <Config
+                isUpdate={true}
+                set={setGold}
+                setUltimate={setUltimate}
+                getPin={getPin}
+                subscribed={gold || ultimate}
+                setSubscribed={setGold}
               />
             }
           />
@@ -134,17 +150,6 @@ function App() {
                 setUltimate={setUltimate}
                 setUsername={setUserName}
                 setPin={setPin}
-              />
-            }
-          />
-          <Route
-            path="/update"
-            element={
-              <RoomAndConfigPage
-                set={setGold}
-                setUltimate={setUltimate}
-                getPin={getPin}
-                subscribed={gold || ultimate}
               />
             }
           />
