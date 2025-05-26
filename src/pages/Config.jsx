@@ -782,7 +782,7 @@ const Config = ({
   };
 
   const handleRegisterConfig = async () => {
-    if (!id) {
+    if (!isUpdate && !id) {
       toast.error("Please enter a name for the set");
       return;
     }
