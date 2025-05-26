@@ -4,6 +4,13 @@ import { Link } from "react-router-dom"
 function HomeCards() {
   const teacherCards = [
     {
+      title: "Question Sets",
+      description: "For teacher use. Create a new set: configure rubric, settings and question bank.",
+      link: "/configure",
+      buttonText: "Configure",
+      color: "blue",
+    },
+    {
       title: "Create Room",
       description: "For Teacher Use. Create a room for your students.",
       link: "/create-room",
@@ -16,13 +23,6 @@ function HomeCards() {
       link: "/teacher-portal",
       buttonText: "Grade",
       color: "purple",
-    },
-    {
-      title: "Configure Sets",
-      description: "For teacher use. Configure question sets: create rubrics and question banks.",
-      link: "/configure",
-      buttonText: "Configure",
-      color: "blue",
     },
     {
       title: "Create Practice",
