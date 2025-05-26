@@ -376,8 +376,10 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
               }),
             }
           );
-
-          if (!response.ok) {
+          if (response.error) {
+            console.error("Server Error Response:", response.error);
+            toast.error(`Server error: ${response.error}`);
+          } else if (!response.ok) {
             throw new Error(`Server error: ${response.status}`);
           }
 
@@ -465,7 +467,6 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
           }),
         }
       );
-
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Server Error Response:", errorText);
