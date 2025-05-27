@@ -26,7 +26,7 @@ function HomeCards() {
     },
     {
       title: "Create Practice",
-      description: "For Teacher Use. Create a practice session for your students.",
+      description: "For Teacher Use. Create an asynchronous ungraded practice session for your students.",
       link: "/create-practice",
       buttonText: "Create",
       color: "pink",
