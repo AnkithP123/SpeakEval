@@ -34,7 +34,7 @@ import RegisterPage from "./pages/RegisterPage";
 import GradeBotCreator from "./pages/GradeBotCreator";
 import ResetPasswordPage from "./pages/ResetPassword";
 import Config from "./pages/Config";
-
+import MaintenancePage from "./pages/Maintainence copy";
 function AudioRecorderRouteWrapper() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -176,7 +176,17 @@ function App() {
     )
   );
 
-  return <RouterProvider router={route} />;
+  return (
+    <RouterProvider
+      router={createBrowserRouter(
+        createRoutesFromElements(
+          <>
+            <Route path="/*" element={<MaintenancePage />} />
+          </>
+        )
+      )}
+    />
+  );
 }
 
 export default App;
