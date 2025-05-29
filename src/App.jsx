@@ -45,6 +45,8 @@ function AudioRecorderRouteWrapper() {
   return <AudioRecorder code={code} participant={participant} uuid={uuid} />;
 }
 
+const maintenance = true;
+
 function App() {
   const [gold, setgold] = React.useState(
     localStorage.getItem("gold") === "true"
@@ -178,14 +180,14 @@ function App() {
 
   return (
     <RouterProvider
-      router={createBrowserRouter(
+      router={maintenance ? createBrowserRouter(
         createRoutesFromElements(
           <>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<HomePage maintenance={true}/>} />
             <Route path="/*" element={<MaintenancePage />} />
           </>
         )
-      )}
+      ) : route}
     />
   );
 }

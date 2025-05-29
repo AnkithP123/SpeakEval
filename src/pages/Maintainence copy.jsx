@@ -1,5 +1,5 @@
 "use client";
-import { FaTools, FaCompass, FaClock } from "react-icons/fa";
+import { FaTools, FaCompass, FaClock, FaHeartbeat } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 const MaintenancePage = () => {
@@ -12,16 +12,24 @@ const MaintenancePage = () => {
         <div style={styles.header}>
           <FaTools size={100} color="#8b5cf6" style={styles.icon} />
           <h1 style={styles.title}>Under Maintenance</h1>
-          <h2 style={styles.message}>We'll be back soon!</h2>
+          <h2 style={styles.message}>We're working to restore service!</h2>
         </div>
         <p style={styles.subtext}>
-          We're currently performing scheduled maintenance to improve your experience. Thank you for your patience while we make things better!
+          We're currently performing maintenance to ensure the best experience for you. Thank you for your patience while we work to resolve this issue.
         </p>
-        <div style={styles.statusContainer}>
-          <div style={styles.statusItem}>
-            <FaClock style={styles.statusIcon} />
-            <span>Estimated downtime: Unknown</span>
+        <div style={styles.statusSection}>
+          <div style={styles.statusLabel}>Current Status</div>
+          <div style={styles.statusHighlight}>
+            <FaHeartbeat style={styles.statusHighlightIcon} />
+            <span>Diagnosing issue<span style={styles.ellipsis}>...</span></span>
           </div>
+          <div style={styles.statusProgressBar}>
+            <div style={styles.statusProgressFill} />
+          </div>
+        </div>
+        <div style={styles.downtimeSection}>
+          <FaClock style={styles.downtimeIcon} />
+          <span style={styles.downtimeText}>Estimated downtime: <span style={styles.downtimeUnknown}>Unknown</span></span>
         </div>
         <div style={styles.optionsContainer}>
           <button style={styles.button} onClick={() => navigate("/")}>
@@ -102,26 +110,89 @@ const styles = {
     maxWidth: "600px",
     lineHeight: "1.6",
   },
-  statusContainer: {
-    background: "rgba(59,130,246,0.10)",
-    padding: "1rem",
-    borderRadius: "0.75rem",
-    boxShadow: "0 2px 10px rgba(59,130,246,0.05)",
-    marginBottom: "2rem",
+  statusSection: {
+    background: "rgba(59,130,246,0.13)",
+    padding: "1.2rem 1rem 1.5rem 1rem",
+    borderRadius: "1rem",
+    boxShadow: "0 2px 12px rgba(59,130,246,0.07)",
+    marginBottom: "1.5rem",
     display: "flex",
-    justifyContent: "center",
+    flexDirection: "column",
+    alignItems: "center",
+    position: "relative",
   },
-  statusItem: {
+  statusLabel: {
+    color: "#38bdf8",
+    fontWeight: 700,
+    fontSize: "1.05rem",
+    letterSpacing: "0.04em",
+    marginBottom: "0.5rem",
+    textTransform: "uppercase",
+  },
+  statusHighlight: {
     display: "flex",
     alignItems: "center",
-    fontSize: "1rem",
-    color: "#a5b4fc",
-    fontWeight: 500,
+    fontSize: "1.18rem",
+    color: "#fff",
+    fontWeight: 600,
+    marginBottom: "0.7rem",
+    letterSpacing: "0.01em",
   },
-  statusIcon: {
-    marginRight: "0.5rem",
+  statusHighlightIcon: {
+    marginRight: "0.6rem",
     color: "#38bdf8",
-    fontSize: "1.2rem",
+    fontSize: "1.5rem",
+    animation: "pulse 1.5s infinite",
+  },
+  ellipsis: {
+    color: "#8b5cf6",
+    fontWeight: 700,
+    marginLeft: "0.2em",
+    fontSize: "1.2em",
+    letterSpacing: "0.1em",
+    animation: "blink 1.2s infinite steps(1, end)",
+  },
+  statusProgressBar: {
+    width: "80%",
+    height: "8px",
+    background: "rgba(59,130,246,0.18)",
+    borderRadius: "4px",
+    overflow: "hidden",
+    marginTop: "0.2rem",
+  },
+  statusProgressFill: {
+    width: "30%",
+    height: "100%",
+    background: "linear-gradient(90deg, #0ea5e9 0%, #8b5cf6 100%)",
+    borderRadius: "4px",
+    transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
+    boxShadow: "0 1px 6px 0 #8b5cf655",
+  },
+  downtimeSection: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(139,92,246,0.10)",
+    padding: "0.8rem 1rem",
+    borderRadius: "0.75rem",
+    marginBottom: "2rem",
+    gap: "0.7rem",
+    boxShadow: "0 2px 8px rgba(139,92,246,0.06)",
+  },
+  downtimeIcon: {
+    color: "#8b5cf6",
+    fontSize: "1.3rem",
+  },
+  downtimeText: {
+    color: "#c7d2fe",
+    fontWeight: 500,
+    fontSize: "1.05rem",
+  },
+  downtimeUnknown: {
+    color: "#fff",
+    fontWeight: 700,
+    fontStyle: "italic",
+    marginLeft: "0.2em",
   },
   optionsContainer: {
     display: "flex",
@@ -165,7 +236,7 @@ const styles = {
   },
 };
 
-// Add CSS animation for the pulsing icon and gradient background
+// Add CSS animation for the pulsing icon, gradient background, and ellipsis blink
 const styleSheet = document.createElement("style");
 styleSheet.type = "text/css";
 styleSheet.innerText = `
@@ -178,6 +249,10 @@ styleSheet.innerText = `
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
   }
 `;
 document.head.appendChild(styleSheet);
