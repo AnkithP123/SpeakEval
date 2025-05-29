@@ -136,42 +136,50 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       let completedRequests = 0
       const totalRequests = questionCodes.length * 2 // data + cheaters for each question
 
-      const allDataPromises = questionCodes.map(async (questionCode) => {
-        try {
-          const [dataResponse, cheatersResponse] = await Promise.all([
-            fetch(`https://www.server.speakeval.org/downloadall?code=${questionCode}`, {
-              headers: {
-                "Cache-Control": "no-store",
-                Pragma: "no-cache",
-                Expires: "0",
-              },
-            }),
-            fetch(
-              `https://www.server.speakeval.org/get_cheaters?token=${localStorage.getItem("token")}&code=${questionCode}`,
-            ),
-          ])
+      // Download one by one, waiting 5 seconds in between each fetch
+      const allDataPromises = []
+      for (let i = 0; i < questionCodes.length; i++) {
+        const questionCode = questionCodes[i]
+        const fetchPromise = (async () => {
+          try {
+        const dataResponse = await fetch(`https://www.server.speakeval.org/downloadall?code=${questionCode}`, {
+          headers: {
+            "Cache-Control": "no-store",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        })
+        const cheatersResponse = await fetch(
+          `https://www.server.speakeval.org/get_cheaters?token=${localStorage.getItem("token")}&code=${questionCode}`,
+        )
 
-          const [data, cheatersData] = await Promise.all([dataResponse.json(), cheatersResponse.json()])
-          
-          completedRequests += 2
-          console.log(`📦 Progress: ${completedRequests}/${totalRequests} requests completed`)
+        const [data, cheatersData] = await Promise.all([dataResponse.json(), cheatersResponse.json()])
 
-          return {
-            questionCode,
-            data: data.error ? null : data,
-            cheaters: cheatersData.cheaters || [],
-          }
-        } catch (error) {
-          console.error(`❌ Error fetching data for question ${questionCode}:`, error)
-          completedRequests += 2
-          return {
-            questionCode,
-            data: null,
-            cheaters: [],
-          }
+        completedRequests += 2
+        console.log(`📦 Progress: ${completedRequests}/${totalRequests} requests completed`)
+
+        return {
+          questionCode,
+          data: data.error ? null : data,
+          cheaters: cheatersData.cheaters || [],
         }
-      })
-
+          } catch (error) {
+        console.error(`❌ Error fetching data for question ${questionCode}:`, error)
+        completedRequests += 2
+        return {
+          questionCode,
+          data: null,
+          cheaters: [],
+        }
+          }
+        })()
+        allDataPromises.push(fetchPromise)
+        // Wait 5 seconds before next fetch, except after the last one
+        if (i < questionCodes.length - 1) {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise((resolve) => setTimeout(resolve, 5000))
+        }
+      }
       const allResults = await Promise.all(allDataPromises)
       console.log("✅ All data fetched, building store...")
 
