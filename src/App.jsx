@@ -181,6 +181,7 @@ function App() {
       router={createBrowserRouter(
         createRoutesFromElements(
           <>
+            <Route path="/" element={<HomePage />} />
             <Route path="/*" element={<MaintenancePage />} />
           </>
         )
