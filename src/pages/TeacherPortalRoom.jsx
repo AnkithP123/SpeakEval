@@ -15,7 +15,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   const [reportOption, setReportOption] = useState("")
   const [sortOption, setSortOption] = useState("name")
   const [sortOrder, setSortOrder] = useState("asc")
-  const [showByPerson, setShowByPerson] = useState(true)
+  const [showByPerson, setShowByPerson] = useState(false)
   const [allQuestions, setAllQuestions] = useState([])
   const [showRubricModal, setShowRubricModal] = useState(false)
   const [rubricContent, setRubricContent] = useState(null)
