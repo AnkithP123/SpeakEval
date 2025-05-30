@@ -431,7 +431,8 @@ export default function AudioRecorder({ code, participant, uuid }) {
           if (
             !error ||
             (!error.includes("Processing...") &&
-              !error.includes("Uploaded to server successfully.")) && !finishedRecording
+              !error.includes("Uploaded to server successfully.") &&
+              !finishedRecording)
           ) {
             setError(
               "Reaching time limit. Please finish your response in the next 5 seconds. "
@@ -558,6 +559,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
   };
 
   const upload = async (formData) => {
+    console.log("Uploading audio...");
     setError(
       "Processing... " +
         (premium
@@ -567,6 +569,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
     setIsError(false);
     setFinishedRecording(true);
     try {
+      console.log("Uploading to server...");
       const response = await fetch(
         `https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`,
         {
@@ -574,6 +577,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
           body: formData,
         }
       );
+      console.log("Response status:", response.status);
 
       if (!response.ok) {
         const retryInterval = setInterval(async () => {
