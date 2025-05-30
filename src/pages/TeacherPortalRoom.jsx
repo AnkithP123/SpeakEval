@@ -1191,7 +1191,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       rubric={rubric}
                                       rubric2={rubric2}
                                       audio={responseData.audio}
-                                      audioFetched={false}
                                       question={responseData.questionText}
                                       questionBase64={responseData.question}
                                       index={responseData.index}
@@ -1234,7 +1233,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                       rubric={rubric}
                       rubric2={rubric2}
                       audio={participant.audio}
-                      audioFetched={false}
                       question={participant.questionText}
                       questionBase64={participant.question}
                       index={participant.index}
