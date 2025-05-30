@@ -663,6 +663,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
   };
 
   const stopRecording = () => {
+    console.log("Stopping recording...");
     setStopped(true);
     setIsRecording(false);
 

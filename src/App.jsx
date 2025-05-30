@@ -185,6 +185,10 @@ function App() {
           ? createBrowserRouter(
               createRoutesFromElements(
                 <>
+                  <Route
+                    path="/record"
+                    element={<AudioRecorderRouteWrapper />}
+                  />
                   <Route path="/" element={<HomePage maintenance={true} />} />
                   <Route path="/*" element={<MaintenancePage />} />
                 </>

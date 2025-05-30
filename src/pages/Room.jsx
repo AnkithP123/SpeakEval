@@ -40,7 +40,7 @@ function Room() {
       return navigate("/join-room");
     }
     if (parsedData.code === 7) {
-      window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`
+      window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`;
     }
     if (parsedData.code === 9) {
       toast.error(
