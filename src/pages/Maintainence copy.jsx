@@ -15,8 +15,8 @@ const MaintenancePage = () => {
           <h2 style={styles.message}>We're working to restore service!</h2>
         </div>
         <p style={styles.subtext}>
-          We've identified the issue and our team is actively implementing a
-          fix. Service should be restored shortly. Thank you for your patience.
+          We've identified the issue and are actively implementing a fix.
+          Service should be restored shortly. Thank you for your patience.
         </p>
         <div style={styles.statusSection}>
           <div style={styles.statusLabel}>Current Status</div>
