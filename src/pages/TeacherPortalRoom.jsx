@@ -192,12 +192,13 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           });
         }
         // Wait 5 seconds before next fetch, except after the last one
-        if (i < questionCodes.length - 1) {
-          // eslint-disable-next-line no-await-in-loop
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-        }
+        // if (i < questionCodes.length - 1) {
+        //   // eslint-disable-next-line no-await-in-loop
+        //   await new Promise((resolve) => setTimeout(resolve, 5000));
+        // }
       }
       console.log("✅ All data fetched, building store...");
+      console.log("📊 Total requests completed:", allResults);
 
       // Step 3: Build the complete data store
       const completeStore = {
@@ -1190,6 +1191,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       rubric={rubric}
                                       rubric2={rubric2}
                                       audio={responseData.audio}
+                                      audioFetched={false}
                                       question={responseData.questionText}
                                       questionBase64={responseData.question}
                                       index={responseData.index}
@@ -1232,6 +1234,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                       rubric={rubric}
                       rubric2={rubric2}
                       audio={participant.audio}
+                      audioFetched={false}
                       question={participant.questionText}
                       questionBase64={participant.question}
                       index={participant.index}
