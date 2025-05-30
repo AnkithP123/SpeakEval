@@ -15,13 +15,17 @@ const MaintenancePage = () => {
           <h2 style={styles.message}>We're working to restore service!</h2>
         </div>
         <p style={styles.subtext}>
-          We're currently performing maintenance to ensure the best experience for you. Thank you for your patience while we work to resolve this issue.
+          We've identified the issue and our team is actively implementing a
+          fix. Service should be restored shortly. Thank you for your patience.
         </p>
         <div style={styles.statusSection}>
           <div style={styles.statusLabel}>Current Status</div>
           <div style={styles.statusHighlight}>
             <FaHeartbeat style={styles.statusHighlightIcon} />
-            <span>Diagnosing issue<span style={styles.ellipsis}>...</span></span>
+            <span>
+              Implementing fix
+              <span style={styles.ellipsis}>...</span>
+            </span>
           </div>
           <div style={styles.statusProgressBar}>
             <div style={styles.statusProgressFill} />
@@ -29,13 +33,19 @@ const MaintenancePage = () => {
         </div>
         <div style={styles.downtimeSection}>
           <FaClock style={styles.downtimeIcon} />
-          <span style={styles.downtimeText}>Estimated downtime: <span style={styles.downtimeUnknown}>Unknown</span></span>
+          <span style={styles.downtimeText}>
+            Estimated downtime:{" "}
+            <span style={styles.downtimeUnknown}>Unkown</span>
+          </span>
         </div>
         <div style={styles.optionsContainer}>
           <button style={styles.button} onClick={() => navigate("/")}>
             <FaCompass style={styles.buttonIcon} /> Try Homepage
           </button>
-          <button style={styles.buttonAlt} onClick={() => window.location.reload()}>
+          <button
+            style={styles.buttonAlt}
+            onClick={() => window.location.reload()}
+          >
             <FaTools style={styles.buttonIcon} /> Refresh Page
           </button>
         </div>
@@ -60,7 +70,8 @@ const styles = {
     position: "absolute",
     inset: 0,
     zIndex: 0,
-    background: "linear-gradient(120deg, #0ea5e9 0%, #8b5cf6 50%, #38bdf8 100%)",
+    background:
+      "linear-gradient(120deg, #0ea5e9 0%, #8b5cf6 50%, #38bdf8 100%)",
     opacity: 0.18,
     animation: "gradient-x 15s ease infinite",
     backgroundSize: "200% 200%",
@@ -161,7 +172,7 @@ const styles = {
     marginTop: "0.2rem",
   },
   statusProgressFill: {
-    width: "30%",
+    width: "65%",
     height: "100%",
     background: "linear-gradient(90deg, #0ea5e9 0%, #8b5cf6 100%)",
     borderRadius: "4px",
