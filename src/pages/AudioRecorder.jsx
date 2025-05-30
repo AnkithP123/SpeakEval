@@ -102,9 +102,10 @@ export default function AudioRecorder({ code, participant, uuid }) {
   };
 
   const handleAudioStop = async (blobUrl, blob) => {
+    console.log("Audio recording stopped:", blobUrl);
     const formData = new FormData();
     formData.append("audio", blob, "audio.wav");
-    upload(formData);
+    await upload(formData);
     setAudioURL(blobUrl);
     setIsRecording(false);
     if (audioRef.current) {
