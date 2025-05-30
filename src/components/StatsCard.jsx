@@ -33,6 +33,7 @@ function ProfileCard({
   cheatingData = [],
 }) {
   // States used in both modes
+  const [fetchedAudio, setFetchedAudio] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -84,7 +85,7 @@ function ProfileCard({
     downloadMode && downloadedData ? downloadedData.name : name;
   const effectiveText =
     downloadMode && downloadedData ? downloadedData.text : text;
-  const effectiveAudio =
+  let effectiveAudio =
     downloadMode && downloadedData ? downloadedData.audio : audio;
   const effectiveQuestion =
     downloadMode && downloadedData ? downloadedData.question : question;
@@ -106,6 +107,22 @@ function ProfileCard({
 
   const fetchAudio = useCallback(async () => {
     console.log("fetching audio");
+    try {
+      const decoded = atob(effectiveAudio);
+      console.log("Decoded:", decoded);
+    } catch (e) {
+      console.log("Not base64:", e.message);
+      console.log("Audio not fetched, fetching now..." + audio);
+      const audios = await fetch(
+        `https://www.server.speakeval.org/fetch_audio?token=${audio}`
+      );
+      const audiosJson = await audios.json();
+      console.log("Audio fetched:", audiosJson);
+      if (!audios.ok) {
+        return toast.error("Failed to fetch audio: " + audiosJson.error);
+      }
+      effectiveAudio = audiosJson.audio;
+    }
     try {
       const audioData = Uint8Array.from(atob(effectiveAudio), (c) =>
         c.charCodeAt(0)
@@ -134,18 +151,7 @@ function ProfileCard({
       console.log("Error loading audio:", error);
       console.log(effectiveName);
     }
-  }, [effectiveAudio, effectiveCode, effectiveName]);
-
-  useEffect(() => {
-    fetchAudio()
-      .then(() => {
-        console.log("Audio fetched");
-      })
-      .catch((error) => {
-        console.error("Error fetching audio:", error);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchAudio]);
+  }, [effectiveCode, effectiveName]);
 
   async function convertOggToWav(oggBlob) {
     const arrayBuffer = await oggBlob.arrayBuffer();
@@ -264,6 +270,22 @@ function ProfileCard({
   const handleDownload = async () => {
     if (!effectiveName)
       return toast.error("Participant has not completed the task");
+    try {
+      const decoded = atob(effectiveAudio);
+      console.log("Decoded:", decoded);
+    } catch (e) {
+      console.log("Not base64:", e.message);
+      console.log("Audio not fetched, fetching now..." + audio);
+      const audios = await fetch(
+        `https://www.server.speakeval.org/fetch_audio?token=${audio}`
+      );
+      const audiosJson = await audios.json();
+      console.log("Audio fetched:", audiosJson);
+      if (!audios.ok) {
+        return toast.error("Failed to fetch audio: " + audiosJson.error);
+      }
+      effectiveAudio = audiosJson.audio;
+    }
     const audioData = Uint8Array.from(atob(effectiveAudio), (c) =>
       c.charCodeAt(0)
     );

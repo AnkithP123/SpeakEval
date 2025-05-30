@@ -180,14 +180,18 @@ function App() {
 
   return (
     <RouterProvider
-      router={maintenance ? createBrowserRouter(
-        createRoutesFromElements(
-          <>
-            <Route path="/" element={<HomePage maintenance={true}/>} />
-            <Route path="/*" element={<MaintenancePage />} />
-          </>
-        )
-      ) : route}
+      router={
+        maintenance
+          ? createBrowserRouter(
+              createRoutesFromElements(
+                <>
+                  <Route path="/" element={<HomePage maintenance={true} />} />
+                  <Route path="/*" element={<MaintenancePage />} />
+                </>
+              )
+            )
+          : route
+      }
     />
   );
 }
