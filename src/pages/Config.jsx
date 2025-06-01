@@ -761,7 +761,7 @@ const Config = ({
 
     setShowSelectiveAutofillModal(false);
     setSelected(true);
-    setId(config.name);
+    //setId(config.name);
     setIsConfigSelection(false);
   };
 
