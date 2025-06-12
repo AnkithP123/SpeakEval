@@ -503,13 +503,13 @@ const Config = ({
               }),
             }
           );
-          if (response.error) {
-            toast.error(`Error: ${response.error}`);
-          } else if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-          }
-
           const result = await response.json();
+
+          if (result.error) {
+            return toast.error(`Error: ${result.error}`);
+          } else if (!response.ok) {
+            throw new Error(`Server error: ${result.error}`);
+          }
 
           if (Array.isArray(result)) {
             setProcessedStrings(result);
@@ -519,7 +519,7 @@ const Config = ({
           }
         } catch (error) {
           console.error("Upload error:", error);
-          toast.error(`Upload failed: ${error.message}`);
+          toast.error(`Upload failed: ${response.error}`);
           setUploadedFile(null);
         } finally {
           setIsUploading(false);
