@@ -653,7 +653,7 @@ Teacher's Comment: ${comment}`
           transform: translateY(-5px);
         }
       `}</style>
-      <div className="profile-card">
+      <div className="profile-card relative">
         <div
           className={`relative flex flex-col items-start p-6 h-auto max-w-[400px] rounded-lg bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 m-2 ${
             completed ? "" : "text-red-400"
@@ -790,7 +790,7 @@ Teacher's Comment: ${comment}`
                     return (
                       <div
                         key={idx}
-                        className="flex items-center relative z-10"
+                        className="flex items-center relative"
                       >
                         <span className="mr-2">{rubricItem}</span>
                         <input
@@ -804,7 +804,9 @@ Teacher's Comment: ${comment}`
                         />
                         <div className="relative group flex items-center">
                           <FaInfoCircle className="ml-2 text-blue-500" />
-                          <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-21">
+                          <div
+                            className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-[100000000000]"
+                          >
                             {justifications[idx]
                               ? justifications[idx]
                               : "Press the AI button to receive an automated grade and view the reason here."}

@@ -1203,6 +1203,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                         handleShowSingleEmailModal
                                       }
                                       cheatingData={cheatingData}
+                                      className=""
                                     />
                                   ) : (
                                     <div className="text-gray-400">

@@ -153,11 +153,12 @@ function JoinRoom({ rooms, pin }) {
             value={roomCode}
             onChange={handleRoomCodeChange}
             maxLength="11"
-            className="w-full p-3 bg-gray-800 border border-cyan-500/30 rounded-lg focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/50 text-white placeholder-gray-400 text-center text-lg"
+            className="w-full p-3 bg-gray-800 border border-cyan-500/30 rounded-lg focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/50 text-white placeholder-gray-400 text-center text-lg cursor-not-allowed"
             placeholder="Enter room code"
             onKeyUp={(e) => {
               if (e.key === "Enter") handleGrade()
             }}
+            disabled
           />
         </div>
 
