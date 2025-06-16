@@ -317,6 +317,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
     if (showByPerson) {
       const organizedParticipants = Object.values(COMPLETE_DATA_STORE.students)
+        .filter((student) => student.name && typeof student.name === 'string') // Ensure valid name
         .map((student) => ({
           name: student.name,
           questionData: new Map(
@@ -327,8 +328,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
               ]
             )
           ),
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        }));
 
       console.log(
         "👥 Organized for Show by Person:",
@@ -337,14 +337,14 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       );
       setParticipants(organizedParticipants);
     } else {
-      // For non-showByPerson, we'll still organize per question but keep all data
+      // For non-showByPerson, organize per question
       const allQuestionParticipants = COMPLETE_DATA_STORE.questions.map(
         (questionCode) => ({
           questionCode,
           participants: Object.values(COMPLETE_DATA_STORE.students)
             .map((student) => student.responses[questionCode])
-            .filter((response) => response)
-            .sort((a, b) => a.name.localeCompare(b.name)),
+            .filter((response) => response && response.name && typeof response.name === 'string') // Ensure valid response and name
+            .sort((a, b) => (a.name || '').localeCompare(b.name || '')),
         })
       );
 
@@ -447,35 +447,39 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   };
 
   const sortParticipants = (participantsToSort) => {
-    if (sortOption === "none") {
-      return participantsToSort;
+    if (sortOption === "none" || !participantsToSort) {
+      return participantsToSort || [];
     }
     return [...participantsToSort].sort((a, b) => {
+      // Defensive check for undefined or non-string names
+      const aName = a.name && typeof a.name === 'string' ? a.name : '';
+      const bName = b.name && typeof b.name === 'string' ? b.name : '';
+
       if (sortOption === "name") {
         return sortOrder === "asc"
-          ? a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-          : b.name.localeCompare(a.name, undefined, { sensitivity: "base" });
+          ? aName.localeCompare(bName, undefined, { sensitivity: "base" })
+          : bName.localeCompare(aName, undefined, { sensitivity: "base" });
       }
       if (sortOption === "lastName") {
         const aLastName =
-          (a.name.split(" ").length > 1
-            ? a.name.split(" ").slice(-1)[0] || ""
+          (aName.split(" ").length > 1
+            ? aName.split(" ").slice(-1)[0] || ""
             : sortOrder === "asc"
             ? "zzzzzz"
             : "aaaaaa") +
           " " +
-          a.name;
+          aName;
         const bLastName =
-          (b.name.split(" ").length > 1
-            ? b.name.split(" ").slice(-1)[0] || ""
+          (bName.split(" ").length > 1
+            ? bName.split(" ").slice(-1)[0] || ""
             : sortOrder === "asc"
             ? "zzzzzz"
             : "aaaaaa") +
           " " +
-          b.name;
+          bName;
 
         if (!aLastName && !bLastName) {
-          return a.name.localeCompare(b.name, undefined, {
+          return aName.localeCompare(bName, undefined, {
             sensitivity: "base",
           });
         }
@@ -524,8 +528,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
     const maxNameLength = Math.max(
       ...(showByPerson
-        ? participants.map((p) => p.name.length)
-        : participants.flatMap((q) => q.participants.map((p) => p.name.length))
+        ? participants.map((p) => (p.name || '').length)
+        : participants.flatMap((q) => q.participants.map((p) => (p.name || '').length))
       )
     );
     const nameColumnWidth = Math.max(25, maxNameLength * 2.5);
@@ -578,7 +582,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     if (showByPerson) {
       sortParticipants(participants).forEach((participant, pIndex) => {
         const y = startY + (pIndex + 1) * cellHeight;
-        doc.text(participant.name, startX, y + cellHeight / 2, {
+        doc.text(participant.name || 'Unknown', startX, y + cellHeight / 2, {
           baseline: "middle",
         });
 
@@ -620,7 +624,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         sortParticipants(currentQuestion.participants).forEach(
           (participant, pIndex) => {
             const y = startY + (pIndex + 1) * cellHeight;
-            doc.text(participant.name, startX, y + cellHeight / 2, {
+            doc.text(participant.name || 'Unknown', startX, y + cellHeight / 2, {
               baseline: "middle",
             });
             const score =
@@ -648,7 +652,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     if (showByPerson) {
       sortParticipants(participants).forEach((participant, pIndex) => {
         doc.setFont("helvetica", "bold");
-        doc.text(`Student: ${participant.name}`, 15, yOffset);
+        doc.text(`Student: ${participant.name || 'Unknown'}`, 15, yOffset);
         yOffset += 6;
 
         questionData.questions.forEach((questionCode, qIndex) => {
@@ -723,7 +727,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         sortParticipants(currentQuestion.participants).forEach(
           (participant, index) => {
             doc.setFont("helvetica", "bold");
-            doc.text(`Student: ${participant.name}`, 15, yOffset);
+            doc.text(`Student: ${participant.name || 'Unknown'}`, 15, yOffset);
             yOffset += 6;
 
             doc.setFont("helvetica", "normal");
@@ -781,8 +785,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       setFailedEmails(new Set());
       const baseExamCode = roomCode.toString().slice(0, -3);
 
-      const emailData = Object.values(COMPLETE_DATA_STORE.students).map(
-        (student) => ({
+      const emailData = Object.values(COMPLETE_DATA_STORE.students)
+        .filter((student) => student.name && typeof student.name === 'string')
+        .map((student) => ({
           studentName: student.name,
           grades: Array.from(selectedQuestionsToEmail).map((questionCode) => {
             const questionData = student.responses[questionCode];
@@ -802,8 +807,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             }
             return null;
           }).filter(Boolean),
-        })
-      );
+        }));
 
       const response = await fetch(
         "https://www.server.speakeval.org/send_bulk_email",
@@ -1150,7 +1154,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                     {sortParticipants(participants).map((participant, index) => (
                       <tr key={index} className="border-b border-cyan-500/10">
                         <td className="py-4 px-6 text-white align-top">
-                          {participant.name}
+                          {participant.name || 'Unknown'}
                         </td>
                         {questionData.questions.map((questionCode, qIndex) => {
                           const responseData = participant.questionData
@@ -1213,7 +1217,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                         );
                         return (
                           <ProfileCard
-                            key={`${question.questionCode}-${participant.name}`}
+                            key={`${question.questionCode}-${participant.name || 'unknown'}`}
                             text={participant.transcription}
                             rubric={rubric}
                             rubric2={rubric2}
@@ -1221,7 +1225,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             question={participant.questionText}
                             questionBase64={participant.question}
                             index={participant.index}
-                            name={participant.name}
+                            name={participant.name || 'Unknown'}
                             code={question.questionCode}
                             onGradeUpdate={handleGradeUpdate}
                             isRed={failedEmails.has(participant.name)}
