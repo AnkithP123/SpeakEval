@@ -651,6 +651,7 @@ Teacher's Comment: ${comment}`
         }
         .profile-card:hover {
           transform: translateY(-5px);
+          z-index: 10;
         }
       `}</style>
       <div className="profile-card relative">
