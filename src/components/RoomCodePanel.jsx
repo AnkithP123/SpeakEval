@@ -130,45 +130,45 @@ function JoinRoom({ rooms, pin }) {
 
               {showOlderRooms && (
                 <div className="mt-3 max-h-40 overflow-y-auto custom-scrollbar border border-cyan-500/20 rounded-md p-2 bg-gray-800/50">
-                  <div className="flex flex-wrap gap-2 px-2 justify-center">{olderRooms.map(renderRoomChip)}</div>
+                  <div className="flex flex-wrap gap-2 px-2 justify-center mt-10">{olderRooms.map(renderRoomChip)}</div>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Divider */}
-        <div className="flex items-center w-full my-6">
-          <div className="flex-grow h-px bg-cyan-500/30"></div>
-          <span className="mx-4 text-cyan-300 font-semibold">or</span>
-          <div className="flex-grow h-px bg-cyan-500/30"></div>
-        </div>
+        <div className="hidden">
+          <div className="flex items-center w-full my-6">
+            <div className="flex-grow h-px bg-cyan-500/30"></div>
+            <span className="mx-4 text-cyan-300 font-semibold">or</span>
+            <div className="flex-grow h-px bg-cyan-500/30"></div>
+          </div>
 
-        {/* Room Code Input */}
-        <div className="w-full mb-8">
-          <h3 className="text-xl font-semibold text-cyan-300 mb-4 text-center">Enter Room Code</h3>
-          <input
-            id="roomCode"
-            type="text"
-            value={roomCode}
-            onChange={handleRoomCodeChange}
-            maxLength="11"
-            className="w-full p-3 bg-gray-800 border border-cyan-500/30 rounded-lg focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/50 text-white placeholder-gray-400 text-center text-lg cursor-not-allowed"
-            placeholder="Enter room code"
-            onKeyUp={(e) => {
-              if (e.key === "Enter") handleGrade()
-            }}
-            disabled
-          />
-        </div>
+          {/* Room Code Input */}
+          <div className="w-full mb-8">
+            <h3 className="text-xl font-semibold text-cyan-300 mb-4 text-center">Enter Room Code</h3>
+            <input
+              id="roomCode"
+              type="text"
+              value={roomCode}
+              onChange={handleRoomCodeChange}
+              maxLength="11"
+              className="w-full p-3 bg-gray-800 border border-cyan-500/30 rounded-lg focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/50 text-white placeholder-gray-400 text-center text-lg cursor-not-allowed"
+              placeholder="Enter room code"
+              onKeyUp={(e) => {
+                if (e.key === "Enter") handleGrade()
+              }}
+            />
+          </div>
 
-        {/* Grade Button */}
-        <button
-          onClick={handleGrade}
-          className="w-full p-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-lg font-bold rounded-lg hover:from-cyan-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300 shadow-lg shadow-cyan-500/30 transform hover:scale-105"
-        >
-          Grade
-        </button>
+          {/* Grade Button */}
+          <button
+            onClick={handleGrade}
+            className="w-full p-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-lg font-bold rounded-lg hover:from-cyan-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300 shadow-lg shadow-cyan-500/30 transform hover:scale-105"
+          >
+            Grade
+          </button>
+        </div>
       </div>
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
