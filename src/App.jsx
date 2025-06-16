@@ -35,6 +35,8 @@ import GradeBotCreator from "./pages/GradeBotCreator";
 import ResetPasswordPage from "./pages/ResetPassword";
 import Config from "./pages/Config";
 import MaintenancePage from "./pages/Maintainence copy";
+import ErrorPage from "./pages/Error";
+
 function AudioRecorderRouteWrapper() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -78,6 +80,7 @@ function App() {
               set4={setUltimate}
             />
           }
+          errorElement={<ErrorPage />}
         >
           <Route path="/" element={<HomePage />} />
           <Route
@@ -173,7 +176,11 @@ function App() {
           />
           <Route path="*" element={<Maintainence />} />
         </Route>
-        <Route path="/record" element={<AudioRecorderRouteWrapper />} />
+        <Route
+          path="/record"
+          element={<AudioRecorderRouteWrapper />}
+          errorElement={<ErrorPage />}
+        />
       </>
     )
   );
@@ -184,14 +191,10 @@ function App() {
         maintenance
           ? createBrowserRouter(
               createRoutesFromElements(
-                <>
-                  <Route
-                    path="/record"
-                    element={<AudioRecorderRouteWrapper />}
-                  />
+                <Route element={null} errorElement={<ErrorPage />}>
                   <Route path="/" element={<HomePage maintenance={true} />} />
                   <Route path="/*" element={<MaintenancePage />} />
-                </>
+                </Route>
               )
             )
           : route
