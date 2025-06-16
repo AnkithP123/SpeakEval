@@ -30,6 +30,7 @@ function ProfileCard({
   participantPass = null,
   isRed = false,
   onShowEmailModal = () => {},
+  onShowInfractionsModal = () => {},
   cheatingData = [],
 }) {
   // States used in both modes
@@ -689,7 +690,7 @@ Teacher's Comment: ${comment}`
               {/* View Infractions button */}
               <div className="absolute top-20 right-6 z-10">
                 <button
-                  onClick={() => setShowInfractionsModal(true)}
+                  onClick={() => onShowInfractionsModal({ cheatingData, name })}
                   className="ml-2 px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs rounded-md shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 flex items-center"
                 >
                   <FaInfoCircle className="mr-1.5" /> View Infractions

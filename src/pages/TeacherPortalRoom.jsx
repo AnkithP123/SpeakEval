@@ -5,7 +5,13 @@ import { useParams } from "react-router-dom";
 import ProfileCard from "../components/StatsCard";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
-import { FaArrowUp, FaArrowDown, FaEnvelope, FaSpinner } from "react-icons/fa";
+import {
+  FaArrowUp,
+  FaArrowDown,
+  FaEnvelope,
+  FaSpinner,
+  FaExclamationTriangle,
+} from "react-icons/fa";
 
 function TeacherPortalRoom({ initialRoomCode, pin }) {
   const { roomCode: paramRoomCode } = useParams();
@@ -70,6 +76,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     includeResponseLink: true,
     emailSubject: "SpeakEval Exam Result",
   });
+  const [showInfractionsModal, setShowInfractionsModal] = useState(false);
+  const [cheatingData, setCheatingData] = useState({});
 
   useEffect(() => {
     localStorage.setItem("descriptions", JSON.stringify(descriptions));
@@ -317,7 +325,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
     if (showByPerson) {
       const organizedParticipants = Object.values(COMPLETE_DATA_STORE.students)
-        .filter((student) => student.name && typeof student.name === 'string') // Ensure valid name
+        .filter((student) => student.name && typeof student.name === "string") // Ensure valid name
         .map((student) => ({
           name: student.name,
           questionData: new Map(
@@ -343,8 +351,11 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           questionCode,
           participants: Object.values(COMPLETE_DATA_STORE.students)
             .map((student) => student.responses[questionCode])
-            .filter((response) => response && response.name && typeof response.name === 'string') // Ensure valid response and name
-            .sort((a, b) => (a.name || '').localeCompare(b.name || '')),
+            .filter(
+              (response) =>
+                response && response.name && typeof response.name === "string"
+            ) // Ensure valid response and name
+            .sort((a, b) => (a.name || "").localeCompare(b.name || "")),
         })
       );
 
@@ -452,8 +463,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     }
     return [...participantsToSort].sort((a, b) => {
       // Defensive check for undefined or non-string names
-      const aName = a.name && typeof a.name === 'string' ? a.name : '';
-      const bName = b.name && typeof b.name === 'string' ? b.name : '';
+      const aName = a.name && typeof a.name === "string" ? a.name : "";
+      const bName = b.name && typeof b.name === "string" ? b.name : "";
 
       if (sortOption === "name") {
         return sortOrder === "asc"
@@ -528,9 +539,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
     const maxNameLength = Math.max(
       ...(showByPerson
-        ? participants.map((p) => (p.name || '').length)
-        : participants.flatMap((q) => q.participants.map((p) => (p.name || '').length))
-      )
+        ? participants.map((p) => (p.name || "").length)
+        : participants.flatMap((q) =>
+            q.participants.map((p) => (p.name || "").length)
+          ))
     );
     const nameColumnWidth = Math.max(25, maxNameLength * 2.5);
     const startX = 15;
@@ -582,7 +594,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     if (showByPerson) {
       sortParticipants(participants).forEach((participant, pIndex) => {
         const y = startY + (pIndex + 1) * cellHeight;
-        doc.text(participant.name || 'Unknown', startX, y + cellHeight / 2, {
+        doc.text(participant.name || "Unknown", startX, y + cellHeight / 2, {
           baseline: "middle",
         });
 
@@ -624,9 +636,14 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         sortParticipants(currentQuestion.participants).forEach(
           (participant, pIndex) => {
             const y = startY + (pIndex + 1) * cellHeight;
-            doc.text(participant.name || 'Unknown', startX, y + cellHeight / 2, {
-              baseline: "middle",
-            });
+            doc.text(
+              participant.name || "Unknown",
+              startX,
+              y + cellHeight / 2,
+              {
+                baseline: "middle",
+              }
+            );
             const score =
               participant.totalScore || participant.totalScore == 0
                 ? participant.totalScore
@@ -652,7 +669,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     if (showByPerson) {
       sortParticipants(participants).forEach((participant, pIndex) => {
         doc.setFont("helvetica", "bold");
-        doc.text(`Student: ${participant.name || 'Unknown'}`, 15, yOffset);
+        doc.text(`Student: ${participant.name || "Unknown"}`, 15, yOffset);
         yOffset += 6;
 
         questionData.questions.forEach((questionCode, qIndex) => {
@@ -727,7 +744,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         sortParticipants(currentQuestion.participants).forEach(
           (participant, index) => {
             doc.setFont("helvetica", "bold");
-            doc.text(`Student: ${participant.name || 'Unknown'}`, 15, yOffset);
+            doc.text(`Student: ${participant.name || "Unknown"}`, 15, yOffset);
             yOffset += 6;
 
             doc.setFont("helvetica", "normal");
@@ -755,7 +772,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             );
             yOffset += 6;
 
-            if (yOffset > 270 && index < currentQuestion.participants.length - 1) {
+            if (
+              yOffset > 270 &&
+              index < currentQuestion.participants.length - 1
+            ) {
               doc.addPage();
               yOffset = 25;
             }
@@ -786,27 +806,30 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       const baseExamCode = roomCode.toString().slice(0, -3);
 
       const emailData = Object.values(COMPLETE_DATA_STORE.students)
-        .filter((student) => student.name && typeof student.name === 'string')
+        .filter((student) => student.name && typeof student.name === "string")
         .map((student) => ({
           studentName: student.name,
-          grades: Array.from(selectedQuestionsToEmail).map((questionCode) => {
-            const questionData = student.responses[questionCode];
-            if (questionData) {
-              return {
-                questionNumber: Number.parseInt(
-                  questionCode.toString().slice(-3)
-                ),
-                question: questionData.questionText || "Question not available",
-                transcription:
-                  questionData.transcription || "No transcription available",
-                totalScore: questionData.totalScore,
-                grades: questionData.grades,
-                categories: questionData.categories,
-                teacherComment: questionData.teacherComment,
-              };
-            }
-            return null;
-          }).filter(Boolean),
+          grades: Array.from(selectedQuestionsToEmail)
+            .map((questionCode) => {
+              const questionData = student.responses[questionCode];
+              if (questionData) {
+                return {
+                  questionNumber: Number.parseInt(
+                    questionCode.toString().slice(-3)
+                  ),
+                  question:
+                    questionData.questionText || "Question not available",
+                  transcription:
+                    questionData.transcription || "No transcription available",
+                  totalScore: questionData.totalScore,
+                  grades: questionData.grades,
+                  categories: questionData.categories,
+                  teacherComment: questionData.teacherComment,
+                };
+              }
+              return null;
+            })
+            .filter(Boolean),
         }));
 
       const response = await fetch(
@@ -882,6 +905,12 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   const handleShowSingleEmailModal = (emailData) => {
     setSingleEmailData(emailData);
     setShowSingleEmailModal(true);
+  };
+
+  const handleShowInfractionsModal = (data) => {
+    console.log("🚨 Showing infractions modal for data:", data);
+    setCheatingData(data);
+    setShowInfractionsModal(true);
   };
 
   const handleSendSingleEmail = async () => {
@@ -1151,50 +1180,59 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortParticipants(participants).map((participant, index) => (
-                      <tr key={index} className="border-b border-cyan-500/10">
-                        <td className="py-4 px-6 text-white align-top">
-                          {participant.name || 'Unknown'}
-                        </td>
-                        {questionData.questions.map((questionCode, qIndex) => {
-                          const responseData = participant.questionData
-                            ? participant.questionData.get(questionCode)
-                            : null;
-                          const cheatingData = getCheatingData(
-                            participant.name,
-                            questionCode
-                          );
+                    {sortParticipants(participants).map(
+                      (participant, index) => (
+                        <tr key={index} className="border-b border-cyan-500/10">
+                          <td className="py-4 px-6 text-white align-top">
+                            {participant.name || "Unknown"}
+                          </td>
+                          {questionData.questions.map(
+                            (questionCode, qIndex) => {
+                              const responseData = participant.questionData
+                                ? participant.questionData.get(questionCode)
+                                : null;
+                              const cheatingData = getCheatingData(
+                                participant.name,
+                                questionCode
+                              );
 
-                          return (
-                            <td key={qIndex} className="py-4 px-6">
-                              {responseData ? (
-                                <ProfileCard
-                                  text={responseData.transcription}
-                                  rubric={rubric}
-                                  rubric2={rubric2}
-                                  audio={responseData.audio}
-                                  question={responseData.questionText}
-                                  questionBase64={responseData.question}
-                                  index={responseData.index}
-                                  name={participant.name}
-                                  code={questionCode}
-                                  onGradeUpdate={handleGradeUpdate}
-                                  customName={`Q${qIndex + 1}`}
-                                  isRed={failedEmails.has(participant.name)}
-                                  onShowEmailModal={handleShowSingleEmailModal}
-                                  cheatingData={cheatingData}
-                                  className=""
-                                />
-                              ) : (
-                                <div className="text-gray-400">
-                                  No submission
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
+                              return (
+                                <td key={qIndex} className="py-4 px-6">
+                                  {responseData ? (
+                                    <ProfileCard
+                                      text={responseData.transcription}
+                                      rubric={rubric}
+                                      rubric2={rubric2}
+                                      audio={responseData.audio}
+                                      question={responseData.questionText}
+                                      questionBase64={responseData.question}
+                                      index={responseData.index}
+                                      name={participant.name}
+                                      code={questionCode}
+                                      onGradeUpdate={handleGradeUpdate}
+                                      customName={`Q${qIndex + 1}`}
+                                      isRed={failedEmails.has(participant.name)}
+                                      onShowEmailModal={
+                                        handleShowSingleEmailModal
+                                      }
+                                      onShowInfractionsModal={
+                                        handleShowInfractionsModal
+                                      }
+                                      cheatingData={cheatingData}
+                                      className=""
+                                    />
+                                  ) : (
+                                    <div className="text-gray-400">
+                                      No submission
+                                    </div>
+                                  )}
+                                </td>
+                              );
+                            }
+                          )}
+                        </tr>
+                      )
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1204,9 +1242,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                   <div
                     key={question.questionCode}
                     className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ${
-                      question.questionCode === roomCode
-                        ? "block"
-                        : "hidden"
+                      question.questionCode === roomCode ? "block" : "hidden"
                     }`}
                   >
                     {sortParticipants(question.participants).map(
@@ -1217,7 +1253,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                         );
                         return (
                           <ProfileCard
-                            key={`${question.questionCode}-${participant.name || 'unknown'}`}
+                            key={`${question.questionCode}-${
+                              participant.name || "unknown"
+                            }`}
                             text={participant.transcription}
                             rubric={rubric}
                             rubric2={rubric2}
@@ -1225,11 +1263,12 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             question={participant.questionText}
                             questionBase64={participant.question}
                             index={participant.index}
-                            name={participant.name || 'Unknown'}
+                            name={participant.name || "Unknown"}
                             code={question.questionCode}
                             onGradeUpdate={handleGradeUpdate}
                             isRed={failedEmails.has(participant.name)}
                             onShowEmailModal={handleShowSingleEmailModal}
+                            onShowInfractionsModal={handleShowInfractionsModal}
                             cheatingData={cheatingData}
                           />
                         );
@@ -1400,14 +1439,20 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                         Current Question (#{questionData.currentIndex})
                         <span
                           className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                            participants.find((q) => q.questionCode === roomCode)
-                              ?.participants.some((p) => p.totalScore !== undefined)
+                            participants
+                              .find((q) => q.questionCode === roomCode)
+                              ?.participants.some(
+                                (p) => p.totalScore !== undefined
+                              )
                               ? "bg-green-500/20 text-green-300 border border-green-500/30"
                               : "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
                           }`}
                         >
-                          {participants.find((q) => q.questionCode === roomCode)
-                            ?.participants.some((p) => p.totalScore !== undefined)
+                          {participants
+                            .find((q) => q.questionCode === roomCode)
+                            ?.participants.some(
+                              (p) => p.totalScore !== undefined
+                            )
                             ? "Graded"
                             : "Not Graded"}
                         </span>
@@ -1526,6 +1571,62 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 onClick={handleSendSingleEmail}
               >
                 Send Email
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showInfractionsModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="relative bg-black/60k/60 rounded-2xl p-8 shadow-xl border border-red-500/70 w-11/12 md:w-1/2 max-w-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-purple-500/10 pointer-events-none rounded-2xl" />
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white flex items-center">
+                <FaExclamationTriangle className="text-red-500 mr-2" />
+                Cheating Infractions: {cheatingData.name}
+              </h2>
+              <button
+                onClick={() => setShowInfractionsModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full text-left text-white">
+                <thead className="bg-gray-800 text-gray-300 text-sm uppercase">
+                  <tr>
+                    <th className="py-3 px-4">Type</th>
+                    <th className="py-3 px-4">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cheatingData.cheatingData.map((infraction, index) => (
+                    <tr
+                      key={index}
+                      className={
+                        index % 2 === 0 ? "bg-gray-800/50" : "bg-gray-900/50"
+                      }
+                    >
+                      <td className="py-3 px-4 border-t border-gray-700">
+                        {infraction.message}
+                      </td>
+                      <td className="py-3 px-4 border-t border-gray-700">
+                        {new Date(infraction.timestamp).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowInfractionsModal(false)}
+                className="px-6 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300"
+              >
+                Close
               </button>
             </div>
           </div>
