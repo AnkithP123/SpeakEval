@@ -844,62 +844,6 @@ Teacher's Comment: ${comment}`
           <audio id={`questionAudioPlayer-${effectiveName}-${effectiveCode}`} />
         </div>
       </div>
-      {showInfractionsModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="relative bg-black/60k/60 rounded-2xl p-8 shadow-xl border border-red-500/70 w-11/12 md:w-1/2 max-w-2xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-purple-500/10 pointer-events-none rounded-2xl" />
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white flex items-center">
-                <FaExclamationTriangle className="text-red-500 mr-2" />
-                Cheating Infractions: {name}
-              </h2>
-              <button
-                onClick={() => setShowInfractionsModal(false)}
-                className="text-gray-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="max-h-96 overflow-y-auto">
-              <table className="w-full text-left text-white">
-                <thead className="bg-gray-800 text-gray-300 text-sm uppercase">
-                  <tr>
-                    <th className="py-3 px-4">Type</th>
-                    <th className="py-3 px-4">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cheatingData.map((infraction, index) => (
-                    <tr
-                      key={index}
-                      className={
-                        index % 2 === 0 ? "bg-gray-800/50" : "bg-gray-900/50"
-                      }
-                    >
-                      <td className="py-3 px-4 border-t border-gray-700">
-                        {infraction.message}
-                      </td>
-                      <td className="py-3 px-4 border-t border-gray-700">
-                        {new Date(infraction.timestamp).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => setShowInfractionsModal(false)}
-                className="px-6 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
