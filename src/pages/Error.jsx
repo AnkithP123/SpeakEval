@@ -40,84 +40,80 @@ class ErrorBoundary extends Component {
   };
 
   render() {
-    if (this.state.hasError) {
-      // Custom fallback UI that matches the theme
-      return (
-        <div style={styles.container}>
-          <div style={styles.header}>
-            <FaExclamationTriangle
-              size={100}
-              color="#E74C3C"
-              style={styles.icon}
-            />
+    // Custom fallback UI that matches the theme
+    return (
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <FaExclamationTriangle
+            size={100}
+            color="#E74C3C"
+            style={styles.icon}
+          />
 
-            <h1 style={styles.title}>Oops! Something Went Wrong</h1>
-            <h2 style={styles.message}>Unexpected Error</h2>
-          </div>
-
-          <p style={styles.subtext}>
-            We're really sorry about this! Something unexpected happened and
-            we're not quite sure what. Our team has been notified and we're
-            working on it.
-          </p>
-
-          <div style={styles.optionsContainer}>
-            <button
-              style={styles.button}
-              onClick={this.handleRefresh}
-              onMouseEnter={(e) =>
-                (e.target.style.backgroundColor =
-                  styles.buttonHover.backgroundColor)
-              }
-              onMouseLeave={(e) =>
-                (e.target.style.backgroundColor = styles.button.backgroundColor)
-              }
-            >
-              <FaRedo style={styles.buttonIcon} /> Try Again
-            </button>
-
-            <button
-              style={styles.button}
-              onClick={this.handleGoHome}
-              onMouseEnter={(e) =>
-                (e.target.style.backgroundColor =
-                  styles.buttonHover.backgroundColor)
-              }
-              onMouseLeave={(e) =>
-                (e.target.style.backgroundColor = styles.button.backgroundColor)
-              }
-            >
-              <FaHome style={styles.buttonIcon} /> Go Home
-            </button>
-
-            <button
-              style={styles.button}
-              onClick={this.handleContact}
-              onMouseEnter={(e) =>
-                (e.target.style.backgroundColor =
-                  styles.buttonHover.backgroundColor)
-              }
-              onMouseLeave={(e) =>
-                (e.target.style.backgroundColor = styles.button.backgroundColor)
-              }
-            >
-              <FaEnvelope style={styles.buttonIcon} /> Contact Support
-            </button>
-          </div>
-
-          <div style={styles.footer}>
-            <p style={styles.footerText}>
-              If this keeps happening, please reach out to us at{" "}
-              <a href="mailto:info@speakeval.org" style={styles.link}>
-                info@speakeval.org
-              </a>
-            </p>
-          </div>
+          <h1 style={styles.title}>Oops! Something Went Wrong</h1>
+          <h2 style={styles.message}>Unexpected Error</h2>
         </div>
-      );
-    }
 
-    return this.props.children;
+        <p style={styles.subtext}>
+          We're really sorry about this! Something unexpected happened and we're
+          not quite sure what. Our team has been notified and we're working on
+          it.
+        </p>
+
+        <div style={styles.optionsContainer}>
+          <button
+            style={styles.button}
+            onClick={this.handleRefresh}
+            onMouseEnter={(e) =>
+              (e.target.style.backgroundColor =
+                styles.buttonHover.backgroundColor)
+            }
+            onMouseLeave={(e) =>
+              (e.target.style.backgroundColor = styles.button.backgroundColor)
+            }
+          >
+            <FaRedo style={styles.buttonIcon} /> Try Again
+          </button>
+
+          <button
+            style={styles.button}
+            onClick={this.handleGoHome}
+            onMouseEnter={(e) =>
+              (e.target.style.backgroundColor =
+                styles.buttonHover.backgroundColor)
+            }
+            onMouseLeave={(e) =>
+              (e.target.style.backgroundColor = styles.button.backgroundColor)
+            }
+          >
+            <FaHome style={styles.buttonIcon} /> Go Home
+          </button>
+
+          <button
+            style={styles.button}
+            onClick={this.handleContact}
+            onMouseEnter={(e) =>
+              (e.target.style.backgroundColor =
+                styles.buttonHover.backgroundColor)
+            }
+            onMouseLeave={(e) =>
+              (e.target.style.backgroundColor = styles.button.backgroundColor)
+            }
+          >
+            <FaEnvelope style={styles.buttonIcon} /> Contact Support
+          </button>
+        </div>
+
+        <div style={styles.footer}>
+          <p style={styles.footerText}>
+            If this keeps happening, please reach out to us at{" "}
+            <a href="mailto:info@speakeval.org" style={styles.link}>
+              info@speakeval.org
+            </a>
+          </p>
+        </div>
+      </div>
+    );
   }
 }
 
@@ -128,7 +124,6 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     height: "100vh",
-    backgroundColor: "#EBF3FD",
     textAlign: "center",
     padding: "20px",
   },
@@ -143,7 +138,7 @@ const styles = {
   },
   title: {
     fontSize: "2.5rem",
-    color: "#333",
+    color: "#FFFFFF",
     marginBottom: "10px",
   },
   message: {
