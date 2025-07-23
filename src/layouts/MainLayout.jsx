@@ -18,12 +18,17 @@ function isMobileDevice() {
   return mobileRegex.test(userAgent.toLowerCase());
 }
 
+document.documentElement.style.setProperty(
+  "--cute-alert-max-width",
+  document.documentElement.style.getPropertyValue("--cute-alert-min-width") ||
+    "40%"
+);
 cuteAlert({
   type: "warning",
   id: "cute-alert-indev",
   title: "Platform Update In Progress",
   description:
-    "We're currently rewriting parts of the platform to better support teachers. You may experience some temporary issues over the next few days. If anything isn't working as expected, please contact us at info@speakeval.org.",
+    "We're currently rewriting parts of the platform to better support teachers.\nYou may experience some temporary issues over the next few days.\nIf anything isn't working as expected, please contact us at info@speakeval.org.",
   primaryButtonText: "OK",
 });
 
