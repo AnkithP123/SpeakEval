@@ -112,6 +112,7 @@ const Config = ({
   const [hoverIndex, setHoverIndex] = useState(null);
   const [processedStrings, setProcessedStrings] = useState(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isLoadingConfigs, setIsLoadingConfigs] = useState(false);
   const [showSelectiveAutofillModal, setShowSelectiveAutofillModal] =
     useState(false);
   const [showPresetRubricsModal, setShowPresetRubricsModal] = useState(false);
@@ -227,6 +228,8 @@ const Config = ({
       if (!isUpdate) return;
 
       try {
+        console.log("Fetching Configs");
+        setIsLoadingConfigs(true);
         const res = await fetch(
           `https://www.server.speakeval.org/getconfigs?pin=${userId}`
         );
@@ -235,6 +238,8 @@ const Config = ({
       } catch (err) {
         console.error("Error Loading Configs", err);
         toast.error("Error Loading Configs");
+      } finally {
+        setIsLoadingConfigs(false);
       }
     };
 
@@ -936,7 +941,11 @@ const Config = ({
                   Select a Configuration
                 </h2>
                 <div className="space-y-4">
-                  {configs.length > 0 ? (
+                  {isLoadingConfigs ? (
+                    <div className="flex justify-center items-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-300"></div>
+                    </div>
+                  ) : configs.length > 0 ? (
                     <div className="flex flex-wrap gap-3 justify-center">
                       {configs.map((config, index) =>
                         config.name ? (
