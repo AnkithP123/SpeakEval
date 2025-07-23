@@ -25,10 +25,12 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   const [shuffleQuestions, setShuffleQuestions] = useState(true);
   const [emailEnding, setEmailEnding] = useState("");
   const [hoverButton, setHoverButton] = useState(false);
+  const [isLoadingConfigs, setIsLoadingConfigs] = useState(false);
 
   useEffect(() => {
     const fetchConfigs = async () => {
       console.log("Fetching Configs");
+      setIsLoadingConfigs(true);
       try {
         const res = await fetch(
           `https://www.server.speakeval.org/getconfigs?pin=${userId}`
@@ -39,6 +41,8 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
       } catch (err) {
         console.error("Error Loading Configs", err);
         toast.error("Error Loading Configs");
+      } finally {
+        setIsLoadingConfigs(false);
       }
     };
 
@@ -156,7 +160,11 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                 <h2 className="text-2xl font-bold text-white text-center mb-6">
                   Create Room
                 </h2>
-                {configs.length > 0 ? (
+                {isLoadingConfigs ? (
+                  <div className="flex justify-center items-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-300"></div>
+                  </div>
+                ) : configs.length > 0 ? (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {configs.map(
                       (config) =>
