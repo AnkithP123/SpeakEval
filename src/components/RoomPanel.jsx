@@ -535,7 +535,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
         }
 
         const receivedData = await response.json()
-        const audios = receivedData.audios
+        const audioUrls = receivedData.audioUrls
 
         if (receivedData.thinkingTime) {
           setThinkingTime(receivedData.thinkingTime)
@@ -545,11 +545,9 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
           setAllowRepeat(receivedData.allowRepeat)
         }
 
-        for (const data of audios) {
-          const audioData = Uint8Array.from(atob(data), (c) => c.charCodeAt(0))
-          const audioBlob = new Blob([audioData], { type: "audio/wav" })
-          const audioUrl = URL.createObjectURL(audioBlob)
-          setAudioBlobURL(audioUrl)
+        if (audioUrls && audioUrls.length > 0) {
+          // Use the presigned URL directly
+          setAudioBlobURL(audioUrls[0])
           questionIndex = receivedData.questionIndex
         }
 
@@ -648,12 +646,43 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
     setIsError(false)
 
     try {
+      // First, get a presigned URL for upload
+      const uploadUrlResponse = await fetch(
+        `https://www.server.speakeval.org/get-recording-upload-url?code=${recordingRoomCode}&participant=${selectedStudent || newStudentName}`,
+        {
+          method: "GET",
+        }
+      )
+      
+      if (!uploadUrlResponse.ok) {
+        throw new Error("Failed to get upload URL")
+      }
+      
+      const { uploadUrl } = await uploadUrlResponse.json()
+      
+      // Upload directly to S3 using presigned URL
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        body: formData.get("audio"),
+        headers: {
+          "Content-Type": "audio/wav",
+        },
+      })
+      
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload to S3")
+      }
+      
+      // Notify server that upload is complete
       const response = await fetch(
-        `https://www.server.speakeval.org/upload?code=${recordingRoomCode}&participant=${selectedStudent || newStudentName}&index=${questionIndex}`,
+        `https://www.server.speakeval.org/upload?code=${recordingRoomCode}&participant=${selectedStudent || newStudentName}&index=${questionIndex}&token=${studentUuid}`,
         {
           method: "POST",
-          body: formData,
-        },
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ uploaded: true }),
+        }
       )
 
       if (!response.ok) {
@@ -663,11 +692,14 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
         // Retry upload
         const retryInterval = setInterval(async () => {
           const retryResponse = await fetch(
-            `https://www.server.speakeval.org/upload?code=${recordingRoomCode}&participant=${selectedStudent || newStudentName}&index=${questionIndex}`,
+            `https://www.server.speakeval.org/upload?code=${recordingRoomCode}&participant=${selectedStudent || newStudentName}&index=${questionIndex}&token=${studentUuid}`,
             {
               method: "POST",
-              body: formData,
-            },
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ uploaded: true }),
+            }
           )
 
           if (retryResponse.ok) {

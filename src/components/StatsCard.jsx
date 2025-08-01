@@ -108,45 +108,49 @@ function ProfileCard({
 
   const fetchAudio = useCallback(async () => {
     console.log("fetching audio");
+    let audioUrl;
+    
     try {
-      const decoded = atob(effectiveAudio);
-      console.log("Decoded:", decoded);
-    } catch (e) {
-      console.log("Not base64:", e.message);
-      console.log("Audio not fetched, fetching now..." + audio);
-      const audios = await fetch(
-        `https://www.server.speakeval.org/fetch_audio?token=${audio}`
-      );
-      const audiosJson = await audios.json();
-      console.log("Audio fetched:", audiosJson);
-      if (!audios.ok) {
-        return toast.error("Failed to fetch audio: " + audiosJson.error);
+      // Check if we already have a presigned URL
+      if (effectiveAudio && effectiveAudio.startsWith('http')) {
+        audioUrl = effectiveAudio;
+      } else {
+        // Fetch new presigned URL
+        console.log("Audio not fetched, fetching now..." + audio);
+        const audios = await fetch(
+          `https://www.server.speakeval.org/fetch_audio?token=${audio}`
+        );
+        const audiosJson = await audios.json();
+        console.log("Audio fetched:", audiosJson);
+        if (!audios.ok) {
+          return toast.error("Failed to fetch audio: " + audiosJson.error);
+        }
+        
+        // Check if we got a presigned URL or fallback to Base64
+        if (audiosJson.audioUrl) {
+          audioUrl = audiosJson.audioUrl;
+        } else if (audiosJson.audio) {
+          // Fallback to Base64 processing
+          const audioData = Uint8Array.from(atob(audiosJson.audio), (c) =>
+            c.charCodeAt(0)
+          );
+          const audioBlob = new Blob([audioData], { type: "audio/ogg" });
+          
+          try {
+            const wavBlob = await convertOggToWav(audioBlob);
+            audioUrl = URL.createObjectURL(wavBlob);
+          } catch (err) {
+            audioUrl = URL.createObjectURL(audioBlob);
+          }
+        }
       }
-      effectiveAudio = audiosJson.audio;
-    }
-    try {
-      const audioData = Uint8Array.from(atob(effectiveAudio), (c) =>
-        c.charCodeAt(0)
+      
+      // Set the audio source
+      const answerAudioPlayer = document.getElementById(
+        `answerAudioPlayer-${effectiveName}-${effectiveCode}`
       );
-      const audioBlob = new Blob([audioData], { type: "audio/ogg" });
-
-      try {
-        const wavBlob = await convertOggToWav(audioBlob);
-        const audioUrl = URL.createObjectURL(wavBlob);
-        const answerAudioPlayer = document.getElementById(
-          `answerAudioPlayer-${effectiveName}-${effectiveCode}`
-        );
-        if (answerAudioPlayer) {
-          answerAudioPlayer.src = audioUrl;
-        }
-      } catch (err) {
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const answerAudioPlayer = document.getElementById(
-          `answerAudioPlayer-${effectiveName}-${effectiveCode}`
-        );
-        if (answerAudioPlayer) {
-          answerAudioPlayer.src = audioUrl;
-        }
+      if (answerAudioPlayer && audioUrl) {
+        answerAudioPlayer.src = audioUrl;
       }
     } catch (error) {
       console.log("Error loading audio:", error);

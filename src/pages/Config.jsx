@@ -756,11 +756,20 @@ const Config = ({
 
     if (autofillOptions.questions && config.questions) {
       config.questions.map(async (question) => {
-        const blob = await fetch(
-          `data:audio/wav;base64,${question.audio}`
-        ).then((res) => res.blob());
-        const url = URL.createObjectURL(blob);
-        setQuestions((prevQuestions) => [...prevQuestions, url]);
+        let url;
+        if (question.audioUrl) {
+          // Use presigned URL directly
+          url = question.audioUrl;
+        } else if (question.audio) {
+          // Fallback to Base64 processing
+          const blob = await fetch(
+            `data:audio/wav;base64,${question.audio}`
+          ).then((res) => res.blob());
+          url = URL.createObjectURL(blob);
+        }
+        if (url) {
+          setQuestions((prevQuestions) => [...prevQuestions, url]);
+        }
       });
     }
 
@@ -881,6 +890,37 @@ const Config = ({
             };
           });
 
+          // First, get a presigned URL for upload
+          const uploadUrlResponse = await fetch(
+            `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}`,
+            {
+              method: "GET",
+            }
+          );
+          
+          if (!uploadUrlResponse.ok) {
+            throw new Error("Failed to get upload URL");
+          }
+          
+          const { uploadUrl } = await uploadUrlResponse.json();
+          
+          // Upload directly to S3 using presigned URL
+          const audioBuffer = Buffer.from(base64Audio, "base64");
+          const audioBlob = new Blob([audioBuffer], { type: "audio/wav" });
+          
+          const uploadResponse = await fetch(uploadUrl, {
+            method: "PUT",
+            body: audioBlob,
+            headers: {
+              "Content-Type": "audio/wav",
+            },
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error("Failed to upload to S3");
+          }
+          
+          // Notify server that upload is complete
           const questionResponse = await fetch(
             `https://www.server.speakeval.org/uploadquestion?pin=${userId}&id=${id}&index=${i}&language=${language}`,
             {
@@ -888,7 +928,7 @@ const Config = ({
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ audio: base64Audio }),
+              body: JSON.stringify({ uploaded: true }),
             }
           );
 

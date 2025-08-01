@@ -8,8 +8,9 @@ import styled, { css, keyframes } from "styled-components";
 import { cuteAlert, cuteToast } from "cute-alert";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import tokenManager from "../utils/tokenManager";
 
-export default function AudioRecorder({ code, participant, uuid }) {
+export default function AudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState(null);
   const [isError, setIsError] = useState(true);
@@ -379,9 +380,19 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
   async function sendStatus() {
     console.log(timer.current);
+    
+    // Check if student is authenticated
+    if (!tokenManager.isAuthenticated()) {
+      toast.error("Please join the room first");
+      navigate("/join-room");
+      return;
+    }
+
+    const token = tokenManager.getStudentToken();
+    
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/check_status?code=${code}&participant=${participant}&uuid=${uuid}`
+        `https://www.server.speakeval.org/check_status?token=${token}`
       );
       if (!response.ok) {
         setError("Failed to fetch status");
@@ -393,7 +404,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
       const responseCode = data.code;
 
       if (responseCode === 7) {
-        window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`;
+        window.location.href = `record`;
       }
 
       if (data.started && data.limit && !finishedRecording) {
@@ -402,15 +413,18 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
       switch (responseCode) {
         case 1:
+          tokenManager.clearAll();
           navigate("/join-room");
           break;
         case 2:
           toast.error("You are not in the room");
+          tokenManager.clearAll();
           navigate("/join-room");
           break;
         case 3:
           break;
         case 4:
+          tokenManager.clearAll();
           navigate("/join-room");
           break;
         case 5:
@@ -449,9 +463,19 @@ export default function AudioRecorder({ code, participant, uuid }) {
 
   const makeResponse = async () => {
     setFetching(true);
+    
+    // Check if student is authenticated
+    if (!tokenManager.isAuthenticated()) {
+      toast.error("Please join the room first");
+      navigate("/join-room");
+      return;
+    }
+
+    const token = tokenManager.getStudentToken();
+    
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/receiveaudio?code=${code}&participant=${participant}&number=1`
+        `https://www.server.speakeval.org/receiveaudio?token=${token}&number=1`
       );
       if (!response.ok) {
         setError("Failed to fetch audio");
@@ -460,7 +484,7 @@ export default function AudioRecorder({ code, participant, uuid }) {
       }
 
       const receivedData = await response.json();
-      const audios = receivedData.audios;
+      const audioUrls = receivedData.audioUrls;
 
       if (receivedData.subscribed) {
         setPremium(true);
@@ -474,11 +498,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
         setAllowRepeat(receivedData.allowRepeat);
       }
 
-      for (const data of audios) {
-        const audioData = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
-        const audioBlob = new Blob([audioData], { type: "audio/wav" });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setAudioBlobURL(audioUrl);
+      if (audioUrls && audioUrls.length > 0) {
+        // Use the presigned URL directly
+        setAudioBlobURL(audioUrls[0]);
         questionIndex = receivedData.questionIndex;
       }
 
@@ -542,8 +564,9 @@ export default function AudioRecorder({ code, participant, uuid }) {
     let success = false;
     while (!success) {
       try {
+        const token = tokenManager.getStudentToken();
         const response = await fetch(
-          `https://www.server.speakeval.org/started_playing_audio?code=${code}&participant=${participant}&time=${currentTime}`
+          `https://www.server.speakeval.org/started_playing_audio?token=${token}&time=${currentTime}`
         );
         const data = await response.json();
         if (data.message) {
@@ -569,13 +592,56 @@ export default function AudioRecorder({ code, participant, uuid }) {
     );
     setIsError(false);
     setFinishedRecording(true);
+    
+    // Check if student is authenticated
+    if (!tokenManager.isAuthenticated()) {
+      toast.error("Please join the room first");
+      navigate("/join-room");
+      return;
+    }
+
+    const token = tokenManager.getStudentToken();
+    const info = tokenManager.getStudentInfo();
+    
     try {
       console.log("Uploading to server...");
+      
+      // First, get a presigned URL for upload
+      const uploadUrlResponse = await fetch(
+        `https://www.server.speakeval.org/get-recording-upload-url?token=${token}`,
+        {
+          method: "GET",
+        }
+      );
+      
+      if (!uploadUrlResponse.ok) {
+        throw new Error("Failed to get upload URL");
+      }
+      
+      const { uploadUrl } = await uploadUrlResponse.json();
+      
+      // Upload directly to S3 using presigned URL
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        body: formData.get("audio"),
+        headers: {
+          "Content-Type": "audio/wav",
+        },
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload to S3");
+      }
+      
+      // Notify server that upload is complete
       const response = await fetch(
-        `https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`,
+        `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
         {
           method: "POST",
-          body: formData,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ uploaded: true }),
         }
       );
       console.log("Response status:", response.status);
@@ -583,10 +649,13 @@ export default function AudioRecorder({ code, participant, uuid }) {
       if (!response.ok) {
         const retryInterval = setInterval(async () => {
           const retryResponse = await fetch(
-            `https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`,
+            `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
             {
               method: "POST",
-              body: formData,
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ uploaded: true }),
             }
           );
           if (retryResponse.ok) {
