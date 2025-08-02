@@ -3,6 +3,7 @@ import { Play, Square, RotateCcw, FastForward } from 'lucide-react'
 import styled, { css, keyframes } from "styled-components"
 import * as Tone from "tone"
 import "../styles/globals2.css"
+import tokenManager from "../utils/tokenManager"
 
 const PulseButton = styled.button`
   animation: ${props => props.isRecording ? 'pulse 1.5s infinite' : 'none'};
@@ -122,9 +123,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     if (isPlaying) return
 
     setIsPlaying(true)
-    const audioData = Uint8Array.from(atob(getExamData().questions[currentQuestionIndex].audio), c => c.charCodeAt(0))
-    const audioBlob = new Blob([audioData], { type: "audio/webm" })
-    const audioUrl = URL.createObjectURL(audioBlob)
+    const audioUrl = getExamData().questions[currentQuestionIndex].audioUrl
 
     if (questionAudioRef.current) {
       questionAudioRef.current.src = audioUrl
@@ -183,6 +182,77 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     ${pulse} 1.1s infinite;
 `
 
+  const uploadAllRecordings = async () => {
+    // Check if student is authenticated
+    if (!tokenManager.isAuthenticated()) {
+      console.error("Not authenticated for practice exam");
+      return;
+    }
+
+    const token = tokenManager.getStudentToken();
+    const info = tokenManager.getStudentInfo();
+    
+    if (!info || info.type !== "practice_participant") {
+      console.error("Invalid session for practice exam");
+      return;
+    }
+
+    try {
+      // Upload each recording
+      for (let i = 0; i < recordings.length; i++) {
+        const recording = recordings[i];
+        
+        // Convert audio URL to blob
+        const response = await fetch(recording.audioUrl);
+        const audioBlob = await response.blob();
+        
+        // Get presigned URL for upload
+        const uploadUrlResponse = await fetch(
+          `https://www.server.speakeval.org/get-practice-upload-url?token=${token}&index=${recording.questionIndex}`,
+          {
+            method: "GET",
+          }
+        );
+        
+        if (!uploadUrlResponse.ok) {
+          console.error("Failed to get upload URL for question", recording.questionIndex);
+          continue;
+        }
+        
+        const { uploadUrl } = await uploadUrlResponse.json();
+        
+        // Upload directly to S3
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "PUT",
+          body: audioBlob,
+          headers: {
+            "Content-Type": "audio/wav",
+          },
+        });
+        
+        if (!uploadResponse.ok) {
+          console.error("Failed to upload question", recording.questionIndex);
+          continue;
+        }
+        
+        // Notify server that upload is complete
+        await fetch(
+          `https://www.server.speakeval.org/upload_practice?token=${token}&index=${recording.questionIndex}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ uploaded: true }),
+          }
+        );
+        
+        console.log("Uploaded question", recording.questionIndex);
+      }
+    } catch (error) {
+      console.error("Error uploading practice recordings:", error);
+    }
+  };
 
   const recordStyle = {
     background: "radial-gradient(circle at bottom, #ff0000 0%, #b20000 70%)",
@@ -302,7 +372,11 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
 
         {currentQuestionIndex === getExamData().questions.length - 1 && (
           <button
-            onClick={() => onComplete(recordings)}
+            onClick={async () => {
+              // Upload all recordings before completing
+              await uploadAllRecordings();
+              onComplete(recordings);
+            }}
             className="mt-8 w-full futuristic-button bg-green-500 hover:bg-green-600"
           >
             Finish Practice Exam

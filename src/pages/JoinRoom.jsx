@@ -11,6 +11,7 @@ import {
 } from "@react-oauth/google";
 import Card from "../components/Card";
 import "../styles/globals.css";
+import tokenManager from "../utils/tokenManager";
 
 function JoinRoomContent() {
   const [name, setName] = useState("");
@@ -48,13 +49,21 @@ function JoinRoomContent() {
         toast.error(parsedData.message);
         return navigate("/join-room");
       }
+      
+      // Store the JWT token and session info
+      const token = parsedData.participant.id;
+      tokenManager.setStudentToken(token);
+      tokenManager.setRoomSession({
+        roomCode: roomCode,
+        participantName: participantName,
+        timestamp: Date.now()
+      });
+      
+      console.log("Stored token and session info");
       console.log(parsedData);
-      console.log(
-        `/room/${roomCode}?name=${participantName}&uuid=${parsedData.participant.id}`
-      );
-      navigate(
-        `/room/${roomCode}?name=${participantName}&uuid=${parsedData.participant.id}`
-      );
+      
+      // Navigate to room without URL parameters
+      navigate(`/room/${roomCode}`);
     } else {
       setLoading(false);
       console.log("Please fill out both fields.");

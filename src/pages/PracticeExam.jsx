@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import PracticeAudioRecorder from "./P2"
+import PracticeAudioRecorder from "./PracticeAudioRecorder"
 import party from "party-js"
 import Card from "../components/Card"
+import tokenManager from "../utils/tokenManager"
 
 export default function PracticeExam() {
   const [examData, setExamData] = useState(null)
@@ -12,23 +13,29 @@ export default function PracticeExam() {
   const [examCompleted, setExamCompleted] = useState(false)
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search)
-    const code = searchParams.get("code")
-    const name = searchParams.get("name")
-    const uuid = searchParams.get("uuid")
-
-    if (code && name && uuid) {
-      fetchExamData(code, name, uuid)
-    } else {
-      setError("Missing exam code or configuration name")
+    // Check if student is authenticated
+    if (!tokenManager.isAuthenticated()) {
+      setError("Please join the practice exam first")
       setIsLoading(false)
+      return
     }
+
+    const token = tokenManager.getStudentToken()
+    const info = tokenManager.getStudentInfo()
+    
+    if (!info || info.type !== "practice_participant") {
+      setError("Invalid session for practice exam")
+      setIsLoading(false)
+      return
+    }
+
+    fetchExamData(info.practiceCode, info.participant, token)
   }, [])
 
-  const fetchExamData = async (code, name, uuid) => {
+  const fetchExamData = async (code, name, token) => {
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/get_practice?code=${code}&name=${name}&uuid=${uuid}`,
+        `https://www.server.speakeval.org/get_practice?token=${token}`,
       )
       if (!response.ok) {
         throw new Error("Failed to fetch exam data")
