@@ -27,7 +27,7 @@ function Room() {
     const token = tokenManager.getStudentToken();
     const info = tokenManager.getStudentInfo();
     
-    if (!info || info.roomCode !== parseInt(roomCode)) {
+    if (!info || info.roomCode != roomCode) {
       toast.error("Invalid session for this room");
       tokenManager.clearAll();
       return navigate("/join-room");
