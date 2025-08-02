@@ -1,5 +1,5 @@
 // Token management utility for student authentication
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 const STUDENT_TOKEN_KEY = "speakeval_student_token";
 const ROOM_SESSION_KEY = "speakeval_room_session";
