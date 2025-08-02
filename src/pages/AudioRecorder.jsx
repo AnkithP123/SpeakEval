@@ -47,6 +47,8 @@ export default function AudioRecorder() {
 
   const navigate = useNavigate();
 
+
+
   // Media recorder setup - using askPermissionOnMount to request mic/camera on load
   const {
     status: audioStatus,
@@ -408,7 +410,27 @@ export default function AudioRecorder() {
       const responseCode = data.code;
 
       if (responseCode === 7) {
-        window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`;
+        // Room has been restarted, server provides new token directly
+        const newToken = data.newToken;
+        const newRoomCode = data.newRoomCode;
+        const participant = data.participant;
+        
+        if (newToken && newRoomCode && participant) {
+          // Update token in localStorage
+          tokenManager.setStudentToken(newToken);
+          tokenManager.setStudentInfo({
+            participant: participant,
+            roomCode: newRoomCode
+          });
+          
+          toast.success("Room restarted with new question - reloading page!");
+          // Simple page reload for fresh start
+          window.location.reload();
+        } else {
+          console.error("Missing token data from server");
+          toast.error("Failed to handle room restart");
+          navigate("/join-room");
+        }
       }
 
       if (data.started && data.limit && !finishedRecording) {

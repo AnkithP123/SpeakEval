@@ -59,7 +59,27 @@ function Room() {
       return navigate("/join-room");
     }
     if (parsedData.code === 7) {
-      window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`;
+      // Room has been restarted, server provides new token directly
+      const newToken = parsedData.newToken;
+      const newRoomCode = parsedData.newRoomCode;
+      const participant = parsedData.participant;
+      
+      if (newToken && newRoomCode && participant) {
+        // Update token in localStorage
+        tokenManager.setStudentToken(newToken);
+        tokenManager.setStudentInfo({
+          participant: participant,
+          roomCode: newRoomCode
+        });
+        
+        toast.success("Room restarted with new question");
+        return navigate("/record");
+      } else {
+        console.error("Missing token data from server");
+        toast.error("Failed to handle room restart");
+        tokenManager.clearAll();
+        return navigate("/join-room");
+      }
     }
     if (parsedData.code === 9) {
       toast.error(
