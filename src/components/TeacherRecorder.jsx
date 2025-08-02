@@ -79,13 +79,11 @@ export default function TeacherRecorder({ code, participant, uuid, onRecordingCo
       }
 
       const receivedData = await response.json()
-      const audios = receivedData.audios
+      const audioUrls = receivedData.audioUrls
 
-      if (audios && audios.length > 0) {
-        const audioData = Uint8Array.from(atob(audios[0]), (c) => c.charCodeAt(0))
-        const audioBlob = new Blob([audioData], { type: "audio/wav" })
-        const audioUrl = URL.createObjectURL(audioBlob)
-        setQuestionAudio(audioUrl)
+      if (audioUrls && audioUrls.length > 0) {
+        // Use the presigned URL directly
+        setQuestionAudio(audioUrls[0])
         questionIndex = receivedData.questionIndex
       }
 
@@ -111,20 +109,48 @@ export default function TeacherRecorder({ code, participant, uuid, onRecordingCo
     setIsProcessing(true)
     setError("Processing recording...")
 
-    const formData = new FormData()
-    formData.append("audio", blob, "audio.wav")
-
     try {
+      // First, get a presigned URL for upload
+      const uploadUrlResponse = await fetch(
+        `https://www.server.speakeval.org/get-recording-upload-url?code=${code}&participant=${participant}`,
+        {
+          method: "GET",
+        }
+      )
+      
+      if (!uploadUrlResponse.ok) {
+        throw new Error("Failed to get upload URL")
+      }
+      
+      const { uploadUrl } = await uploadUrlResponse.json()
+      
+      // Upload directly to S3 using presigned URL
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        body: blob,
+        headers: {
+          "Content-Type": "audio/wav",
+        },
+      })
+      
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload to S3")
+      }
+      
+      // Notify server that upload is complete
       const response = await fetch(
-        `https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}`,
+        `https://www.server.speakeval.org/upload?code=${code}&participant=${participant}&index=${questionIndex}&token=${uuid}`,
         {
           method: "POST",
-          body: formData,
-        },
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ uploaded: true }),
+        }
       )
 
       if (!response.ok) {
-        throw new Error("Failed to upload recording")
+        throw new Error("Failed to notify server")
       }
 
       const data = await response.json()

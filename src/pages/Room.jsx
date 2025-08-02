@@ -1,15 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Card from "../components/Card";
 import { cuteAlert } from "cute-alert";
+import tokenManager from "../utils/tokenManager";
+import urlCache from "../utils/urlCache";
 
 function Room() {
-  const [searchParams] = useSearchParams();
-  const name = searchParams.get("name");
-  const uuid = searchParams.get("uuid");
   const { roomCode } = useParams();
   const navigate = useNavigate();
   const [recording, setRecording] = useState(false);
@@ -17,36 +16,78 @@ function Room() {
   const [testAudioURL, setTestAudioURL] = useState("");
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const [studentInfo, setStudentInfo] = useState(null);
 
   const checkStatus = async () => {
-    console.log(`uuid: ${uuid}, name: ${name}, roomCode: ${roomCode}`);
+    // Check if student is authenticated and session is valid
+    if (!tokenManager.isAuthenticated()) {
+      toast.error("Please join the room first");
+      return navigate("/join-room");
+    }
+
+    const token = tokenManager.getStudentToken();
+    const info = tokenManager.getStudentInfo();
+    
+    if (!info || info.roomCode != roomCode) {
+      toast.error("Invalid session for this room");
+      tokenManager.clearAll();
+      return navigate("/join-room");
+    }
+
+    console.log(`Token: ${token}, Participant: ${info.participant}, RoomCode: ${roomCode}`);
+    
     const res = await fetch(
-      `https://www.server.speakeval.org/check_status?code=${roomCode}&participant=${name}&uuid=${uuid}`
+      `https://www.server.speakeval.org/check_status?token=${token}`
     );
     const parsedData = await res.json();
+    
     if (parsedData.code === 1) {
       return;
     }
     if (parsedData.code === 2) {
       toast.error("You are not in the room");
+      tokenManager.clearAll();
       return navigate("/join-room");
     }
     if (parsedData.code === 3) {
       toast.success("Exam has started");
-      return (window.location.href = `https://speakeval.org/record?code=${roomCode}&participant=${name}&uuid=${uuid}`);
+      return navigate("/record");
     }
     if (parsedData.code === 4) {
       toast.error("Room doesn't exist");
+      tokenManager.clearAll();
       return navigate("/join-room");
     }
     if (parsedData.code === 7) {
-      window.location.href = `record?code=${data.newRoomCode}&participant=${participant}&uuid=${uuid}`;
+      // Room has been restarted, server provides new token directly
+      const newToken = parsedData.newToken;
+      const newRoomCode = parsedData.newRoomCode;
+      const participant = parsedData.participant;
+      
+      if (newToken && newRoomCode && participant) {
+        // Update token in localStorage
+        tokenManager.setStudentToken(newToken);
+        tokenManager.setStudentInfo({
+          participant: participant,
+          roomCode: newRoomCode
+        });
+        
+        toast.success("Room restarted with new question - reloading page!");
+        // Simple page reload for fresh start
+        window.location.reload();
+      } else {
+        console.error("Missing token data from server");
+        toast.error("Failed to handle room restart");
+        tokenManager.clearAll();
+        return navigate("/join-room");
+      }
     }
     if (parsedData.code === 9) {
       toast.error(
         "The IP this user joined from is different than your current IP. If this is a mistake, tell your teacher to remove you and rejoin with the same name."
       );
       console.log(parsedData);
+      tokenManager.clearAll();
       return navigate("/join-room");
     }
   };
@@ -94,15 +135,28 @@ function Room() {
   };
 
   const fetchTestAudio = async () => {
-    const res = await fetch("https://www.server.speakeval.org/get_test_audio");
-    const parsedData = await res.json();
-    const audioBase64 = parsedData.audio;
-    const audioBlob = new Blob(
-      [Uint8Array.from(atob(audioBase64), (c) => c.charCodeAt(0))],
-      { type: "audio/wav" }
-    );
-    const audioUrl = URL.createObjectURL(audioBlob);
-    setTestAudioURL(audioUrl);
+    try {
+      const audioUrl = await urlCache.getUrl(
+        'test_audio',
+        'test',
+        null,
+        async () => {
+          const res = await fetch("https://www.server.speakeval.org/get_test_audio");
+          const parsedData = await res.json();
+          
+          if (parsedData.error) {
+            throw new Error(parsedData.error);
+          }
+          
+          return parsedData.audioUrl;
+        }
+      );
+      
+      setTestAudioURL(audioUrl);
+    } catch (error) {
+      console.error("Error fetching test audio:", error);
+      toast.error("Failed to fetch test audio");
+    }
   };
 
   return (
