@@ -1248,6 +1248,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       audio={responseData.audio}
                                       question={responseData.questionText}
                                       questionBase64={responseData.question}
+                                      questionAudioUrl={responseData.questionAudioUrl}
                                       index={responseData.index}
                                       name={participant.name}
                                       code={questionCode}
@@ -1304,6 +1305,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             audio={participant.audio}
                             question={participant.questionText}
                             questionBase64={participant.question}
+                            questionAudioUrl={participant.questionAudioUrl}
                             index={participant.index}
                             name={participant.name || "Unknown"}
                             code={question.questionCode}

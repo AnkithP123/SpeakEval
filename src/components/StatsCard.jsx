@@ -23,6 +23,7 @@ function ProfileCard({
   question,
   index,
   questionBase64,
+  questionAudioUrl,
   name,
   code,
   onGradeUpdate,
@@ -98,6 +99,10 @@ function ProfileCard({
     downloadMode && downloadedData
       ? downloadedData.questionBase64
       : questionBase64;
+  const effectiveQuestionAudioUrl =
+    downloadMode && downloadedData
+      ? downloadedData.questionAudioUrl
+      : questionAudioUrl;
 
   useEffect(() => {
     if (effectiveName) {
@@ -325,7 +330,17 @@ function ProfileCard({
     if (!effectiveName)
       return toast.error("Participant has not completed the task");
     try {
-      if (effectiveQuestionBase64) {
+      // Check if we have questionAudioUrl from the new system
+      if (effectiveQuestionAudioUrl) {
+        const questionAudioPlayer = document.getElementById(
+          `questionAudioPlayer-${effectiveName}-${effectiveCode}`
+        );
+        if (questionAudioPlayer) {
+          questionAudioPlayer.src = effectiveQuestionAudioUrl;
+          questionAudioPlayer.play();
+        }
+      } else if (effectiveQuestionBase64) {
+        // Fallback to old Base64 system
         const audioData = Uint8Array.from(atob(effectiveQuestionBase64), (c) =>
           c.charCodeAt(0)
         );
@@ -344,9 +359,11 @@ function ProfileCard({
         }
       } else {
         console.error("No audio data returned from fetchQuestion.");
+        toast.error("No question audio available");
       }
     } catch (error) {
       console.error("Error fetching or playing question audio:", error);
+      toast.error("Error playing question audio");
     }
   };
 
