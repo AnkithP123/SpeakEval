@@ -22,6 +22,8 @@ export default function PracticeExam() {
 
     const token = tokenManager.getStudentToken()
     const info = tokenManager.getStudentInfo()
+
+    console.log("info", info)
     
     if (!info || info.type !== "practice_participant") {
       setError("Invalid session for practice exam")
@@ -29,10 +31,10 @@ export default function PracticeExam() {
       return
     }
 
-    fetchExamData(info.practiceCode, info.participant, token)
+    fetchExamData(token)
   }, [])
 
-  const fetchExamData = async (code, name, token) => {
+  const fetchExamData = async (token) => {
     try {
       const response = await fetch(
         `https://www.server.speakeval.org/get_practice?token=${token}`,
@@ -68,7 +70,7 @@ export default function PracticeExam() {
       recordings &&
         recordings.forEach((recording, index) => {
           const audio = document.createElement("audio")
-          audio.src = recording
+          audio.src = recording.audioUrl || recording // Handle both object and string
           audio.controls = true
           audio.style.position = "absolute"
           const cardRect = document.querySelector(".card").getBoundingClientRect()

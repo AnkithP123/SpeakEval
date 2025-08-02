@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import Card from "../components/Card"
+import tokenManager from "../utils/tokenManager"
 import "../styles/globals3.css"
 
 export default function Practice() {
@@ -52,7 +53,10 @@ export default function Practice() {
       if (data.error) {
         toast.error(data.error)
       } else {
-        navigate(`/practice-exam?code=${code}&name=${name}&uuid=${data.uuid}`)
+        // Store token and info in tokenManager instead of URL parameters
+        tokenManager.setStudentToken(data.uuid) // data.uuid is actually the JWT token
+        
+        navigate(`/practice-exam`)
       }
     } catch (err) {
       console.error("Error joining practice exam", err)

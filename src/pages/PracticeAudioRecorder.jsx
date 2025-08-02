@@ -198,59 +198,87 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     }
 
     try {
-      // Upload each recording
-      for (let i = 0; i < recordings.length; i++) {
-        const recording = recordings[i];
-        
-        // Convert audio URL to blob
-        const response = await fetch(recording.audioUrl);
-        const audioBlob = await response.blob();
-        
-        // Get presigned URL for upload
-        const uploadUrlResponse = await fetch(
-          `https://www.server.speakeval.org/get-practice-upload-url?token=${token}&index=${recording.questionIndex}`,
-          {
-            method: "GET",
+      console.log("🚀 Starting batch upload of", recordings.length, "recordings...");
+      
+      // Step 1: Get presigned URLs for all recordings
+      const uploadPromises = recordings.map(async (recording, index) => {
+        try {
+          // Convert audio URL to blob
+          const response = await fetch(recording.audioUrl);
+          const audioBlob = await response.blob();
+          
+          // Get presigned URL for this recording
+          const urlResponse = await fetch(
+            `https://www.server.speakeval.org/get-practice-upload-url?token=${token}&index=${recording.questionIndex}`,
+            { method: "GET" }
+          );
+          
+          if (!urlResponse.ok) {
+            throw new Error(`Failed to get upload URL for question ${recording.questionIndex}`);
           }
-        );
-        
-        if (!uploadUrlResponse.ok) {
-          console.error("Failed to get upload URL for question", recording.questionIndex);
-          continue;
+          
+          const { uploadUrl } = await urlResponse.json();
+          
+          // Upload directly to S3
+          const uploadResponse = await fetch(uploadUrl, {
+            method: "PUT",
+            body: audioBlob,
+            headers: {
+              "Content-Type": "audio/wav",
+            },
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload question ${recording.questionIndex}`);
+          }
+          
+          console.log(`✅ Uploaded question ${recording.questionIndex}`);
+          return { success: true, questionIndex: recording.questionIndex };
+        } catch (error) {
+          console.error(`❌ Failed to upload question ${recording.questionIndex}:`, error);
+          return { success: false, questionIndex: recording.questionIndex, error: error.message };
         }
-        
-        const { uploadUrl } = await uploadUrlResponse.json();
-        
-        // Upload directly to S3
-        const uploadResponse = await fetch(uploadUrl, {
-          method: "PUT",
-          body: audioBlob,
-          headers: {
-            "Content-Type": "audio/wav",
-          },
-        });
-        
-        if (!uploadResponse.ok) {
-          console.error("Failed to upload question", recording.questionIndex);
-          continue;
-        }
-        
-        // Notify server that upload is complete
-        await fetch(
-          `https://www.server.speakeval.org/upload_practice?token=${token}&index=${recording.questionIndex}`,
+      });
+      
+      // Step 2: Wait for all uploads to complete
+      const results = await Promise.all(uploadPromises);
+      
+      // Step 3: Check results and notify server
+      const successfulUploads = results.filter(r => r.success);
+      const failedUploads = results.filter(r => !r.success);
+      
+      if (failedUploads.length > 0) {
+        console.error("Some uploads failed:", failedUploads);
+        // Could implement retry logic here
+      }
+      
+      if (successfulUploads.length > 0) {
+        // Notify server that uploads are complete
+        const notifyResponse = await fetch(
+          `https://www.server.speakeval.org/notify-practice-uploads?token=${token}`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ uploaded: true }),
+            body: JSON.stringify({
+              uploadedQuestions: successfulUploads.map(r => r.questionIndex),
+              totalQuestions: recordings.length,
+            }),
           }
         );
         
-        console.log("Uploaded question", recording.questionIndex);
+        if (notifyResponse.ok) {
+          console.log("✅ All uploads completed and server notified");
+        } else {
+          console.error("Failed to notify server of upload completion");
+        }
       }
+      
+      return successfulUploads.length === recordings.length;
     } catch (error) {
-      console.error("Error uploading practice recordings:", error);
+      console.error("Error in batch upload:", error);
+      return false;
     }
   };
 
@@ -374,8 +402,13 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
           <button
             onClick={async () => {
               // Upload all recordings before completing
-              await uploadAllRecordings();
-              onComplete(recordings);
+              const uploadSuccess = await uploadAllRecordings();
+              if (uploadSuccess) {
+                onComplete(recordings);
+              } else {
+                // Could show error message to user
+                console.error("Some uploads failed");
+              }
             }}
             className="mt-8 w-full futuristic-button bg-green-500 hover:bg-green-600"
           >
