@@ -418,13 +418,10 @@ export default function AudioRecorder() {
         if (newToken && newRoomCode && participant) {
           // Update token in localStorage
           tokenManager.setStudentToken(newToken);
-          tokenManager.setStudentInfo({
-            participant: participant,
-            roomCode: newRoomCode
-          });
           
           toast.success("Room restarted with new question - reloading page!");
           // Simple page reload for fresh start
+          console.log("Reloading page...");
           window.location.reload();
         } else {
           console.error("Missing token data from server");
