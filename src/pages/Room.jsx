@@ -72,8 +72,9 @@ function Room() {
           roomCode: newRoomCode
         });
         
-        toast.success("Room restarted with new question");
-        return navigate("/record");
+        toast.success("Room restarted with new question - reloading page!");
+        // Simple page reload for fresh start
+        window.location.reload();
       } else {
         console.error("Missing token data from server");
         toast.error("Failed to handle room restart");

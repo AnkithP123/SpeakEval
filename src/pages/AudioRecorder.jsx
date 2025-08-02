@@ -47,6 +47,8 @@ export default function AudioRecorder() {
 
   const navigate = useNavigate();
 
+
+
   // Media recorder setup - using askPermissionOnMount to request mic/camera on load
   const {
     status: audioStatus,
@@ -421,8 +423,9 @@ export default function AudioRecorder() {
             roomCode: newRoomCode
           });
           
-          toast.success("Room restarted with new question");
-          navigate("/record");
+          toast.success("Room restarted with new question - reloading page!");
+          // Simple page reload for fresh start
+          window.location.reload();
         } else {
           console.error("Missing token data from server");
           toast.error("Failed to handle room restart");
