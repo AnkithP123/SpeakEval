@@ -743,8 +743,11 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
             <FaUsers className="text-cyan-400 mr-2" /> Participants: {participants.length}
           </div>
           <button
+            disabled={true}
             onClick={roomStarted ? handleRestart : handleStart}
-            className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg px-4 py-2 flex items-center space-x-2 hover:from-red-600 hover:to-pink-600 transition-all duration-300"
+            className="bg-gray-500 text-white rounded-lg px-4 py-2 flex items-center space-x-2"
+            cursor="not-allowed"
+            //className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg px-4 py-2 flex items-center space-x-2 hover:from-red-600 hover:to-pink-600 transition-all duration-300"
           >
             {roomStarted ? <FaRedo className="mr-2" /> : <FaPlay className="mr-2" />}
             <span>{roomStarted ? "New Question" : "Start Room"}</span>

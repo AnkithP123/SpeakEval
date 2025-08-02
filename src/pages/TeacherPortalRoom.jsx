@@ -12,6 +12,7 @@ import {
   FaSpinner,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import urlCache from "../utils/urlCache";
 
 function TeacherPortalRoom({ initialRoomCode, pin }) {
   const { roomCode: paramRoomCode } = useParams();
@@ -300,6 +301,47 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         Object.keys(completeStore.students).length,
         "students"
       );
+
+      // Preload all audio URLs for better performance
+      console.log("🚀 Preloading audio URLs for all students...");
+      const preloadItems = [];
+      
+      Object.values(completeStore.students).forEach(student => {
+        Object.entries(student.responses).forEach(([questionCode, response]) => {
+          if (response.audio) {
+            preloadItems.push({
+              type: 'student_audio',
+              id: response.audio, // token
+              index: null
+            });
+          }
+        });
+      });
+
+      if (preloadItems.length > 0) {
+        // Preload URLs in background (don't await to avoid blocking UI)
+        urlCache.preloadUrls(preloadItems, async (item) => {
+          const response = await fetch(
+            `https://www.server.speakeval.org/fetch_audio?token=${item.id}`
+          );
+          const data = await response.json();
+          
+          if (data.audioUrl) {
+            return data.audioUrl;
+          } else if (data.audio) {
+            // Handle Base64 fallback
+            const audioData = Uint8Array.from(atob(data.audio), (c) => c.charCodeAt(0));
+            const audioBlob = new Blob([audioData], { type: "audio/ogg" });
+            return URL.createObjectURL(audioBlob);
+          }
+          throw new Error("No audio data received");
+        }).then(() => {
+          console.log(`✅ Preloaded ${preloadItems.length} audio URLs`);
+        }).catch(error => {
+          console.warn("⚠️ Some URLs failed to preload:", error);
+        });
+      }
+
       setIsInitialLoading(false);
       setFetched(true);
     } catch (error) {

@@ -56,7 +56,7 @@ export default function AudioRecorder() {
     clearBlobUrl: clearAudioBlobUrl,
   } = useReactMediaRecorder({
     audio: true,
-    video: true,
+    video: false,
     askPermissionOnMount: true, // Request permissions on component mount
     onStop: (blobUrl, blob) => handleAudioStop(blobUrl, blob),
   });
@@ -78,7 +78,7 @@ export default function AudioRecorder() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: true,
+        video: false,
       });
       const audioTracks = stream.getAudioTracks();
       const videoTracks = stream.getVideoTracks();
@@ -202,8 +202,15 @@ export default function AudioRecorder() {
   useEffect(() => {
     const makePostRequestWithRetry = (endpoint, messageText) => {
       const sendRequest = () => {
+        // Get token from localStorage
+        const token = tokenManager.getStudentToken();
+        if (!token) {
+          console.error("No token available for cheating detection");
+          return;
+        }
+        
         fetch(
-          `https://www.server.speakeval.org/${endpoint}?code=${code}&participant=${participant}&uuid=${uuid}`,
+          `https://www.server.speakeval.org/${endpoint}?token=${token}`,
           {
             method: "POST",
             headers: {
@@ -326,9 +333,6 @@ export default function AudioRecorder() {
     fullscreenViolationReported,
     tabSwitchReported,
     isFullscreen,
-    code,
-    participant,
-    uuid,
   ]);
 
   const pulse = keyframes`
@@ -404,7 +408,26 @@ export default function AudioRecorder() {
       const responseCode = data.code;
 
       if (responseCode === 7) {
-        window.location.href = `record`;
+        // Room has been restarted, server provides new token directly
+        const newToken = data.newToken;
+        const newRoomCode = data.newRoomCode;
+        const participant = data.participant;
+        
+        if (newToken && newRoomCode && participant) {
+          // Update token in localStorage
+          tokenManager.setStudentToken(newToken);
+          tokenManager.setStudentInfo({
+            participant: participant,
+            roomCode: newRoomCode
+          });
+          
+          toast.success("Room restarted with new question");
+          navigate("/record");
+        } else {
+          console.error("Missing token data from server");
+          toast.error("Failed to handle room restart");
+          navigate("/join-room");
+        }
       }
 
       if (data.started && data.limit && !finishedRecording) {
@@ -630,8 +653,15 @@ export default function AudioRecorder() {
       });
       
       if (!uploadResponse.ok) {
+        // Check if it's a CORS error
+        if (uploadResponse.status === 0 || uploadResponse.type === 'opaque') {
+          console.warn("CORS error detected, falling back to server upload");
+          throw new Error("CORS_ERROR");
+        }
         throw new Error("Failed to upload to S3");
       }
+      
+      console.log("Direct S3 upload successful");
       
       // Notify server that upload is complete
       const response = await fetch(
@@ -687,6 +717,34 @@ export default function AudioRecorder() {
       }
     } catch (error) {
       console.error("Error uploading audio:", error);
+      
+      // Handle CORS error with fallback
+      if (error.message === "CORS_ERROR") {
+        console.log("Attempting server-side upload fallback...");
+        try {
+          const fallbackResponse = await fetch(
+            `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+          
+          if (fallbackResponse.ok) {
+            const data = await fallbackResponse.json();
+            setFinishedRecording(true);
+            setError(
+              "Uploaded to server successfully. We think you might have said: " +
+                data.transcription
+            );
+            setDisplayTime("xx:xx");
+            return;
+          }
+        } catch (fallbackErr) {
+          console.error("Fallback upload also failed:", fallbackErr);
+        }
+      }
+      
       setError("Failed to upload audio. Please try again.");
       setIsError(true);
     }
@@ -701,8 +759,15 @@ export default function AudioRecorder() {
 
   const uploadScreen = async (formData) => {
     try {
+      // Get token from localStorage
+      const token = tokenManager.getStudentToken();
+      if (!token) {
+        console.error("No token available for screen upload");
+        return;
+      }
+      
       await fetch(
-        `https://www.server.speakeval.org/upload_screen?code=${code}&participant=${participant}&index=${questionIndex}`,
+        `https://www.server.speakeval.org/upload_screen?token=${token}&index=${questionIndex}`,
         {
           method: "POST",
           body: formData,

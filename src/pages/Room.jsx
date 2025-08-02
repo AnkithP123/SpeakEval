@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import Card from "../components/Card";
 import { cuteAlert } from "cute-alert";
 import tokenManager from "../utils/tokenManager";
+import urlCache from "../utils/urlCache";
 
 function Room() {
   const { roomCode } = useParams();
@@ -50,7 +51,7 @@ function Room() {
     }
     if (parsedData.code === 3) {
       toast.success("Exam has started");
-      return (window.location.href = `https://speakeval.org/record`);
+      return navigate("/record");
     }
     if (parsedData.code === 4) {
       toast.error("Room doesn't exist");
@@ -58,7 +59,27 @@ function Room() {
       return navigate("/join-room");
     }
     if (parsedData.code === 7) {
-      window.location.href = `record`;
+      // Room has been restarted, server provides new token directly
+      const newToken = parsedData.newToken;
+      const newRoomCode = parsedData.newRoomCode;
+      const participant = parsedData.participant;
+      
+      if (newToken && newRoomCode && participant) {
+        // Update token in localStorage
+        tokenManager.setStudentToken(newToken);
+        tokenManager.setStudentInfo({
+          participant: participant,
+          roomCode: newRoomCode
+        });
+        
+        toast.success("Room restarted with new question");
+        return navigate("/record");
+      } else {
+        console.error("Missing token data from server");
+        toast.error("Failed to handle room restart");
+        tokenManager.clearAll();
+        return navigate("/join-room");
+      }
     }
     if (parsedData.code === 9) {
       toast.error(
@@ -113,16 +134,28 @@ function Room() {
   };
 
   const fetchTestAudio = async () => {
-    const res = await fetch("https://www.server.speakeval.org/get_test_audio");
-    const parsedData = await res.json();
-    
-    if (parsedData.error) {
-      console.error("Error fetching test audio:", parsedData.error);
-      return;
+    try {
+      const audioUrl = await urlCache.getUrl(
+        'test_audio',
+        'test',
+        null,
+        async () => {
+          const res = await fetch("https://www.server.speakeval.org/get_test_audio");
+          const parsedData = await res.json();
+          
+          if (parsedData.error) {
+            throw new Error(parsedData.error);
+          }
+          
+          return parsedData.audioUrl;
+        }
+      );
+      
+      setTestAudioURL(audioUrl);
+    } catch (error) {
+      console.error("Error fetching test audio:", error);
+      toast.error("Failed to fetch test audio");
     }
-    
-    // Use the presigned URL directly
-    setTestAudioURL(parsedData.audioUrl);
   };
 
   return (

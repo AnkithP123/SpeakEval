@@ -13,6 +13,7 @@ import {
   FaEnvelope,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import urlCache from "../utils/urlCache";
 
 function ProfileCard({
   text,
@@ -115,34 +116,42 @@ function ProfileCard({
       if (effectiveAudio && effectiveAudio.startsWith('http')) {
         audioUrl = effectiveAudio;
       } else {
-        // Fetch new presigned URL
-        console.log("Audio not fetched, fetching now..." + audio);
-        const audios = await fetch(
-          `https://www.server.speakeval.org/fetch_audio?token=${audio}`
-        );
-        const audiosJson = await audios.json();
-        console.log("Audio fetched:", audiosJson);
-        if (!audios.ok) {
-          return toast.error("Failed to fetch audio: " + audiosJson.error);
-        }
-        
-        // Check if we got a presigned URL or fallback to Base64
-        if (audiosJson.audioUrl) {
-          audioUrl = audiosJson.audioUrl;
-        } else if (audiosJson.audio) {
-          // Fallback to Base64 processing
-          const audioData = Uint8Array.from(atob(audiosJson.audio), (c) =>
-            c.charCodeAt(0)
-          );
-          const audioBlob = new Blob([audioData], { type: "audio/ogg" });
-          
-          try {
-            const wavBlob = await convertOggToWav(audioBlob);
-            audioUrl = URL.createObjectURL(wavBlob);
-          } catch (err) {
-            audioUrl = URL.createObjectURL(audioBlob);
+        // Use URL cache for fetching
+        audioUrl = await urlCache.getUrl(
+          'student_audio',
+          audio, // token as id
+          null,
+          async () => {
+            console.log("Audio not fetched, fetching now..." + audio);
+            const audios = await fetch(
+              `https://www.server.speakeval.org/fetch_audio?token=${audio}`
+            );
+            const audiosJson = await audios.json();
+            console.log("Audio fetched:", audiosJson);
+            if (!audios.ok) {
+              throw new Error("Failed to fetch audio: " + audiosJson.error);
+            }
+            
+            // Check if we got a presigned URL or fallback to Base64
+            if (audiosJson.audioUrl) {
+              return audiosJson.audioUrl;
+            } else if (audiosJson.audio) {
+              // Fallback to Base64 processing
+              const audioData = Uint8Array.from(atob(audiosJson.audio), (c) =>
+                c.charCodeAt(0)
+              );
+              const audioBlob = new Blob([audioData], { type: "audio/ogg" });
+              
+              try {
+                const wavBlob = await convertOggToWav(audioBlob);
+                return URL.createObjectURL(wavBlob);
+              } catch (err) {
+                return URL.createObjectURL(audioBlob);
+              }
+            }
+            throw new Error("No audio data received");
           }
-        }
+        );
       }
       
       // Set the audio source
@@ -156,7 +165,7 @@ function ProfileCard({
       console.log("Error loading audio:", error);
       console.log(effectiveName);
     }
-  }, [effectiveCode, effectiveName]);
+  }, [effectiveCode, effectiveName, effectiveAudio, audio]);
 
   async function convertOggToWav(oggBlob) {
     const arrayBuffer = await oggBlob.arrayBuffer();

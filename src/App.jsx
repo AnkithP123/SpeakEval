@@ -18,7 +18,6 @@ import {
   createBrowserRouter,
   createRoutesFromElements,
   RouterProvider,
-  useLocation,
 } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import { getPin, setPin, setUserName } from "./components/Navbar";
@@ -36,15 +35,12 @@ import ResetPasswordPage from "./pages/ResetPassword";
 import Config from "./pages/Config";
 import MaintenancePage from "./pages/Maintainence copy";
 import ErrorPage from "./pages/Error";
+import urlCache from "./utils/urlCache";
 
 function AudioRecorderRouteWrapper() {
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const code = queryParams.get("code");
-  const participant = queryParams.get("participant");
-  const uuid = queryParams.get("uuid");
-
-  return <AudioRecorder code={code} participant={participant} uuid={uuid} />;
+  // AudioRecorder now uses token system from localStorage
+  // No URL parameters needed
+  return <AudioRecorder />;
 }
 
 const maintenance = false;
@@ -56,6 +52,13 @@ function App() {
   const [ultimate, setultimate] = React.useState(
     localStorage.getItem("ultimate") === "true"
   );
+
+  // Cleanup URL cache on app unmount
+  React.useEffect(() => {
+    return () => {
+      urlCache.destroy();
+    };
+  }, []);
 
   const setGold = (val) => {
     setgold(val);
