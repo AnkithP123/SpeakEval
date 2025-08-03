@@ -10,9 +10,10 @@ class WebSocketService {
     this.currentRoom = null;
     this.currentParticipant = null;
     this.connectionPromise = null;
+    this.studentToken = null; // Store token received from server
   }
 
-  connect(token) {
+  connect(roomCode = null) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       return Promise.resolve();
     }
@@ -24,7 +25,12 @@ class WebSocketService {
 
     this.connectionPromise = new Promise((resolve, reject) => {
       try {
-        this.ws = new WebSocket(`${this.serverUrl}?token=${token}`);
+        // Connect without token initially
+        const url = roomCode 
+          ? `${this.serverUrl}?roomCode=${roomCode}`
+          : this.serverUrl;
+        
+        this.ws = new WebSocket(url);
         
         this.ws.onopen = () => {
           console.log('✅ WebSocket connected');
@@ -72,7 +78,7 @@ class WebSocketService {
       console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
       
       setTimeout(() => {
-        this.connect()
+        this.connect(this.currentRoom)
           .catch(error => {
             console.error('Reconnection failed:', error);
           });
@@ -89,6 +95,7 @@ class WebSocketService {
       this.isConnected = false;
       this.currentRoom = null;
       this.currentParticipant = null;
+      this.studentToken = null;
     }
   }
 
@@ -135,14 +142,32 @@ class WebSocketService {
 
   // Student Flow Methods
 
-  // 1. Join Room Flow
-  joinRoom(roomCode, participant) {
+  // 1. Join Room Flow (NEW - replaces HTTP endpoint)
+  joinRoom(roomCode, participantName, useGoogle = false, email = null) {
     this.currentRoom = roomCode;
-    this.currentParticipant = participant;
+    this.currentParticipant = participantName;
     
     this.send({
-      type: 'join_room',
-      payload: { roomCode, participant }
+      type: 'join_room_request',
+      payload: { 
+        roomCode, 
+        participantName,
+        useGoogle,
+        email,
+        timestamp: Date.now()
+      }
+    });
+  }
+
+  // 2. Reconnect with existing token
+  reconnectWithToken(token) {
+    this.studentToken = token;
+    this.send({
+      type: 'reconnect_with_token',
+      payload: { 
+        token,
+        timestamp: Date.now()
+      }
     });
   }
 
@@ -155,7 +180,7 @@ class WebSocketService {
     this.currentParticipant = null;
   }
 
-  // 2. Room Status Updates
+  // 3. Room Status Updates
   updateRoomStatus(status) {
     this.send({
       type: 'room_status_update',
@@ -168,7 +193,7 @@ class WebSocketService {
     });
   }
 
-  // 3. Question Flow
+  // 4. Question Flow
   questionStarted(questionIndex) {
     this.send({
       type: 'question_started',
@@ -193,7 +218,7 @@ class WebSocketService {
     });
   }
 
-  // 4. Recording Flow
+  // 5. Recording Flow
   startRecording() {
     this.send({
       type: 'recording_started',
@@ -216,7 +241,7 @@ class WebSocketService {
     });
   }
 
-  // 5. Audio Playback
+  // 6. Audio Playback
   audioPlaybackStarted() {
     this.send({
       type: 'audio_playback_started',
@@ -239,7 +264,7 @@ class WebSocketService {
     });
   }
 
-  // 6. Upload Status
+  // 7. Upload Status
   uploadStarted() {
     this.send({
       type: 'upload_started',
@@ -262,7 +287,7 @@ class WebSocketService {
     });
   }
 
-  // 7. Practice Exam Flow
+  // 8. Practice Exam Flow
   joinPractice(practiceCode, participant) {
     this.currentRoom = practiceCode;
     this.currentParticipant = participant;
@@ -282,7 +307,7 @@ class WebSocketService {
     this.currentParticipant = null;
   }
 
-  // 8. Error Reporting
+  // 9. Error Reporting
   reportError(error) {
     this.send({
       type: 'error_reported',
@@ -295,7 +320,7 @@ class WebSocketService {
     });
   }
 
-  // 9. Heartbeat
+  // 10. Heartbeat
   sendHeartbeat() {
     this.send({
       type: 'heartbeat',
@@ -307,7 +332,7 @@ class WebSocketService {
     });
   }
 
-  // 10. Student Status
+  // 11. Student Status
   updateStudentStatus(status) {
     this.send({
       type: 'student_status_update',
@@ -318,6 +343,19 @@ class WebSocketService {
         timestamp: Date.now()
       }
     });
+  }
+
+  // Getters
+  getStudentToken() {
+    return this.studentToken;
+  }
+
+  getCurrentRoom() {
+    return this.currentRoom;
+  }
+
+  getCurrentParticipant() {
+    return this.currentParticipant;
   }
 }
 

@@ -8,22 +8,16 @@ export const useRealTimeCommunication = () => {
   const [currentRoom, setCurrentRoom] = useState(null);
   const [currentParticipant, setCurrentParticipant] = useState(null);
   const [roomStatus, setRoomStatus] = useState(null);
+  const [joinStatus, setJoinStatus] = useState(null); // 'pending', 'success', 'error'
   const listenersRef = useRef(new Map());
   const heartbeatInterval = useRef(null);
 
   // Connect to WebSocket
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (roomCode = null) => {
     try {
       setConnectionStatus('connecting');
       
-      if (!tokenManager.isAuthenticated()) {
-        console.warn('No token available for WebSocket connection');
-        setConnectionStatus('disconnected');
-        return;
-      }
-
-      const token = tokenManager.getStudentToken();
-      await websocketService.connect(token);
+      await websocketService.connect(roomCode);
       
       setIsConnected(true);
       setConnectionStatus('connected');
@@ -54,6 +48,7 @@ export const useRealTimeCommunication = () => {
     setCurrentRoom(null);
     setCurrentParticipant(null);
     setRoomStatus(null);
+    setJoinStatus(null);
   }, []);
 
   // Add event listener
@@ -84,11 +79,16 @@ export const useRealTimeCommunication = () => {
     websocketService.send(message);
   }, []);
 
-  // Room management
-  const joinRoom = useCallback((roomCode, participant) => {
+  // Room management - NEW approach
+  const joinRoom = useCallback((roomCode, participantName, useGoogle = false, email = null) => {
+    setJoinStatus('pending');
     setCurrentRoom(roomCode);
-    setCurrentParticipant(participant);
-    websocketService.joinRoom(roomCode, participant);
+    setCurrentParticipant(participantName);
+    websocketService.joinRoom(roomCode, participantName, useGoogle, email);
+  }, []);
+
+  const reconnectWithToken = useCallback((token) => {
+    websocketService.reconnectWithToken(token);
   }, []);
 
   const leaveRoom = useCallback(() => {
@@ -161,6 +161,19 @@ export const useRealTimeCommunication = () => {
     websocketService.reportError(error);
   }, []);
 
+  // Getters
+  const getStudentToken = useCallback(() => {
+    return websocketService.getStudentToken();
+  }, []);
+
+  const getCurrentRoom = useCallback(() => {
+    return websocketService.getCurrentRoom();
+  }, []);
+
+  const getCurrentParticipant = useCallback(() => {
+    return websocketService.getCurrentParticipant();
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -185,12 +198,14 @@ export const useRealTimeCommunication = () => {
     currentRoom,
     currentParticipant,
     roomStatus,
+    joinStatus,
     connect,
     disconnect,
     on,
     off,
     send,
     joinRoom,
+    reconnectWithToken,
     leaveRoom,
     joinPractice,
     leavePractice,
@@ -204,6 +219,9 @@ export const useRealTimeCommunication = () => {
     audioPlaybackCompleted,
     uploadStarted,
     uploadCompleted,
-    reportError
+    reportError,
+    getStudentToken,
+    getCurrentRoom,
+    getCurrentParticipant
   };
 }; 

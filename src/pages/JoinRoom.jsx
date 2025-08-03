@@ -28,7 +28,16 @@ function JoinRoomContent() {
   const navigate = useNavigate();
   
   // Real-time communication
-  const { connect, joinRoom, updateStudentStatus } = useRealTimeCommunication();
+  const { 
+    connect, 
+    joinRoom, 
+    on: onWebSocketEvent,
+    off: offWebSocketEvent,
+    joinStatus,
+    getStudentToken,
+    getCurrentRoom,
+    getCurrentParticipant
+  } = useRealTimeCommunication();
 
   const handleJoin = async () => {
     setLoading(true);
@@ -42,43 +51,48 @@ function JoinRoomContent() {
         "and room code:",
         roomCode
       );
-      const res = await fetch(
-        `https://www.server.speakeval.org/join_room?code=${roomCode}&participant=${participantName}${
-          useGoogle ? `&email=${email}` : ""
-        }`
-      );
-      const parsedData = await res.json();
-      setLoading(false);
-      if (parsedData.error) {
-        toast.error(parsedData.message);
-        return navigate("/join-room");
-      }
-      
-      // Store the JWT token and session info
-      const token = parsedData.participant.id;
-      tokenManager.setStudentToken(token);
-      tokenManager.setRoomSession({
-        roomCode: roomCode,
-        participantName: participantName,
-        timestamp: Date.now()
-      });
-      
-      console.log("Stored token and session info");
-      console.log(parsedData);
-      
-      // Connect to WebSocket and join room
+
       try {
-        await connect();
-        joinRoom(roomCode, participantName);
-        updateStudentStatus('joined_room');
-        console.log('✅ Connected to WebSocket and joined room');
+        // Connect to WebSocket first
+        await connect(roomCode);
+        
+        // Set up event listeners for join response
+        const handleJoinSuccess = (payload) => {
+          console.log('✅ Join room successful:', payload);
+          
+          // Store the JWT token and session info
+          const token = payload.token;
+          tokenManager.setStudentToken(token);
+          tokenManager.setRoomSession({
+            roomCode: roomCode,
+            participantName: participantName,
+            timestamp: Date.now()
+          });
+          
+          console.log("Stored token and session info");
+          
+          // Navigate to room
+          navigate(`/room/${roomCode}`);
+        };
+        
+        const handleJoinError = (payload) => {
+          console.log('❌ Join room failed:', payload);
+          toast.error(payload.message || "Failed to join room");
+          setLoading(false);
+        };
+        
+        // Add event listeners
+        onWebSocketEvent('join_room_success', handleJoinSuccess);
+        onWebSocketEvent('join_room_error', handleJoinError);
+        
+        // Send join room request
+        joinRoom(roomCode, participantName, useGoogle, email);
+        
       } catch (error) {
         console.error('❌ Failed to connect to WebSocket:', error);
-        // Continue anyway - WebSocket is optional
+        toast.error("Failed to connect to server");
+        setLoading(false);
       }
-      
-      // Navigate to room without URL parameters
-      navigate(`/room/${roomCode}`);
     } else {
       setLoading(false);
       console.log("Please fill out both fields.");
