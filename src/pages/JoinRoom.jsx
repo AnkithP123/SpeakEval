@@ -29,11 +29,11 @@ function JoinRoomContent() {
   
   // Real-time communication
   const { 
-    connect, 
-    joinRoom, 
-    on: onWebSocketEvent,
+    isConnected, 
+    connectionStatus,
+    connectForJoin,
+    on: onWebSocketEvent, 
     off: offWebSocketEvent,
-    joinStatus,
     getStudentToken,
     getCurrentRoom,
     getCurrentParticipant
@@ -53,8 +53,15 @@ function JoinRoomContent() {
       );
 
       try {
-        // Connect to WebSocket first
-        await connect(roomCode);
+        // Check if we have a stored token for reconnection
+        const existingToken = tokenManager.getStudentToken();
+        
+        if (existingToken) {
+          console.log('🔄 Reconnecting with existing token...');
+          // For reconnection, we'll use the token-based connection
+          // But since this is the join page, we should do a fresh join
+          console.log('🔄 Fresh join requested on join page');
+        }
         
         // Set up event listeners for join response
         const handleJoinSuccess = (payload) => {
@@ -62,6 +69,12 @@ function JoinRoomContent() {
           
           // Store the JWT token and session info
           const token = payload.token;
+          console.log('🔍 Storing token:', {
+            hasToken: !!token,
+            tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+            tokenLength: token ? token.length : 0
+          });
+          
           tokenManager.setStudentToken(token);
           tokenManager.setRoomSession({
             roomCode: roomCode,
@@ -70,6 +83,11 @@ function JoinRoomContent() {
           });
           
           console.log("Stored token and session info");
+          console.log('🔍 TokenManager state after storage:', {
+            isAuthenticated: tokenManager.isAuthenticated(),
+            studentInfo: tokenManager.getStudentInfo(),
+            roomSession: tokenManager.getRoomSession()
+          });
           
           // Navigate to room
           navigate(`/room/${roomCode}`);
@@ -81,15 +99,26 @@ function JoinRoomContent() {
           setLoading(false);
         };
         
+        const handleConnectionError = (payload) => {
+          console.log('❌ Connection error:', payload);
+          toast.error(payload.message || "Connection failed");
+          setLoading(false);
+        };
+        
         // Add event listeners
+        console.log('🎧 Adding event listeners...');
         onWebSocketEvent('join_room_success', handleJoinSuccess);
         onWebSocketEvent('join_room_error', handleJoinError);
+        onWebSocketEvent('connection_error', handleConnectionError);
         
-        // Send join room request
-        joinRoom(roomCode, participantName, useGoogle, email);
+        // Connect and join room in one step
+        console.log('📤 Connecting and joining room...');
+        await connectForJoin(roomCode, participantName, useGoogle, email);
+        
+        console.log('📤 Join request sent');
         
       } catch (error) {
-        console.error('❌ Failed to connect to WebSocket:', error);
+        console.error('❌ Failed to connect and join:', error);
         toast.error("Failed to connect to server");
         setLoading(false);
       }

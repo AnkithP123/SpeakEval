@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import tokenManager from "../utils/tokenManager";
 import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
+import websocketService from '../utils/websocketService';
 
 export default function AudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -24,7 +25,7 @@ export default function AudioRecorder() {
   const countdownRef = useRef(0);
   const [countdownDisplay, setCountdownDisplay] = useState(0);
   const timer = useRef(-1);
-  const statusInterval = useRef(null);
+
   const audioRef = useRef(null);
   const [displayTime, setDisplayTime] = useState("xx:xx");
   const [obtainedAudio, setObtainedAudio] = useState(false);
@@ -33,6 +34,8 @@ export default function AudioRecorder() {
   const [premium, setPremium] = useState(false);
   const [thinkingTime, setThinkingTime] = useState(5);
   const [allowRepeat, setAllowRepeat] = useState(true);
+  const [timeLimit, setTimeLimit] = useState(-1); // Time limit in seconds (-1 means no limit)
+  const [remainingTime, setRemainingTime] = useState(-1); // Current remaining time in seconds
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [finishedRecording, setFinishedRecording] = useState(false);
   const [hasScreenPermission, setHasScreenPermission] = useState(true); // temporarily set to true
@@ -52,12 +55,10 @@ export default function AudioRecorder() {
   const {
     isConnected,
     connectionStatus,
-    connect: connectWebSocket,
+    connectForReconnect,
     disconnect: disconnectWebSocket,
     on: onWebSocketEvent,
     off: offWebSocketEvent,
-    joinRoom,
-    leaveRoom,
     updateRoomStatus,
     updateStudentStatus,
     questionStarted,
@@ -68,10 +69,9 @@ export default function AudioRecorder() {
     audioPlaybackCompleted,
     uploadStarted,
     uploadCompleted,
-    reportError
+    reportError,
+    reconnect
   } = useRealTimeCommunication();
-
-
 
   // Media recorder setup - using askPermissionOnMount to request mic/camera on load
   const {
@@ -103,7 +103,14 @@ export default function AudioRecorder() {
   // WebSocket connection and event listeners
   useEffect(() => {
     if (tokenManager.isAuthenticated()) {
-      connectWebSocket();
+      // Try to reconnect with existing token
+      const existingToken = tokenManager.getStudentToken();
+      if (existingToken) {
+        console.log('🔄 Connecting with stored token...');
+        connectForReconnect(existingToken);
+      } else {
+        console.error('❌ No token available for connection');
+      }
       
       // Set up event listeners
       const handleRoomStarted = (payload) => {
@@ -119,6 +126,7 @@ export default function AudioRecorder() {
         setIsRecording(false);
         setFinishedRecording(false);
         setDisplayTime("xx:xx");
+        setRemainingTime(-1);
         if (timer.current !== -1) {
           clearInterval(timer.current);
           timer.current = -1;
@@ -127,8 +135,23 @@ export default function AudioRecorder() {
       
       const handleRoomRestart = (payload) => {
         console.log('🔄 Room restarted:', payload);
-        // Handle room restart - reload page
-        window.location.reload();
+        
+        // Extract new token and room information
+        const { newToken, newRoomCode, participant } = payload;
+        
+        if (newToken && newRoomCode && participant) {
+          // Update token in localStorage
+          tokenManager.setStudentToken(newToken);
+          
+          toast.success("Room restarted with new question - reloading page!");
+          // Simple page reload for fresh start
+          console.log("Reloading page...");
+          window.location.reload();
+        } else {
+          console.error("Missing token data from server");
+          toast.error("Failed to handle room restart");
+          window.location.reload();
+        }
       };
       
       const handleParticipantUpdate = (payload) => {
@@ -141,18 +164,79 @@ export default function AudioRecorder() {
         updateStudentStatus('exam_started');
       };
       
+      const handleReconnectNeeded = (payload) => {
+        console.log('🔄 Reconnection needed:', payload);
+        // Try to reconnect automatically
+        reconnect();
+      };
+      
+      const handleRoomStateSync = (payload) => {
+        console.log('📊 Room state sync received:', payload);
+        
+        const { 
+          roomCode, 
+          participant, 
+          roomStarted, 
+          examStarted, 
+          currentQuestion,
+          timeLimit,
+          thinkingTime,
+          allowRepeat,
+          latestToken,
+          roomRestarted
+        } = payload;
+        
+        // Update time limit if provided
+        if (timeLimit !== undefined) {
+          setTimeLimit(timeLimit);
+          if (timeLimit > 0) {
+            setDisplayTime(formatTime(timeLimit * 1000));
+          } else {
+            setDisplayTime("xx:xx");
+          }
+        }
+        
+        // Update other settings
+        if (thinkingTime !== undefined) {
+          setThinkingTime(thinkingTime);
+        }
+        if (allowRepeat !== undefined) {
+          setAllowRepeat(allowRepeat);
+        }
+        
+        // Handle room restart with latest token
+        if (roomRestarted && latestToken) {
+          console.log('🔄 Room was restarted, updating with latest token');
+          tokenManager.setStudentToken(latestToken);
+          
+          toast.success("Room restarted with new question - reloading page!");
+          window.location.reload();
+          return;
+        }
+        
+        // Handle exam started state
+        if (examStarted && roomStarted) {
+          console.log('🎯 Exam has started, navigating to record page');
+          toast.success("Exam has started");
+          navigate("/record");
+          return;
+        }
+        
+        // Handle room started but not exam
+        if (roomStarted && !examStarted) {
+          console.log('📊 Room has started but exam not yet begun');
+          // Stay on current page, wait for exam to start
+        }
+      };
+      
       // Add event listeners
       onWebSocketEvent('room_started', handleRoomStarted);
       onWebSocketEvent('question_changed', handleQuestionChange);
       onWebSocketEvent('room_restart', handleRoomRestart);
       onWebSocketEvent('participant_update', handleParticipantUpdate);
       onWebSocketEvent('exam_started', handleExamStarted);
-      
-      // Join room if we have participant info
-      const info = tokenManager.getStudentInfo();
-      if (info && info.roomCode && info.participant) {
-        joinRoom(info.roomCode, info.participant);
-      }
+      onWebSocketEvent('reconnect_needed', handleReconnectNeeded);
+      onWebSocketEvent('room_state_sync', handleRoomStateSync);
       
       return () => {
         // Cleanup event listeners
@@ -161,11 +245,22 @@ export default function AudioRecorder() {
         offWebSocketEvent('room_restart', handleRoomRestart);
         offWebSocketEvent('participant_update', handleParticipantUpdate);
         offWebSocketEvent('exam_started', handleExamStarted);
-        leaveRoom();
-        disconnectWebSocket();
+        offWebSocketEvent('reconnect_needed', handleReconnectNeeded);
+        offWebSocketEvent('room_state_sync', handleRoomStateSync);
+        // Clean up WebSocket service properly
+        websocketService.cleanup();
       };
     }
-  }, [connectWebSocket, disconnectWebSocket, onWebSocketEvent, offWebSocketEvent, joinRoom, leaveRoom]);
+  }, [connectForReconnect, disconnectWebSocket, onWebSocketEvent, offWebSocketEvent, reconnect]);
+
+  // Update display time when remaining time changes
+  useEffect(() => {
+    if (remainingTime > 0) {
+      setDisplayTime(formatTime(remainingTime * 1000)); // Convert to milliseconds
+    } else if (remainingTime <= 0) {
+      setDisplayTime("xx:xx");
+    }
+  }, [remainingTime]);
 
   const requestPermissions = async () => {
     try {
@@ -285,18 +380,7 @@ export default function AudioRecorder() {
     }
   }, [audioStatus]);
 
-  // Set up status interval (reduced frequency due to WebSocket communication)
-  useEffect(() => {
-    // Use WebSocket for real-time updates, HTTP polling as fallback
-    if (isConnected) {
-      // Less frequent polling when WebSocket is connected
-      statusInterval.current = setInterval(sendStatus, 10000); // 10 seconds instead of 3
-    } else {
-      // More frequent polling when WebSocket is not connected
-      statusInterval.current = setInterval(sendStatus, 5000); // 5 seconds as fallback
-    }
-    return () => clearInterval(statusInterval.current);
-  }, [isConnected]);
+
 
   // Monitor fullscreen state and prevent suspicious activities
   useEffect(() => {
@@ -370,7 +454,7 @@ export default function AudioRecorder() {
         isFullscreen &&
         !tabSwitchReported
       ) {
-        setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
+        setTabSwitchReported(true); // Set flag to prevent multiple alerts
         makePostRequestWithRetry("cheating_detected", "Tab switch detected");
         alert(
           "You switched tabs or went out of the window. This will be reported to your teacher."
@@ -482,106 +566,6 @@ export default function AudioRecorder() {
     synth.triggerAttackRelease("C6", "4n");
   };
 
-  async function sendStatus() {
-    console.log(timer.current);
-    
-    // Check if student is authenticated
-    if (!tokenManager.isAuthenticated()) {
-      toast.error("Please join the room first");
-      navigate("/join-room");
-      return;
-    }
-
-    const token = tokenManager.getStudentToken();
-    
-    try {
-      const response = await fetch(
-        `https://www.server.speakeval.org/check_status?token=${token}`
-      );
-      if (!response.ok) {
-        setError("Failed to fetch status");
-        setIsError(true);
-        return;
-      }
-
-      const data = await response.json();
-      const responseCode = data.code;
-
-      if (responseCode === 7) {
-        // Room has been restarted, server provides new token directly
-        const newToken = data.newToken;
-        const newRoomCode = data.newRoomCode;
-        const participant = data.participant;
-        
-        if (newToken && newRoomCode && participant) {
-          // Update token in localStorage
-          tokenManager.setStudentToken(newToken);
-          
-          toast.success("Room restarted with new question - reloading page!");
-          // Simple page reload for fresh start
-          console.log("Reloading page...");
-          window.location.reload();
-        } else {
-          console.error("Missing token data from server");
-          toast.error("Failed to handle room restart");
-          navigate("/join-room");
-        }
-      }
-
-      if (data.started && data.limit && !finishedRecording) {
-        updateTimer(data.limit - (Date.now() - data.started));
-      }
-
-      switch (responseCode) {
-        case 1:
-          tokenManager.clearAll();
-          navigate("/join-room");
-          break;
-        case 2:
-          toast.error("You are not in the room");
-          tokenManager.clearAll();
-          navigate("/join-room");
-          break;
-        case 3:
-          break;
-        case 4:
-          tokenManager.clearAll();
-          navigate("/join-room");
-          break;
-        case 5:
-          if (
-            error ===
-            "Reaching time limit. Please finish your response in the next 5 seconds. "
-          ) {
-            setError(
-              "You reached the time limit and your audio was stopped and uploaded automatically. " +
-                (premium
-                  ? "Your audio will be processed faster, but may still take a little bit of time"
-                  : "It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.")
-            );
-            setIsError(false);
-          }
-          stopRecording();
-          break;
-        case 6:
-          if (
-            !error ||
-            (!error.includes("Processing...") &&
-              !error.includes("Uploaded to server successfully.") &&
-              !finishedRecording)
-          ) {
-            setError(
-              "Reaching time limit. Please finish your response in the next 5 seconds. "
-            );
-            setIsError(true);
-          }
-          break;
-      }
-    } catch (error) {
-      console.error("Error in sendStatus:", error);
-    }
-  }
-
   const makeResponse = async () => {
     setFetching(true);
     
@@ -617,6 +601,16 @@ export default function AudioRecorder() {
 
       if (receivedData.allowRepeat !== undefined) {
         setAllowRepeat(receivedData.allowRepeat);
+      }
+
+      if (receivedData.timeLimit) {
+        setTimeLimit(receivedData.timeLimit);
+        // Set initial display time to time limit only if it's not -1 (no limit)
+        if (receivedData.timeLimit > 0) {
+          setDisplayTime(formatTime(receivedData.timeLimit * 1000)); // Convert to milliseconds
+        } else {
+          setDisplayTime("xx:xx"); // No time limit
+        }
       }
 
       if (audioUrls && audioUrls.length > 0) {
@@ -672,19 +666,50 @@ export default function AudioRecorder() {
           participant: tokenManager.getStudentInfo()?.participant
         });
 
-      // Send status via HTTP as fallback
-      await sendStatus();
+
 
       // Fix timer implementation
       if (timer.current !== -1) {
         clearInterval(timer.current);
       }
       
-      let elapsedTime = 0;
-      timer.current = setInterval(() => {
-        elapsedTime += 1;
-        setDisplayTime(formatTime(elapsedTime));
-      }, 1000);
+      // Only start countdown if there's a time limit
+      if (timeLimit > 0) {
+        setRemainingTime(timeLimit); // Start with time limit
+        timer.current = setInterval(() => {
+          setRemainingTime(prevTime => {
+            const newTime = prevTime - 1;
+            
+            // Local time limit handling
+            if (newTime <= 5 && newTime > 0) {
+              // Warning: 5 seconds before time limit
+              if (!error || (!error.includes("Processing...") && !error.includes("Uploaded to server successfully.") && !finishedRecording)) {
+                setError("Reaching time limit. Please finish your response in the next 5 seconds. ");
+                setIsError(true);
+              }
+            } else if (newTime <= 0) {
+              // Time limit reached
+              setDisplayTime("xx:xx");
+              if (error === "Reaching time limit. Please finish your response in the next 5 seconds. ") {
+                setError(
+                  "You reached the time limit and your audio was stopped and uploaded automatically. " +
+                    (premium
+                      ? "Your audio will be processed faster, but may still take a little bit of time"
+                      : "It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.")
+                );
+                setIsError(false);
+              }
+              stopRecording();
+            }
+            
+            return newTime;
+          });
+        }, 1000);
+      } else {
+        // No time limit - just show xx:xx
+        setRemainingTime(-1);
+        setDisplayTime("xx:xx");
+      }
 
     } catch (err) {
       console.error("Error starting recording:", err);
@@ -948,6 +973,10 @@ export default function AudioRecorder() {
       timer.current = -1;
     }
 
+    // Reset display time
+    setDisplayTime("xx:xx");
+    setRemainingTime(-1);
+
     // Notify server via WebSocket
     wsStopRecording();
     updateStudentStatus('stopped_recording');
@@ -965,7 +994,7 @@ export default function AudioRecorder() {
   };
 
   const formatTime = (time) => {
-    if (time === 0) return "xx:xx";
+    if (time <= 0) return "xx:xx";
     const minutes = Math.floor(time / 60000);
     const seconds = Math.round((time % 60000) / 1000);
 
@@ -1008,7 +1037,9 @@ export default function AudioRecorder() {
           fontSize: "48px",
           fontWeight: "bold",
           color:
-            timer.current < 5000 && timer.current !== 0 ? "red" : "#374151",
+            displayTime !== "xx:xx" && 
+            remainingTime > 0 && 
+            remainingTime <= 5 ? "red" : "#374151",
         }}
       >
         {displayTime}

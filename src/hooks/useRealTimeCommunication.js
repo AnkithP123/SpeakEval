@@ -13,11 +13,19 @@ export const useRealTimeCommunication = () => {
   const heartbeatInterval = useRef(null);
 
   // Connect to WebSocket
-  const connect = useCallback(async (roomCode = null) => {
+  const connect = useCallback(async (roomCode = null, token = null) => {
     try {
       setConnectionStatus('connecting');
       
-      await websocketService.connect(roomCode);
+      if (token) {
+        await websocketService.connectForReconnect(token);
+      } else if (roomCode) {
+        // This should only be used for initial joins
+        console.warn('Legacy connect called with roomCode but no participant name');
+        throw new Error('Use connectForJoin for initial connections');
+      } else {
+        throw new Error('No roomCode or token provided');
+      }
       
       setIsConnected(true);
       setConnectionStatus('connected');
@@ -35,6 +43,56 @@ export const useRealTimeCommunication = () => {
     }
   }, [isConnected]);
 
+  // Connect for initial join
+  const connectForJoin = useCallback(async (roomCode, participantName, useGoogle = false, email = null) => {
+    try {
+      setConnectionStatus('connecting');
+      setJoinStatus('pending');
+      
+      await websocketService.connectForJoin(roomCode, participantName, useGoogle, email);
+      
+      setIsConnected(true);
+      setConnectionStatus('connected');
+      setCurrentRoom(roomCode);
+      setCurrentParticipant(participantName);
+      
+      // Start heartbeat
+      heartbeatInterval.current = setInterval(() => {
+        if (isConnected) {
+          websocketService.sendHeartbeat();
+        }
+      }, 30000); // Send heartbeat every 30 seconds
+      
+    } catch (error) {
+      console.error('Failed to connect for join:', error);
+      setConnectionStatus('error');
+      setJoinStatus('error');
+    }
+  }, [isConnected]);
+
+  // Connect for reconnection
+  const connectForReconnect = useCallback(async (token) => {
+    try {
+      setConnectionStatus('connecting');
+      
+      await websocketService.connectForReconnect(token);
+      
+      setIsConnected(true);
+      setConnectionStatus('connected');
+      
+      // Start heartbeat
+      heartbeatInterval.current = setInterval(() => {
+        if (isConnected) {
+          websocketService.sendHeartbeat();
+        }
+      }, 30000); // Send heartbeat every 30 seconds
+      
+    } catch (error) {
+      console.error('Failed to connect for reconnection:', error);
+      setConnectionStatus('error');
+    }
+  }, [isConnected]);
+
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
     if (heartbeatInterval.current) {
@@ -45,10 +103,7 @@ export const useRealTimeCommunication = () => {
     websocketService.disconnect();
     setIsConnected(false);
     setConnectionStatus('disconnected');
-    setCurrentRoom(null);
-    setCurrentParticipant(null);
-    setRoomStatus(null);
-    setJoinStatus(null);
+    // Don't clear room/participant for reconnection
   }, []);
 
   // Add event listener
@@ -79,36 +134,20 @@ export const useRealTimeCommunication = () => {
     websocketService.send(message);
   }, []);
 
-  // Room management - NEW approach
-  const joinRoom = useCallback((roomCode, participantName, useGoogle = false, email = null) => {
-    setJoinStatus('pending');
-    setCurrentRoom(roomCode);
-    setCurrentParticipant(participantName);
-    websocketService.joinRoom(roomCode, participantName, useGoogle, email);
-  }, []);
+  // Enhanced reconnection
+  const reconnect = useCallback(async () => {
+    console.log('🔄 Attempting to reconnect...');
+    const token = tokenManager.getStudentToken();
+    
+    if (token) {
+      console.log('🔄 Reconnecting with token...');
+      await connectForReconnect(token);
+    } else {
+      console.error('❌ No token available for reconnection');
+    }
+  }, [connectForReconnect]);
 
-  const reconnectWithToken = useCallback((token) => {
-    websocketService.reconnectWithToken(token);
-  }, []);
 
-  const leaveRoom = useCallback(() => {
-    websocketService.leaveRoom();
-    setCurrentRoom(null);
-    setCurrentParticipant(null);
-  }, []);
-
-  // Practice exam management
-  const joinPractice = useCallback((practiceCode, participant) => {
-    setCurrentRoom(practiceCode);
-    setCurrentParticipant(participant);
-    websocketService.joinPractice(practiceCode, participant);
-  }, []);
-
-  const leavePractice = useCallback(() => {
-    websocketService.leavePractice();
-    setCurrentRoom(null);
-    setCurrentParticipant(null);
-  }, []);
 
   // Status updates
   const updateRoomStatus = useCallback((status) => {
@@ -200,15 +239,13 @@ export const useRealTimeCommunication = () => {
     roomStatus,
     joinStatus,
     connect,
+    connectForJoin,
+    connectForReconnect,
     disconnect,
     on,
     off,
     send,
-    joinRoom,
-    reconnectWithToken,
-    leaveRoom,
-    joinPractice,
-    leavePractice,
+    reconnect,
     updateRoomStatus,
     updateStudentStatus,
     questionStarted,

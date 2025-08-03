@@ -8,6 +8,7 @@ import { cuteAlert } from "cute-alert";
 import tokenManager from "../utils/tokenManager";
 import urlCache from "../utils/urlCache";
 import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
+import websocketService from '../utils/websocketService';
 
 function Room() {
   const { roomCode } = useParams();
@@ -24,10 +25,12 @@ function Room() {
     isConnected, 
     on: onWebSocketEvent, 
     off: offWebSocketEvent,
-    updateStudentStatus 
+    updateStudentStatus,
+    connectForReconnect,
+    reconnect
   } = useRealTimeCommunication();
 
-  const checkStatus = async () => {
+  useEffect(() => {
     // Check if student is authenticated and session is valid
     if (!tokenManager.isAuthenticated()) {
       toast.error("Please join the room first");
@@ -45,63 +48,22 @@ function Room() {
 
     console.log(`Token: ${token}, Participant: ${info.participant}, RoomCode: ${roomCode}`);
     
-    const res = await fetch(
-      `https://www.server.speakeval.org/check_status?token=${token}`
-    );
-    const parsedData = await res.json();
+    // Try to connect with stored token if available
+    const tokenForConnection = tokenManager.getStudentToken();
+    console.log('🔍 Room component token check:', {
+      hasToken: !!tokenForConnection,
+      tokenPreview: tokenForConnection ? tokenForConnection.substring(0, 20) + '...' : 'none',
+      tokenLength: tokenForConnection ? tokenForConnection.length : 0,
+      isAuthenticated: tokenManager.isAuthenticated(),
+      studentInfo: tokenManager.getStudentInfo()
+    });
     
-    if (parsedData.code === 1) {
-      return;
+    if (tokenForConnection && !isConnected) {
+      console.log('🔄 Connecting with stored token...');
+      connectForReconnect(tokenForConnection);
+    } else if (!tokenForConnection) {
+      console.error('❌ No token available for connection in Room component');
     }
-    if (parsedData.code === 2) {
-      toast.error("You are not in the room");
-      tokenManager.clearAll();
-      return navigate("/join-room");
-    }
-    if (parsedData.code === 3) {
-      toast.success("Exam has started");
-      return navigate("/record");
-    }
-    if (parsedData.code === 4) {
-      toast.error("Room doesn't exist");
-      tokenManager.clearAll();
-      return navigate("/join-room");
-    }
-    if (parsedData.code === 7) {
-      // Room has been restarted, server provides new token directly
-      const newToken = parsedData.newToken;
-      const newRoomCode = parsedData.newRoomCode;
-      const participant = parsedData.participant;
-      
-      if (newToken && newRoomCode && participant) {
-        // Update token in localStorage
-        tokenManager.setStudentToken(newToken);
-        tokenManager.setStudentInfo({
-          participant: participant,
-          roomCode: newRoomCode
-        });
-        
-        toast.success("Room restarted with new question");
-        return navigate("/record");
-      } else {
-        console.error("Missing token data from server");
-        toast.error("Failed to handle room restart");
-        tokenManager.clearAll();
-        return navigate("/join-room");
-      }
-    }
-    if (parsedData.code === 9) {
-      toast.error(
-        "The IP this user joined from is different than your current IP. If this is a mistake, tell your teacher to remove you and rejoin with the same name."
-      );
-      console.log(parsedData);
-      tokenManager.clearAll();
-      return navigate("/join-room");
-    }
-  };
-
-  useEffect(() => {
-    checkStatus();
     
     // Set up WebSocket event listeners
     const handleExamStarted = (payload) => {
@@ -112,8 +74,23 @@ function Room() {
     
     const handleRoomRestart = (payload) => {
       console.log('🔄 Room restarted:', payload);
-      // Handle room restart - reload page
-      window.location.reload();
+      
+      // Extract new token and room information
+      const { newToken, newRoomCode, participant } = payload;
+      
+      if (newToken && newRoomCode && participant) {
+        // Update token in localStorage
+        tokenManager.setStudentToken(newToken);
+        
+        toast.success("Room restarted with new question - reloading page!");
+        // Simple page reload for fresh start
+        console.log("Reloading page...");
+        window.location.reload();
+      } else {
+        console.error("Missing token data from server");
+        toast.error("Failed to handle room restart");
+        window.location.reload();
+      }
     };
     
     const handleParticipantUpdate = (payload) => {
@@ -121,22 +98,75 @@ function Room() {
       // Handle participant status updates
     };
     
+    const handleReconnectNeeded = (payload) => {
+      console.log('🔄 Reconnection needed:', payload);
+      // Try to reconnect automatically
+      reconnect();
+    };
+    
+    const handleRoomStatusUpdate = (payload) => {
+      console.log('📊 Room status update:', payload);
+      // Handle room status updates
+    };
+    
+    const handleStudentStatusUpdate = (payload) => {
+      console.log('👤 Student status update:', payload);
+      // Handle student status updates
+    };
+    
+    const handleRoomStateSync = (payload) => {
+      console.log('📊 Room state sync received:', payload);
+      
+      const { 
+        roomCode, 
+        participant, 
+        roomStarted, 
+        examStarted, 
+        currentQuestion,
+        latestToken,
+        roomRestarted
+      } = payload;
+      
+      // Handle room restart with latest token
+      if (roomRestarted && latestToken) {
+        console.log('🔄 Room was restarted, updating with latest token');
+        tokenManager.setStudentToken(latestToken);
+        
+        toast.success("Room restarted with new question - reloading page!");
+        window.location.reload();
+        return;
+      }
+      
+      // Handle exam started state
+      if (examStarted && roomStarted) {
+        console.log('🎯 Exam has started, navigating to record page');
+        toast.success("Exam has started");
+        navigate("/record");
+        return;
+      }
+      
+      // Handle room started but not exam
+      if (roomStarted && !examStarted) {
+        console.log('📊 Room has started but exam not yet begun');
+        // Stay on current page, wait for exam to start
+      }
+    };
+    
     // Add event listeners
     onWebSocketEvent('exam_started', handleExamStarted);
     onWebSocketEvent('room_restart', handleRoomRestart);
     onWebSocketEvent('participant_update', handleParticipantUpdate);
+    onWebSocketEvent('reconnect_needed', handleReconnectNeeded);
+    onWebSocketEvent('room_status_update', handleRoomStatusUpdate);
+    onWebSocketEvent('student_status_update', handleStudentStatusUpdate);
+    onWebSocketEvent('room_state_sync', handleRoomStateSync);
     
     // Update student status
     updateStudentStatus('waiting_in_room');
-    
-    // Use WebSocket for real-time updates, HTTP polling as fallback
-    const intervalId = setInterval(checkStatus, isConnected ? 10000 : 3000);
 
     document.documentElement.style.setProperty("--cute-alert-max-width", "40%");
 
     cuteAlert({
-      type: "info",
-      title: "Welcome to SpeakEval",
       id: "cute-alert-welcome",
       description:
         "You're currently in a waiting room. Please wait until your instructor starts the oral examination. It is VERY IMPORTANT that you follow the directions on this screen, and that you watch the video, then scroll down and test your audio devices. Make sure your teacher does not start the exam until you have completed this. Good luck!",
@@ -144,11 +174,16 @@ function Room() {
     });
 
     return () => {
-      clearInterval(intervalId);
       // Cleanup event listeners
       offWebSocketEvent('exam_started', handleExamStarted);
       offWebSocketEvent('room_restart', handleRoomRestart);
       offWebSocketEvent('participant_update', handleParticipantUpdate);
+      offWebSocketEvent('reconnect_needed', handleReconnectNeeded);
+      offWebSocketEvent('room_status_update', handleRoomStatusUpdate);
+      offWebSocketEvent('student_status_update', handleStudentStatusUpdate);
+      offWebSocketEvent('room_state_sync', handleRoomStateSync);
+      // Clean up WebSocket service properly
+      websocketService.cleanup();
     };
   }, [roomCode, isConnected]);
 
@@ -183,8 +218,8 @@ function Room() {
         'test',
         null,
         async () => {
-          const res = await fetch("https://www.server.speakeval.org/get_test_audio");
-          const parsedData = await res.json();
+    const res = await fetch("https://www.server.speakeval.org/get_test_audio");
+    const parsedData = await res.json();
           
           if (parsedData.error) {
             throw new Error(parsedData.error);
@@ -194,7 +229,7 @@ function Room() {
         }
       );
       
-      setTestAudioURL(audioUrl);
+    setTestAudioURL(audioUrl);
     } catch (error) {
       console.error("Error fetching test audio:", error);
       toast.error("Failed to fetch test audio");

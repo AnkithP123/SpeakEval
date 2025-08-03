@@ -1,3 +1,5 @@
+import tokenManager from './tokenManager';
+
 class WebSocketService {
   constructor() {
     this.ws = null;
@@ -11,9 +13,40 @@ class WebSocketService {
     this.currentParticipant = null;
     this.connectionPromise = null;
     this.studentToken = null; // Store token received from server
+    this.lastActivityTime = Date.now();
+    this.visibilityChangeHandler = null;
+    this.setupVisibilityDetection();
   }
 
-  connect(roomCode = null) {
+  setupVisibilityDetection() {
+    // Set up Page Visibility API detection
+    this.visibilityChangeHandler = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('👁️ Tab became visible - requesting state sync');
+        this.requestStateSync();
+        this.lastActivityTime = Date.now();
+      } else {
+        console.log('👁️ Tab became hidden');
+      }
+    };
+
+    document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+  }
+
+  requestStateSync() {
+    if (this.isConnected) {
+      console.log('🔄 Requesting state sync from server');
+      this.send({
+        type: 'request_state_sync',
+        payload: {
+          timestamp: Date.now()
+        }
+      });
+    }
+  }
+
+  // Connect for initial join (room code + participant name)
+  connectForJoin(roomCode, participantName, useGoogle = false, email = null) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       return Promise.resolve();
     }
@@ -25,18 +58,28 @@ class WebSocketService {
 
     this.connectionPromise = new Promise((resolve, reject) => {
       try {
-        // Connect without token initially
-        const url = roomCode 
-          ? `${this.serverUrl}?roomCode=${roomCode}`
-          : this.serverUrl;
+        // Build URL with join parameters
+        const params = new URLSearchParams({
+          roomCode: roomCode,
+          participantName: participantName,
+          useGoogle: useGoogle.toString(),
+          ...(email && { email: email })
+        });
+        
+        const url = `${this.serverUrl}?${params.toString()}`;
+        console.log('🔗 Connecting for initial join:', { roomCode, participantName });
+        console.log('🔗 WebSocket URL:', url);
         
         this.ws = new WebSocket(url);
         
         this.ws.onopen = () => {
-          console.log('✅ WebSocket connected');
+          console.log('✅ WebSocket connected for join');
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.connectionPromise = null;
+          this.currentRoom = roomCode;
+          this.currentParticipant = participantName;
+          this.lastActivityTime = Date.now();
           resolve();
         };
 
@@ -44,6 +87,7 @@ class WebSocketService {
           try {
             const data = JSON.parse(event.data);
             this.handleMessage(data);
+            this.lastActivityTime = Date.now();
           } catch (error) {
             console.error('Error parsing WebSocket message:', error);
           }
@@ -72,16 +116,112 @@ class WebSocketService {
     return this.connectionPromise;
   }
 
+  // Connect for reconnection (token only)
+  connectForReconnect(token) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      return Promise.resolve();
+    }
+
+    // Prevent multiple connection attempts
+    if (this.connectionPromise) {
+      return this.connectionPromise;
+    }
+
+    this.connectionPromise = new Promise((resolve, reject) => {
+      try {
+        // Build URL with token parameter
+        const url = `${this.serverUrl}?token=${token}`;
+        console.log('🔗 Connecting for reconnection with token:', token.substring(0, 20) + '...');
+        console.log('🔗 WebSocket URL:', url);
+        
+        this.ws = new WebSocket(url);
+        
+        this.ws.onopen = () => {
+          console.log('✅ WebSocket connected for reconnection');
+          this.isConnected = true;
+          this.reconnectAttempts = 0;
+          this.connectionPromise = null;
+          this.studentToken = token;
+          this.lastActivityTime = Date.now();
+          resolve();
+        };
+
+        this.ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            this.handleMessage(data);
+            this.lastActivityTime = Date.now();
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        };
+
+        this.ws.onclose = (event) => {
+          console.log('❌ WebSocket disconnected:', event.code, event.reason);
+          this.isConnected = false;
+          this.connectionPromise = null;
+          this.attemptReconnect();
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          this.connectionPromise = null;
+          reject(error);
+        };
+
+      } catch (error) {
+        console.error('Error creating WebSocket:', error);
+        this.connectionPromise = null;
+        reject(error);
+      }
+    });
+
+    return this.connectionPromise;
+  }
+
+  // Legacy connect method for backward compatibility
+  connect(roomCode = null, token = null) {
+    if (token) {
+      return this.connectForReconnect(token);
+    } else if (roomCode) {
+      // This should only be used for initial joins, but we need participant name
+      console.warn('Legacy connect called with roomCode but no participant name');
+      return Promise.reject(new Error('Use connectForJoin for initial connections'));
+    } else {
+      return Promise.reject(new Error('No roomCode or token provided'));
+    }
+  }
+
   attemptReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
       
       setTimeout(() => {
-        this.connect(this.currentRoom)
-          .catch(error => {
-            console.error('Reconnection failed:', error);
+        // Always try to reconnect with stored token first
+        const token = tokenManager.getStudentToken();
+        console.log('🔍 Token check for reconnection:', {
+          hasToken: !!token,
+          tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+          tokenLength: token ? token.length : 0
+        });
+        
+        if (token) {
+          console.log('🔄 Reconnecting with stored token...');
+          this.connectForReconnect(token)
+            .catch(error => {
+              console.error('Token reconnection failed:', error);
+              // If token reconnection fails, we can't reconnect with room code
+              // because we need participant name for initial join
+            });
+        } else {
+          console.error('❌ No token available for reconnection');
+          console.log('🔍 TokenManager state:', {
+            isAuthenticated: tokenManager.isAuthenticated(),
+            studentInfo: tokenManager.getStudentInfo(),
+            roomSession: tokenManager.getRoomSession()
           });
+        }
       }, this.reconnectDelay * this.reconnectAttempts);
     } else {
       console.error('Max reconnection attempts reached');
@@ -93,14 +233,25 @@ class WebSocketService {
       this.ws.close();
       this.ws = null;
       this.isConnected = false;
-      this.currentRoom = null;
-      this.currentParticipant = null;
-      this.studentToken = null;
+      // Don't clear currentRoom and currentParticipant for reconnection
+      // Only clear token if explicitly requested
     }
+  }
+
+  cleanup() {
+    // Remove visibility change listener
+    if (this.visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+      this.visibilityChangeHandler = null;
+    }
+    
+    // Disconnect WebSocket
+    this.disconnect();
   }
 
   send(message) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log('📤 Sending WebSocket message:', message);
       this.ws.send(JSON.stringify(message));
     } else {
       console.warn('WebSocket not connected, message not sent:', message);
@@ -120,6 +271,8 @@ class WebSocketService {
           console.error(`Error in ${type} listener:`, error);
         }
       });
+    } else {
+      console.log(`⚠️ No listeners found for event type: ${type}`);
     }
   }
 
@@ -142,43 +295,8 @@ class WebSocketService {
 
   // Student Flow Methods
 
-  // 1. Join Room Flow (NEW - replaces HTTP endpoint)
-  joinRoom(roomCode, participantName, useGoogle = false, email = null) {
-    this.currentRoom = roomCode;
-    this.currentParticipant = participantName;
-    
-    this.send({
-      type: 'join_room_request',
-      payload: { 
-        roomCode, 
-        participantName,
-        useGoogle,
-        email,
-        timestamp: Date.now()
-      }
-    });
-  }
-
-  // 2. Reconnect with existing token
-  reconnectWithToken(token) {
-    this.studentToken = token;
-    this.send({
-      type: 'reconnect_with_token',
-      payload: { 
-        token,
-        timestamp: Date.now()
-      }
-    });
-  }
-
-  leaveRoom() {
-    this.send({
-      type: 'leave_room',
-      payload: {}
-    });
-    this.currentRoom = null;
-    this.currentParticipant = null;
-  }
+  // Note: Join and reconnect are now handled during WebSocket connection
+  // No separate methods needed
 
   // 3. Room Status Updates
   updateRoomStatus(status) {
@@ -287,25 +405,7 @@ class WebSocketService {
     });
   }
 
-  // 8. Practice Exam Flow
-  joinPractice(practiceCode, participant) {
-    this.currentRoom = practiceCode;
-    this.currentParticipant = participant;
-    
-    this.send({
-      type: 'join_practice',
-      payload: { practiceCode, participant }
-    });
-  }
 
-  leavePractice() {
-    this.send({
-      type: 'leave_practice',
-      payload: {}
-    });
-    this.currentRoom = null;
-    this.currentParticipant = null;
-  }
 
   // 9. Error Reporting
   reportError(error) {
@@ -347,7 +447,7 @@ class WebSocketService {
 
   // Getters
   getStudentToken() {
-    return this.studentToken;
+    return tokenManager.getStudentToken();
   }
 
   getCurrentRoom() {
@@ -356,6 +456,29 @@ class WebSocketService {
 
   getCurrentParticipant() {
     return this.currentParticipant;
+  }
+
+  // Enhanced reconnection method
+  reconnect() {
+    const token = tokenManager.getStudentToken();
+    console.log('🔍 Token check for manual reconnect:', {
+      hasToken: !!token,
+      tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+      tokenLength: token ? token.length : 0
+    });
+    
+    if (token) {
+      console.log('🔄 Reconnecting with stored token...');
+      return this.connectForReconnect(token);
+    } else {
+      console.error('❌ No token available for manual reconnection');
+      console.log('🔍 TokenManager state:', {
+        isAuthenticated: tokenManager.isAuthenticated(),
+        studentInfo: tokenManager.getStudentInfo(),
+        roomSession: tokenManager.getRoomSession()
+      });
+      return Promise.reject(new Error('No token available for reconnection'));
+    }
   }
 }
 
