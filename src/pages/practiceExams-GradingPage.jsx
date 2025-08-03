@@ -6,7 +6,7 @@ import Card from "../components/Card";
 const studentsData = [
   {
     id: 1,
-    name: "AmberG",
+    name: "AmberS",
     isCompleted: true,
     completionPercentage: 100,
   },
