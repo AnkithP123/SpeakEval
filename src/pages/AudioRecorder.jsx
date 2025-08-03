@@ -9,6 +9,7 @@ import { cuteAlert, cuteToast } from "cute-alert";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import tokenManager from "../utils/tokenManager";
+import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
 
 export default function AudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -46,6 +47,29 @@ export default function AudioRecorder() {
   let played = false;
 
   const navigate = useNavigate();
+  
+  // Real-time communication
+  const {
+    isConnected,
+    connectionStatus,
+    connect: connectWebSocket,
+    disconnect: disconnectWebSocket,
+    on: onWebSocketEvent,
+    off: offWebSocketEvent,
+    joinRoom,
+    leaveRoom,
+    updateRoomStatus,
+    updateStudentStatus,
+    questionStarted,
+    questionCompleted,
+    startRecording: wsStartRecording,
+    stopRecording: wsStopRecording,
+    audioPlaybackStarted,
+    audioPlaybackCompleted,
+    uploadStarted,
+    uploadCompleted,
+    reportError
+  } = useRealTimeCommunication();
 
 
 
@@ -75,6 +99,73 @@ export default function AudioRecorder() {
     askPermissionOnMount: false, // We'll handle screen permissions separately
     onStop: (blobUrl, blob) => handleScreenStop(blobUrl, blob),
   });
+
+  // WebSocket connection and event listeners
+  useEffect(() => {
+    if (tokenManager.isAuthenticated()) {
+      connectWebSocket();
+      
+      // Set up event listeners
+      const handleRoomStarted = (payload) => {
+        console.log('🎯 Room started:', payload);
+        updateStudentStatus('exam_started');
+        // Handle room start - could trigger question audio playback
+      };
+      
+      const handleQuestionChange = (payload) => {
+        console.log('🔄 Question changed:', payload);
+        questionStarted(payload.questionIndex);
+        // Handle question change - reset recording state
+        setIsRecording(false);
+        setFinishedRecording(false);
+        setDisplayTime("xx:xx");
+        if (timer.current !== -1) {
+          clearInterval(timer.current);
+          timer.current = -1;
+        }
+      };
+      
+      const handleRoomRestart = (payload) => {
+        console.log('🔄 Room restarted:', payload);
+        // Handle room restart - reload page
+        window.location.reload();
+      };
+      
+      const handleParticipantUpdate = (payload) => {
+        console.log('👥 Participant update:', payload);
+        // Handle participant status updates
+      };
+      
+      const handleExamStarted = (payload) => {
+        console.log('🎯 Exam started:', payload);
+        updateStudentStatus('exam_started');
+      };
+      
+      // Add event listeners
+      onWebSocketEvent('room_started', handleRoomStarted);
+      onWebSocketEvent('question_changed', handleQuestionChange);
+      onWebSocketEvent('room_restart', handleRoomRestart);
+      onWebSocketEvent('participant_update', handleParticipantUpdate);
+      onWebSocketEvent('exam_started', handleExamStarted);
+      
+      // Join room if we have participant info
+      const info = tokenManager.getStudentInfo();
+      if (info && info.roomCode && info.participant) {
+        joinRoom(info.roomCode, info.participant);
+      }
+      
+      return () => {
+        // Cleanup event listeners
+        offWebSocketEvent('room_started', handleRoomStarted);
+        offWebSocketEvent('question_changed', handleQuestionChange);
+        offWebSocketEvent('room_restart', handleRoomRestart);
+        offWebSocketEvent('participant_update', handleParticipantUpdate);
+        offWebSocketEvent('exam_started', handleExamStarted);
+        leaveRoom();
+        disconnectWebSocket();
+      };
+    }
+  }, [connectWebSocket, disconnectWebSocket, onWebSocketEvent, offWebSocketEvent, joinRoom, leaveRoom]);
 
   const requestPermissions = async () => {
     try {
@@ -194,11 +285,18 @@ export default function AudioRecorder() {
     }
   }, [audioStatus]);
 
-  // Set up status interval
+  // Set up status interval (reduced frequency due to WebSocket communication)
   useEffect(() => {
-    statusInterval.current = setInterval(sendStatus, 3000);
+    // Use WebSocket for real-time updates, HTTP polling as fallback
+    if (isConnected) {
+      // Less frequent polling when WebSocket is connected
+      statusInterval.current = setInterval(sendStatus, 10000); // 10 seconds instead of 3
+    } else {
+      // More frequent polling when WebSocket is not connected
+      statusInterval.current = setInterval(sendStatus, 5000); // 5 seconds as fallback
+    }
     return () => clearInterval(statusInterval.current);
-  }, []);
+  }, [isConnected]);
 
   // Monitor fullscreen state and prevent suspicious activities
   useEffect(() => {
@@ -565,18 +663,29 @@ export default function AudioRecorder() {
       // Start both recordings
       startAudioRecording();
 
+              // Notify server via WebSocket
+        wsStartRecording();
+        updateStudentStatus('recording');
+        updateRoomStatus({ 
+          status: 'recording', 
+          timestamp: currentTime,
+          participant: tokenManager.getStudentInfo()?.participant
+        });
+
+      // Send status via HTTP as fallback
       await sendStatus();
 
-      interval = setInterval(() => {
-        if (timer.current > 0) {
-          timer.current -= 1000;
-          setDisplayTime(formatTime(timer.current));
-        }
-        if (timer.current <= 0) {
-          setDisplayTime("xx:xx");
-          clearInterval(interval);
-        }
+      // Fix timer implementation
+      if (timer.current !== -1) {
+        clearInterval(timer.current);
+      }
+      
+      let elapsedTime = 0;
+      timer.current = setInterval(() => {
+        elapsedTime += 1;
+        setDisplayTime(formatTime(elapsedTime));
       }, 1000);
+
     } catch (err) {
       console.error("Error starting recording:", err);
       setError(
@@ -584,6 +693,8 @@ export default function AudioRecorder() {
       );
       setIsError(true);
     }
+    
+    // Notify server about recording start (fallback)
     let success = false;
     while (!success) {
       try {
@@ -615,6 +726,10 @@ export default function AudioRecorder() {
     );
     setIsError(false);
     setFinishedRecording(true);
+    
+    // Notify WebSocket about upload start
+    uploadStarted();
+    updateStudentStatus('uploading');
     
     // Check if student is authenticated
     if (!tokenManager.isAuthenticated()) {
@@ -697,6 +812,11 @@ export default function AudioRecorder() {
                 data.transcription
             );
             setDisplayTime("xx:xx");
+            
+            // Notify WebSocket about successful upload
+            uploadCompleted();
+            updateStudentStatus('upload_completed');
+            questionCompleted(questionIndex);
           }
         }, 10000);
       } else {
@@ -714,6 +834,11 @@ export default function AudioRecorder() {
             data.transcription
         );
         setIsError(false);
+        
+        // Notify WebSocket about successful upload
+        uploadCompleted();
+        updateStudentStatus('upload_completed');
+        questionCompleted(questionIndex);
       }
     } catch (error) {
       console.error("Error uploading audio:", error);
@@ -738,6 +863,11 @@ export default function AudioRecorder() {
                 data.transcription
             );
             setDisplayTime("xx:xx");
+            
+            // Notify WebSocket about successful upload
+            uploadCompleted();
+            updateStudentStatus('upload_completed');
+            questionCompleted(questionIndex);
             return;
           }
         } catch (fallbackErr) {
@@ -784,11 +914,19 @@ export default function AudioRecorder() {
     setPlaying(true);
     setHasPlayed(true);
     played = true;
+    
+    // Notify WebSocket about audio playback
+    audioPlaybackStarted();
 
     const playAudio = () => {
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
         audioRef.current.play();
+        
+        // Notify WebSocket when audio playback completes
+        audioRef.current.onended = () => {
+          audioPlaybackCompleted();
+        };
       } else {
         setTimeout(playAudio, 100);
       }
@@ -804,7 +942,20 @@ export default function AudioRecorder() {
     stopAudioRecording();
     stopScreenRecording();
 
-    clearInterval(interval);
+    // Clear timer properly
+    if (timer.current !== -1) {
+      clearInterval(timer.current);
+      timer.current = -1;
+    }
+
+    // Notify server via WebSocket
+    wsStopRecording();
+    updateStudentStatus('stopped_recording');
+    updateRoomStatus({ 
+      status: 'stopped_recording', 
+      timestamp: Date.now(),
+      participant: tokenManager.getStudentInfo()?.participant
+    });
   };
 
   const updateTimer = (time) => {

@@ -7,6 +7,7 @@ import Card from "../components/Card";
 import { cuteAlert } from "cute-alert";
 import tokenManager from "../utils/tokenManager";
 import urlCache from "../utils/urlCache";
+import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
 
 function Room() {
   const { roomCode } = useParams();
@@ -17,6 +18,14 @@ function Room() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [studentInfo, setStudentInfo] = useState(null);
+  
+  // Real-time communication
+  const { 
+    isConnected, 
+    on: onWebSocketEvent, 
+    off: offWebSocketEvent,
+    updateStudentStatus 
+  } = useRealTimeCommunication();
 
   const checkStatus = async () => {
     // Check if student is authenticated and session is valid
@@ -93,7 +102,35 @@ function Room() {
 
   useEffect(() => {
     checkStatus();
-    const intervalId = setInterval(checkStatus, 3000);
+    
+    // Set up WebSocket event listeners
+    const handleExamStarted = (payload) => {
+      console.log('🎯 Exam started:', payload);
+      toast.success("Exam has started");
+      navigate("/record");
+    };
+    
+    const handleRoomRestart = (payload) => {
+      console.log('🔄 Room restarted:', payload);
+      // Handle room restart - reload page
+      window.location.reload();
+    };
+    
+    const handleParticipantUpdate = (payload) => {
+      console.log('👥 Participant update:', payload);
+      // Handle participant status updates
+    };
+    
+    // Add event listeners
+    onWebSocketEvent('exam_started', handleExamStarted);
+    onWebSocketEvent('room_restart', handleRoomRestart);
+    onWebSocketEvent('participant_update', handleParticipantUpdate);
+    
+    // Update student status
+    updateStudentStatus('waiting_in_room');
+    
+    // Use WebSocket for real-time updates, HTTP polling as fallback
+    const intervalId = setInterval(checkStatus, isConnected ? 10000 : 3000);
 
     document.documentElement.style.setProperty("--cute-alert-max-width", "40%");
 
@@ -106,8 +143,14 @@ function Room() {
       primaryButtonText: "Got it",
     });
 
-    return () => clearInterval(intervalId);
-  }, [roomCode]);
+    return () => {
+      clearInterval(intervalId);
+      // Cleanup event listeners
+      offWebSocketEvent('exam_started', handleExamStarted);
+      offWebSocketEvent('room_restart', handleRoomRestart);
+      offWebSocketEvent('participant_update', handleParticipantUpdate);
+    };
+  }, [roomCode, isConnected]);
 
   const startRecording = () => {
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {

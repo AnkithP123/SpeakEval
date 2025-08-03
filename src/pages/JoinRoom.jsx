@@ -12,6 +12,7 @@ import {
 import Card from "../components/Card";
 import "../styles/globals.css";
 import tokenManager from "../utils/tokenManager";
+import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
 
 function JoinRoomContent() {
   const [name, setName] = useState("");
@@ -25,6 +26,9 @@ function JoinRoomContent() {
   const [loading, setLoading] = useState(false);
   const [hoverButton, setHoverButton] = useState(false);
   const navigate = useNavigate();
+  
+  // Real-time communication
+  const { connect, joinRoom, updateStudentStatus } = useRealTimeCommunication();
 
   const handleJoin = async () => {
     setLoading(true);
@@ -61,6 +65,17 @@ function JoinRoomContent() {
       
       console.log("Stored token and session info");
       console.log(parsedData);
+      
+      // Connect to WebSocket and join room
+      try {
+        await connect();
+        joinRoom(roomCode, participantName);
+        updateStudentStatus('joined_room');
+        console.log('✅ Connected to WebSocket and joined room');
+      } catch (error) {
+        console.error('❌ Failed to connect to WebSocket:', error);
+        // Continue anyway - WebSocket is optional
+      }
       
       // Navigate to room without URL parameters
       navigate(`/room/${roomCode}`);
