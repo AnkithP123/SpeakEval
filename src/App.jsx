@@ -36,6 +36,7 @@ import Config from "./pages/Config";
 import MaintenancePage from "./pages/Maintainence copy";
 import ErrorPage from "./pages/Error";
 import urlCache from "./utils/urlCache";
+import Test from "./pages/practiceExams-GradingPage.jsx";
 
 function AudioRecorderRouteWrapper() {
   // AudioRecorder now uses token system from localStorage
@@ -161,6 +162,7 @@ function App() {
               />
             }
           />
+          <Route path="/test" element={<Test />} />
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/download" element={<Download />} />
           <Route path="/teacher-verify" element={<TeacherVerifyPage />} />
