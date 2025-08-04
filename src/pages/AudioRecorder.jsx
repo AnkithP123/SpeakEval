@@ -12,6 +12,7 @@ import tokenManager from "../utils/tokenManager";
 import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
 import websocketService from '../utils/websocketService';
 
+
 export default function AudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState(null);
@@ -49,7 +50,157 @@ export default function AudioRecorder() {
   let questionIndex;
   let played = false;
 
+  // Stage-based data-driven approach
+  const [currentStage, setCurrentStage] = useState('initializing');
+  const [thinkingProgress, setThinkingProgress] = useState(1); // Smooth progress (0 to 1)
+  const [setupLoading, setSetupLoading] = useState({
+    microphone: false,
+    fullscreen: false
+  });
+  const [stageData, setStageData] = useState({
+    // Stage: 'initializing'
+    audioDownloaded: false,
+    audioDownloadError: null,
+    
+    // Stage: 'setup'
+    setup: {
+      microphonePermission: false,
+      fullscreenEnabled: false,
+    },
+    
+    // Stage: 'audio_play'
+    audioPlay: {
+      hasPlayed: false,
+      isPlaying: false,
+      playError: null,
+    },
+    
+    // Stage: 'thinking'
+    thinking: {
+      thinkingTimeRemaining: 0,
+      thinkingComplete: false,
+    },
+    
+    // Stage: 'recording'
+    recording: {
+      isRecording: false,
+      hasRecorded: false,
+      recordingBlob: null,
+      recordingError: null,
+    },
+    
+    // Stage: 'uploading'
+    uploading: {
+      isUploading: false,
+      uploadProgress: 0,
+      uploadComplete: false,
+      uploadError: null,
+      transcriptionText: null,
+      waitingForTranscription: false,
+    },
+    
+
+    
+
+  });
+
   const navigate = useNavigate();
+  
+  // Stage transition logic
+  const advanceStage = (newStage) => {
+    console.log(`🔄 Advancing from stage '${currentStage}' to '${newStage}'`);
+    setCurrentStage(newStage);
+  };
+  
+  const updateStageData = (updates) => {
+    setStageData(prev => ({
+      ...prev,
+      ...updates
+    }));
+  };
+  
+  const updateSetup = (updates) => {
+    setStageData(prev => ({
+      ...prev,
+      setup: {
+        ...prev.setup,
+        ...updates
+      }
+    }));
+  };
+  
+  const updateRecordingData = (updates) => {
+    setStageData(prev => ({
+      ...prev,
+      recording: {
+        ...prev.recording,
+        ...updates
+      }
+    }));
+  };
+  
+  const updateUploadingData = (updates) => {
+    setStageData(prev => ({
+      ...prev,
+      uploading: {
+        ...prev.uploading,
+        ...updates
+      }
+    }));
+  };
+  
+  const updateAudioPlayData = (updates) => {
+    setStageData(prev => ({
+      ...prev,
+      audioPlay: {
+        ...prev.audioPlay,
+        ...updates
+      }
+    }));
+  };
+  
+  const updateThinkingData = (updates) => {
+    setStageData(prev => ({
+      ...prev,
+      thinking: {
+        ...prev.thinking,
+        ...updates
+      }
+    }));
+  };
+  
+
+  
+  // Stage validation functions
+  const canAdvanceToSetup = () => {
+    return stageData.audioDownloaded && !stageData.audioDownloadError;
+  };
+  
+  const canAdvanceToAudioPlay = () => {
+    const setup = stageData.setup;
+    return setup.microphonePermission && 
+           setup.fullscreenEnabled;
+  };
+  
+  const canAdvanceToThinking = () => {
+    return stageData.audioPlay.hasPlayed && !stageData.audioPlay.playError;
+  };
+  
+  const canAdvanceToRecording = () => {
+    // If thinking time is 0 or less, skip thinking stage
+    if (thinkingTime <= 0) {
+      return stageData.audioPlay.hasPlayed && !stageData.audioPlay.playError;
+    }
+    return stageData.thinking.thinkingComplete;
+  };
+  
+  const canAdvanceToUploading = () => {
+    return stageData.recording.hasRecorded && 
+           stageData.recording.recordingBlob && 
+           !stageData.recording.recordingError;
+  };
+  
+
   
   // Real-time communication
   const {
@@ -262,6 +413,109 @@ export default function AudioRecorder() {
     }
   }, [remainingTime]);
 
+  // Automatic stage transitions (only for non-user-initiated stages)
+  useEffect(() => {
+    // Auto-advance to thinking when audio play is complete
+    if (currentStage === 'audio_play' && canAdvanceToThinking()) {
+      advanceStage('thinking');
+    }
+    
+    // Auto-advance to recording when thinking is complete (or skip if no thinking time)
+    if (currentStage === 'thinking' && canAdvanceToRecording()) {
+      advanceStage('recording');
+    }
+    
+    // Auto-advance to uploading when recording is complete
+    if (currentStage === 'recording' && canAdvanceToUploading()) {
+      advanceStage('uploading');
+    }
+    
+    // Auto-advance to uploading when recording is complete
+    if (currentStage === 'recording' && canAdvanceToUploading()) {
+      advanceStage('uploading');
+    }
+    
+
+  }, [currentStage, stageData]);
+
+  // Start audio download when component mounts
+  useEffect(() => {
+    if (currentStage === 'initializing' && !stageData.audioDownloaded && !stageData.audioDownloadError) {
+      console.log('🎵 Starting audio download...');
+      makeResponse();
+    }
+  }, [currentStage]);
+
+  // Start thinking timer when thinking stage begins
+  useEffect(() => {
+    if (currentStage === 'thinking' && thinkingTime > 0) {
+      console.log('🤔 Starting thinking timer...');
+      
+      const startTime = Date.now();
+      const totalDuration = thinkingTime * 1000; // Convert to milliseconds
+      
+      // Initialize thinking time
+      updateThinkingData({ 
+        thinkingTimeRemaining: thinkingTime,
+        thinkingComplete: false 
+      });
+      
+      // Smooth animation timer (updates every 16ms for 60fps)
+      const smoothInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, totalDuration - elapsed);
+        const remainingSeconds = Math.ceil(remaining / 1000);
+        const progress = remaining / totalDuration; // 1 to 0
+        
+        setThinkingProgress(progress);
+        
+        setStageData(prev => {
+          if (remaining <= 0) {
+            // Thinking time complete
+            clearInterval(smoothInterval);
+            return {
+              ...prev,
+              thinking: {
+                thinkingTimeRemaining: 0,
+                thinkingComplete: true
+              }
+            };
+          }
+          
+          return {
+            ...prev,
+            thinking: {
+              thinkingTimeRemaining: remainingSeconds,
+              thinkingComplete: false
+            }
+          };
+        });
+      }, 16); // 60fps for smooth animation
+      
+      // Cleanup interval on unmount or stage change
+      return () => {
+        clearInterval(smoothInterval);
+      };
+    }
+  }, [currentStage, thinkingTime]);
+
+  // Auto-start recording when recording stage begins
+  useEffect(() => {
+    if (currentStage === 'recording' && !stageData.recording.isRecording && !stageData.recording.hasRecorded) {
+      console.log('🎙️ Auto-starting recording...');
+      
+      // Start recording immediately
+      startRecording();
+      updateRecordingData({ 
+        isRecording: true,
+        hasRecorded: false,
+        recordingError: null 
+      });
+    }
+  }, [currentStage]);
+
+
+
   const requestPermissions = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -294,6 +548,15 @@ export default function AudioRecorder() {
     console.log("Audio recording stopped:", blobUrl);
     const formData = new FormData();
     formData.append("audio", blob, "audio.wav");
+    
+    // Update recording data with blob
+    updateRecordingData({ 
+      recordingBlob: blob,
+      hasRecorded: true,
+      isRecording: false 
+    });
+    
+    // Start upload process
     await upload(formData);
     setAudioURL(blobUrl);
     setIsRecording(false);
@@ -363,13 +626,13 @@ export default function AudioRecorder() {
     getAudio();
 
     // Show initial instructions
-    cuteAlert({
+    /*cuteAlert({
       type: "info",
       title: "Get Ready to Record",
       description:
         "It's time to record your response. First, we'll need to set up your screen sharing permissions. After that, you'll enter fullscreen mode and can listen to the question. If your teacher has allowed it, it will then count down for a few seconds before beginning recording, during which you think about your answer, or replay the question once (if allowed), and THEN begin recording. Speak clearly, confidently, and loudly, so that your microphone picks up your audio well. If you are not currently wearing headphones, please do so now if possible.",
       primaryButtonText: "Got it",
-    });
+    });*/
   }, []);
 
   // Monitor audio status changes
@@ -531,6 +794,8 @@ export default function AudioRecorder() {
     }
   `;
 
+
+
   const animation = (props) => css`
     ${pulse} 1.1s infinite;
   `;
@@ -572,7 +837,7 @@ export default function AudioRecorder() {
     // Check if student is authenticated
     if (!tokenManager.isAuthenticated()) {
       toast.error("Please join the room first");
-      navigate("/join-room");
+          navigate("/join-room");
       return;
     }
 
@@ -585,6 +850,7 @@ export default function AudioRecorder() {
       if (!response.ok) {
         setError("Failed to fetch audio");
         setIsError(true);
+        updateStageData({ audioDownloadError: "Failed to fetch audio" });
         return;
       }
 
@@ -617,6 +883,17 @@ export default function AudioRecorder() {
         // Use the presigned URL directly
         setAudioBlobURL(audioUrls[0]);
         questionIndex = receivedData.questionIndex;
+        
+        // Mark audio as downloaded successfully
+        updateStageData({ 
+          audioDownloaded: true, 
+          audioDownloadError: null 
+        });
+      } else {
+        updateStageData({ 
+          audioDownloaded: false, 
+          audioDownloadError: "No questions received" 
+        });
       }
 
       setQuestionAudioReady(true);
@@ -626,6 +903,10 @@ export default function AudioRecorder() {
         "An error occurred while fetching the audio. Try reloading the page."
       );
       setIsError(true);
+      updateStageData({ 
+        audioDownloaded: false, 
+        audioDownloadError: "An error occurred while fetching the audio" 
+      });
     } finally {
       setFetching(false);
     }
@@ -689,13 +970,10 @@ export default function AudioRecorder() {
               }
             } else if (newTime <= 0) {
               // Time limit reached
-              setDisplayTime("xx:xx");
+          setDisplayTime("xx:xx");
               if (error === "Reaching time limit. Please finish your response in the next 5 seconds. ") {
                 setError(
-                  "You reached the time limit and your audio was stopped and uploaded automatically. " +
-                    (premium
-                      ? "Your audio will be processed faster, but may still take a little bit of time"
-                      : "It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.")
+                  "You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
                 );
                 setIsError(false);
               }
@@ -704,7 +982,7 @@ export default function AudioRecorder() {
             
             return newTime;
           });
-        }, 1000);
+      }, 1000);
       } else {
         // No time limit - just show xx:xx
         setRemainingTime(-1);
@@ -743,11 +1021,17 @@ export default function AudioRecorder() {
 
   const upload = async (formData) => {
     console.log("Uploading audio...");
+    
+    // Update uploading stage data
+    updateUploadingData({
+      isUploading: true,
+      uploadProgress: 0,
+      uploadComplete: false,
+      uploadError: null
+    });
+    
     setError(
-      "Processing... " +
-        (premium
-          ? "Your audio will be processed faster, but may still take a little bit of time"
-          : "It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.")
+      "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
     );
     setIsError(false);
     setFinishedRecording(true);
@@ -803,6 +1087,14 @@ export default function AudioRecorder() {
       
       console.log("Direct S3 upload successful");
       
+      // Update to show upload complete, waiting for transcription
+      updateUploadingData({
+        isUploading: false,
+        uploadComplete: false,
+        uploadError: null,
+        waitingForTranscription: true
+      });
+      
       // Notify server that upload is complete
       const response = await fetch(
         `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
@@ -832,11 +1124,16 @@ export default function AudioRecorder() {
             setFinishedRecording(true);
             clearInterval(retryInterval);
             const data = await retryResponse.json();
-            setError(
-              "Uploaded to server successfully. We think you might have said: " +
-                data.transcription
-            );
             setDisplayTime("xx:xx");
+            
+            // Update uploading stage data with transcription
+            updateUploadingData({
+              isUploading: false,
+              uploadComplete: true,
+              uploadError: null,
+              transcriptionText: data.transcription,
+              waitingForTranscription: false
+            });
             
             // Notify WebSocket about successful upload
             uploadCompleted();
@@ -851,58 +1148,76 @@ export default function AudioRecorder() {
         if (data.error) {
           setError(data.error);
           setIsError(true);
+          updateUploadingData({
+            isUploading: false,
+            uploadComplete: false,
+            uploadError: data.error
+          });
           return;
         }
 
-        setError(
-          "Uploaded to server successfully. We think you might have said: " +
-            data.transcription
-        );
-        setIsError(false);
+        // Update uploading stage data with transcription
+        updateUploadingData({
+          isUploading: false,
+          uploadComplete: true,
+          uploadError: null,
+          transcriptionText: data.transcription,
+          waitingForTranscription: false
+        });
         
         // Notify WebSocket about successful upload
         uploadCompleted();
         updateStudentStatus('upload_completed');
         questionCompleted(questionIndex);
       }
-    } catch (error) {
-      console.error("Error uploading audio:", error);
-      
-      // Handle CORS error with fallback
-      if (error.message === "CORS_ERROR") {
-        console.log("Attempting server-side upload fallback...");
-        try {
-          const fallbackResponse = await fetch(
-            `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
-            {
-              method: "POST",
-              body: formData,
-            }
-          );
-          
-          if (fallbackResponse.ok) {
-            const data = await fallbackResponse.json();
-            setFinishedRecording(true);
-            setError(
-              "Uploaded to server successfully. We think you might have said: " +
-                data.transcription
+          } catch (error) {
+        console.error("Error uploading audio:", error);
+        
+        // Handle CORS error with fallback
+        if (error.message === "CORS_ERROR") {
+          console.log("Attempting server-side upload fallback...");
+          try {
+            const fallbackResponse = await fetch(
+              `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
+              {
+                method: "POST",
+                body: formData,
+              }
             );
-            setDisplayTime("xx:xx");
             
-            // Notify WebSocket about successful upload
-            uploadCompleted();
-            updateStudentStatus('upload_completed');
-            questionCompleted(questionIndex);
-            return;
+            if (fallbackResponse.ok) {
+              const data = await fallbackResponse.json();
+              setFinishedRecording(true);
+              setDisplayTime("xx:xx");
+              
+              // Update uploading stage data with transcription
+              updateUploadingData({
+                isUploading: false,
+                uploadComplete: true,
+                uploadError: null,
+                transcriptionText: data.transcription,
+                waitingForTranscription: false
+              });
+              
+              // Notify WebSocket about successful upload
+              uploadCompleted();
+              updateStudentStatus('upload_completed');
+              questionCompleted(questionIndex);
+              return;
+            }
+          } catch (fallbackErr) {
+            console.error("Fallback upload also failed:", fallbackErr);
           }
-        } catch (fallbackErr) {
-          console.error("Fallback upload also failed:", fallbackErr);
         }
+        
+        setError("Failed to upload audio. Please try again.");
+        setIsError(true);
+        updateUploadingData({
+          isUploading: false,
+          uploadComplete: false,
+          uploadError: "Failed to upload audio. Please try again."
+        });
       }
-      
-      setError("Failed to upload audio. Please try again.");
-      setIsError(true);
-    }
 
     if (interval) {
       clearInterval(interval);
@@ -1018,6 +1333,9 @@ export default function AudioRecorder() {
   let countdownInterval;
 
   return (
+    <>
+
+      
     <div
       style={{
         display: "flex",
@@ -1045,6 +1363,7 @@ export default function AudioRecorder() {
         {displayTime}
       </div>
 
+      {/* Stage-based content */}
       <div
         style={{
           display: "flex",
@@ -1056,361 +1375,760 @@ export default function AudioRecorder() {
           borderRadius: "24px",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
           width: "90%",
-          maxWidth: "600px",
+          maxWidth: "700px",
           textAlign: "center",
-          transform: "translateY(30%)",
+          transform: "translateY(10%)",
+          minHeight: "400px", // Make it taller to support all stages
         }}
       >
-        <h1
-          style={{
-            fontSize: "32px",
-            fontWeight: "700",
-            color: "#374151",
-            marginBottom: "16px",
-          }}
-        >
-          Oral Exam Assistant
-        </h1>
-
-        {!hasScreenPermission && (
-          <div
-            style={{
-              marginTop: "16px",
-              textAlign: "center",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "18px",
-                fontWeight: "bold",
-                color: "#374151",
-                marginBottom: "8px",
-              }}
-            >
-              Please share your entire screen (not just a window or tab) to
-              continue.
-            </p>
-            <button
-              onClick={async () => {
-                const perms = await requestPermissions();
-                console.log(perms);
-                if (!perms.permissionGranted) {
-                  setError(
-                    "Microphone and camera access is required first. Click here to try again."
-                  );
-                  setIsError(true);
-                  return;
-                }
-                requestScreenPermission();
-              }}
-              style={{
-                padding: "12px 24px",
-                fontSize: "16px",
-                fontWeight: "bold",
-                color: "white",
-                backgroundColor: "#2563EB",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                transition: "background-color 0.3s",
-              }}
-              onMouseOver={(e) => (e.target.style.backgroundColor = "#1D4ED8")}
-              onMouseOut={(e) => (e.target.style.backgroundColor = "#2563EB")}
-            >
-              Share Screen
-            </button>
+        {/* Stage content */}
+        {currentStage === 'initializing' && (
+          <div style={{ marginTop: "16px" }}>
+            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "16px" }}>
+              {stageData.audioDownloaded ? "Downloaded Exam" : "Downloading Exam..."}
+            </h1>
+            
+            {/* Download Animation with Custom Images */}
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "center", 
+              marginBottom: "16px" 
+            }}>
+              {/* Fixed Content Container - This won't move */}
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                minHeight: "160px" // Reserve space for content + button
+              }}>
+                {/* Image Container */}
+                <div style={{
+                  marginBottom: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
+                  {!stageData.audioDownloaded ? (
+                    <img 
+                      src="/download-load.gif" 
+                      alt="Downloading exam" 
+                      style={{
+                        width: "120px",
+                        height: "120px",
+                        objectFit: "contain"
+                      }}
+                    />
+                  ) : (
+                    <img 
+                      src="/download-done.png" 
+                      alt="Download complete" 
+                      style={{
+                        width: "120px",
+                        height: "120px",
+                        objectFit: "contain"
+                      }}
+                    />
+                  )}
+                </div>
+                
+                {/* Error Message */}
+                {stageData.audioDownloadError && (
+                  <p style={{ 
+                    fontSize: "14px", 
+                    color: "#EF4444",
+                    margin: "8px 0 0 0",
+                    textAlign: "center"
+                  }}>
+                    {stageData.audioDownloadError}
+                  </p>
+                )}
+                
+                {/* Continue Button - always takes up space, just invisible when not needed */}
+                <div style={{
+                  height: "44px", // Fixed height for button + margin
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: stageData.audioDownloaded && !stageData.audioDownloadError ? 1 : 0,
+                  transition: "opacity 0.3s ease"
+                }}>
+                  {stageData.audioDownloaded && !stageData.audioDownloadError && (
+                    <button
+                      onClick={() => advanceStage('setup')}
+                      style={{
+                        padding: "10px 24px",
+                        fontSize: "15px",
+                        fontWeight: "600",
+                        color: "white",
+                        backgroundColor: "#10B981",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        transition: "background-color 0.3s ease",
+                        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
+                      }}
+                      onMouseOver={(e) => (e.target.style.backgroundColor = "#059669")}
+                      onMouseOut={(e) => (e.target.style.backgroundColor = "#10B981")}
+                    >
+                      Continue to Setup
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
-
-        {hasScreenPermission && !isFullscreen && (
-          <div
-            style={{
-              marginTop: "16px",
-              textAlign: "center",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "18px",
-                fontWeight: "bold",
-                color: "#374151",
-                marginBottom: "8px",
-              }}
-            >
-              {!questionAudioReady
-                ? "Downloading question audio..."
-                : "All set! Please enter fullscreen mode to continue."}
+        
+        {/* Setup Stage */}
+        {currentStage === 'setup' && (
+          <div style={{ marginTop: "20px" }}>
+            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
+              Exam Setup
+            </h1>
+            <p style={{ fontSize: "16px", color: "#6B7280", marginBottom: "24px" }}>
+              Please complete the following setup steps before starting your exam:
             </p>
-            {questionAudioReady && (
-              <button
-                onClick={async () => {
-                  enterFullscreen();
-                  setIsFullscreen(true);
-                  // Initialize Tone.js here to ensure it's ready when needed
-                  Tone.start();
-                }}
-                style={{
-                  padding: "12px 24px",
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                  color: "white",
-                  backgroundColor: "#2563EB",
-                  border: "none",
+            
+            {/* Setup Checklist with Reserved Button Space */}
+            <div style={{ 
+              maxWidth: "500px", 
+              margin: "0 auto",
+              display: "flex",
+              flexDirection: "column",
+              minHeight: "200px" // Reserve space for checklist + button
+            }}>
+              {/* Checklist Items */}
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                flex: 1
+              }}>
+                {/* Microphone Permission */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "16px",
+                  backgroundColor: "#F9FAFB",
                   borderRadius: "8px",
-                  cursor: "pointer",
-                  transition: "background-color 0.3s",
-                }}
-                onMouseOver={(e) =>
-                  (e.target.style.backgroundColor = "#1D4ED8")
-                }
-                onMouseOut={(e) => (e.target.style.backgroundColor = "#2563EB")}
-              >
-                Enter Fullscreen
-              </button>
-            )}
+                  border: "1px solid #E5E7EB"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: stageData.setup.microphonePermission ? "#10B981" : setupLoading.microphone ? "#3B82F6" : "#D1D5DB",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}>
+                      {stageData.setup.microphonePermission && (
+                        <span style={{ color: "white", fontSize: "12px", fontWeight: "bold" }}>✓</span>
+                      )}
+                      {setupLoading.microphone && (
+                        <div style={{
+                          width: "12px",
+                          height: "12px",
+                          border: "2px solid transparent",
+                          borderTop: "2px solid white",
+                          borderRadius: "50%",
+                          animation: "spin 1s linear infinite"
+                        }} />
+                      )}
+                    </div>
+                    <div>
+                      <p style={{ 
+                        fontSize: "16px", 
+                        fontWeight: "500", 
+                        color: "#374151",
+                        margin: "0 0 2px 0"
+                      }}>
+                        Microphone Permission
+                      </p>
+                      <p style={{ 
+                        fontSize: "14px", 
+                        color: "#6B7280",
+                        margin: "0"
+                      }}>
+                        Allow microphone access for recording
+                      </p>
+                    </div>
+                  </div>
+                  {!stageData.setup.microphonePermission && (
+                    <button
+                      onClick={async () => {
+                        setSetupLoading(prev => ({ ...prev, microphone: true }));
+                        const perms = await requestPermissions();
+                        if (perms.permissionGranted) {
+                          updateSetup({ microphonePermission: true });
+                        }
+                        setSetupLoading(prev => ({ ...prev, microphone: false }));
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "white",
+                        backgroundColor: "#3B82F6",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        transition: "background-color 0.2s ease"
+                      }}
+                      onMouseOver={(e) => (e.target.style.backgroundColor = "#2563EB")}
+                      onMouseOut={(e) => (e.target.style.backgroundColor = "#3B82F6")}
+                    >
+                      Grant Access
+                    </button>
+                  )}
+                </div>
+
+                {/* Fullscreen Mode */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "16px",
+                  backgroundColor: "#F9FAFB",
+                  borderRadius: "8px",
+                  border: "1px solid #E5E7EB"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: stageData.setup.fullscreenEnabled ? "#10B981" : setupLoading.fullscreen ? "#3B82F6" : "#D1D5DB",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}>
+                      {stageData.setup.fullscreenEnabled && (
+                        <span style={{ color: "white", fontSize: "12px", fontWeight: "bold" }}>✓</span>
+                      )}
+                      {setupLoading.fullscreen && (
+                        <div style={{
+                          width: "12px",
+                          height: "12px",
+                          border: "2px solid transparent",
+                          borderTop: "2px solid white",
+                          borderRadius: "50%",
+                          animation: "spin 1s linear infinite"
+                        }} />
+                      )}
+                    </div>
+                    <div>
+                      <p style={{ 
+                        fontSize: "16px", 
+                        fontWeight: "500", 
+                        color: "#374151",
+                        margin: "0 0 2px 0"
+                      }}>
+                        Fullscreen Mode
+                      </p>
+                      <p style={{ 
+                        fontSize: "14px", 
+                        color: "#6B7280",
+                        margin: "0"
+                      }}>
+                        Enter fullscreen for exam security
+                      </p>
+                    </div>
+                  </div>
+                  {!stageData.setup.fullscreenEnabled && (
+                    <button
+                      onClick={async () => {
+                        setSetupLoading(prev => ({ ...prev, fullscreen: true }));
+                        enterFullscreen();
+                        updateSetup({ fullscreenEnabled: true });
+                        setSetupLoading(prev => ({ ...prev, fullscreen: false }));
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "white",
+                        backgroundColor: "#3B82F6",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        transition: "background-color 0.2s ease"
+                      }}
+                      onMouseOver={(e) => (e.target.style.backgroundColor = "#2563EB")}
+                      onMouseOut={(e) => (e.target.style.backgroundColor = "#3B82F6")}
+                    >
+                      Enter Fullscreen
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Continue Button - always takes up space, just invisible when not needed */}
+              <div style={{
+                height: "80px", // Increased height for button + margin
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: canAdvanceToAudioPlay() ? 1 : 0,
+                transition: "opacity 0.3s ease"
+              }}>
+                {canAdvanceToAudioPlay() && (
+                  <button
+                    onClick={() => advanceStage('audio_play')}
+                    style={{
+                      padding: "12px 32px",
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      color: "white",
+                      backgroundColor: "#10B981",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      transition: "background-color 0.3s ease",
+                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)"
+                    }}
+                    onMouseOver={(e) => (e.target.style.backgroundColor = "#059669")}
+                    onMouseOut={(e) => (e.target.style.backgroundColor = "#10B981")}
+                  >
+                    Continue to Question
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
-
-        {isFullscreen && !isRecording && !stopped && countdownDisplay <= 0 && (
-          <PulseButton
-            onClick={playRecording}
-            style={{
-              width: "80px",
-              height: "80px",
-              borderRadius: "50%",
-              backgroundColor: "#28a745",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "background-color 0.3s",
-              animation: "none",
-            }}
-          >
-            <Play size={24} color="white" fill="white" />
-          </PulseButton>
-        )}
-
-        {isFullscreen && isRecording && (
-          <PulseButton
-            onClick={() => {
-              stopRecording();
-            }}
-            style={recordStyle}
-          />
-        )}
-
-        {countdownDisplay > 0 && isFullscreen && allowRepeat && (
-          <p
-            style={{
-              marginTop: "16px",
-              fontSize: "18px",
-              fontWeight: "bold",
-              color: "#374151",
-            }}
-          >
-            If you couldn't hear or understand the question, you can use this
-            time to replay it using the audio component below.
-          </p>
-        )}
-
-        {isFullscreen && audioBlobURL && !isRecording && (
-          <div
-            style={{
-              width: "100%",
-              marginTop: "20px",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <audio
-              controls={
-                hasPlayed &&
-                allowRepeat &&
-                !playing &&
-                (!audioRef.current || audioRef.current.paused)
-              }
-              ref={(input) => {
-                audioRef.current = input;
-              }}
-              style={{
-                width: "100%",
-                borderRadius: "8px",
-                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.1)",
-                backgroundColor: "#F8F8F8",
-              }}
-              src={audioBlobURL}
-              onPlay={() => {
-                if (!playing) {
-                  countdownRef.current = audioRef.current.duration + 1;
-                }
-              }}
-              onEnded={() => {
-                if (!finished) {
-                  if (thinkingTime >= 1) {
-                    cuteToast({
-                      type: "info",
-                      title: "Recording will start after countdown ends",
-                      description: `Recording will start in ${thinkingTime} seconds. Please think about your answer. Recording has NOT YET STARTED`,
-                      timer: 5000,
-                    });
-                  }
-                  setPlaying(false);
-                  setFinished(true);
-
-                  countdownRef.current = thinkingTime;
-                  setCountdownDisplay(countdownRef.current);
-
-                  countdownInterval = setInterval(() => {
-                    countdownRef.current -= 1;
-                    setCountdownDisplay(countdownRef.current);
-                    if (countdownRef.current <= 0) {
-                      clearInterval(countdownInterval);
-                      startRecording();
-                    }
-
-                    if (countdownRef.current <= -2) {
-                      // Do nothing
-                    } else if (countdownRef.current <= 0) {
-                      if (audioRef.current && !audioRef.current.paused)
-                        audioRef.current.pause();
-                      playRecordingStarted();
-                    }
-                  }, 1000);
-                } else {
-                  countdownRef.current = -1;
-                  setCountdownDisplay(-1);
-                }
-              }}
-            >
-              Your browser does not support the audio element.
-            </audio>
-          </div>
-        )}
-
-        {isRecording && (
-          <p
-            style={{
-              marginTop: "16px",
-              fontSize: "18px",
-              fontWeight: "600",
-              color: "#374151",
-            }}
-          >
-            Recording...
-          </p>
-        )}
-
-        {(playing || waiting) && (
-          <p
-            style={{
-              marginTop: "18px",
-              fontSize: "18px",
-              fontWeight: "bold",
-              color: "#28a745",
-            }}
-          >
-            {fetching
-              ? "Downloading question..."
-              : waiting
-              ? "Loading..."
-              : "Playing..."}
-          </p>
-        )}
-
-        {waiting && (
-          <p
-            style={{
-              marginTop: "8px",
-              fontSize: "16px",
-              fontWeight: "bold",
-              color: "#FF0000",
-            }}
-          >
-            If this is taking too long, please ensure you have allowed
-            microphone and screen sharing permissions. If it still doesn't work,
-            try switching to another browser.
-          </p>
-        )}
-
-        {countdownDisplay > 0 && (
-          <p
-            style={{
-              marginTop: "16px",
-              fontSize: "24px",
-              fontWeight: "bold",
-              color: "red",
-            }}
-          >
-            {!playing && audioRef.current && audioRef.current.paused
-              ? `Recording will start in ${countdownDisplay}...`
-              : `Recording will begin immediately upon question completion`}
-          </p>
-        )}
-
-        {error && (
-          <div
-            onClick={
-              !hasPermissions
-                ? requestPermissions
-                : hasScreenPermission
-                ? null
-                : requestScreenPermission
-            }
-            style={
-              isError
-                ? {
-                    marginTop: "24px",
-                    padding: "16px",
-                    backgroundColor: "#FEE2E2",
-                    borderRadius: "12px",
-                    border: "1px solid #F87171",
-                    color: "#B91C1C",
-                    cursor: "pointer",
-                    maxWidth: "80%",
-                  }
-                : {
-                    marginTop: "24px",
-                    padding: "16px",
-                    backgroundColor: "#D1FAE5",
-                    borderRadius: "12px",
-                    border: "1px solid #34D399",
-                    color: "#065F46",
-                    cursor: "pointer",
-                    maxWidth: "80%",
-                  }
-            }
-          >
-            <p style={{ margin: "5px" }}>{error}</p>
-          </div>
-        )}
-        {isError && hasPermissions && !hasScreenPermission && (
-          <div
-            style={{
-              marginTop: "16px",
-              textAlign: "center",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "18px",
-                fontWeight: "bold",
-                color: "#2563EB",
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
-              onClick={() => {
-                setHasScreenPermission(true);
-                setError(null);
-                setIsError(false);
-              }}
-            >
-              Not working? Click here.
+        
+        {/* Audio Play Stage */}
+        {currentStage === 'audio_play' && (
+          <div style={{ marginTop: "20px" }}>
+            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
+              Listen to Question
+            </h1>
+            <p style={{ fontSize: "16px", color: "#6B7280", marginBottom: "24px" }}>
+              Please listen to the question carefully before recording your response.
             </p>
+            
+            {/* Audio Player */}
+            <div style={{ 
+              maxWidth: "500px", 
+              margin: "0 auto",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "20px"
+            }}>
+              {/* Audio Controls */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+                marginBottom: "20px"
+              }}>
+                <PulseButton
+                  onClick={() => {
+                    if (audioRef.current && audioRef.current.paused) {
+                      audioRef.current.play();
+                      updateAudioPlayData({ isPlaying: true });
+                    }
+                  }}
+                  style={{
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    backgroundColor: "#28a745",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "background-color 0.3s",
+                    animation: "none",
+                  }}
+                >
+                  <Play size={24} color="white" fill="white" />
+                </PulseButton>
+                
+                {stageData.audioPlay.hasPlayed && (
+                  <button
+                    onClick={() => {
+                      if (audioRef.current) {
+                        audioRef.current.currentTime = 0;
+                        audioRef.current.play();
+                        updateAudioPlayData({ isPlaying: true });
+                      }
+                    }}
+                    style={{
+                      padding: "8px 16px",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      color: "#3B82F6",
+                      backgroundColor: "transparent",
+                      border: "2px solid #3B82F6",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease"
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.backgroundColor = "#3B82F6";
+                      e.target.style.color = "white";
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.backgroundColor = "transparent";
+                      e.target.style.color = "#3B82F6";
+                    }}
+                  >
+                    Replay
+                  </button>
+                )}
+              </div>
+              
+              {/* Hidden Audio Element */}
+              <audio
+                ref={audioRef}
+                style={{ display: "none" }}
+                onPlay={() => {
+                  updateAudioPlayData({ isPlaying: true });
+                }}
+                onPause={() => {
+                  updateAudioPlayData({ isPlaying: false });
+                }}
+                onEnded={() => {
+                  updateAudioPlayData({ 
+                    isPlaying: false, 
+                    hasPlayed: true 
+                  });
+                }}
+                onError={() => {
+                  updateAudioPlayData({ 
+                    isPlaying: false, 
+                    playError: "Failed to load audio" 
+                  });
+                }}
+                src={audioBlobURL}
+              >
+                Your browser does not support the audio element.
+              </audio>
+              
+              {/* Status Message */}
+              <div style={{ textAlign: "center" }}>
+                {stageData.audioPlay.playError && (
+                  <p style={{ 
+                    fontSize: "14px", 
+                    color: "#EF4444",
+                    margin: "8px 0"
+                  }}>
+                    {stageData.audioPlay.playError}
+                  </p>
+                )}
+                
+                {stageData.audioPlay.hasPlayed && !stageData.audioPlay.playError && (
+                  <p style={{ 
+                    fontSize: "16px", 
+                    color: "#10B981",
+                    fontWeight: "500",
+                    margin: "8px 0"
+                  }}>
+                    ✓ Question played successfully
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Thinking Stage */}
+        {currentStage === 'thinking' && (
+          <div style={{ marginTop: "20px" }}>
+            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
+              Thinking Time
+            </h1>
+            <p style={{ fontSize: "16px", color: "#6B7280", marginBottom: "32px" }}>
+              Take a moment to think about your response before recording begins.
+            </p>
+            
+            {/* Countdown Display */}
+            <div style={{ 
+              textAlign: "center",
+              marginBottom: "32px"
+            }}>
+              <div style={{
+                fontSize: "48px",
+                fontWeight: "bold",
+                color: "#EF4444",
+                marginBottom: "16px"
+              }}>
+                {stageData.thinking.thinkingTimeRemaining}
+              </div>
+              <p style={{
+                fontSize: "16px",
+                color: "#6B7280",
+                margin: "0"
+              }}>
+                seconds remaining
+              </p>
+            </div>
+            
+            {/* Progress Bar */}
+            <div style={{
+              width: "100%",
+              maxWidth: "400px",
+              margin: "0 auto",
+              position: "relative"
+            }}>
+              {/* Background Bar */}
+              <div style={{
+                width: "100%",
+                height: "8px",
+                backgroundColor: "#FEE2E2",
+                borderRadius: "4px",
+                position: "relative"
+              }}>
+                {/* Progress Bar - shrinks from both sides */}
+                <div style={{
+                  position: "absolute",
+                  left: `${(1 - thinkingProgress) * 50}%`,
+                  right: `${(1 - thinkingProgress) * 50}%`,
+                  height: "100%",
+                  backgroundColor: "#EF4444",
+                  borderRadius: "4px",
+                  transition: "none" // Remove transition for smooth animation
+                }} />
+              </div>
+            </div>
+            
+            {/* Instructions */}
+            <div style={{
+              marginTop: "24px",
+              textAlign: "center"
+            }}>
+              <p style={{
+                fontSize: "14px",
+                color: "#6B7280",
+                margin: "0"
+              }}>
+                Recording will start automatically when the timer reaches zero
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {/* Recording Stage */}
+        {currentStage === 'recording' && (
+          <div style={{ marginTop: "20px" }}>
+            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
+              Recording Your Response
+            </h1>
+            
+            {/* Recording Button */}
+            <div style={{ 
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "20px"
+            }}>
+              {!stageData.recording.isRecording && !stageData.recording.hasRecorded && (
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ 
+                    fontSize: "16px", 
+                    color: "#6B7280",
+                    margin: "8px 0"
+                  }}>
+                    Preparing to record...
+                  </p>
+                </div>
+              )}
+
+              {stageData.recording.isRecording && (
+                <PulseButton
+                  onClick={() => {
+                    stopRecording();
+                    updateRecordingData({ 
+                      isRecording: false,
+                      hasRecorded: true 
+                    });
+                  }}
+                  style={recordStyle}
+                />
+              )}
+
+              {stageData.recording.hasRecorded && !stageData.recording.isRecording && (
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ 
+                    fontSize: "16px", 
+                    color: "#10B981",
+                    fontWeight: "500",
+                    margin: "8px 0"
+                  }}>
+                    ✓ Recording completed successfully
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Uploading Stage */}
+        {currentStage === 'uploading' && (
+          <div style={{ marginTop: "20px" }}>
+            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
+              {stageData.uploading.waitingForTranscription 
+                ? "Waiting for Transcription"
+                : stageData.uploading.uploadComplete 
+                  ? "Upload Complete"
+                  : "Uploading Response"
+              }
+            </h1>
+            <p style={{ fontSize: "16px", color: "#6B7280", marginBottom: "24px" }}>
+              {stageData.uploading.waitingForTranscription
+                ? "Your response has been uploaded successfully. We're now waiting for the transcription to be processed..."
+                : stageData.uploading.uploadComplete 
+                  ? "Your response has been uploaded and transcribed successfully."
+                  : "Please wait while we upload your recording..."
+              }
+            </p>
+            
+            {/* Transcription Results */}
+            {stageData.uploading.uploadComplete && stageData.uploading.transcriptionText && (
+              <div style={{
+                backgroundColor: "#F0F9FF",
+                border: "1px solid #0EA5E9",
+                borderRadius: "12px",
+                padding: "20px",
+                marginBottom: "24px",
+                maxWidth: "500px",
+                margin: "0 auto 24px auto"
+              }}>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "12px"
+                }}>
+                  <div style={{
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    backgroundColor: "#10B981",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}>
+                    <span style={{ color: "white", fontSize: "12px", fontWeight: "bold" }}>✓</span>
+                  </div>
+                  <h3 style={{
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    color: "#0F172A",
+                    margin: "0"
+                  }}>
+                    Tentative Transcription
+                  </h3>
+                </div>
+                <p style={{
+                  fontSize: "16px",
+                  color: "#374151",
+                  lineHeight: "1.5",
+                  margin: "0 0 16px 0",
+                  fontStyle: "italic"
+                }}>
+                  "{stageData.uploading.transcriptionText}"
+                </p>
+                
+                {/* Relisten Button and Disclaimer */}
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  marginTop: "12px"
+                }}>
+                  <span style={{
+                    fontSize: "12px",
+                    color: "#6B7280",
+                    fontStyle: "italic"
+                  }}>
+                    This is an AI-generated transcription and may not be 100% accurate
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {/* Upload Animation with Custom Images */}
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "center", 
+              marginBottom: "16px" 
+            }}>
+              {/* Fixed Content Container - This won't move */}
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                minHeight: "160px" // Reserve space for content + button
+              }}>
+                {/* Image Container */}
+                <div style={{
+                  marginBottom: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
+                  {stageData.uploading.uploadComplete || stageData.uploading.waitingForTranscription ? (
+                    <img 
+                      src="/upload-done.png" 
+                      alt="Upload complete" 
+                      style={{
+                        width: "120px",
+                        height: "120px",
+                        objectFit: "contain"
+                      }}
+                    />
+                  ) : (
+                    <img 
+                      src="/upload-load.gif" 
+                      alt="Uploading response" 
+                      style={{
+                        width: "120px",
+                        height: "120px",
+                        objectFit: "contain"
+                      }}
+                    />
+                  )}
+                </div>
+                
+                {/* Error Message */}
+                {stageData.uploading.uploadError && (
+                  <p style={{ 
+                    fontSize: "14px", 
+                    color: "#EF4444",
+                    margin: "8px 0 0 0",
+                    textAlign: "center"
+                  }}>
+                    {stageData.uploading.uploadError}
+                  </p>
+                )}
+                
+                {/* Success Message */}
+                {stageData.uploading.uploadComplete && !stageData.uploading.uploadError && (
+                  <p style={{ 
+                    fontSize: "16px", 
+                    color: "#10B981",
+                    fontWeight: "500",
+                    margin: "8px 0 0 0",
+                    textAlign: "center"
+                  }}>
+                    ✓ Upload and transcription completed
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
     </div>
+    </>
   );
 }
