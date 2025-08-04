@@ -259,9 +259,20 @@ class WebSocketService {
   }
 
   handleMessage(data) {
-    const { type, payload } = data;
+    const { type, payload, messageId } = data;
     
     console.log(`📨 Received WebSocket message: ${type}`, payload);
+    
+    // Handle message acknowledgments
+    if (messageId) {
+      console.log('✅ Sending acknowledgment for message:', messageId);
+      this.send({
+        type: 'message_ack',
+        payload: {
+          messageId: messageId
+        }
+      });
+    }
     
     if (this.listeners.has(type)) {
       this.listeners.get(type).forEach(callback => {

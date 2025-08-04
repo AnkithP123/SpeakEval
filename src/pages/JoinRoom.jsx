@@ -120,7 +120,7 @@ function JoinRoomContent() {
       } catch (error) {
         console.error('❌ Failed to connect and join:', error);
         toast.error("Failed to connect to server");
-        setLoading(false);
+      setLoading(false);
       }
     } else {
       setLoading(false);

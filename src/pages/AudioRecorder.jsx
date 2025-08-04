@@ -54,6 +54,7 @@ export default function AudioRecorder() {
   // Stage-based data-driven approach
   const [currentStage, setCurrentStage] = useState('initializing');
   const [thinkingProgress, setThinkingProgress] = useState(1); // Smooth progress (0 to 1)
+  const [lastRoomRestart, setLastRoomRestart] = useState(null); // Track last room restart
   const [setupLoading, setSetupLoading] = useState({
     microphone: false,
     fullscreen: false
@@ -112,6 +113,9 @@ export default function AudioRecorder() {
     console.log(`🔄 Advancing from stage '${currentStage}' to '${newStage}'`);
     console.trace('Stage transition stack trace'); // Add stack trace to see what's calling this
     setCurrentStage(newStage);
+    
+    // Track stage start time for periodic checks
+    window.stageStartTime = Date.now();
   };
   
   // Reset state for new question
@@ -357,34 +361,54 @@ export default function AudioRecorder() {
       const handleRoomRestart = (payload) => {
         console.log('🔄 Room restarted:', payload);
         
-        // Extract new token and room information
-        const { newToken, newRoomCode, participant } = payload;
+        // Extract new token and room information - handle multiple formats
+        const { newToken, newRoomCode, participant, latestToken } = payload;
         
-        if (newToken && newRoomCode && participant) {
+        // Determine which token to use
+        const tokenToUse = newToken || latestToken;
+        const roomCodeToUse = newRoomCode;
+        
+        if (tokenToUse && participant) {
           // Get current room code from token
           const currentInfo = tokenManager.getStudentInfo();
           const currentRoomCode = currentInfo?.roomCode;
           
+          // Decode the token to get the room code if not provided
+          const tokenInfo = tokenManager.decodeStudentToken(tokenToUse);
+          const actualNewRoomCode = roomCodeToUse || tokenInfo?.roomCode;
+          
           console.log('🔄 Room restart comparison:', {
             currentRoomCode,
-            newRoomCode,
-            roomCodeChanged: currentRoomCode !== newRoomCode
+            actualNewRoomCode,
+            roomCodeChanged: currentRoomCode !== actualNewRoomCode
           });
           
-          // Update token in localStorage
-          tokenManager.setStudentToken(newToken);
+          // Track this room restart
+          setLastRoomRestart({
+            timestamp: Date.now(),
+            newRoomCode: actualNewRoomCode,
+            newToken: tokenToUse,
+            participant
+          });
           
-          if (currentRoomCode !== newRoomCode) {
+          // Always update token in localStorage
+          tokenManager.setStudentToken(tokenToUse);
+          
+          if (currentRoomCode !== actualNewRoomCode) {
             // New question - reset state and continue
             toast.success("New question received - preparing...");
             console.log("Room code changed, resetting for new question...");
             resetForNewQuestion();
           } else {
-            console.log("Room code unchanged, just updating token");
+            console.log("Room code unchanged, but still resetting for new question");
+            // Even if room code is the same, reset for new question to ensure fresh state
+            toast.success("New question received - preparing...");
+            resetForNewQuestion();
           }
         } else {
           console.error("Missing token data from server");
           toast.error("Failed to handle room restart");
+          // Force reload as fallback
           window.location.reload();
         }
       };
@@ -418,7 +442,9 @@ export default function AudioRecorder() {
           thinkingTime,
           allowRepeat,
           latestToken,
-          roomRestarted
+          roomRestarted,
+          newRoomCode,
+          newToken
         } = payload;
         
         // Update time limit if provided (only if recording hasn't finished)
@@ -442,37 +468,50 @@ export default function AudioRecorder() {
           setAllowRepeat(allowRepeat);
         }
         
-        // Handle room restart with latest token - only reload if room code changed
-        if (roomRestarted && latestToken) {
-          console.log('🔄 Room was restarted, checking if room code changed');
+        // Enhanced room restart detection - check multiple indicators
+        const hasRoomRestartInfo = roomRestarted || newRoomCode || newToken || latestToken;
+        const hasTokenInfo = latestToken || newToken;
+        
+        if (hasRoomRestartInfo && hasTokenInfo) {
+          console.log('🔄 Room restart detected in state sync:', {
+            roomRestarted,
+            newRoomCode,
+            hasNewToken: !!newToken,
+            hasLatestToken: !!latestToken
+          });
+          
+          // Determine which token to use
+          const tokenToUse = newToken || latestToken;
           
           // Get current room info from token
           const currentTokenInfo = tokenManager.getStudentInfo();
           const currentRoomCode = currentTokenInfo?.roomCode;
           
           // Decode the new token to get the new room code
-          const newTokenInfo = tokenManager.decodeStudentToken(latestToken);
-          const newRoomCode = newTokenInfo?.roomCode;
+          const newTokenInfo = tokenManager.decodeStudentToken(tokenToUse);
+          const actualNewRoomCode = newRoomCode || newTokenInfo?.roomCode;
           
           console.log('🔍 Room code comparison:', {
             current: currentRoomCode,
-            new: newRoomCode,
-            changed: currentRoomCode !== newRoomCode
+            new: actualNewRoomCode,
+            changed: currentRoomCode !== actualNewRoomCode
           });
           
-          // Only reset if the room code actually changed
-          if (currentRoomCode !== newRoomCode) {
-            console.log('🔄 Room code changed, updating token and resetting for new question');
-            tokenManager.setStudentToken(latestToken);
-            
-            toast.success("New question received - preparing...");
-            resetForNewQuestion();
-            return;
-          } else {
-            console.log('🔄 Room code unchanged, updating token without reset');
-            tokenManager.setStudentToken(latestToken);
-            return;
-          }
+          // Track this room restart
+          setLastRoomRestart({
+            timestamp: Date.now(),
+            newRoomCode: actualNewRoomCode,
+            newToken: tokenToUse,
+            participant: participant
+          });
+          
+          // Always update token and reset for new question
+          console.log('🔄 Room restart detected, updating token and resetting for new question');
+          tokenManager.setStudentToken(tokenToUse);
+          
+          toast.success("New question received - preparing...");
+          resetForNewQuestion();
+          return;
         }
         
         // Handle exam started state
@@ -488,6 +527,27 @@ export default function AudioRecorder() {
           console.log('📊 Room has started but exam not yet begun');
           // Stay on current page, wait for exam to start
         }
+        
+        // Additional check: if we receive a state sync with a different room code than current,
+        // it might indicate a room restart that wasn't explicitly flagged
+        if (roomCode && participant) {
+          const currentInfo = tokenManager.getStudentInfo();
+          const currentRoomCode = currentInfo?.roomCode;
+          
+          if (currentRoomCode && roomCode !== currentRoomCode) {
+            console.log('🔄 Room code mismatch detected in state sync - possible room restart');
+            console.log('🔍 Room code comparison:', {
+              current: currentRoomCode,
+              received: roomCode,
+              changed: true
+            });
+            
+            // This might be a room restart - force a reset
+            toast.success("New question received - preparing...");
+            resetForNewQuestion();
+            return;
+          }
+        }
       };
       
       // Add event listeners
@@ -499,6 +559,30 @@ export default function AudioRecorder() {
       onWebSocketEvent('reconnect_needed', handleReconnectNeeded);
       onWebSocketEvent('room_state_sync', handleRoomStateSync);
       
+      // Add additional handlers for different message types that might contain room restart info
+      const handleReconnectSuccess = (payload) => {
+        console.log('🔄 Reconnect success:', payload);
+        // Check if this reconnect contains room restart information
+        if (payload.roomRestarted || payload.latestToken || payload.newToken || payload.newRoomCode) {
+          console.log('🔄 Reconnect success contains room restart info');
+          handleRoomRestart(payload);
+        }
+      };
+      
+      const handleStateSync = (payload) => {
+        console.log('📊 State sync received:', payload);
+        // Check if this state sync contains room restart information
+        if (payload.roomRestarted || payload.latestToken || payload.newToken || payload.newRoomCode) {
+          console.log('🔄 State sync contains room restart info');
+          handleRoomStateSync(payload);
+        }
+      };
+      
+      onWebSocketEvent('reconnect_success', handleReconnectSuccess);
+      onWebSocketEvent('state_sync', handleStateSync);
+      
+
+      
       return () => {
         // Cleanup event listeners
         offWebSocketEvent('room_started', handleRoomStarted);
@@ -508,6 +592,13 @@ export default function AudioRecorder() {
         offWebSocketEvent('exam_started', handleExamStarted);
         offWebSocketEvent('reconnect_needed', handleReconnectNeeded);
         offWebSocketEvent('room_state_sync', handleRoomStateSync);
+        
+        // Clean up additional event listeners
+        offWebSocketEvent('reconnect_success', handleReconnectSuccess);
+        offWebSocketEvent('state_sync', handleStateSync);
+        
+
+        
         // Clean up WebSocket service properly
         websocketService.cleanup();
       };
@@ -557,7 +648,73 @@ export default function AudioRecorder() {
       console.log('🎵 Starting audio download...');
       makeResponse();
     }
-  }, [currentStage]);
+  }, [currentStage, stageData.audioDownloaded, stageData.audioDownloadError]);
+
+  // Fallback: If we're in initializing stage but no download has started, trigger it
+  useEffect(() => {
+    if (currentStage === 'initializing' && !fetching && !stageData.audioDownloaded && !stageData.audioDownloadError) {
+      console.log('🎵 Fallback: Starting audio download...');
+      makeResponse();
+    }
+  }, [currentStage, fetching, stageData.audioDownloaded, stageData.audioDownloadError]);
+
+  // Periodic check for room restart responsiveness
+  useEffect(() => {
+    const checkRoomRestart = () => {
+      // Check if we're stuck in a state that might indicate a missed room restart
+      const currentInfo = tokenManager.getStudentInfo();
+      const currentRoomCode = currentInfo?.roomCode;
+      
+      // If we're in initializing for too long without progress, force a refresh
+      if (currentStage === 'initializing' && !fetching && !stageData.audioDownloaded) {
+        console.log('🔄 Periodic check: Stuck in initializing, forcing audio download...');
+        makeResponse();
+      }
+      
+      // If we have a recent room restart but haven't made progress, force a reset
+      if (lastRoomRestart && (Date.now() - lastRoomRestart.timestamp) > 15000) {
+        console.log('🔄 Periodic check: Recent room restart detected but no progress, forcing reset...');
+        toast.success("New question received - preparing...");
+        resetForNewQuestion();
+        setLastRoomRestart(null); // Clear the restart tracking
+      }
+      
+      // Additional check: if we're in any stage for too long without progress, request state sync
+      const timeInCurrentStage = Date.now() - (window.stageStartTime || Date.now());
+      if (timeInCurrentStage > 30000) { // 30 seconds
+        console.log('🔄 Periodic check: Been in current stage too long, requesting state sync...');
+        // Request state sync from server
+        if (window.websocketService) {
+          window.websocketService.requestStateSync();
+        }
+      }
+      
+      // Check if we might have missed a room restart by comparing room codes
+      const periodicCurrentInfo = tokenManager.getStudentInfo();
+      const periodicCurrentRoomCode = periodicCurrentInfo?.roomCode;
+      
+      // If we have a last room restart but the current room code doesn't match, we might have missed an update
+      if (lastRoomRestart && periodicCurrentRoomCode && lastRoomRestart.newRoomCode && 
+          periodicCurrentRoomCode !== lastRoomRestart.newRoomCode) {
+        console.log('🔄 Periodic check: Room code mismatch detected - possible missed room restart');
+        console.log('🔍 Room code comparison:', {
+          current: periodicCurrentRoomCode,
+          expected: lastRoomRestart.newRoomCode,
+          lastRestart: lastRoomRestart.timestamp
+        });
+        
+        // Force a reset to sync with the expected room
+        toast.success("New question received - preparing...");
+        resetForNewQuestion();
+        setLastRoomRestart(null); // Clear the restart tracking
+      }
+    };
+
+    // Check every 10 seconds
+    const interval = setInterval(checkRoomRestart, 10000);
+    
+    return () => clearInterval(interval);
+  }, [currentStage, fetching, stageData.audioDownloaded, lastRoomRestart]);
   
 
 
