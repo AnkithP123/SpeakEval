@@ -303,8 +303,8 @@ class WebSocketService {
     this.send({
       type: 'room_status_update',
       payload: { 
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo().roomCode,
+        participant: tokenManager.getStudentInfo().participant,
         status,
         timestamp: Date.now()
       }
@@ -415,6 +415,18 @@ class WebSocketService {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
         error: error.message || error,
+        timestamp: Date.now()
+      }
+    });
+  }
+
+  reportCheating(message) {
+    this.send({
+      type: 'cheating_detected',
+      payload: { 
+        roomCode: this.currentRoom,
+        participant: this.currentParticipant,
+        message,
         timestamp: Date.now()
       }
     });

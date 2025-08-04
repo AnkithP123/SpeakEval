@@ -680,7 +680,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-          },
+        },
           body: JSON.stringify({ uploaded: true }),
         }
       )
@@ -697,7 +697,7 @@ function RoomPanel({ roomCode, userId, setRoomCodes }) {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-              },
+            },
               body: JSON.stringify({ uploaded: true }),
             }
           )

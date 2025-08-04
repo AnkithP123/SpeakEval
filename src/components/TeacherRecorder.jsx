@@ -144,7 +144,7 @@ export default function TeacherRecorder({ code, participant, uuid, onRecordingCo
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-          },
+        },
           body: JSON.stringify({ uploaded: true }),
         }
       )

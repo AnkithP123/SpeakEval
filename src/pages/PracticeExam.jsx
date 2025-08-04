@@ -24,7 +24,7 @@ export default function PracticeExam() {
     const info = tokenManager.getStudentInfo()
 
     console.log("info", info)
-    
+
     if (!info || info.type !== "practice_participant") {
       setError("Invalid session for practice exam")
       setIsLoading(false)

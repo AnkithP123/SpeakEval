@@ -127,15 +127,15 @@ function ProfileCard({
           audio, // token as id
           null,
           async () => {
-            console.log("Audio not fetched, fetching now..." + audio);
-            const audios = await fetch(
-              `https://www.server.speakeval.org/fetch_audio?token=${audio}`
-            );
-            const audiosJson = await audios.json();
-            console.log("Audio fetched:", audiosJson);
-            if (!audios.ok) {
+      console.log("Audio not fetched, fetching now..." + audio);
+      const audios = await fetch(
+        `https://www.server.speakeval.org/fetch_audio?token=${audio}`
+      );
+      const audiosJson = await audios.json();
+      console.log("Audio fetched:", audiosJson);
+      if (!audios.ok) {
               throw new Error("Failed to fetch audio: " + audiosJson.error);
-            }
+      }
             
             // Check if we got a presigned URL or fallback to Base64
             if (audiosJson.audioUrl) {
@@ -143,14 +143,14 @@ function ProfileCard({
             } else if (audiosJson.audio) {
               // Fallback to Base64 processing
               const audioData = Uint8Array.from(atob(audiosJson.audio), (c) =>
-                c.charCodeAt(0)
-              );
-              const audioBlob = new Blob([audioData], { type: "audio/ogg" });
-              
-              try {
-                const wavBlob = await convertOggToWav(audioBlob);
+        c.charCodeAt(0)
+      );
+      const audioBlob = new Blob([audioData], { type: "audio/ogg" });
+
+      try {
+        const wavBlob = await convertOggToWav(audioBlob);
                 return URL.createObjectURL(wavBlob);
-              } catch (err) {
+      } catch (err) {
                 return URL.createObjectURL(audioBlob);
               }
             }
@@ -160,11 +160,11 @@ function ProfileCard({
       }
       
       // Set the audio source
-      const answerAudioPlayer = document.getElementById(
-        `answerAudioPlayer-${effectiveName}-${effectiveCode}`
-      );
+        const answerAudioPlayer = document.getElementById(
+          `answerAudioPlayer-${effectiveName}-${effectiveCode}`
+        );
       if (answerAudioPlayer && audioUrl) {
-        answerAudioPlayer.src = audioUrl;
+          answerAudioPlayer.src = audioUrl;
       }
     } catch (error) {
       console.log("Error loading audio:", error);

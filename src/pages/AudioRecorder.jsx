@@ -38,6 +38,7 @@ export default function AudioRecorder() {
   const [timeLimit, setTimeLimit] = useState(-1); // Time limit in seconds (-1 means no limit)
   const [remainingTime, setRemainingTime] = useState(-1); // Current remaining time in seconds
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [examStarted, setExamStarted] = useState(false); // Track when exam has actually started
   const [finishedRecording, setFinishedRecording] = useState(false);
   const [hasScreenPermission, setHasScreenPermission] = useState(true); // temporarily set to true
   const [hasPermissions, setHasPermissions] = useState(false);
@@ -105,11 +106,79 @@ export default function AudioRecorder() {
   });
 
   const navigate = useNavigate();
-  
+
   // Stage transition logic
   const advanceStage = (newStage) => {
     console.log(`🔄 Advancing from stage '${currentStage}' to '${newStage}'`);
+    console.trace('Stage transition stack trace'); // Add stack trace to see what's calling this
     setCurrentStage(newStage);
+  };
+  
+  // Reset state for new question
+  const resetForNewQuestion = () => {
+    console.log('🔄 Resetting state for new question...');
+    
+    // Reset all recording-related states
+    setIsRecording(false);
+    setFinishedRecording(false);
+    setAudioURL(null);
+    setAudioBlobURL(null);
+    setDisplayTime("xx:xx");
+    setRemainingTime(-1);
+    setError(null);
+    setIsError(false);
+    
+    // Clear any existing timers
+    if (timer.current !== -1) {
+      clearInterval(timer.current);
+      timer.current = -1;
+    }
+    
+    // Reset stage data
+    setStageData({
+      audioDownloaded: false,
+      audioDownloadError: null,
+      setup: {
+        microphonePermission: false,
+        fullscreenEnabled: false,
+      },
+      audioPlay: {
+        hasPlayed: false,
+        isPlaying: false,
+        playError: null,
+      },
+      thinking: {
+        thinkingTimeRemaining: 0,
+        thinkingComplete: false,
+      },
+      recording: {
+        isRecording: false,
+        hasRecorded: false,
+        recordingBlob: null,
+        recordingError: null,
+      },
+      uploading: {
+        isUploading: false,
+        uploadProgress: 0,
+        uploadComplete: false,
+        uploadError: null,
+        transcriptionText: null,
+        waitingForTranscription: false,
+      },
+    });
+    
+    // Reset setup loading states
+    setSetupLoading({
+      microphone: false,
+      fullscreen: false
+    });
+    
+    // Reset thinking progress
+    setThinkingProgress(1);
+    
+    // Go to initializing to download new audio, then proceed through normal flow
+    console.log('🔄 New question - going to initializing stage to download audio');
+    advanceStage('initializing');
   };
   
   const updateStageData = (updates) => {
@@ -120,6 +189,7 @@ export default function AudioRecorder() {
   };
   
   const updateSetup = (updates) => {
+    console.log('🔧 Updating setup data:', updates);
     setStageData(prev => ({
       ...prev,
       setup: {
@@ -224,7 +294,7 @@ export default function AudioRecorder() {
     reconnect
   } = useRealTimeCommunication();
 
-  // Media recorder setup - using askPermissionOnMount to request mic/camera on load
+  // Media recorder setup - we'll handle permissions manually
   const {
     status: audioStatus,
     startRecording: startAudioRecording,
@@ -234,7 +304,7 @@ export default function AudioRecorder() {
   } = useReactMediaRecorder({
     audio: true,
     video: false,
-    askPermissionOnMount: true, // Request permissions on component mount
+    askPermissionOnMount: false, // We'll handle permissions manually
     onStop: (blobUrl, blob) => handleAudioStop(blobUrl, blob),
   });
 
@@ -291,13 +361,27 @@ export default function AudioRecorder() {
         const { newToken, newRoomCode, participant } = payload;
         
         if (newToken && newRoomCode && participant) {
+          // Get current room code from token
+          const currentInfo = tokenManager.getStudentInfo();
+          const currentRoomCode = currentInfo?.roomCode;
+          
+          console.log('🔄 Room restart comparison:', {
+            currentRoomCode,
+            newRoomCode,
+            roomCodeChanged: currentRoomCode !== newRoomCode
+          });
+          
           // Update token in localStorage
           tokenManager.setStudentToken(newToken);
           
-          toast.success("Room restarted with new question - reloading page!");
-          // Simple page reload for fresh start
-          console.log("Reloading page...");
-          window.location.reload();
+          if (currentRoomCode !== newRoomCode) {
+            // New question - reset state and continue
+            toast.success("New question received - preparing...");
+            console.log("Room code changed, resetting for new question...");
+            resetForNewQuestion();
+          } else {
+            console.log("Room code unchanged, just updating token");
+          }
         } else {
           console.error("Missing token data from server");
           toast.error("Failed to handle room restart");
@@ -337,14 +421,17 @@ export default function AudioRecorder() {
           roomRestarted
         } = payload;
         
-        // Update time limit if provided
+        // Update time limit if provided (only if recording hasn't finished)
         if (timeLimit !== undefined) {
           setTimeLimit(timeLimit);
-          if (timeLimit > 0) {
-            setDisplayTime(formatTime(timeLimit * 1000));
-          } else {
-            setDisplayTime("xx:xx");
+          if (!finishedRecording) {
+            if (timeLimit > 0) {
+              setDisplayTime(formatTime(timeLimit * 1000));
+            } else {
+              setDisplayTime("xx:xx");
+            }
           }
+          // If recording has finished, keep timer at "xx:xx"
         }
         
         // Update other settings
@@ -355,14 +442,37 @@ export default function AudioRecorder() {
           setAllowRepeat(allowRepeat);
         }
         
-        // Handle room restart with latest token
+        // Handle room restart with latest token - only reload if room code changed
         if (roomRestarted && latestToken) {
-          console.log('🔄 Room was restarted, updating with latest token');
-          tokenManager.setStudentToken(latestToken);
+          console.log('🔄 Room was restarted, checking if room code changed');
           
-          toast.success("Room restarted with new question - reloading page!");
-          window.location.reload();
-          return;
+          // Get current room info from token
+          const currentTokenInfo = tokenManager.getStudentInfo();
+          const currentRoomCode = currentTokenInfo?.roomCode;
+          
+          // Decode the new token to get the new room code
+          const newTokenInfo = tokenManager.decodeStudentToken(latestToken);
+          const newRoomCode = newTokenInfo?.roomCode;
+          
+          console.log('🔍 Room code comparison:', {
+            current: currentRoomCode,
+            new: newRoomCode,
+            changed: currentRoomCode !== newRoomCode
+          });
+          
+          // Only reset if the room code actually changed
+          if (currentRoomCode !== newRoomCode) {
+            console.log('🔄 Room code changed, updating token and resetting for new question');
+            tokenManager.setStudentToken(latestToken);
+            
+            toast.success("New question received - preparing...");
+            resetForNewQuestion();
+            return;
+          } else {
+            console.log('🔄 Room code unchanged, updating token without reset');
+            tokenManager.setStudentToken(latestToken);
+            return;
+          }
         }
         
         // Handle exam started state
@@ -404,14 +514,17 @@ export default function AudioRecorder() {
     }
   }, [connectForReconnect, disconnectWebSocket, onWebSocketEvent, offWebSocketEvent, reconnect]);
 
-  // Update display time when remaining time changes
+  // Update display time when remaining time changes (only if recording hasn't finished)
   useEffect(() => {
-    if (remainingTime > 0) {
-      setDisplayTime(formatTime(remainingTime * 1000)); // Convert to milliseconds
-    } else if (remainingTime <= 0) {
-      setDisplayTime("xx:xx");
+    if (!finishedRecording) {
+      if (remainingTime > 0) {
+        setDisplayTime(formatTime(remainingTime * 1000)); // Convert to milliseconds
+      } else if (remainingTime <= 0) {
+        setDisplayTime("xx:xx");
+      }
     }
-  }, [remainingTime]);
+    // If recording has finished, keep timer at "xx:xx"
+  }, [remainingTime, finishedRecording]);
 
   // Automatic stage transitions (only for non-user-initiated stages)
   useEffect(() => {
@@ -445,6 +558,8 @@ export default function AudioRecorder() {
       makeResponse();
     }
   }, [currentStage]);
+  
+
 
   // Start thinking timer when thinking stage begins
   useEffect(() => {
@@ -647,63 +762,50 @@ export default function AudioRecorder() {
 
   // Monitor fullscreen state and prevent suspicious activities
   useEffect(() => {
-    const makePostRequestWithRetry = (endpoint, messageText) => {
-      const sendRequest = () => {
-        // Get token from localStorage
-        const token = tokenManager.getStudentToken();
-        if (!token) {
-          console.error("No token available for cheating detection");
-          return;
-        }
+    const reportCheatingViaWebSocket = (messageText) => {
+      if (websocketService && websocketService.isConnected) {
+        console.log("🚨 Reporting cheating via WebSocket:", messageText);
+        websocketService.reportCheating(messageText);
         
-        fetch(
-          `https://www.server.speakeval.org/${endpoint}?token=${token}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              message: messageText,
-              timestamp: Date.now(),
-            }),
-          }
-        )
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            console.log("Request sent successfully:", messageText);
+        // Set flags to prevent multiple reports
             if (messageText === "Fullscreen exit detected") {
               setFullscreenViolationReported(true);
             } else if (messageText === "Tab switch detected") {
               setTabSwitchReported(true);
             }
-            return response;
-          })
-          .catch((error) => {
-            console.error(
-              `Error notifying server about ${messageText}:`,
-              error
-            );
-            setTimeout(sendRequest, 3000);
-          });
-      };
-      sendRequest();
+      } else {
+        console.error("WebSocket not connected, cannot report cheating");
+      }
     };
 
     const onFullscreenChange = () => {
+      console.log("🖥️ Fullscreen change detected:", {
+        fullscreenElement: !!document.fullscreenElement,
+        isRecording,
+        isFullscreen,
+        finishedRecording,
+        fullscreenViolationReported,
+        currentStage,
+        examStarted
+      });
+      
+      // If they exit fullscreen during setup, uncheck the fullscreen setup
+      if (!document.fullscreenElement && currentStage === 'setup' && stageData.setup.fullscreenEnabled) {
+        console.log("🔄 Fullscreen exited during setup - unchecking fullscreen");
+        updateSetup({ fullscreenEnabled: false });
+        return;
+      }
+      
+      // If they exit fullscreen during exam (after Continue to Question), report cheating
       if (
         !document.fullscreenElement &&
+        examStarted &&
         !finishedRecording &&
-        isFullscreen &&
         !fullscreenViolationReported
       ) {
+        console.log("🚨 Fullscreen exit detected during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
-        makePostRequestWithRetry(
-          "cheating_detected",
-          "Fullscreen exit detected"
-        );
+        reportCheatingViaWebSocket("Fullscreen exit detected");
         alert(
           "Exiting fullscreen is not allowed. This will be reported to your teacher."
         );
@@ -711,14 +813,24 @@ export default function AudioRecorder() {
     };
 
     const onVisibilityChange = () => {
+      console.log("👁️ Visibility change detected:", {
+        hidden: document.hidden,
+        isRecording,
+        finishedRecording,
+        tabSwitchReported,
+        currentStage,
+        examStarted
+      });
+      
       if (
         document.hidden &&
+        examStarted &&
         !finishedRecording &&
-        isFullscreen &&
         !tabSwitchReported
       ) {
+        console.log("🚨 Tab switch detected during exam!");
         setTabSwitchReported(true); // Set flag to prevent multiple alerts
-        makePostRequestWithRetry("cheating_detected", "Tab switch detected");
+        reportCheatingViaWebSocket("Tab switch detected");
         alert(
           "You switched tabs or went out of the window. This will be reported to your teacher."
         );
@@ -726,14 +838,23 @@ export default function AudioRecorder() {
     };
 
     const preventKeyShortcuts = (e) => {
+      // Always prevent these shortcuts (block F12, escape, etc.)
       if (
         (e.ctrlKey && e.shiftKey && e.key === "I") || // Prevent DevTools (Ctrl+Shift+I)
         (e.ctrlKey && e.shiftKey && e.key === "J") || // Prevent DevTools (Ctrl+Shift+J)
+        (e.metaKey && e.altKey && e.key === "I") || // Prevent DevTools (Cmd+Option+I) - Mac
+        (e.metaKey && e.altKey && e.key === "J") || // Prevent DevTools (Cmd+Option+J) - Mac
         (e.ctrlKey && e.key === "U") || // Prevent View Source (Ctrl+U)
+        (e.metaKey && e.key === "U") || // Prevent View Source (Cmd+U) - Mac
         e.key === "F12" || // Prevent F12
-        (e.key === "Escape" && isFullscreen) // Prevent Escape in fullscreen
+        e.key === "Escape" || // Prevent Escape
+        e.code === "Escape" // Also check the key code
       ) {
+        console.log("🚫 Blocked key:", e.key);
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
       }
     };
 
@@ -743,18 +864,14 @@ export default function AudioRecorder() {
 
     const checkFocusAndFullscreen = () => {
       if (
-        (!document.fullscreenElement ||
-          document.hidden ||
-          document.hasFocus() === false) &&
+        examStarted &&
         !finishedRecording &&
-        isFullscreen &&
-        !fullscreenViolationReported
+        !fullscreenViolationReported &&
+        (!document.fullscreenElement || document.hidden || document.hasFocus() === false)
       ) {
+        console.log("🚨 Focus or fullscreen lost during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
-        makePostRequestWithRetry(
-          "cheating_detected",
-          "Focus or fullscreen lost"
-        );
+        reportCheatingViaWebSocket("Focus or fullscreen lost");
         alert(
           "You lost focus or exited fullscreen. This will be reported to your teacher."
         );
@@ -763,24 +880,40 @@ export default function AudioRecorder() {
 
     const focusCheckInterval = setInterval(checkFocusAndFullscreen, 1000);
 
-    document.addEventListener("fullscreenchange", onFullscreenChange);
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    document.addEventListener("keydown", preventKeyShortcuts);
-    document.addEventListener("contextmenu", preventContextMenu);
+    console.log("🔒 Setting up anti-cheat event listeners");
+    document.addEventListener("fullscreenchange", onFullscreenChange, true);
+    document.addEventListener("visibilitychange", onVisibilityChange, true);
+    document.addEventListener("keydown", preventKeyShortcuts, true);
+    document.addEventListener("contextmenu", preventContextMenu, true);
 
     return () => {
+      console.log("🔒 Cleaning up anti-cheat event listeners");
       clearInterval(focusCheckInterval);
-      document.removeEventListener("fullscreenchange", onFullscreenChange);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      document.removeEventListener("keydown", preventKeyShortcuts);
-      document.removeEventListener("contextmenu", preventContextMenu);
+      document.removeEventListener("fullscreenchange", onFullscreenChange, true);
+      document.removeEventListener("visibilitychange", onVisibilityChange, true);
+      document.removeEventListener("keydown", preventKeyShortcuts, true);
+      document.removeEventListener("contextmenu", preventContextMenu, true);
     };
   }, [
     finishedRecording,
     fullscreenViolationReported,
     tabSwitchReported,
     isFullscreen,
+    currentStage, // Monitor during exam stages
   ]);
+
+  // Debug useEffect to monitor anti-cheat state
+  useEffect(() => {
+    console.log("🔒 Anti-cheat state changed:", {
+      currentStage,
+      isRecording,
+      isFullscreen,
+      examStarted,
+      finishedRecording,
+      fullscreenViolationReported,
+      tabSwitchReported
+    });
+  }, [currentStage, isRecording, isFullscreen, examStarted, finishedRecording, fullscreenViolationReported, tabSwitchReported]);
 
   const pulse = keyframes`
     0% {
@@ -871,12 +1004,16 @@ export default function AudioRecorder() {
 
       if (receivedData.timeLimit) {
         setTimeLimit(receivedData.timeLimit);
-        // Set initial display time to time limit only if it's not -1 (no limit)
-        if (receivedData.timeLimit > 0) {
-          setDisplayTime(formatTime(receivedData.timeLimit * 1000)); // Convert to milliseconds
-        } else {
-          setDisplayTime("xx:xx"); // No time limit
+        // Only set display time if recording hasn't finished yet
+        if (!finishedRecording) {
+          // Set initial display time to time limit only if it's not -1 (no limit)
+          if (receivedData.timeLimit > 0) {
+            setDisplayTime(formatTime(receivedData.timeLimit * 1000)); // Convert to milliseconds
+          } else {
+            setDisplayTime("xx:xx"); // No time limit
+          }
         }
+        // If recording has finished, keep timer at "xx:xx"
       }
 
       if (audioUrls && audioUrls.length > 0) {
@@ -931,21 +1068,48 @@ export default function AudioRecorder() {
 
   const startRecording = async () => {
     const currentTime = Date.now();
+    console.log("🎬 Starting recording - enabling anti-cheat system");
     setIsRecording(true);
     setAudioURL(null);
 
+    // Ensure fullscreen is active for recording
+    if (!document.fullscreenElement) {
+      console.log("🖥️ Entering fullscreen for recording");
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+      }
+    }
+    
+    // Enable fullscreen monitoring
+    setIsFullscreen(true);
+    console.log("🔒 Anti-cheat system enabled for recording");
+
     try {
+      // Ensure permissions are granted before starting recording
+      console.log("🎤 Checking microphone permissions before recording...");
+      const permissionResult = await requestPermissions();
+      if (!permissionResult.permissionGranted) {
+        console.error("❌ Microphone permission not granted");
+        setError("Microphone permission is required to start recording. Please grant permission and try again.");
+        setIsError(true);
+        setIsRecording(false);
+        return;
+      }
+      
+      console.log("✅ Microphone permissions confirmed, starting recording...");
+      
       // Start both recordings
       startAudioRecording();
 
-              // Notify server via WebSocket
-        wsStartRecording();
-        updateStudentStatus('recording');
-        updateRoomStatus({ 
-          status: 'recording', 
-          timestamp: currentTime,
-          participant: tokenManager.getStudentInfo()?.participant
-        });
+      // Notify server via WebSocket
+      wsStartRecording();
+      updateStudentStatus('recording');
+      updateRoomStatus({ 
+        status: 'recording', 
+        timestamp: currentTime,
+        participant: tokenManager.getStudentInfo()?.participant
+      });
 
 
 
@@ -957,9 +1121,23 @@ export default function AudioRecorder() {
       // Only start countdown if there's a time limit
       if (timeLimit > 0) {
         setRemainingTime(timeLimit); // Start with time limit
+        // Only set display time if recording hasn't finished
+        if (!finishedRecording) {
+          setDisplayTime(formatTime(timeLimit * 1000)); // Set initial display time
+        }
+        
         timer.current = setInterval(() => {
           setRemainingTime(prevTime => {
             const newTime = prevTime - 1;
+            
+            // Update display time only if recording hasn't finished
+            if (!finishedRecording) {
+              if (newTime > 0) {
+                setDisplayTime(formatTime(newTime * 1000));
+              } else {
+          setDisplayTime("xx:xx");
+              }
+            }
             
             // Local time limit handling
             if (newTime <= 5 && newTime > 0) {
@@ -970,7 +1148,7 @@ export default function AudioRecorder() {
               }
             } else if (newTime <= 0) {
               // Time limit reached
-          setDisplayTime("xx:xx");
+              setDisplayTime("xx:xx");
               if (error === "Reaching time limit. Please finish your response in the next 5 seconds. ") {
                 setError(
                   "You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
@@ -1029,6 +1207,10 @@ export default function AudioRecorder() {
       uploadComplete: false,
       uploadError: null
     });
+
+    // Disable anti-cheat system after upload starts (exam is complete)
+    console.log("✅ Exam complete - disabling anti-cheat system");
+    setIsFullscreen(false);
     
     setError(
       "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
@@ -1170,8 +1352,8 @@ export default function AudioRecorder() {
         updateStudentStatus('upload_completed');
         questionCompleted(questionIndex);
       }
-          } catch (error) {
-        console.error("Error uploading audio:", error);
+    } catch (error) {
+      console.error("Error uploading audio:", error);
         
         // Handle CORS error with fallback
         if (error.message === "CORS_ERROR") {
@@ -1210,14 +1392,14 @@ export default function AudioRecorder() {
           }
         }
         
-        setError("Failed to upload audio. Please try again.");
-        setIsError(true);
+      setError("Failed to upload audio. Please try again.");
+      setIsError(true);
         updateUploadingData({
           isUploading: false,
           uploadComplete: false,
           uploadError: "Failed to upload audio. Please try again."
         });
-      }
+    }
 
     if (interval) {
       clearInterval(interval);
@@ -1275,10 +1457,11 @@ export default function AudioRecorder() {
   };
 
   const stopRecording = () => {
-    console.log("Stopping recording...");
+    console.log("⏹️ Stopping recording - triggering upload");
     setStopped(true);
     setIsRecording(false);
 
+    // Stop the media recorders - this will trigger handleAudioStop
     stopAudioRecording();
     stopScreenRecording();
 
@@ -1292,6 +1475,10 @@ export default function AudioRecorder() {
     setDisplayTime("xx:xx");
     setRemainingTime(-1);
 
+    // Disable fullscreen monitoring when recording stops
+    setIsFullscreen(false);
+    console.log("🔒 Anti-cheat system disabled");
+
     // Notify server via WebSocket
     wsStopRecording();
     updateStudentStatus('stopped_recording');
@@ -1304,8 +1491,12 @@ export default function AudioRecorder() {
 
   const updateTimer = (time) => {
     timer.current = time;
+    // Only update display time if recording hasn't finished
+    if (!finishedRecording) {
     setDisplayTime(formatTime(time));
     if (time < 0) setDisplayTime("xx:xx");
+    }
+    // If recording has finished, keep timer at "xx:xx"
   };
 
   const formatTime = (time) => {
@@ -1386,8 +1577,8 @@ export default function AudioRecorder() {
           <div style={{ marginTop: "16px" }}>
             <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "16px" }}>
               {stageData.audioDownloaded ? "Downloaded Exam" : "Downloading Exam..."}
-            </h1>
-            
+        </h1>
+
             {/* Download Animation with Custom Images */}
             <div style={{ 
               display: "flex", 
@@ -1413,7 +1604,7 @@ export default function AudioRecorder() {
                     <img 
                       src="/download-load.gif" 
                       alt="Downloading exam" 
-                      style={{
+            style={{
                         width: "120px",
                         height: "120px",
                         objectFit: "contain"
@@ -1423,7 +1614,7 @@ export default function AudioRecorder() {
                     <img 
                       src="/download-done.png" 
                       alt="Download complete" 
-                      style={{
+              style={{
                         width: "120px",
                         height: "120px",
                         objectFit: "contain"
@@ -1558,31 +1749,33 @@ export default function AudioRecorder() {
                     </div>
                   </div>
                   {!stageData.setup.microphonePermission && (
-                    <button
-                      onClick={async () => {
+            <button
+              onClick={async () => {
+                        console.log('🎤 Granting microphone permission...');
                         setSetupLoading(prev => ({ ...prev, microphone: true }));
-                        const perms = await requestPermissions();
+                const perms = await requestPermissions();
                         if (perms.permissionGranted) {
+                          console.log('✅ Microphone permission granted, updating setup');
                           updateSetup({ microphonePermission: true });
                         }
                         setSetupLoading(prev => ({ ...prev, microphone: false }));
-                      }}
-                      style={{
+              }}
+              style={{
                         padding: "8px 16px",
                         fontSize: "14px",
                         fontWeight: "500",
-                        color: "white",
+                color: "white",
                         backgroundColor: "#3B82F6",
-                        border: "none",
+                border: "none",
                         borderRadius: "6px",
-                        cursor: "pointer",
+                cursor: "pointer",
                         transition: "background-color 0.2s ease"
-                      }}
+              }}
                       onMouseOver={(e) => (e.target.style.backgroundColor = "#2563EB")}
                       onMouseOut={(e) => (e.target.style.backgroundColor = "#3B82F6")}
-                    >
+            >
                       Grant Access
-                    </button>
+            </button>
                   )}
                 </div>
 
@@ -1624,7 +1817,7 @@ export default function AudioRecorder() {
                       <p style={{ 
                         fontSize: "16px", 
                         fontWeight: "500", 
-                        color: "#374151",
+                color: "#374151",
                         margin: "0 0 2px 0"
                       }}>
                         Fullscreen Mode
@@ -1639,14 +1832,18 @@ export default function AudioRecorder() {
                     </div>
                   </div>
                   {!stageData.setup.fullscreenEnabled && (
-                    <button
-                      onClick={async () => {
+              <button
+                onClick={async () => {
+                        console.log("🖥️ Entering fullscreen...");
                         setSetupLoading(prev => ({ ...prev, fullscreen: true }));
-                        enterFullscreen();
+                        console.log("🖥️ Entering fullscreen - starting monitoring");
+                        setIsFullscreen(true); // Enable fullscreen monitoring
+                  enterFullscreen();
+                        console.log("✅ Fullscreen enabled, updating setup");
                         updateSetup({ fullscreenEnabled: true });
                         setSetupLoading(prev => ({ ...prev, fullscreen: false }));
-                      }}
-                      style={{
+                }}
+                style={{
                         padding: "8px 16px",
                         fontSize: "14px",
                         fontWeight: "500",
@@ -1677,16 +1874,21 @@ export default function AudioRecorder() {
               }}>
                 {canAdvanceToAudioPlay() && (
                   <button
-                    onClick={() => advanceStage('audio_play')}
+                    onClick={() => {
+                      console.log("🎬 Starting anti-cheat system for question");
+                      setIsFullscreen(true); // Enable fullscreen monitoring
+                      setExamStarted(true); // Mark exam as started
+                      advanceStage('audio_play');
+                    }}
                     style={{
                       padding: "12px 32px",
-                      fontSize: "16px",
+                  fontSize: "16px",
                       fontWeight: "600",
-                      color: "white",
+                  color: "white",
                       backgroundColor: "#10B981",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: "pointer",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
                       transition: "background-color 0.3s ease",
                       boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)"
                     }}
@@ -1694,13 +1896,13 @@ export default function AudioRecorder() {
                     onMouseOut={(e) => (e.target.style.backgroundColor = "#10B981")}
                   >
                     Continue to Question
-                  </button>
-                )}
+              </button>
+            )}
               </div>
             </div>
           </div>
         )}
-        
+
         {/* Audio Play Stage */}
         {currentStage === 'audio_play' && (
           <div style={{ marginTop: "20px" }}>
@@ -1727,40 +1929,40 @@ export default function AudioRecorder() {
                 gap: "16px",
                 marginBottom: "20px"
               }}>
-                <PulseButton
+          <PulseButton
                   onClick={() => {
                     if (audioRef.current && audioRef.current.paused) {
                       audioRef.current.play();
                       updateAudioPlayData({ isPlaying: true });
                     }
                   }}
-                  style={{
-                    width: "80px",
-                    height: "80px",
-                    borderRadius: "50%",
-                    backgroundColor: "#28a745",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "background-color 0.3s",
-                    animation: "none",
-                  }}
-                >
-                  <Play size={24} color="white" fill="white" />
-                </PulseButton>
-                
+            style={{
+              width: "80px",
+              height: "80px",
+              borderRadius: "50%",
+              backgroundColor: "#28a745",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "background-color 0.3s",
+              animation: "none",
+            }}
+          >
+            <Play size={24} color="white" fill="white" />
+          </PulseButton>
+
                 {stageData.audioPlay.hasPlayed && (
                   <button
-                    onClick={() => {
+            onClick={() => {
                       if (audioRef.current) {
                         audioRef.current.currentTime = 0;
                         audioRef.current.play();
                         updateAudioPlayData({ isPlaying: true });
                       }
                     }}
-                    style={{
+            style={{
                       padding: "8px 16px",
                       fontSize: "14px",
                       fontWeight: "500",
@@ -1786,16 +1988,16 @@ export default function AudioRecorder() {
               </div>
               
               {/* Hidden Audio Element */}
-              <audio
+            <audio
                 ref={audioRef}
                 style={{ display: "none" }}
-                onPlay={() => {
+              onPlay={() => {
                   updateAudioPlayData({ isPlaying: true });
                 }}
                 onPause={() => {
                   updateAudioPlayData({ isPlaying: false });
-                }}
-                onEnded={() => {
+              }}
+              onEnded={() => {
                   updateAudioPlayData({ 
                     isPlaying: false, 
                     hasPlayed: true 
@@ -1808,9 +2010,9 @@ export default function AudioRecorder() {
                   });
                 }}
                 src={audioBlobURL}
-              >
-                Your browser does not support the audio element.
-              </audio>
+            >
+              Your browser does not support the audio element.
+            </audio>
               
               {/* Status Message */}
               <div style={{ textAlign: "center" }}>
@@ -1856,7 +2058,7 @@ export default function AudioRecorder() {
             }}>
               <div style={{
                 fontSize: "48px",
-                fontWeight: "bold",
+              fontWeight: "bold",
                 color: "#EF4444",
                 marginBottom: "16px"
               }}>
@@ -1932,7 +2134,7 @@ export default function AudioRecorder() {
               {!stageData.recording.isRecording && !stageData.recording.hasRecorded && (
                 <div style={{ textAlign: "center" }}>
                   <p style={{ 
-                    fontSize: "16px", 
+              fontSize: "16px",
                     color: "#6B7280",
                     margin: "8px 0"
                   }}>
@@ -1995,7 +2197,7 @@ export default function AudioRecorder() {
               <div style={{
                 backgroundColor: "#F0F9FF",
                 border: "1px solid #0EA5E9",
-                borderRadius: "12px",
+                    borderRadius: "12px",
                 padding: "20px",
                 marginBottom: "24px",
                 maxWidth: "500px",
@@ -2052,8 +2254,8 @@ export default function AudioRecorder() {
                     This is an AI-generated transcription and may not be 100% accurate
                   </span>
                 </div>
-              </div>
-            )}
+          </div>
+        )}
             
             {/* Upload Animation with Custom Images */}
             <div style={{ 
@@ -2080,7 +2282,7 @@ export default function AudioRecorder() {
                     <img 
                       src="/upload-done.png" 
                       alt="Upload complete" 
-                      style={{
+            style={{
                         width: "120px",
                         height: "120px",
                         objectFit: "contain"
@@ -2090,7 +2292,7 @@ export default function AudioRecorder() {
                     <img 
                       src="/upload-load.gif" 
                       alt="Uploading response" 
-                      style={{
+              style={{
                         width: "120px",
                         height: "120px",
                         objectFit: "contain"

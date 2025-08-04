@@ -762,13 +762,13 @@ const Config = ({
           url = question.audioUrl;
         } else if (question.audio) {
           // Fallback to Base64 processing
-          const blob = await fetch(
-            `data:audio/wav;base64,${question.audio}`
-          ).then((res) => res.blob());
+        const blob = await fetch(
+          `data:audio/wav;base64,${question.audio}`
+        ).then((res) => res.blob());
           url = URL.createObjectURL(blob);
         }
         if (url) {
-          setQuestions((prevQuestions) => [...prevQuestions, url]);
+        setQuestions((prevQuestions) => [...prevQuestions, url]);
         }
       });
     }

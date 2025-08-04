@@ -79,13 +79,29 @@ function Room() {
       const { newToken, newRoomCode, participant } = payload;
       
       if (newToken && newRoomCode && participant) {
-        // Update token in localStorage
-        tokenManager.setStudentToken(newToken);
+        // Get current room code from token
+        const currentInfo = tokenManager.getStudentInfo();
+        const currentRoomCode = currentInfo?.roomCode;
         
-        toast.success("Room restarted with new question - reloading page!");
-        // Simple page reload for fresh start
-        console.log("Reloading page...");
-        window.location.reload();
+        console.log('🔄 Room restart comparison:', {
+          currentRoomCode,
+          newRoomCode,
+          roomCodeChanged: currentRoomCode !== newRoomCode
+        });
+        
+        // Only reload if room code actually changed
+        if (currentRoomCode !== newRoomCode) {
+          // Update token in localStorage
+          tokenManager.setStudentToken(newToken);
+          
+          toast.success("Room restarted with new question - reloading page!");
+          console.log("Room code changed, reloading page...");
+          window.location.reload();
+        } else {
+          console.log("Room code unchanged, skipping reload");
+          // Still update the token but don't reload
+          tokenManager.setStudentToken(newToken);
+        }
       } else {
         console.error("Missing token data from server");
         toast.error("Failed to handle room restart");
@@ -127,14 +143,37 @@ function Room() {
         roomRestarted
       } = payload;
       
-      // Handle room restart with latest token
+      // Handle room restart with latest token - only reload if room code changed
       if (roomRestarted && latestToken) {
-        console.log('🔄 Room was restarted, updating with latest token');
-        tokenManager.setStudentToken(latestToken);
+        console.log('🔄 Room was restarted, checking if room code changed');
         
-        toast.success("Room restarted with new question - reloading page!");
-        window.location.reload();
-        return;
+        // Get current room info from token
+        const currentTokenInfo = tokenManager.getStudentInfo();
+        const currentRoomCode = currentTokenInfo?.roomCode;
+        
+        // Decode the new token to get the new room code
+        const newTokenInfo = tokenManager.decodeStudentToken(latestToken);
+        const newRoomCode = newTokenInfo?.roomCode;
+        
+        console.log('🔍 Room code comparison:', {
+          current: currentRoomCode,
+          new: newRoomCode,
+          changed: currentRoomCode !== newRoomCode
+        });
+        
+        // Only reload if the room code actually changed
+        if (currentRoomCode !== newRoomCode) {
+          console.log('🔄 Room code changed, updating token and reloading');
+          tokenManager.setStudentToken(latestToken);
+          
+          toast.success("Room restarted with new question - reloading page!");
+          window.location.reload();
+          return;
+        } else {
+          console.log('🔄 Room code unchanged, updating token without reload');
+          tokenManager.setStudentToken(latestToken);
+          return;
+        }
       }
       
       // Handle exam started state
@@ -353,3 +392,4 @@ function Room() {
 }
 
 export default Room;
+
