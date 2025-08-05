@@ -32,13 +32,15 @@ function Room() {
 
   useEffect(() => {
     // Check if student is authenticated and session is valid
-    if (!tokenManager.isAuthenticated()) {
+    if (!tokenManager.isAuthenticated() || !tokenManager.getStudentInfo()) {
       toast.error("Please join the room first");
       return navigate("/join-room");
     }
 
     const token = tokenManager.getStudentToken();
     const info = tokenManager.getStudentInfo();
+    setStudentInfo(info);
+    console.log("Info: ", info);
     
     if (!info || info.roomCode != roomCode) {
       toast.error("Invalid session for this room");
@@ -285,7 +287,7 @@ function Room() {
         Welcome to Room {roomCode.toString().slice(0, -3)}
       </h1>
       <p className="text-2xl mb-8">
-        Hello, {name}! Please wait until your instructor starts this oral
+        Hello, {studentInfo ? studentInfo.participant : "Student"}! Please wait until your instructor starts this oral
         examination. Watch this informational video while you wait. Please note
         that the layout has been slightly changed from the time of recording,
         and a countdown timer has been added at the top. Remember to use the
