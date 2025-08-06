@@ -1062,9 +1062,11 @@ export default function AudioRecorder() {
         console.log("🚨 Fullscreen exit detected during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
         reportCheatingViaWebSocket("Fullscreen exit detected");
-        toast.error(
-          "Exiting fullscreen is not allowed. This will be reported to your teacher."
-        );
+        cuteToast({
+          type: "error",
+          title: "Fullscreen exit detected",
+          description: "Exiting fullscreen is not allowed. This will be reported to your teacher."
+        });
       }
     };
 
@@ -1087,9 +1089,11 @@ export default function AudioRecorder() {
         console.log("🚨 Tab switch detected during exam!");
         setTabSwitchReported(true); // Set flag to prevent multiple alerts
         reportCheatingViaWebSocket("Tab switch detected");
-        toast.error(
-          "You switched tabs or went out of the window. This will be reported to your teacher."
-        );
+        cuteToast({
+          type: "error",
+          title: "Tab switch detected",
+          description: "You switched tabs or went out of the window. This will be reported to your teacher."
+        });
       }
     };
 
@@ -1128,9 +1132,11 @@ export default function AudioRecorder() {
         console.log("🚨 Focus or fullscreen lost during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
         reportCheatingViaWebSocket("Focus or fullscreen lost");
-        toast.error(
-          "You lost focus or exited fullscreen. This will be reported to your teacher."
-        );
+        cuteToast({
+          type: "error",
+          title: "Focus or fullscreen lost",
+          description: "You lost focus or exited fullscreen. This will be reported to your teacher."
+        });
       }
     };
 
