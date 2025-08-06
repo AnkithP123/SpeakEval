@@ -448,11 +448,13 @@ const Config = ({
   const handleSelectiveAutofillClick = async () => {
     try {
       setShowSelectiveAutofillModal(true);
+      setIsLoadingConfigs(true);
       const configss = await fetch(
         `https://www.server.speakeval.org/getconfigs?pin=${userId}`
       );
       const configsList = await configss.json();
       setSelectedConfig(configsList);
+      setIsLoadingConfigs(false);
     } catch (error) {
       console.error("Failed to fetch configs:", error);
       toast.error("Failed to fetch question sets");
@@ -762,13 +764,13 @@ const Config = ({
           url = question.audioUrl;
         } else if (question.audio) {
           // Fallback to Base64 processing
-        const blob = await fetch(
-          `data:audio/wav;base64,${question.audio}`
-        ).then((res) => res.blob());
+          const blob = await fetch(
+            `data:audio/wav;base64,${question.audio}`
+          ).then((res) => res.blob());
           url = URL.createObjectURL(blob);
         }
         if (url) {
-        setQuestions((prevQuestions) => [...prevQuestions, url]);
+          setQuestions((prevQuestions) => [...prevQuestions, url]);
         }
       });
     }
@@ -897,17 +899,17 @@ const Config = ({
               method: "GET",
             }
           );
-          
+
           if (!uploadUrlResponse.ok) {
             throw new Error("Failed to get upload URL");
           }
-          
+
           const { uploadUrl } = await uploadUrlResponse.json();
-          
+
           // Upload directly to S3 using presigned URL
           const audioBuffer = Buffer.from(base64Audio, "base64");
           const audioBlob = new Blob([audioBuffer], { type: "audio/wav" });
-          
+
           const uploadResponse = await fetch(uploadUrl, {
             method: "PUT",
             body: audioBlob,
@@ -915,11 +917,11 @@ const Config = ({
               "Content-Type": "audio/wav",
             },
           });
-          
+
           if (!uploadResponse.ok) {
             throw new Error("Failed to upload to S3");
           }
-          
+
           // Notify server that upload is complete
           const questionResponse = await fetch(
             `https://www.server.speakeval.org/uploadquestion?pin=${userId}&id=${id}&index=${i}&language=${language}`,
@@ -1490,6 +1492,10 @@ const Config = ({
                               </div>
                             </div>
                           ))
+                        ) : isLoadingConfigs ? (
+                          <div className="flex justify-center items-center py-4">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+                          </div>
                         ) : (
                           <div className="text-center py-8">
                             <div className="text-gray-400 text-lg">
