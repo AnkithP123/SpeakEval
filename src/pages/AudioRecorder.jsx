@@ -47,6 +47,7 @@ export default function AudioRecorder() {
     useState(false);
   const [tabSwitchReported, setTabSwitchReported] = useState(false);
   const [screenStream, setScreenStream] = useState(null);
+  const [microphoneStream, setMicrophoneStream] = useState(null);
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
   let questionIndex;
   let played = false;
@@ -663,27 +664,67 @@ export default function AudioRecorder() {
 
   // Automatic stage transitions (only for non-user-initiated stages)
   useEffect(() => {
-    // Auto-advance to thinking when audio play is complete
-    if (currentStage === 'audio_play' && canAdvanceToThinking()) {
-      advanceStage('thinking');
-    }
-    
-    // Auto-advance to recording when thinking is complete (or skip if no thinking time)
-    if (currentStage === 'thinking' && canAdvanceToRecording()) {
-      advanceStage('recording');
-    }
-    
-    // Auto-advance to uploading when recording is complete
-    if (currentStage === 'recording' && canAdvanceToUploading()) {
-      advanceStage('uploading');
-    }
-    
-    // Auto-advance to uploading when recording is complete
-    if (currentStage === 'recording' && canAdvanceToUploading()) {
-      advanceStage('uploading');
-    }
-    
+    const handleStageTransitions = async () => {
+      // Auto-advance to thinking when audio play is complete (only if there's thinking time)
+      if (currentStage === 'audio_play' && canAdvanceToThinking() && thinkingTime > 0) {
+        advanceStage('thinking');
+      }
+      
+      // Auto-advance directly to recording when audio play is complete and no thinking time
+      if (currentStage === 'audio_play' && canAdvanceToRecording() && thinkingTime <= 0) {
+        try {
+          // Start recording BEFORE switching to recording stage for minimal delay
+          console.log('🎙️ Starting recording before stage switch (no thinking time)...');
+          await startRecording();
+          updateRecordingData({ 
+            isRecording: true,
+            hasRecorded: false,
+            recordingError: null 
+          });
+          
+          // Now advance to recording stage
+          advanceStage('recording');
+        } catch (error) {
+          console.error('❌ Failed to start recording:', error);
+          updateRecordingData({ 
+            isRecording: false,
+            hasRecorded: false,
+            recordingError: error.message 
+          });
+        }
+      }
+      
+      // Auto-advance to recording when thinking is complete
+      if (currentStage === 'thinking' && canAdvanceToRecording()) {
+        try {
+          // Start recording BEFORE switching to recording stage for minimal delay
+          console.log('🎙️ Starting recording before stage switch (after thinking)...');
+          await startRecording();
+          updateRecordingData({ 
+            isRecording: true,
+            hasRecorded: false,
+            recordingError: null 
+          });
+          
+          // Now advance to recording stage
+          advanceStage('recording');
+        } catch (error) {
+          console.error('❌ Failed to start recording:', error);
+          updateRecordingData({ 
+            isRecording: false,
+            hasRecorded: false,
+            recordingError: error.message 
+          });
+        }
+      }
+      
+      // Auto-advance to uploading when recording is complete
+      if (currentStage === 'recording' && canAdvanceToUploading()) {
+        advanceStage('uploading');
+      }
+    };
 
+    handleStageTransitions();
   }, [currentStage, stageData]);
 
   // Start audio download when component mounts
@@ -783,25 +824,54 @@ export default function AudioRecorder() {
     }
   }, [currentStage, thinkingTime]);
 
-  // Auto-start recording when recording stage begins
+  // Fallback: Auto-start recording if somehow we're in recording stage without recording started
   useEffect(() => {
-    if (currentStage === 'recording' && !stageData.recording.isRecording && !stageData.recording.hasRecorded) {
-      console.log('🎙️ Auto-starting recording...');
-      
-      // Start recording immediately
-      startRecording();
-      updateRecordingData({ 
-        isRecording: true,
-        hasRecorded: false,
-        recordingError: null 
-      });
-    }
+    const handleFallbackRecording = async () => {
+      if (currentStage === 'recording' && !stageData.recording.isRecording && !stageData.recording.hasRecorded) {
+        try {
+          console.log('🎙️ Fallback: Starting recording in recording stage...');
+          
+          // Start recording as fallback
+          await startRecording();
+          updateRecordingData({ 
+            isRecording: true,
+            hasRecorded: false,
+            recordingError: null 
+          });
+        } catch (error) {
+          console.error('❌ Fallback recording failed:', error);
+          updateRecordingData({ 
+            isRecording: false,
+            hasRecorded: false,
+            recordingError: error.message 
+          });
+        }
+      }
+    };
+
+    handleFallbackRecording();
   }, [currentStage]);
 
 
 
+  const isStreamValid = (stream) => {
+    if (!stream) return false;
+    const tracks = stream.getAudioTracks();
+    return tracks.length > 0 && tracks[0].readyState === 'live';
+  };
+
   const requestPermissions = async () => {
     try {
+      // Check if we already have a valid microphone stream
+      if (microphoneStream && isStreamValid(microphoneStream)) {
+        console.log('🎤 Using existing microphone stream');
+        setHasPermissions(true);
+        setError(null);
+        setIsError(false);
+        return { permissionGranted: true, stream: microphoneStream };
+      }
+
+      console.log('🎤 Requesting new microphone stream');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: false,
@@ -814,6 +884,9 @@ export default function AudioRecorder() {
       if (videoTracks.length > 0) {
         videoTracks[0].enabled = true;
       }
+      
+      // Store the microphone stream for later reuse
+      setMicrophoneStream(stream);
       setHasPermissions(true);
       setError(null); // Clear error when permissions are granted
       setIsError(false);
@@ -902,6 +975,20 @@ export default function AudioRecorder() {
     }
   };
 
+  // Cleanup streams on component unmount
+  useEffect(() => {
+    return () => {
+      // Clean up microphone stream
+      if (microphoneStream) {
+        microphoneStream.getTracks().forEach(track => track.stop());
+      }
+      // Clean up screen stream
+      if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [microphoneStream, screenStream]);
+
   // Initialize setup on component mount
   useEffect(() => {
     document.documentElement.style.setProperty("--cute-alert-max-width", "40%");
@@ -975,7 +1062,7 @@ export default function AudioRecorder() {
         console.log("🚨 Fullscreen exit detected during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
         reportCheatingViaWebSocket("Fullscreen exit detected");
-        alert(
+        toast.error(
           "Exiting fullscreen is not allowed. This will be reported to your teacher."
         );
       }
@@ -1000,7 +1087,7 @@ export default function AudioRecorder() {
         console.log("🚨 Tab switch detected during exam!");
         setTabSwitchReported(true); // Set flag to prevent multiple alerts
         reportCheatingViaWebSocket("Tab switch detected");
-        alert(
+        toast.error(
           "You switched tabs or went out of the window. This will be reported to your teacher."
         );
       }
@@ -1041,7 +1128,7 @@ export default function AudioRecorder() {
         console.log("🚨 Focus or fullscreen lost during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
         reportCheatingViaWebSocket("Focus or fullscreen lost");
-        alert(
+        toast.error(
           "You lost focus or exited fullscreen. This will be reported to your teacher."
         );
       }
@@ -1263,13 +1350,59 @@ export default function AudioRecorder() {
         setError("Microphone permission is required to start recording. Please grant permission and try again.");
         setIsError(true);
         setIsRecording(false);
+        
+        // Show prominent error alert with reload instructions
+        cuteAlert({
+          type: "error",
+          title: "Microphone Permission Required",
+          description: "We couldn't access your microphone. This is required to complete the exam. Please check your browser settings to allow microphone access for this site, then reload the page to try again.",
+          primaryButtonText: "Reload Page",
+          secondaryButtonText: "Cancel"
+        }).then((event) => {
+          if (event === "primaryButtonClicked") {
+            console.log("🔄 Reloading page...");
+            window.location.reload();
+          }
+        });
+        
         return;
       }
       
       console.log("✅ Microphone permissions confirmed, starting recording...");
       
-      // Start both recordings
-      startAudioRecording();
+      // Start recording - this will use the browser's MediaRecorder API
+      // which should work with the permissions we've already granted
+      try {
+        startAudioRecording();
+      } catch (recordingError) {
+        console.error("❌ Failed to start audio recording:", recordingError);
+        // If recording fails, try to refresh permissions and try again
+        console.log("🔄 Attempting to refresh microphone permissions...");
+        setMicrophoneStream(null); // Clear the cached stream
+        const refreshResult = await requestPermissions();
+        if (refreshResult.permissionGranted) {
+          startAudioRecording();
+        } else {
+          console.error("❌ Failed to refresh microphone permissions");
+          setError("Unable to access microphone after multiple attempts.");
+          setIsError(true);
+          setIsRecording(false);
+          
+          // Show prominent error alert with reload instructions
+          cuteAlert({
+            type: "error",
+            title: "Microphone Access Failed",
+            description: "We tried multiple times but couldn't access your microphone. Please check your browser settings to ensure microphone access is allowed for this site, then reload the page to try again.",
+            primaryButtonText: "Reload Page",
+            secondaryButtonText: "Cancel",
+            primaryButtonAction: () => {
+              window.location.reload();
+            }
+          });
+          
+          return;
+        }
+      }
 
       // Notify server via WebSocket
       wsStartRecording();
@@ -1681,13 +1814,13 @@ export default function AudioRecorder() {
   const enterFullscreen = () => {
     const el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen();
-    cuteAlert({
-      type: "info",
-      title: "Fullscreen",
-      description:
-        "You are now in fullscreen mode. You may not exit or switch to any other tabs, or this will be reported to your teacher and they may choose to administer a zero.",
-      primaryButtonText: "Understood",
-    });
+    toast.warn(
+      "You are now in fullscreen mode. You may not exit or switch to any other tabs, or this will be reported to your teacher and they may choose to administer a zero.",
+      {
+        autoClose: 5000,
+        position: "top-center"
+      }
+    );
   };
 
   let countdownInterval;
