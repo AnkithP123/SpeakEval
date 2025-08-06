@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as jwtDecode from "jwt-decode";
@@ -25,6 +25,8 @@ function JoinRoomContent() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hoverButton, setHoverButton] = useState(false);
+  const [rejoinData, setRejoinData] = useState(null);
+  const [checkingRejoin, setCheckingRejoin] = useState(true);
   const navigate = useNavigate();
   
   // Real-time communication
@@ -38,6 +40,62 @@ function JoinRoomContent() {
     getCurrentRoom,
     getCurrentParticipant
   } = useRealTimeCommunication();
+
+  // Check for existing token and validate it for rejoin
+  useEffect(() => {
+    const checkForRejoin = async () => {
+      try {
+        const existingToken = tokenManager.getStudentToken();
+        
+        if (!existingToken) {
+          setCheckingRejoin(false);
+          return;
+        }
+
+        console.log('🔍 Checking for existing token for rejoin...');
+        
+        // Validate the token with the server
+        const response = await fetch(`https://server.speakeval.org/validate_token?token=${existingToken}`);
+        const data = await response.json();
+        
+        if (data.valid) {
+          console.log('✅ Valid token found for rejoin:', data);
+          setRejoinData(data);
+        } else {
+          console.log('❌ Token validation failed:', data.error);
+          // Clear invalid token
+          tokenManager.clearStudentToken();
+        }
+      } catch (error) {
+        console.error('Error checking for rejoin:', error);
+      } finally {
+        setCheckingRejoin(false);
+      }
+    };
+
+    checkForRejoin();
+  }, []);
+
+  const handleRejoin = async () => {
+    if (!rejoinData) return;
+    
+    setLoading(true);
+    
+    try {
+      console.log('🔄 Attempting to rejoin room:', rejoinData.roomCode);
+      
+      // Connect using the existing token
+      await connectForJoin(rejoinData.roomCode, rejoinData.participant);
+      
+      // Navigate directly to the room
+      navigate(`/room/${rejoinData.roomCode}`);
+      
+    } catch (error) {
+      console.error('Error rejoining room:', error);
+      toast.error('Failed to rejoin room. Please try joining again.');
+      setLoading(false);
+    }
+  };
 
   const handleJoin = async () => {
     setLoading(true);
@@ -198,6 +256,46 @@ function JoinRoomContent() {
         <h2 className="text-2xl font-bold text-white text-center mb-6">
           Join Room
         </h2>
+        
+        {/* Rejoin Section */}
+        {checkingRejoin ? (
+          <div className="text-center text-white mb-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto mb-2"></div>
+            <p>Checking for previous session...</p>
+          </div>
+        ) : rejoinData ? (
+          <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+            <h3 className="text-lg font-semibold text-green-400 mb-2">
+              🎉 Welcome back, {rejoinData.participant}!
+            </h3>
+            <p className="text-green-300 text-sm mb-3">
+              You can rejoin room {rejoinData.roomCode} where you left off.
+            </p>
+            <div className="text-xs text-green-300/70 mb-3">
+              <p>Room Status: {rejoinData.roomStarted ? 'Started' : 'Waiting'}</p>
+              {rejoinData.examStarted && (
+                <p>Exam: In Progress (Question {rejoinData.currentQuestion + 1})</p>
+              )}
+            </div>
+            <button
+              onClick={handleRejoin}
+              disabled={loading}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-500/50"
+            >
+              {loading ? "Rejoining..." : "Rejoin Room"}
+            </button>
+            <button
+              onClick={() => {
+                setRejoinData(null);
+                tokenManager.clearStudentToken();
+              }}
+              className="w-full mt-2 bg-gray-500/50 hover:bg-gray-600/50 text-white text-sm py-1 px-3 rounded transition-all duration-300"
+            >
+              Start Fresh
+            </button>
+          </div>
+        ) : null}
+        
         {step === 1 ? (
           <div className="w-full mb-4 space-y-6">
             <div>
