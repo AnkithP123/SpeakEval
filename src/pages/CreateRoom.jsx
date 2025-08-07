@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import "./CreateRoom.css";
 import { FaInfoCircle } from "react-icons/fa";
 import Card from "../components/Card";
+import Config from "./Config";
 
 function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   const [userId, setUserId] = useState(getPin());
@@ -133,7 +134,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
       Math.floor(Math.random() * 5) + 1 + time.toString().slice(-7) + "001";
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/create_room?code=${time}&pin=${userId}&config=${configId}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&shuffle=${shuffleQuestions}&google=${requireGoogleSignIn}&ending=${emailEnding}`
+        `https://www.server.speakeval.org/create_room?pin=${userId}&config=${configId}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&shuffle=${shuffleQuestions}&google=${requireGoogleSignIn}&ending=${emailEnding}`
       );
       const parsedData = await res.json();
       if (parsedData.code === 400) {
@@ -141,7 +142,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
         setIsConfigEntered(false);
         return navigate("/create-room");
       }
-      setRoomCode(time);
+      setRoomCode(parsedData.message); //server returns the room code
     } catch (err) {
       console.error("Error Creating Room", err);
       toast.error("Error Creating Room");
@@ -171,7 +172,11 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                         config.name && (
                           <div
                             key={config.name}
-                            className="px-4 py-2 rounded-full bg-black/30 text-cyan-300 cursor-pointer hover:bg-cyan-900/50 transition-colors duration-300 border border-cyan-500/30"
+                            className={`px-4 py-2 rounded-full cursor-pointer transition-colors duration-300 border ${
+                              config.name === configId
+                                ? "bg-cyan-900/50 text-cyan-300 border-cyan-500"
+                                : "bg-black/30 text-cyan-300 hover:bg-cyan-900/50 border-cyan-500/30"
+                            }`}
                             onClick={() => setConfigId(config.name)}
                           >
                             {config.name}
@@ -189,7 +194,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                   </div>
                 )}
                 <div className="flex flex-col space-y-4">
-                  <input
+                  {/* <input
                     type="text"
                     value={configId}
                     onChange={handleConfigChange}
@@ -198,7 +203,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                     onKeyUp={(e) => {
                       if (e.key === "Enter") handleConfigSubmit();
                     }}
-                  />
+                  /> */}
                   <button
                     onClick={handleConfigSubmit}
                     onMouseEnter={() => setHoverButton(true)}
@@ -401,7 +406,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                         : "bg-gradient-to-r from-cyan-600/50 to-purple-700/50"
                     }`}
                   >
-                    <span className="relative z-10">Create Room</span>
+                    <span className="relative z-1">Create Room</span>
                   </button>
                 </div>
               </div>
