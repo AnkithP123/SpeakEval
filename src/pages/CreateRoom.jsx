@@ -14,7 +14,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   const [loggedIn, setLoggedIn] = useState(userId);
   const [roomCode, setRoomCode] = useState("");
   const [shake, setShake] = useState(false);
-  const [configId, setConfigId] = useState("");
+  const [config, setConfig] = useState({});
   const [isConfigEntered, setIsConfigEntered] = useState(false);
   const [configs, setConfigs] = useState([]);
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
         );
         const parsedData = await res.json();
         setConfigs(parsedData);
-        console.log(configs);
+        console.log(parsedData);
       } catch (err) {
         console.error("Error Loading Configs", err);
         toast.error("Error Loading Configs");
@@ -64,7 +64,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   };
 
   const handleConfigChange = (e) => {
-    setConfigId(e.target.value);
+    setConfig(e.target.value);
   };
 
   const checkUserId = async (userId) => {
@@ -104,18 +104,20 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   };
 
   const handleConfigSubmit = async () => {
-    if (configId === "") {
+    if (config.name === "") {
       return toast.error(
         "Please enter a config name into the box or click one of your saved configs before creating the room!"
       );
     }
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/verifyconfig?name=${configId}`
+        `https://www.server.speakeval.org/verifyconfig?name=${config.name}`
       );
       const parsedData = await res.json();
       if (parsedData.valid) {
-        setTimeLimit(configs.find((c) => c.name === configId)?.timeLimit || 30);
+        setTimeLimit(
+          configs.find((c) => c.name === config.name)?.timeLimit || 30
+        );
         setIsConfigEntered(true);
       } else {
         toast.error(
@@ -134,7 +136,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
       Math.floor(Math.random() * 5) + 1 + time.toString().slice(-7) + "001";
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/create_room?pin=${userId}&config=${configId}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&shuffle=${shuffleQuestions}&google=${requireGoogleSignIn}&ending=${emailEnding}`
+        `https://www.server.speakeval.org/create_room?pin=${userId}&config=${config.name}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&shuffle=${shuffleQuestions}&google=${requireGoogleSignIn}&ending=${emailEnding}`
       );
       const parsedData = await res.json();
       if (parsedData.code === 400) {
@@ -168,18 +170,18 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                 ) : configs.length > 0 ? (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {configs.map(
-                      (config) =>
-                        config.name && (
+                      (configuration) =>
+                        configuration.name && (
                           <div
-                            key={config.name}
+                            key={configuration.name}
                             className={`px-4 py-2 rounded-full cursor-pointer transition-colors duration-300 border ${
-                              config.name === configId
+                              configuration.name === config.name
                                 ? "bg-cyan-900/50 text-cyan-300 border-cyan-500"
                                 : "bg-black/30 text-cyan-300 hover:bg-cyan-900/50 border-cyan-500/30"
                             }`}
-                            onClick={() => setConfigId(config.name)}
+                            onClick={() => setConfig(configuration)}
                           >
-                            {config.name}
+                            {configuration.name}
                           </div>
                         )
                     )}
@@ -196,7 +198,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                 <div className="flex flex-col space-y-4">
                   {/* <input
                     type="text"
-                    value={configId}
+                    value={config.name}
                     onChange={handleConfigChange}
                     className="w-full px-4 py-3 bg-black/30 border border-cyan-500/30 rounded-lg text-white placeholder-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                     placeholder="Enter Name of Set"
@@ -420,6 +422,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
         <RoomPanel
           roomCode={roomCode}
           userId={userId}
+          config={config}
           setRoomCodes={setRoomCode}
         />
       )}
