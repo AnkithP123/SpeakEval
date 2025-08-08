@@ -950,17 +950,18 @@ const Config = ({
             throw new Error("Failed to get upload URL");
           }
 
-          const { url, fields } = await uploadUrlResponse.json();
-          const formDatass = new FormData();
-          Object.entries(fields).forEach(([key, value]) => {
-            formDatass.append(key, value);
-          });
-          formDatass.append("file", blob);
+          const { uploadUrl } = await uploadUrlResponse.json();
 
-          // Send the POST request to S3
-          const uploadResponse = await fetch(url, {
-            method: "POST",
-            body: formDatass,
+          // Upload directly to S3 using presigned URL
+          const audioBuffer = Buffer.from(base64Audio, "base64");
+          const audioBlob = new Blob([audioBuffer], { type: "audio/wav" });
+
+          const uploadResponse = await fetch(uploadUrl, {
+            method: "PUT",
+            body: audioBlob,
+            headers: {
+              "Content-Type": "audio/wav",
+            },
           });
 
           if (!uploadResponse.ok) {
