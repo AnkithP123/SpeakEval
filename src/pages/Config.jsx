@@ -718,7 +718,7 @@ const Config = ({
     setIsConfirming(false);
   };
 
-  const handleConfigClick = (config) => {
+  const handleConfigClick = (config, autoFillSelection = true) => {
     let rubric2 = config.rubric;
     console.log("Config clicked:", config);
 
@@ -777,7 +777,9 @@ const Config = ({
 
     setShowSelectiveAutofillModal(false);
     setSelected(true);
-    //setId(config.name);
+    if (!autoFillSelection) {
+      setId(config.name);
+    }
     setIsConfigSelection(false);
   };
 
@@ -956,6 +958,7 @@ const Config = ({
             formDatass.append(key, value);
           });
           formDatass.append("file", blob);
+          formDatass.append("content-type", "audio/wav");
 
           // Send the POST request to S3
           const uploadResponse = await fetch(url, {
@@ -1038,7 +1041,7 @@ const Config = ({
                         config.name ? (
                           <button
                             key={config.name}
-                            onClick={() => handleConfigClick(config)}
+                            onClick={() => handleConfigClick(config, false)}
                             onMouseEnter={() => setHoverIndex(index)}
                             onMouseLeave={() => setHoverIndex(null)}
                             className={`relative overflow-hidden px-4 py-2 rounded-full transition-all duration-300 ${
