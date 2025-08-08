@@ -718,7 +718,7 @@ const Config = ({
     setIsConfirming(false);
   };
 
-  const handleConfigClick = (config) => {
+  const handleConfigClick = (config, autoFillCorrection = true) => {
     let rubric2 = config.rubric;
     console.log("Config clicked:", config);
 
@@ -777,7 +777,9 @@ const Config = ({
 
     setShowSelectiveAutofillModal(false);
     setSelected(true);
-    //setId(config.name);
+    if (!autoFillCorrection) {
+      setId(config.name);
+    }
     setIsConfigSelection(false);
   };
 
@@ -1039,7 +1041,7 @@ const Config = ({
                         config.name ? (
                           <button
                             key={config.name}
-                            onClick={() => handleConfigClick(config)}
+                            onClick={() => handleConfigClick(config, false)}
                             onMouseEnter={() => setHoverIndex(index)}
                             onMouseLeave={() => setHoverIndex(null)}
                             className={`relative overflow-hidden px-4 py-2 rounded-full transition-all duration-300 ${
