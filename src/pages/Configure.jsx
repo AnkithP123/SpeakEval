@@ -644,6 +644,39 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
     setPopupVisible(false); // Hide the popup
   };
 
+  // Helper function for client-side file validation. Place this right above your component.
+  const validateAudioBlob = (blob, questionIndex, maxSizeBytes) => {
+    const MAX_SIZE_MB = maxSizeBytes / (1024 * 1024);
+    const allowedTypes = [
+      "audio/webm",
+      "audio/wav",
+      "audio/mp4",
+      "audio/x-m4a",
+    ];
+
+    // 1. Check MIME Type
+    if (!allowedTypes.includes(blob.type)) {
+      toast.error(
+        `Question ${
+          questionIndex + 1
+        }: Invalid file type. Only audio files are allowed.`
+      );
+      return false;
+    }
+
+    // 2. Check File Size
+    if (blob.size > maxSizeBytes) {
+      toast.error(
+        `Question ${
+          questionIndex + 1
+        }: File is too large. Maximum size is ${MAX_SIZE_MB}MB.`
+      );
+      return false;
+    }
+
+    return true;
+  };
+
   // Create config first, then upload questions one by one
   const handleRegisterConfig = async () => {
     if (!id) {
@@ -674,6 +707,19 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
 
       const language =
         selectedLanguage === "Other" ? otherLanguage : selectedLanguage;
+
+      const maxFileSizeBytes = 15 * 1024 * 1024; // 15MB limit
+      const allFilesAreValid = await Promise.all(
+        questions.map(async (questionUrl, i) => {
+          const blob = await fetch(questionUrl).then((res) => res.blob());
+          return validateAudioBlob(blob, i, maxFileSizeBytes);
+        })
+      );
+
+      if (allFilesAreValid.includes(false)) {
+        setIsUploading(false);
+        return; // Stop execution if any file is invalid
+      }
 
       // Create config first
       const configResponse = await fetch(
@@ -716,17 +762,17 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
             method: "GET",
           }
         );
-        
+
         if (!uploadUrlResponse.ok) {
           throw new Error("Failed to get upload URL");
         }
-        
+
         const { uploadUrl } = await uploadUrlResponse.json();
-        
+
         // Upload directly to S3 using presigned URL
         const audioBuffer = Buffer.from(base64Audio, "base64");
         const audioBlob = new Blob([audioBuffer], { type: "audio/wav" });
-        
+
         const uploadResponse = await fetch(uploadUrl, {
           method: "PUT",
           body: audioBlob,
@@ -734,11 +780,11 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
             "Content-Type": "audio/wav",
           },
         });
-        
+
         if (!uploadResponse.ok) {
           throw new Error("Failed to upload to S3");
         }
-        
+
         // Notify server that upload is complete
         const questionResponse = await fetch(
           `https://www.server.speakeval.org/uploadquestion?pin=${userId}&id=${id}&index=${i}&language=${language}`,

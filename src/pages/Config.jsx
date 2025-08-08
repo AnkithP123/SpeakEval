@@ -799,6 +799,39 @@ const Config = ({
     toast.success(`Applied ${presetName} rubric`);
   };
 
+  // Helper function for client-side file validation. Place this right above your component.
+  const validateAudioBlob = (blob, questionIndex, maxSizeBytes) => {
+    const MAX_SIZE_MB = maxSizeBytes / (1024 * 1024);
+    const allowedTypes = [
+      "audio/webm",
+      "audio/wav",
+      "audio/mp4",
+      "audio/x-m4a",
+    ];
+
+    // 1. Check MIME Type
+    if (!allowedTypes.includes(blob.type)) {
+      toast.error(
+        `Question ${
+          questionIndex + 1
+        }: Invalid file type. Only audio files are allowed.`
+      );
+      return false;
+    }
+
+    // 2. Check File Size
+    if (blob.size > maxSizeBytes) {
+      toast.error(
+        `Question ${
+          questionIndex + 1
+        }: File is too large. Maximum size is ${MAX_SIZE_MB}MB.`
+      );
+      return false;
+    }
+
+    return true;
+  };
+
   const handleRegisterConfig = async () => {
     if (!id) {
       toast.error("Please enter a name for the set");
@@ -827,6 +860,19 @@ const Config = ({
 
       const language =
         selectedLanguage === "Other" ? otherLanguage : selectedLanguage;
+
+      const maxFileSizeBytes = 15 * 1024 * 1024; // 15MB limit
+      const allFilesAreValid = await Promise.all(
+        questions.map(async (questionUrl, i) => {
+          const blob = await fetch(questionUrl).then((res) => res.blob());
+          return validateAudioBlob(blob, i, maxFileSizeBytes);
+        })
+      );
+
+      if (allFilesAreValid.includes(false)) {
+        setIsUploading(false);
+        return; // Stop execution if any file is invalid
+      }
 
       if (isUpdate) {
         // Update existing config
