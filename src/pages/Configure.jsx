@@ -773,7 +773,6 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
           formDatass.append(key, value);
         });
         formDatass.append("file", blob);
-        formDatass.append("content-type", "audio/wav");
 
         // Send the POST request to S3
         const uploadResponse = await fetch(url, {
