@@ -718,7 +718,7 @@ const Config = ({
     setIsConfirming(false);
   };
 
-  const handleConfigClick = (config, autoFillCorrection = true) => {
+  const handleConfigClick = (config) => {
     let rubric2 = config.rubric;
     console.log("Config clicked:", config);
 
@@ -777,9 +777,7 @@ const Config = ({
 
     setShowSelectiveAutofillModal(false);
     setSelected(true);
-    if (!autoFillCorrection) {
-      setId(config.name);
-    }
+    //setId(config.name);
     setIsConfigSelection(false);
   };
 
@@ -958,6 +956,7 @@ const Config = ({
             formDatass.append(key, value);
           });
           formDatass.append("file", blob);
+          formDatass.append("content-type", "audio/wav");
 
           // Send the POST request to S3
           const uploadResponse = await fetch(url, {
