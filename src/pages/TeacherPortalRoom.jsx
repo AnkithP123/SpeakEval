@@ -40,6 +40,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     const savedDescriptions = localStorage.getItem("descriptions");
     return savedDescriptions ? JSON.parse(savedDescriptions) : [];
   });
+  const [info, setInfo] = useState({});
   const [questionData, setQuestionData] = useState({
     currentIndex: 1,
     totalQuestions: 0,
@@ -129,7 +130,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       // Step 1: Get total questions
       const originalRoomCode = initialRoomCode || paramRoomCode;
       const questionsResponse = await fetch(
-        `https://www.server.speakeval.org/get_num_questions?code=${originalRoomCode}`
+        `https://www.server.speakeval.org/get_num_questions?code=${originalRoomCode}&token=${localStorage.getItem(
+          "token"
+        )}`
       );
       const questionsData = await questionsResponse.json();
 
@@ -157,7 +160,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         const questionCode = questionCodes[i];
         try {
           const dataResponse = await fetch(
-            `https://www.server.speakeval.org/downloadall?code=${questionCode}`,
+            `https://www.server.speakeval.org/downloadall?code=${questionCode}&token=${localStorage.getItem(
+              "token"
+            )}`,
             {
               headers: {
                 "Cache-Control": "no-store",
@@ -166,6 +171,33 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
               },
             }
           );
+          let dataResponseJson = await dataResponse.json();
+          if (dataResponseJson.error) {
+            toast.error(dataResponseJson.error);
+            continue;
+          }
+
+          setInfo(dataResponseJson.info || {});
+          console.log("Info: ", dataResponseJson.info);
+          // if (!config.name) {
+          //   console.log("Fetching config for question:", dataResponseJson);
+          //   let configResponse = await fetch(
+          //     `https://www.server.speakeval.org/getconfig?name=${
+          //       dataResponseJson.config
+          //     }&pin=${localStorage.getItem("token")}`
+          //   );
+          //   let configData = await configResponse.json();
+          //   if (configData.error) {
+          //     toast.error(configData.error);
+          //   }
+          //   setConfig(configData);
+          //   // console.log(
+          //   //   "Config loaded: " +
+          //   //     JSON.stringify(configData) +
+          //   //     " Question Code: " +
+          //   //     questionCode
+          //   // );
+          // }
           const cheatersResponse = await fetch(
             `https://www.server.speakeval.org/get_cheaters?token=${localStorage.getItem(
               "token"
@@ -173,7 +205,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           );
 
           const [data, cheatersData] = await Promise.all([
-            dataResponse.json(),
+            dataResponseJson,
             cheatersResponse.json(),
           ]);
 
@@ -305,41 +337,48 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       // Preload all audio URLs for better performance
       console.log("🚀 Preloading audio URLs for all students...");
       const preloadItems = [];
-      
-      Object.values(completeStore.students).forEach(student => {
-        Object.entries(student.responses).forEach(([questionCode, response]) => {
-          if (response.audio) {
-            preloadItems.push({
-              type: 'student_audio',
-              id: response.audio, // token
-              index: null
-            });
+
+      Object.values(completeStore.students).forEach((student) => {
+        Object.entries(student.responses).forEach(
+          ([questionCode, response]) => {
+            if (response.audio) {
+              preloadItems.push({
+                type: "student_audio",
+                id: response.audio, // token
+                index: null,
+              });
+            }
           }
-        });
+        );
       });
 
       if (preloadItems.length > 0) {
         // Preload URLs in background (don't await to avoid blocking UI)
-        urlCache.preloadUrls(preloadItems, async (item) => {
-          const response = await fetch(
-            `https://www.server.speakeval.org/fetch_audio?token=${item.id}`
-          );
-          const data = await response.json();
-          
-          if (data.audioUrl) {
-            return data.audioUrl;
-          } else if (data.audio) {
-            // Handle Base64 fallback
-            const audioData = Uint8Array.from(atob(data.audio), (c) => c.charCodeAt(0));
-            const audioBlob = new Blob([audioData], { type: "audio/ogg" });
-            return URL.createObjectURL(audioBlob);
-          }
-          throw new Error("No audio data received");
-        }).then(() => {
-          console.log(`✅ Preloaded ${preloadItems.length} audio URLs`);
-        }).catch(error => {
-          console.warn("⚠️ Some URLs failed to preload:", error);
-        });
+        urlCache
+          .preloadUrls(preloadItems, async (item) => {
+            const response = await fetch(
+              `https://www.server.speakeval.org/fetch_audio?token=${item.id}`
+            );
+            const data = await response.json();
+
+            if (data.audioUrl) {
+              return data.audioUrl;
+            } else if (data.audio) {
+              // Handle Base64 fallback
+              const audioData = Uint8Array.from(atob(data.audio), (c) =>
+                c.charCodeAt(0)
+              );
+              const audioBlob = new Blob([audioData], { type: "audio/ogg" });
+              return URL.createObjectURL(audioBlob);
+            }
+            throw new Error("No audio data received");
+          })
+          .then(() => {
+            console.log(`✅ Preloaded ${preloadItems.length} audio URLs`);
+          })
+          .catch((error) => {
+            console.warn("⚠️ Some URLs failed to preload:", error);
+          });
       }
 
       setIsInitialLoading(false);
@@ -1158,8 +1197,12 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 onClick={async () => {
                   setShowBulkEmailModal(true);
                 }}
-                className="px-4 py-2 bg-gradient-to-r from-sky-500 to-cyan-600 text-white rounded-lg shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50 transition-all duration-300 flex items-center"
-                disabled={isEmailSending}
+                className={`${
+                  info.email
+                    ? "px-4 py-2 bg-gradient-to-r from-sky-500 to-cyan-600 text-white rounded-lg shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50 transition-all duration-300 flex items-center"
+                    : "px-4 py-2 bg-slate-400 text-slate-600 rounded-lg shadow-inner cursor-not-allowed transition-all duration-300 flex items-center"
+                }`}
+                disabled={isEmailSending || !info.email}
               >
                 <FaEnvelope className="mr-2" />
                 {isEmailSending ? "Sending..." : "Send Emails"}
@@ -1248,7 +1291,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       audio={responseData.audio}
                                       question={responseData.questionText}
                                       questionBase64={responseData.question}
-                                      questionAudioUrl={responseData.questionAudioUrl}
+                                      questionAudioUrl={
+                                        responseData.questionAudioUrl
+                                      }
                                       index={responseData.index}
                                       name={participant.name}
                                       code={questionCode}
@@ -1262,6 +1307,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                         handleShowInfractionsModal
                                       }
                                       cheatingData={cheatingData}
+                                      info={info}
                                       className=""
                                     />
                                   ) : (
@@ -1314,6 +1360,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             onShowEmailModal={handleShowSingleEmailModal}
                             onShowInfractionsModal={handleShowInfractionsModal}
                             cheatingData={cheatingData}
+                            info={info}
                           />
                         );
                       }
