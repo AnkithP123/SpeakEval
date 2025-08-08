@@ -161,13 +161,13 @@ export default function AudioRecorder() {
       timer.current = -1;
     }
     
-    // Reset stage data
+    // Reset stage data but preserve setup permissions for room restarts
     setStageData({
       audioDownloaded: false,
       audioDownloadError: null,
       setup: {
-        microphonePermission: false,
-        fullscreenEnabled: false,
+        microphonePermission: false, // Will be checked after audio download
+        fullscreenEnabled: false, // Will be checked after audio download
       },
       audioPlay: {
         hasPlayed: false,
@@ -202,6 +202,12 @@ export default function AudioRecorder() {
     
     // Reset thinking progress
     setThinkingProgress(1);
+    
+    // Reset anticheat flags for room restart
+    setFullscreenViolationReported(false);
+    setTabSwitchReported(false);
+    setExamStarted(false);
+    setIsFullscreen(false);
     
     // Go to initializing to download new audio, then proceed through normal flow
     console.log('🔄 New question - going to initializing stage to download audio');
@@ -295,6 +301,48 @@ export default function AudioRecorder() {
     return stageData.recording.hasRecorded && 
            stageData.recording.recordingBlob && 
            !stageData.recording.recordingError;
+  };
+  
+  // Check current permissions for room restart optimization
+  const checkCurrentPermissions = async () => {
+    console.log('🔍 Checking current permissions for room restart...');
+    
+    // Check microphone permission
+    let microphonePermission = false;
+    try {
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      microphonePermission = true;
+      micStream.getTracks().forEach(track => track.stop()); // Clean up
+    } catch (error) {
+      console.log('❌ Microphone permission not available:', error.message);
+    }
+    
+    // Check fullscreen status
+    const fullscreenEnabled = !!document.fullscreenElement;
+    
+    console.log('🔍 Current permissions:', {
+      microphonePermission,
+      fullscreenEnabled,
+      isRoomRestart: !!lastRoomRestart
+    });
+    
+    return { microphonePermission, fullscreenEnabled };
+  };
+  
+  // Determine if setup can be skipped for room restart
+  const canSkipSetupForRestart = async () => {
+    if (!lastRoomRestart) return false;
+    
+    const permissions = await checkCurrentPermissions();
+    const bothPermissionsAvailable = permissions.microphonePermission && permissions.fullscreenEnabled;
+    
+    console.log('🔍 Can skip setup for restart:', {
+      isRoomRestart: !!lastRoomRestart,
+      bothPermissionsAvailable,
+      permissions
+    });
+    
+    return bothPermissionsAvailable;
   };
   
 
@@ -1042,7 +1090,8 @@ export default function AudioRecorder() {
         finishedRecording,
         fullscreenViolationReported,
         currentStage,
-        examStarted
+        examStarted,
+        lastRoomRestart: !!lastRoomRestart
       });
       
       // If they exit fullscreen during setup, uncheck the fullscreen setup
@@ -1053,11 +1102,13 @@ export default function AudioRecorder() {
       }
       
       // If they exit fullscreen during exam (after Continue to Question), report cheating
+      // But don't flag them immediately if this is a room restart and they haven't clicked continue yet
       if (
         !document.fullscreenElement &&
         examStarted &&
         !finishedRecording &&
-        !fullscreenViolationReported
+        !fullscreenViolationReported &&
+        !(lastRoomRestart && currentStage === 'initializing') // Don't flag during room restart before continue
       ) {
         console.log("🚨 Fullscreen exit detected during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
@@ -1077,14 +1128,16 @@ export default function AudioRecorder() {
         finishedRecording,
         tabSwitchReported,
         currentStage,
-        examStarted
+        examStarted,
+        lastRoomRestart: !!lastRoomRestart
       });
       
       if (
         document.hidden &&
         examStarted &&
         !finishedRecording &&
-        !tabSwitchReported
+        !tabSwitchReported &&
+        !(lastRoomRestart && currentStage === 'initializing') // Don't flag during room restart before continue
       ) {
         console.log("🚨 Tab switch detected during exam!");
         setTabSwitchReported(true); // Set flag to prevent multiple alerts
@@ -1127,7 +1180,8 @@ export default function AudioRecorder() {
         examStarted &&
         !finishedRecording &&
         !fullscreenViolationReported &&
-        (!document.fullscreenElement || document.hidden || document.hasFocus() === false)
+        (!document.fullscreenElement || document.hidden || document.hasFocus() === false) &&
+        !(lastRoomRestart && currentStage === 'initializing') // Don't flag during room restart before continue
       ) {
         console.log("🚨 Focus or fullscreen lost during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
@@ -1162,6 +1216,7 @@ export default function AudioRecorder() {
     tabSwitchReported,
     isFullscreen,
     currentStage, // Monitor during exam stages
+    lastRoomRestart, // Monitor room restart state
   ]);
 
   // Debug useEffect to monitor anti-cheat state
@@ -1954,7 +2009,28 @@ export default function AudioRecorder() {
                 }}>
                   {stageData.audioDownloaded && !stageData.audioDownloadError && (
                     <button
-                      onClick={() => advanceStage('setup')}
+                      onClick={async () => {
+                        // Check if we can skip setup for room restart
+                        const canSkipSetup = await canSkipSetupForRestart();
+                        
+                        if (canSkipSetup) {
+                          console.log('🚀 Room restart detected with permissions available - skipping setup');
+                          // Update setup data with current permissions
+                          const permissions = await checkCurrentPermissions();
+                          updateSetup({
+                            microphonePermission: permissions.microphonePermission,
+                            fullscreenEnabled: permissions.fullscreenEnabled
+                          });
+                          
+                          // Enable anticheat and go directly to audio play
+                          setIsFullscreen(true);
+                          setExamStarted(true);
+                          advanceStage('audio_play');
+                        } else {
+                          console.log('🔄 Proceeding to setup stage');
+                          advanceStage('setup');
+                        }
+                      }}
                       style={{
                         padding: "10px 24px",
                         fontSize: "15px",
@@ -1970,7 +2046,7 @@ export default function AudioRecorder() {
                       onMouseOver={(e) => (e.target.style.backgroundColor = "#059669")}
                       onMouseOut={(e) => (e.target.style.backgroundColor = "#10B981")}
                     >
-                      Continue to Setup
+                      Continue
                     </button>
                   )}
                 </div>
