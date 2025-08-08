@@ -34,6 +34,7 @@ function ProfileCard({
   onShowEmailModal = () => {},
   onShowInfractionsModal = () => {},
   cheatingData = [],
+  info = {},
 }) {
   // States used in both modes
   const [fetchedAudio, setFetchedAudio] = useState(false);
@@ -115,42 +116,42 @@ function ProfileCard({
   const fetchAudio = useCallback(async () => {
     console.log("fetching audio");
     let audioUrl;
-    
+
     try {
       // Check if we already have a presigned URL
-      if (effectiveAudio && effectiveAudio.startsWith('http')) {
+      if (effectiveAudio && effectiveAudio.startsWith("http")) {
         audioUrl = effectiveAudio;
       } else {
         // Use URL cache for fetching
         audioUrl = await urlCache.getUrl(
-          'student_audio',
+          "student_audio",
           audio, // token as id
           null,
           async () => {
-      console.log("Audio not fetched, fetching now..." + audio);
-      const audios = await fetch(
-        `https://www.server.speakeval.org/fetch_audio?token=${audio}`
-      );
-      const audiosJson = await audios.json();
-      console.log("Audio fetched:", audiosJson);
-      if (!audios.ok) {
+            console.log("Audio not fetched, fetching now..." + audio);
+            const audios = await fetch(
+              `https://www.server.speakeval.org/fetch_audio?token=${audio}`
+            );
+            const audiosJson = await audios.json();
+            console.log("Audio fetched:", audiosJson);
+            if (!audios.ok) {
               throw new Error("Failed to fetch audio: " + audiosJson.error);
-      }
-            
+            }
+
             // Check if we got a presigned URL or fallback to Base64
             if (audiosJson.audioUrl) {
               return audiosJson.audioUrl;
             } else if (audiosJson.audio) {
               // Fallback to Base64 processing
               const audioData = Uint8Array.from(atob(audiosJson.audio), (c) =>
-        c.charCodeAt(0)
-      );
-      const audioBlob = new Blob([audioData], { type: "audio/ogg" });
+                c.charCodeAt(0)
+              );
+              const audioBlob = new Blob([audioData], { type: "audio/ogg" });
 
-      try {
-        const wavBlob = await convertOggToWav(audioBlob);
+              try {
+                const wavBlob = await convertOggToWav(audioBlob);
                 return URL.createObjectURL(wavBlob);
-      } catch (err) {
+              } catch (err) {
                 return URL.createObjectURL(audioBlob);
               }
             }
@@ -158,13 +159,13 @@ function ProfileCard({
           }
         );
       }
-      
+
       // Set the audio source
-        const answerAudioPlayer = document.getElementById(
-          `answerAudioPlayer-${effectiveName}-${effectiveCode}`
-        );
+      const answerAudioPlayer = document.getElementById(
+        `answerAudioPlayer-${effectiveName}-${effectiveCode}`
+      );
       if (answerAudioPlayer && audioUrl) {
-          answerAudioPlayer.src = audioUrl;
+        answerAudioPlayer.src = audioUrl;
       }
     } catch (error) {
       console.log("Error loading audio:", error);
@@ -770,12 +771,17 @@ Teacher's Comment: ${comment}`
                     <FaRobot />
                   </button>
                   <button
-                    className="p-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-full hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 shadow-md shadow-cyan-500/50 relative"
+                    className={
+                      info.email
+                        ? "p-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-full hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 shadow-md shadow-cyan-500/50 relative"
+                        : "p-2 bg-slate-400 text-slate-600 rounded-full transition-all duration-300 shadow-inner relative cursor-not-allowed"
+                    }
                     onClick={handleEmailButtonClick}
-                    title="Send Email"
+                    disabled={!info.email}
+                    title={info.email ? "Send Email" : "Email not available"}
                   >
                     <FaEnvelope />
-                    {isRed && (
+                    {isRed && info.email && (
                       <span className="absolute top-1 right-1 translate-x-1/2 -translate-y-1/2 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
                         !
                       </span>
