@@ -862,7 +862,7 @@ function RoomPanel({ roomCode, userId, config, setRoomCodes }) {
         </div>
 
         <div
-          className={`relative text-center mb-8 ${
+          className={`relative text-center ${
             roomStarted ? "-translate-y-[170px]" : ""
           }`}
         >
