@@ -718,7 +718,7 @@ const Config = ({
     setIsConfirming(false);
   };
 
-  const handleConfigClick = (config) => {
+  const handleConfigClick = (config, autoFillSelected = true) => {
     let rubric2 = config.rubric;
     console.log("Config clicked:", config);
 
@@ -777,7 +777,9 @@ const Config = ({
 
     setShowSelectiveAutofillModal(false);
     setSelected(true);
-    //setId(config.name);
+    if (!autoFillSelected) {
+      setId(config.name);
+    }
     setIsConfigSelection(false);
   };
 
