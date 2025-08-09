@@ -35,6 +35,7 @@ function Download() {
         setParticipants(data.participant);
         //iterate throught data.participant
         let counter = 0;
+        console.log(data.audioUrl);
         data.participant.forEach(async (participant) => {
           console.log("Audio URLs: ", data.audioUrl[counter]);
           if (data.audioUrl[counter]) {
