@@ -961,7 +961,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
         studentObj.grades.forEach(async (gradeObj) => {
           console.log("  AudioBlobl:", gradeObj.voiceComment);
-          if (includeVoiceNote) {
+          if (includeVoice) {
             let uploadUrl = uploadUrls[counter];
             let audioBlob = gradeObj.voiceComment;
             await fetch(uploadUrl, {
