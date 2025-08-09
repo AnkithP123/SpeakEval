@@ -563,12 +563,13 @@ Total Score: ${totalScore}${
 Teacher's Comment: ${comment}`
         : ""
     }`;
-
+    console.log(recordedAudioBlob);
     onShowEmailModal({
       studentName: effectiveName,
       emailBody: autoEmail,
       code: effectiveCode,
       includeResponseLink: true,
+      voiceCommentAudio: recordedAudioBlob,
       emailSubject: "SpeakEval Exam Result",
     });
   };

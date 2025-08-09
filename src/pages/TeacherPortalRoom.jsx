@@ -985,6 +985,13 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       );
       const resp = await response.json();
       if (resp.resp.success) {
+        let uploadUrl = resp.uploadUrl;
+        let audioBlob = singleEmailData.voiceCommentAudio;
+        await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "audio/wav" },
+          body: audioBlob,
+        });
         toast.success("Email sent successfully");
         setShowSingleEmailModal(false);
         setFailedEmails((prev) => {
