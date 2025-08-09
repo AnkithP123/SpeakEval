@@ -498,20 +498,30 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       : roomCode;
 
     setCOMPLETE_DATA_STORE((prevStore) => {
-      const newStore = JSON.parse(JSON.stringify(prevStore)); // Deep copy to avoid mutation issues
-      if (
-        newStore.students[participantName] &&
-        newStore.students[participantName].responses[questionCode]
-      ) {
-        newStore.students[participantName].responses[questionCode] = {
-          ...newStore.students[participantName].responses[questionCode],
-          grades,
-          totalScore,
-          teacherComment: comment,
-          categories,
-          voiceComment,
-        };
-      }
+      // Create a deep copy of the store immutably to prevent data corruption
+      // This correctly preserves the 'voiceComment' Blob object
+      const newStore = {
+        ...prevStore,
+        students: {
+          ...prevStore.students,
+          [participantName]: {
+            ...prevStore.students[participantName],
+            responses: {
+              ...prevStore.students[participantName]?.responses,
+              [questionCode]: {
+                ...prevStore.students[participantName]?.responses?.[
+                  questionCode
+                ],
+                grades,
+                totalScore,
+                teacherComment: comment,
+                categories,
+                voiceComment,
+              },
+            },
+          },
+        },
+      };
       return newStore;
     });
   };
@@ -884,6 +894,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                   grades: questionData.grades,
                   categories: questionData.categories,
                   teacherComment: questionData.teacherComment,
+                  voiceComment: questionData.voiceComment,
                 };
               }
               return null;
@@ -954,25 +965,35 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         setShowBulkEmailModal(false);
         setSelectedQuestionsToEmail(new Set());
       }
-      let uploadUrls = data.uploadUrls || [];
-      let counter = 0;
-      emailData.forEach(async (studentObj) => {
-        console.log("Student:", studentObj.studentName);
 
-        studentObj.grades.forEach(async (gradeObj) => {
-          console.log("  AudioBlobl:", gradeObj.voiceComment);
-          if (includeVoice) {
-            let uploadUrl = uploadUrls[counter];
-            let audioBlob = gradeObj.voiceComment;
+      // --- Start of Corrected Upload Loop ---
+      let uploadUrls = data.uploadUrls || [];
+      let uploadCounter = 0;
+
+      // Use for...of loops to handle async operations sequentially and prevent race conditions
+      for (const studentObj of emailData) {
+        for (const gradeObj of studentObj.grades) {
+          // Check if we should upload, if a voice comment exists, and if there's a URL for it
+          if (
+            includeVoice &&
+            gradeObj.voiceComment &&
+            uploadCounter < uploadUrls.length
+          ) {
+            const uploadUrl = uploadUrls[uploadCounter];
+            const audioBlob = gradeObj.voiceComment;
+
             await fetch(uploadUrl, {
               method: "PUT",
               headers: { "Content-Type": "audio/wav" },
               body: audioBlob,
             });
+
+            // Only increment the counter after an upload is attempted
+            uploadCounter++;
           }
-          counter++;
-        });
-      });
+        }
+      }
+      // --- End of Corrected Upload Loop ---
     } catch (error) {
       console.error("Error sending emails:", error);
       toast.error(`Failed to send emails: ${error.message}`);
