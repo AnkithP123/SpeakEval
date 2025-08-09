@@ -485,7 +485,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     grades,
     totalScore,
     comment,
-    categories
+    categories,
+    voiceComment
   ) => {
     const baseCode = roomCode.toString().slice(0, -3);
     const questionCode = customName
@@ -494,48 +495,23 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         )
       : roomCode;
 
-    if (customName) {
-      setParticipants((prevParticipants) => {
-        return prevParticipants.map((participant) => {
-          if (participant.name === participantName) {
-            const updatedQuestionData = new Map(participant.questionData);
-            if (updatedQuestionData.has(questionCode)) {
-              const existingData = updatedQuestionData.get(questionCode);
-              updatedQuestionData.set(questionCode, {
-                ...existingData,
-                grades,
-                totalScore,
-                teacherComment: comment,
-                categories,
-              });
-            }
-            return {
-              ...participant,
-              questionData: updatedQuestionData,
-            };
-          }
-          return participant;
-        });
-      });
-    } else {
-      setParticipants((prevParticipants) => {
-        return prevParticipants.map((question) => ({
-          ...question,
-          participants: question.participants.map((participant) => {
-            if (participant.name === participantName) {
-              return {
-                ...participant,
-                grades,
-                totalScore,
-                teacherComment: comment,
-                categories,
-              };
-            }
-            return participant;
-          }),
-        }));
-      });
-    }
+    setCOMPLETE_DATA_STORE((prevStore) => {
+      const newStore = JSON.parse(JSON.stringify(prevStore)); // Deep copy to avoid mutation issues
+      if (
+        newStore.students[participantName] &&
+        newStore.students[participantName].responses[questionCode]
+      ) {
+        newStore.students[participantName].responses[questionCode] = {
+          ...newStore.students[participantName].responses[questionCode],
+          grades,
+          totalScore,
+          teacherComment: comment,
+          categories,
+          voiceComment,
+        };
+      }
+      return newStore;
+    });
   };
 
   const sortParticipants = (participantsToSort) => {
@@ -1008,7 +984,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         `https://www.server.speakeval.org/send_email?${queryParams.toString()}`
       );
       const resp = await response.json();
-      if (resp.success) {
+      if (resp.resp.success) {
         toast.success("Email sent successfully");
         setShowSingleEmailModal(false);
         setFailedEmails((prev) => {
@@ -1017,7 +993,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           return newSet;
         });
       } else {
-        toast.error(resp.error || "Failed to send email");
+        toast.error(resp.resp.error || "Failed to send email");
       }
     } catch (error) {
       console.error("Error sending email:", error);
@@ -1308,6 +1284,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       }
                                       cheatingData={cheatingData}
                                       info={info}
+                                      voiceComment={responseData.voiceComment}
                                       className=""
                                     />
                                   ) : (
@@ -1360,6 +1337,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             onShowEmailModal={handleShowSingleEmailModal}
                             onShowInfractionsModal={handleShowInfractionsModal}
                             cheatingData={cheatingData}
+                            voiceComment={participant.voiceComment}
                             info={info}
                           />
                         );

@@ -12,6 +12,10 @@ import {
   FaSpinner,
   FaEnvelope,
   FaExclamationTriangle,
+  FaMicrophone,
+  FaStop,
+  FaSave,
+  FaTrash,
 } from "react-icons/fa";
 import urlCache from "../utils/urlCache";
 
@@ -35,6 +39,7 @@ function ProfileCard({
   onShowInfractionsModal = () => {},
   cheatingData = [],
   info = {},
+  voiceComment = null,
 }) {
   // States used in both modes
   const [fetchedAudio, setFetchedAudio] = useState(false);
@@ -61,6 +66,23 @@ function ProfileCard({
   const [showInfractionsModal, setShowInfractionsModal] = useState(false);
 
   const [error, setError] = useState(false);
+
+  // Voice Comment States
+  const [showVoiceNoteModal, setShowVoiceNoteModal] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState(null);
+  const [recordedAudioBlob, setRecordedAudioBlob] = useState(null);
+  const [localVoiceComment, setLocalVoiceComment] = useState(voiceComment);
+  const [voiceCommentUrl, setVoiceCommentUrl] = useState(null);
+
+  useEffect(() => {
+    if (localVoiceComment && localVoiceComment instanceof Blob) {
+      const url = URL.createObjectURL(localVoiceComment);
+      setVoiceCommentUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [localVoiceComment]);
 
   // Reset error after animation
   useEffect(() => {
@@ -423,7 +445,8 @@ function ProfileCard({
         data.grades,
         total,
         comment,
-        categories
+        categories,
+        localVoiceComment
       );
     } catch (error) {
       console.error("Error getting grade:", error);
@@ -456,7 +479,8 @@ function ProfileCard({
       updatedGrades,
       total,
       comment,
-      categories
+      categories,
+      localVoiceComment
     );
   };
 
@@ -590,8 +614,72 @@ Teacher's Comment: ${comment}`
       grades,
       totalScore,
       newComment,
-      categories
+      categories,
+      localVoiceComment
     );
+  };
+
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      setMediaRecorder(recorder);
+      recorder.start();
+      setIsRecording(true);
+      setRecordedAudioUrl(null);
+      setRecordedAudioBlob(null);
+
+      const audioChunks = [];
+      recorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      recorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        setRecordedAudioBlob(audioBlob);
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setRecordedAudioUrl(audioUrl);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+    } catch (err) {
+      console.error("Error starting recording:", err);
+      toast.error(
+        "Could not start recording. Please grant microphone permission."
+      );
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const handleSaveVoiceNote = () => {
+    setLocalVoiceComment(recordedAudioBlob);
+    onGradeUpdate(
+      effectiveName,
+      effectiveCustomName,
+      grades,
+      totalScore,
+      comment,
+      categories,
+      recordedAudioBlob
+    );
+    setShowVoiceNoteModal(false);
+    setRecordedAudioUrl(null);
+    setRecordedAudioBlob(null);
+    toast.success("Voice note saved!");
+  };
+
+  const handleCancelVoiceNote = () => {
+    if (isRecording) {
+      handleStopRecording();
+    }
+    setShowVoiceNoteModal(false);
+    setRecordedAudioUrl(null);
+    setRecordedAudioBlob(null);
   };
 
   if (downloadMode && !downloadedData) {
@@ -872,6 +960,28 @@ Teacher's Comment: ${comment}`
                   value={comment}
                   onChange={handleCommentChange}
                 />
+                {/* This flex container aligns the button and the player */}
+                <div className="flex items-center justify-between mt-2">
+                  <button
+                    className="flex items-center px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg shadow-lg hover:shadow-cyan-500/40 transition-all duration-300"
+                    onClick={() => setShowVoiceNoteModal(true)}
+                  >
+                    <FaMicrophone className="mr-2" />
+                    Voice Comment
+                  </button>
+                  {voiceCommentUrl && (
+                    // This inner flex container aligns the label and the player itself
+                    <div className="flex items-center gap-2">
+                      {/* <span className="text-sm text-gray-400">Saved Note:</span> */}
+                      {/* Constrained width and standardized height on the audio player */}
+                      <audio
+                        src={voiceCommentUrl}
+                        controls
+                        className="h-9 w-40"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -880,8 +990,66 @@ Teacher's Comment: ${comment}`
           <audio id={`questionAudioPlayer-${effectiveName}-${effectiveCode}`} />
         </div>
       </div>
+      {showVoiceNoteModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[9999]">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg p-6 w-11/12 md:w-1/3 shadow-xl border border-cyan-500/30">
+            <h2 className="text-xl font-bold mb-4 text-white">
+              Record Voice Comment
+            </h2>
+
+            <div className="flex justify-center items-center space-x-4 my-6">
+              {!isRecording ? (
+                <button
+                  className="p-4 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors duration-300 flex items-center"
+                  onClick={handleStartRecording}
+                  disabled={isRecording}
+                >
+                  <FaMicrophone size={24} />
+                </button>
+              ) : (
+                <button
+                  className="p-4 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors duration-300 flex items-center"
+                  onClick={handleStopRecording}
+                  disabled={!isRecording}
+                >
+                  <FaStop size={24} />
+                </button>
+              )}
+              {isRecording && (
+                <p className="text-red-500 animate-pulse">Recording...</p>
+              )}
+            </div>
+
+            {recordedAudioUrl && (
+              <div className="my-4">
+                <p className="text-white mb-2">Preview:</p>
+                <audio src={recordedAudioUrl} controls className="w-full" />
+              </div>
+            )}
+
+            <div className="flex justify-end mt-6 space-x-4">
+              <button
+                className="flex items-center px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-300"
+                onClick={handleCancelVoiceNote}
+              >
+                <FaTrash className="mr-2" />
+                Cancel
+              </button>
+              <button
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300 disabled:bg-gray-500"
+                onClick={handleSaveVoiceNote}
+                disabled={!recordedAudioBlob}
+              >
+                <FaSave className="mr-2" />
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default ProfileCard;
+``;
