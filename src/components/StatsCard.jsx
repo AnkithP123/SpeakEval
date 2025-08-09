@@ -563,13 +563,13 @@ Total Score: ${totalScore}${
 Teacher's Comment: ${comment}`
         : ""
     }`;
-    console.log(recordedAudioBlob);
+    console.log("Bobs" + localVoiceComment);
     onShowEmailModal({
       studentName: effectiveName,
       emailBody: autoEmail,
       code: effectiveCode,
       includeResponseLink: true,
-      voiceCommentAudio: recordedAudioBlob,
+      voiceCommentAudio: localVoiceComment,
       emailSubject: "SpeakEval Exam Result",
     });
   };
@@ -961,31 +961,37 @@ Teacher's Comment: ${comment}`
                   value={comment}
                   onChange={handleCommentChange}
                 />
-                {/* This flex container aligns the button and the player */}
-                <div className="flex items-center justify-between mt-2">
-                  <button
-                    className="flex items-center px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg shadow-lg hover:shadow-cyan-500/40 transition-all duration-300"
-                    onClick={() => setShowVoiceNoteModal(true)}
-                  >
-                    <FaMicrophone className="mr-2" />
-                    Voice Comment
-                  </button>
-                  {voiceCommentUrl && (
-                    // This inner flex container aligns the label and the player itself
-                    <div className="flex items-center gap-2">
-                      {/* <span className="text-sm text-gray-400">Saved Note:</span> */}
-                      {/* Constrained width and standardized height on the audio player */}
-                      <audio
-                        src={voiceCommentUrl}
-                        controls
-                        className="h-9 w-40"
-                      />
-                    </div>
-                  )}
-                </div>
               </div>
             </>
           )}
+
+          {/* This flex container aligns the button and the player */}
+          <div className="flex items-center justify-between mt-2">
+            {/* In normal mode, this button opens the recorder modal. */}
+            {!downloadMode ? (
+              <button
+                className="flex items-center px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg shadow-lg hover:shadow-cyan-500/40 transition-all duration-300"
+                onClick={() => setShowVoiceNoteModal(true)}
+              >
+                <FaMicrophone className="mr-2" />
+                Voice Comment
+              </button>
+            ) : (
+              // In download mode, this just acts as a static label.
+              <div className="flex items-center px-3 py-2 text-gray-400">
+                <FaMicrophone className="mr-2" />
+                Voice Comment
+              </div>
+            )}
+
+            {/* The standard HTML audio player is shown if a voice comment exists. */}
+            {/* The 'controls' attribute makes the default player UI visible. */}
+            {voiceCommentUrl && (
+              <div className="flex items-center">
+                <audio src={voiceCommentUrl} controls className="h-9 w-48" />
+              </div>
+            )}
+          </div>
 
           <audio id={`answerAudioPlayer-${effectiveName}-${effectiveCode}`} />
           <audio id={`questionAudioPlayer-${effectiveName}-${effectiveCode}`} />

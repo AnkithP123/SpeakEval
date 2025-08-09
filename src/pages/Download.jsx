@@ -39,8 +39,10 @@ function Download() {
         if (!audioResponse.ok) {
           throw new Error("Failed to download audio from S3.");
         }
-        setAudioUrls(audioResponse);
-        console.log(audioResponse);
+        const audioBlob = await audioResponse.blob();
+
+        setAudioUrls(audioBlob);
+        console.log(JSON.stringify(data));
       } catch (err) {
         setError(err.message || "Failed to fetch participant data");
         toast.error(
