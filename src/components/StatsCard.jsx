@@ -75,7 +75,7 @@ function ProfileCard({
   const [recordedAudioBlob, setRecordedAudioBlob] = useState(null);
   const [localVoiceComment, setLocalVoiceComment] = useState(voiceComment);
   const [voiceCommentUrl, setVoiceCommentUrl] = useState(null);
-
+  console.log("Voice Comment: " + voiceComment);
   useEffect(() => {
     if (localVoiceComment && localVoiceComment instanceof Blob) {
       const url = URL.createObjectURL(localVoiceComment);
@@ -1002,7 +1002,7 @@ Teacher's Comment: ${comment}`
 
             {/* The standard HTML audio player is shown if a voice comment exists. */}
             {/* The 'controls' attribute makes the default player UI visible. */}
-            {voiceCommentUrl && voiceComment && (
+            {voiceCommentUrl && (
               <div className="flex items-center">
                 <audio src={voiceCommentUrl} controls className="h-9 w-48" />
               </div>

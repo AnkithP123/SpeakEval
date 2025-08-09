@@ -26,34 +26,57 @@ function Download() {
           `https://www.server.speakeval.org/download_bulk?token=${token}`
         );
         const data = await response.json();
-        console.log("Data: " + data.participant.length);
+        console.log("Data: " + JSON.stringify(data));
 
         if (data.error) {
           throw new Error(data.error);
         }
 
-        setParticipants(data.participant);
         //iterate throught data.participant
-        let counter = 0;
-        console.log(data.audioUrl);
-        data.participant.forEach(async (participant) => {
-          console.log("Audio URLs: ", data.audioUrl[counter]);
-          if (data.audioUrl[counter]) {
-            const audioResponse = await fetch(data.audioUrl[counter]);
-            if (!audioResponse.ok) {
-              throw new Error("Failed to download audio from S3.");
+        const participantPromises = data.participant.map(
+          async (participant, index) => {
+            // Create a new object to avoid mutating the original data
+            const newParticipant = { ...participant };
+
+            if (data.audioUrl[index]) {
+              try {
+                const audioResponse = await fetch(data.audioUrl[index]);
+                if (audioResponse.ok) {
+                  const audioBlob = await audioResponse.blob();
+                  // Add the blob to our new participant object
+                  newParticipant.voiceAudio = audioBlob;
+                } else {
+                  console.warn(
+                    `Failed to fetch audio for participant ${index}`
+                  );
+                  newParticipant.voiceAudio = null;
+                }
+              } catch (fetchError) {
+                console.error(
+                  `Error fetching audio for participant ${index}:`,
+                  fetchError
+                );
+                newParticipant.voiceAudio = null;
+              }
+            } else {
+              newParticipant.voiceAudio = null;
             }
-            const audioBlob = await audioResponse.blob();
-            participant.voiceAudio = audioBlob;
+            return newParticipant;
           }
-          counter++;
-        });
+        );
+
+        // Wait for all the fetch promises to complete
+        const updatedParticipants = await Promise.all(participantPromises);
+
+        // Now, set the state with the fully populated data
+        setParticipants(updatedParticipants);
       } catch (err) {
         setError(err.message || "Failed to fetch participant data");
         toast.error(
           "Error loading responses: " + (err.message || "Unknown error")
         );
       } finally {
+        //wait 1 second
         setIsLoading(false);
       }
     };
