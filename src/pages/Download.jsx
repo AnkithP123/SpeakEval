@@ -71,6 +71,7 @@ function Download() {
 
         // Now, set the state with the fully populated data
         setParticipants(updatedParticipants);
+        console.log("Updated Participants: ", updatedParticipants);
       } catch (err) {
         setError(err.message || "Failed to fetch participant data");
         toast.error(
