@@ -150,22 +150,37 @@ function ProfileCard({
           audio, // token as id
           null,
           async () => {
-            console.log("Audio not fetched, fetching now..." + audio);
-            const audios = await fetch(
-              `https://www.server.speakeval.org/fetch_audio?token=${audio}`
-            );
-            const audiosJson = await audios.json();
-            console.log("Audio fetched:", audiosJson);
-            if (!audios.ok) {
-              throw new Error("Failed to fetch audio: " + audiosJson.error);
-            }
+            try {
+              console.log("Audio not fetched, fetching now..." + audio);
+              const audios = await fetch(
+                `https://www.server.speakeval.org/fetch_audio?token=${audio}`
+              );
+              const audiosJson = await audios.json();
+              console.log("Audio fetched:", audiosJson);
+              if (!audios.ok) {
+                throw new Error("Failed to fetch audio: " + audiosJson.error);
+              }
 
-            // Check if we got a presigned URL or fallback to Base64
-            if (audiosJson.audioUrl) {
-              return audiosJson.audioUrl;
-            } else if (audiosJson.audio) {
-              // Fallback to Base64 processing
-              const audioData = Uint8Array.from(atob(audiosJson.audio), (c) =>
+              // Check if we got a presigned URL or fallback to Base64
+              if (audiosJson.audioUrl) {
+                return audiosJson.audioUrl;
+              } else if (audiosJson.audio) {
+                // Fallback to Base64 processing
+                const audioData = Uint8Array.from(atob(audiosJson.audio), (c) =>
+                  c.charCodeAt(0)
+                );
+                const audioBlob = new Blob([audioData], { type: "audio/ogg" });
+
+                try {
+                  const wavBlob = await convertOggToWav(audioBlob);
+                  return URL.createObjectURL(wavBlob);
+                } catch (err) {
+                  return URL.createObjectURL(audioBlob);
+                }
+              }
+            } catch (error) {
+              console.error("Error fetching audio:", error);
+              const audioData = Uint8Array.from(atob(audio), (c) =>
                 c.charCodeAt(0)
               );
               const audioBlob = new Blob([audioData], { type: "audio/ogg" });
