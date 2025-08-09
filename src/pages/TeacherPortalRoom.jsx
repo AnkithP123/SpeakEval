@@ -67,6 +67,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     new Set()
   );
   const [includeResponseLink, setIncludeResponseLink] = useState(true);
+  const [includeVoice, setIncludeVoice] = useState(true);
   const [emailSubject, setEmailSubject] = useState("SpeakEval Exam Results");
   const [isEmailSending, setIsEmailSending] = useState(false);
 
@@ -901,6 +902,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             examCode: baseExamCode,
             emailData,
             includeResponseLink,
+            includeVoice,
             subject: emailSubject,
             pin: localStorage.getItem("token"),
           }),
@@ -952,6 +954,25 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         setShowBulkEmailModal(false);
         setSelectedQuestionsToEmail(new Set());
       }
+      let uploadUrls = data.uploadUrls || [];
+      let counter = 0;
+      emailData.forEach(async (studentObj) => {
+        console.log("Student:", studentObj.studentName);
+
+        studentObj.grades.forEach(async (gradeObj) => {
+          console.log("  AudioBlobl:", gradeObj.voiceComment);
+          if (includeVoiceNote) {
+            let uploadUrl = uploadUrls[counter];
+            let audioBlob = gradeObj.voiceComment;
+            await fetch(uploadUrl, {
+              method: "PUT",
+              headers: { "Content-Type": "audio/wav" },
+              body: audioBlob,
+            });
+          }
+          counter++;
+        });
+      });
     } catch (error) {
       console.error("Error sending emails:", error);
       toast.error(`Failed to send emails: ${error.message}`);
@@ -1580,6 +1601,17 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                   />
                   <span className="text-sm text-white">
                     Include links for students to review their responses
+                  </span>
+                </label>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={includeVoice}
+                    onChange={(e) => setIncludeVoice(e.target.checked)}
+                    className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
+                  />
+                  <span className="text-sm text-white">
+                    Include the Voice Comments
                   </span>
                 </label>
               </div>

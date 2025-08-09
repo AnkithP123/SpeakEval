@@ -33,6 +33,7 @@ function Download() {
         }
 
         //iterate throught data.participant
+        console.log("Participants: ", data.audioUrl);
         const participantPromises = data.participant.map(
           async (participant, index) => {
             // Create a new object to avoid mutating the original data
