@@ -960,6 +960,30 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     }
   };
 
+  const handleEmailOptionChange = (option, value) => {
+    if (option === "includeVoiceNote" && value) {
+      // If "include voice note" is checked, force "include link" to be checked too.
+      setSingleEmailData((prev) => ({
+        ...prev,
+        includeVoiceNote: true,
+        includeResponseLink: true,
+      }));
+    } else if (option === "includeResponseLink" && !value) {
+      // If "include link" is unchecked, force "include voice note" to be unchecked too.
+      setSingleEmailData((prev) => ({
+        ...prev,
+        includeResponseLink: false,
+        includeVoiceNote: false,
+      }));
+    } else {
+      // Otherwise, just update the one that was changed.
+      setSingleEmailData((prev) => ({
+        ...prev,
+        [option]: value,
+      }));
+    }
+  };
+
   const handleShowSingleEmailModal = (emailData) => {
     setSingleEmailData(emailData);
     setShowSingleEmailModal(true);
@@ -981,18 +1005,24 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         pin: localStorage.getItem("token"),
       });
       queryParams.append("link", singleEmailData.includeResponseLink);
+      if (!singleEmailData.voiceCommentAudio) {
+        singleEmailData.includeVoiceNote = false;
+      }
+      queryParams.append("voice", singleEmailData.includeVoiceNote);
       const response = await fetch(
         `https://www.server.speakeval.org/send_email?${queryParams.toString()}`
       );
       const resp = await response.json();
       if (resp.resp.success) {
-        let uploadUrl = resp.uploadUrl;
-        let audioBlob = singleEmailData.voiceCommentAudio;
-        await fetch(uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": "audio/wav" },
-          body: audioBlob,
-        });
+        if (includeVoiceNote) {
+          let uploadUrl = resp.uploadUrl;
+          let audioBlob = singleEmailData.voiceCommentAudio;
+          await fetch(uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": "audio/wav" },
+            body: audioBlob,
+          });
+        }
         toast.success("Email sent successfully");
         setShowSingleEmailModal(false);
         setFailedEmails((prev) => {
@@ -1619,23 +1649,45 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 }
               />
             </div>
-            <div className="mb-4">
-              <label className="flex items-center space-x-2 text-gray-300">
+
+            {/* Checkbox section with new logic */}
+            <div className="mb-4 space-y-3">
+              <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={singleEmailData.includeResponseLink}
-                  onChange={(e) => {
-                    setSingleEmailData({
-                      ...singleEmailData,
-                      includeResponseLink: e.target.checked,
-                    });
-                  }}
+                  checked={singleEmailData.includeResponseLink || false}
+                  onChange={(e) =>
+                    handleEmailOptionChange(
+                      "includeResponseLink",
+                      e.target.checked
+                    )
+                  }
+                  className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
                 />
                 <span>
                   Include a link for the student to view their response
                 </span>
               </label>
+
+              {/* Conditionally render the voice note option only if one exists */}
+              {singleEmailData.voiceCommentAudio && (
+                <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={singleEmailData.includeVoiceNote || true}
+                    onChange={(e) =>
+                      handleEmailOptionChange(
+                        "includeVoiceNote",
+                        e.target.checked
+                      )
+                    }
+                    className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
+                  />
+                  <span>Include the teacher's voice note comment</span>
+                </label>
+              )}
             </div>
+
             <div className="flex justify-end mt-4">
               <button
                 className="px-4 py-2 mr-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-300"
