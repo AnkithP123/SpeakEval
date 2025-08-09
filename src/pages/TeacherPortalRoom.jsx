@@ -176,9 +176,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             toast.error(dataResponseJson.error);
             continue;
           }
-
-          setInfo(dataResponseJson.info || {});
-          console.log("Info: ", dataResponseJson.info);
+          if (("" + questionCode).slice(-3) === "001") {
+            setInfo(dataResponseJson.info || {});
+            console.log("Info: ", dataResponseJson.info);
+          }
           // if (!config.name) {
           //   console.log("Fetching config for question:", dataResponseJson);
           //   let configResponse = await fetch(
