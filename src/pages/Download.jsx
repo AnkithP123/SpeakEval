@@ -26,23 +26,27 @@ function Download() {
           `https://www.server.speakeval.org/download_bulk?token=${token}`
         );
         const data = await response.json();
-        console.log("Data: " + data);
+        console.log("Data: " + data.participant.length);
 
         if (data.error) {
           throw new Error(data.error);
         }
 
         setParticipants(data.participant);
-        setAudioUrls(data.audioUrl);
-        console.log("Audio URLs: ", data.audioUrl);
-        const audioResponse = await fetch(data.audioUrl);
-        if (!audioResponse.ok) {
-          throw new Error("Failed to download audio from S3.");
-        }
-        const audioBlob = await audioResponse.blob();
-
-        setAudioUrls(audioBlob);
-        console.log(JSON.stringify(data));
+        //iterate throught data.participant
+        let counter = 0;
+        data.participant.forEach(async (participant) => {
+          console.log("Audio URLs: ", data.audioUrl[counter]);
+          if (data.audioUrl[counter]) {
+            const audioResponse = await fetch(data.audioUrl[counter]);
+            if (!audioResponse.ok) {
+              throw new Error("Failed to download audio from S3.");
+            }
+            const audioBlob = await audioResponse.blob();
+            participant.voiceAudio = audioBlob;
+          }
+          counter++;
+        });
       } catch (err) {
         setError(err.message || "Failed to fetch participant data");
         toast.error(
@@ -112,7 +116,7 @@ function Download() {
             onGradeUpdate={() => {}}
             tokenProvided={true}
             participantPass={participant}
-            voiceComment={audioUrls}
+            voiceComment={participant.voiceAudio}
           />
         ))}
       </div>

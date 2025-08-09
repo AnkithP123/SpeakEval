@@ -584,6 +584,7 @@ Teacher's Comment: ${comment}`
       emailBody: autoEmail,
       code: effectiveCode,
       includeResponseLink: true,
+      includeVoiceNote: localVoiceComment !== null,
       voiceCommentAudio: localVoiceComment,
       emailSubject: "SpeakEval Exam Result",
     });
@@ -1001,7 +1002,7 @@ Teacher's Comment: ${comment}`
 
             {/* The standard HTML audio player is shown if a voice comment exists. */}
             {/* The 'controls' attribute makes the default player UI visible. */}
-            {voiceCommentUrl && (
+            {voiceCommentUrl && voiceComment && (
               <div className="flex items-center">
                 <audio src={voiceCommentUrl} controls className="h-9 w-48" />
               </div>

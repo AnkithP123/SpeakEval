@@ -1009,12 +1009,13 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         singleEmailData.includeVoiceNote = false;
       }
       queryParams.append("voice", singleEmailData.includeVoiceNote);
+      console.log("IncludeVoice is: ", singleEmailData.includeVoiceNote);
       const response = await fetch(
         `https://www.server.speakeval.org/send_email?${queryParams.toString()}`
       );
       const resp = await response.json();
       if (resp.resp.success) {
-        if (includeVoiceNote) {
+        if (singleEmailData.includeVoiceNote) {
           let uploadUrl = resp.uploadUrl;
           let audioBlob = singleEmailData.voiceCommentAudio;
           await fetch(uploadUrl, {
@@ -1674,7 +1675,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={singleEmailData.includeVoiceNote || true}
+                    checked={singleEmailData.includeVoiceNote || false}
                     onChange={(e) =>
                       handleEmailOptionChange(
                         "includeVoiceNote",
