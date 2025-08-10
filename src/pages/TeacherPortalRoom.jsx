@@ -67,6 +67,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     new Set()
   );
   const [includeResponseLink, setIncludeResponseLink] = useState(true);
+  const [includeVoice, setIncludeVoice] = useState(true);
   const [emailSubject, setEmailSubject] = useState("SpeakEval Exam Results");
   const [isEmailSending, setIsEmailSending] = useState(false);
 
@@ -176,9 +177,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             toast.error(dataResponseJson.error);
             continue;
           }
-
-          setInfo(dataResponseJson.info || {});
-          console.log("Info: ", dataResponseJson.info);
+          if (("" + questionCode).slice(-3) === "001") {
+            setInfo(dataResponseJson.info || {});
+            console.log("Info: ", dataResponseJson.info);
+          }
           // if (!config.name) {
           //   console.log("Fetching config for question:", dataResponseJson);
           //   let configResponse = await fetch(
@@ -485,7 +487,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
     grades,
     totalScore,
     comment,
-    categories
+    categories,
+    voiceComment
   ) => {
     const baseCode = roomCode.toString().slice(0, -3);
     const questionCode = customName
@@ -494,48 +497,33 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         )
       : roomCode;
 
-    if (customName) {
-      setParticipants((prevParticipants) => {
-        return prevParticipants.map((participant) => {
-          if (participant.name === participantName) {
-            const updatedQuestionData = new Map(participant.questionData);
-            if (updatedQuestionData.has(questionCode)) {
-              const existingData = updatedQuestionData.get(questionCode);
-              updatedQuestionData.set(questionCode, {
-                ...existingData,
+    setCOMPLETE_DATA_STORE((prevStore) => {
+      // Create a deep copy of the store immutably to prevent data corruption
+      // This correctly preserves the 'voiceComment' Blob object
+      const newStore = {
+        ...prevStore,
+        students: {
+          ...prevStore.students,
+          [participantName]: {
+            ...prevStore.students[participantName],
+            responses: {
+              ...prevStore.students[participantName]?.responses,
+              [questionCode]: {
+                ...prevStore.students[participantName]?.responses?.[
+                  questionCode
+                ],
                 grades,
                 totalScore,
                 teacherComment: comment,
                 categories,
-              });
-            }
-            return {
-              ...participant,
-              questionData: updatedQuestionData,
-            };
-          }
-          return participant;
-        });
-      });
-    } else {
-      setParticipants((prevParticipants) => {
-        return prevParticipants.map((question) => ({
-          ...question,
-          participants: question.participants.map((participant) => {
-            if (participant.name === participantName) {
-              return {
-                ...participant,
-                grades,
-                totalScore,
-                teacherComment: comment,
-                categories,
-              };
-            }
-            return participant;
-          }),
-        }));
-      });
-    }
+                voiceComment,
+              },
+            },
+          },
+        },
+      };
+      return newStore;
+    });
   };
 
   const sortParticipants = (participantsToSort) => {
@@ -906,6 +894,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                   grades: questionData.grades,
                   categories: questionData.categories,
                   teacherComment: questionData.teacherComment,
+                  voiceComment: questionData.voiceComment,
                 };
               }
               return null;
@@ -924,6 +913,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             examCode: baseExamCode,
             emailData,
             includeResponseLink,
+            includeVoice,
             subject: emailSubject,
             pin: localStorage.getItem("token"),
           }),
@@ -975,11 +965,64 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         setShowBulkEmailModal(false);
         setSelectedQuestionsToEmail(new Set());
       }
+
+      // --- Start of Corrected Upload Loop ---
+      let uploadUrls = data.uploadUrls || [];
+      let uploadCounter = 0;
+
+      // Use for...of loops to handle async operations sequentially and prevent race conditions
+      for (const studentObj of emailData) {
+        for (const gradeObj of studentObj.grades) {
+          // Check if we should upload, if a voice comment exists, and if there's a URL for it
+          if (
+            includeVoice &&
+            gradeObj.voiceComment &&
+            uploadCounter < uploadUrls.length
+          ) {
+            const uploadUrl = uploadUrls[uploadCounter];
+            const audioBlob = gradeObj.voiceComment;
+
+            await fetch(uploadUrl, {
+              method: "PUT",
+              headers: { "Content-Type": "audio/wav" },
+              body: audioBlob,
+            });
+
+            // Only increment the counter after an upload is attempted
+            uploadCounter++;
+          }
+        }
+      }
+      // --- End of Corrected Upload Loop ---
     } catch (error) {
       console.error("Error sending emails:", error);
       toast.error(`Failed to send emails: ${error.message}`);
     } finally {
       setIsEmailSending(false);
+    }
+  };
+
+  const handleEmailOptionChange = (option, value) => {
+    if (option === "includeVoiceNote" && value) {
+      // If "include voice note" is checked, force "include link" to be checked too.
+      setSingleEmailData((prev) => ({
+        ...prev,
+        includeVoiceNote: true,
+        includeResponseLink: true,
+      }));
+    } else if (option === "includeResponseLink" && !value) {
+      // If "include link" is unchecked, force "include voice note" to be unchecked too.
+      setSingleEmailData((prev) => ({
+        ...prev,
+        includeResponseLink: false,
+        includeVoiceNote: false,
+      }));
+    } else {
+      // Otherwise, just update the one that was changed.
+      setSingleEmailData((prev) => ({
+        ...prev,
+        [option]: value,
+      }));
     }
   };
 
@@ -1004,11 +1047,25 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         pin: localStorage.getItem("token"),
       });
       queryParams.append("link", singleEmailData.includeResponseLink);
+      if (!singleEmailData.voiceCommentAudio) {
+        singleEmailData.includeVoiceNote = false;
+      }
+      queryParams.append("voice", singleEmailData.includeVoiceNote);
+      console.log("IncludeVoice is: ", singleEmailData.includeVoiceNote);
       const response = await fetch(
         `https://www.server.speakeval.org/send_email?${queryParams.toString()}`
       );
       const resp = await response.json();
-      if (resp.success) {
+      if (resp.resp.success) {
+        if (singleEmailData.includeVoiceNote) {
+          let uploadUrl = resp.uploadUrl;
+          let audioBlob = singleEmailData.voiceCommentAudio;
+          await fetch(uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": "audio/wav" },
+            body: audioBlob,
+          });
+        }
         toast.success("Email sent successfully");
         setShowSingleEmailModal(false);
         setFailedEmails((prev) => {
@@ -1017,7 +1074,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           return newSet;
         });
       } else {
-        toast.error(resp.error || "Failed to send email");
+        toast.error(resp.resp.error || "Failed to send email");
       }
     } catch (error) {
       console.error("Error sending email:", error);
@@ -1308,6 +1365,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       }
                                       cheatingData={cheatingData}
                                       info={info}
+                                      voiceComment={responseData.voiceComment}
                                       className=""
                                     />
                                   ) : (
@@ -1360,6 +1418,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             onShowEmailModal={handleShowSingleEmailModal}
                             onShowInfractionsModal={handleShowInfractionsModal}
                             cheatingData={cheatingData}
+                            voiceComment={participant.voiceComment}
                             info={info}
                           />
                         );
@@ -1565,6 +1624,17 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                     Include links for students to review their responses
                   </span>
                 </label>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={includeVoice}
+                    onChange={(e) => setIncludeVoice(e.target.checked)}
+                    className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
+                  />
+                  <span className="text-sm text-white">
+                    Include the Voice Comments
+                  </span>
+                </label>
               </div>
 
               <div className="flex justify-end space-x-4">
@@ -1633,23 +1703,45 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 }
               />
             </div>
-            <div className="mb-4">
-              <label className="flex items-center space-x-2 text-gray-300">
+
+            {/* Checkbox section with new logic */}
+            <div className="mb-4 space-y-3">
+              <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={singleEmailData.includeResponseLink}
-                  onChange={(e) => {
-                    setSingleEmailData({
-                      ...singleEmailData,
-                      includeResponseLink: e.target.checked,
-                    });
-                  }}
+                  checked={singleEmailData.includeResponseLink || false}
+                  onChange={(e) =>
+                    handleEmailOptionChange(
+                      "includeResponseLink",
+                      e.target.checked
+                    )
+                  }
+                  className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
                 />
                 <span>
                   Include a link for the student to view their response
                 </span>
               </label>
+
+              {/* Conditionally render the voice note option only if one exists */}
+              {singleEmailData.voiceCommentAudio && (
+                <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={singleEmailData.includeVoiceNote || false}
+                    onChange={(e) =>
+                      handleEmailOptionChange(
+                        "includeVoiceNote",
+                        e.target.checked
+                      )
+                    }
+                    className="h-4 w-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/50"
+                  />
+                  <span>Include the teacher's voice note comment</span>
+                </label>
+              )}
             </div>
+
             <div className="flex justify-end mt-4">
               <button
                 className="px-4 py-2 mr-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-300"
