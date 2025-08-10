@@ -40,6 +40,9 @@ function ProfileCard({
   cheatingData = [],
   info = {},
   voiceComment = null,
+  initialGrades,
+  initialComment,
+  initialTotalScore,
 }) {
   // States used in both modes
   const [fetchedAudio, setFetchedAudio] = useState(false);
