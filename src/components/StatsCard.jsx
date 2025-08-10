@@ -47,9 +47,9 @@ function ProfileCard({
   const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [comment, setComment] = useState("");
-  const [totalScore, setTotalScore] = useState(0);
-  const [grades, setGrades] = useState({});
+  const [comment, setComment] = useState(initialComment || "");
+  const [totalScore, setTotalScore] = useState(initialTotalScore || 0);
+  const [grades, setGrades] = useState(initialGrades || {});
   const [justifications, setJustifications] = useState({});
   const [categories, setCategories] = useState([]);
 

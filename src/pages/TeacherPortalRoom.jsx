@@ -1366,6 +1366,11 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       cheatingData={cheatingData}
                                       info={info}
                                       voiceComment={responseData.voiceComment}
+                                      initialGrades={participant.grades}
+                                      initialComment={
+                                        participant.teacherComment
+                                      }
+                                      initialTotalScore={participant.totalScore}
                                       className=""
                                     />
                                   ) : (
@@ -1420,6 +1425,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             cheatingData={cheatingData}
                             voiceComment={participant.voiceComment}
                             info={info}
+                            initialGrades={participant.grades}
+                            initialComment={participant.teacherComment}
+                            initialTotalScore={participant.totalScore}
+                            className=""
                           />
                         );
                       }
