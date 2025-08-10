@@ -236,6 +236,7 @@ class WebSocketService {
       // Don't clear currentRoom and currentParticipant for reconnection
       // Only clear token if explicitly requested
     }
+    this.stopClientPing();
   }
 
   cleanup() {
@@ -244,6 +245,9 @@ class WebSocketService {
       document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
       this.visibilityChangeHandler = null;
     }
+    
+    // Stop client ping
+    this.stopClientPing();
     
     // Disconnect WebSocket
     this.disconnect();
@@ -272,6 +276,38 @@ class WebSocketService {
           messageId: messageId
         }
       });
+    }
+    
+    // Handle ping from server
+    if (type === 'ping') {
+      console.log('🏓 Received ping from server, sending pong response');
+      this.send({
+        type: 'pong',
+        payload: {
+          timestamp: payload.timestamp,
+          clientTime: Date.now(),
+          roomCode: this.currentRoom,
+          participant: this.currentParticipant
+        }
+      });
+      return; // Don't trigger listeners for ping
+    }
+    
+    // Handle pong acknowledgment from server
+    if (type === 'pong_ack') {
+      console.log('🏓 Received pong acknowledgment from server:', {
+        latency: payload.latency,
+        serverTime: payload.serverTime,
+        clientTime: payload.clientTime
+      });
+      return; // Don't trigger listeners for pong_ack
+    }
+    
+    // Handle kick message from server
+    if (type === 'kicked') {
+      console.log('🚫 Kicked by server:', payload.reason);
+      this.handleKick(payload);
+      return; // Don't trigger listeners for kicked
     }
     
     if (this.listeners.has(type)) {
@@ -443,16 +479,77 @@ class WebSocketService {
     });
   }
 
-  // 10. Heartbeat
-  sendHeartbeat() {
+  // 10. Ping (client-initiated)
+  sendPing() {
     this.send({
-      type: 'heartbeat',
+      type: 'ping',
       payload: { 
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
         timestamp: Date.now()
       }
     });
+  }
+
+  // Start client-side ping interval (optional, for additional monitoring)
+  startClientPing(intervalMs = 10000) {
+    if (this.clientPingInterval) {
+      clearInterval(this.clientPingInterval);
+    }
+    
+    this.clientPingInterval = setInterval(() => {
+      if (this.isConnected) {
+        console.log('🏓 Client sending ping to server');
+        this.sendPing();
+      }
+    }, intervalMs);
+    
+    console.log(`🏓 Client ping started with ${intervalMs}ms interval`);
+  }
+
+  // Stop client-side ping interval
+  stopClientPing() {
+    if (this.clientPingInterval) {
+      clearInterval(this.clientPingInterval);
+      this.clientPingInterval = null;
+      console.log('🏓 Client ping stopped');
+    }
+  }
+
+  // Handle kick from server
+  handleKick(payload) {
+    console.log('🚫 Handling server kick:', payload);
+    
+    // Disconnect from WebSocket
+    this.disconnect();
+    
+    // Clear any stored tokens/session data
+    if (typeof tokenManager !== 'undefined' && tokenManager.clearSession) {
+      tokenManager.clearSession();
+    }
+    
+    // Emit kick event for components to handle
+    if (this.listeners.has('kicked')) {
+      this.listeners.get('kicked').forEach(callback => {
+        try {
+          callback(payload);
+        } catch (error) {
+          console.error('Error in kicked listener:', error);
+        }
+      });
+    }
+    
+    // Show user-friendly message
+    if (typeof window !== 'undefined' && window.alert) {
+      window.alert(`You have been disconnected from the room: ${payload.reason}`);
+    }
+  }
+
+  // Helper method to check if client is about to be kicked
+  getMissedPingCount() {
+    // This would need to be implemented on the server side
+    // For now, return null to indicate it's not available
+    return null;
   }
 
   // 11. Student Status
