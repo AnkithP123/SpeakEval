@@ -10,8 +10,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import tokenManager from "../utils/tokenManager";
 import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
-import websocketService from '../utils/websocketService';
-
+import websocketService from "../utils/websocketService";
 
 export default function AudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -53,59 +52,59 @@ export default function AudioRecorder() {
   let played = false;
 
   // Stage-based data-driven approach
-  const [currentStage, setCurrentStage] = useState('initializing');
+  const [currentStage, setCurrentStage] = useState("initializing");
   const [thinkingProgress, setThinkingProgress] = useState(1); // Smooth progress (0 to 1)
   const [lastRoomRestart, setLastRoomRestart] = useState(null); // Track last room restart
   const [setupLoading, setSetupLoading] = useState({
     microphone: false,
-    fullscreen: false
+    fullscreen: false,
   });
 
   // Helper function to check if a room code is newer than another
   const isNewerRoomCode = (newCode, currentCode) => {
     if (!newCode || !currentCode) return false;
-    
+
     // Extract base and suffix from room codes
     const newBase = newCode.slice(0, 8);
     const newSuffix = newCode.slice(8);
     const currentBase = currentCode.slice(0, 8);
     const currentSuffix = currentCode.slice(8);
-    
+
     // If bases are different, they're different rooms entirely
     if (newBase !== currentBase) {
       return false;
     }
-    
+
     // Compare suffixes numerically
     const newSuffixNum = parseInt(newSuffix || "0", 10);
     const currentSuffixNum = parseInt(currentSuffix || "0", 10);
-    
+
     return newSuffixNum > currentSuffixNum;
   };
   const [stageData, setStageData] = useState({
     // Stage: 'initializing'
     audioDownloaded: false,
     audioDownloadError: null,
-    
+
     // Stage: 'setup'
     setup: {
       microphonePermission: false,
-      fullscreenEnabled: false,
+      fullscreenEnabled: true,
     },
-    
+
     // Stage: 'audio_play'
     audioPlay: {
       hasPlayed: false,
       isPlaying: false,
       playError: null,
     },
-    
+
     // Stage: 'thinking'
     thinking: {
       thinkingTimeRemaining: 0,
       thinkingComplete: false,
     },
-    
+
     // Stage: 'recording'
     recording: {
       isRecording: false,
@@ -113,7 +112,7 @@ export default function AudioRecorder() {
       recordingBlob: null,
       recordingError: null,
     },
-    
+
     // Stage: 'uploading'
     uploading: {
       isUploading: false,
@@ -123,10 +122,6 @@ export default function AudioRecorder() {
       transcriptionText: null,
       waitingForTranscription: false,
     },
-    
-
-    
-
   });
 
   const navigate = useNavigate();
@@ -134,17 +129,17 @@ export default function AudioRecorder() {
   // Stage transition logic
   const advanceStage = (newStage) => {
     console.log(`🔄 Advancing from stage '${currentStage}' to '${newStage}'`);
-    console.trace('Stage transition stack trace'); // Add stack trace to see what's calling this
+    console.trace("Stage transition stack trace"); // Add stack trace to see what's calling this
     setCurrentStage(newStage);
-    
+
     // Track stage start time for periodic checks
     window.stageStartTime = Date.now();
   };
-  
+
   // Reset state for new question
   const resetForNewQuestion = () => {
-    console.log('🔄 Resetting state for new question...');
-    
+    console.log("🔄 Resetting state for new question...");
+
     // Reset all recording-related states
     setIsRecording(false);
     setFinishedRecording(false);
@@ -154,13 +149,13 @@ export default function AudioRecorder() {
     setRemainingTime(-1);
     setError(null);
     setIsError(false);
-    
+
     // Clear any existing timers
     if (timer.current !== -1) {
       clearInterval(timer.current);
       timer.current = -1;
     }
-    
+
     // Reset stage data but preserve setup permissions for room restarts
     setStageData({
       audioDownloaded: false,
@@ -193,102 +188,101 @@ export default function AudioRecorder() {
         waitingForTranscription: false,
       },
     });
-    
+
     // Reset setup loading states
     setSetupLoading({
       microphone: false,
-      fullscreen: false
+      fullscreen: false,
     });
-    
+
     // Reset thinking progress
     setThinkingProgress(1);
-    
+
     // Reset anticheat flags for room restart
     setFullscreenViolationReported(false);
     setTabSwitchReported(false);
     setExamStarted(false);
     setIsFullscreen(false);
-    
+
     // Go to initializing to download new audio, then proceed through normal flow
-    console.log('🔄 New question - going to initializing stage to download audio');
-    advanceStage('initializing');
+    console.log(
+      "🔄 New question - going to initializing stage to download audio"
+    );
+    advanceStage("initializing");
   };
-  
+
   const updateStageData = (updates) => {
-    setStageData(prev => ({
+    setStageData((prev) => ({
       ...prev,
-      ...updates
+      ...updates,
     }));
   };
-  
+
   const updateSetup = (updates) => {
-    console.log('🔧 Updating setup data:', updates);
-    setStageData(prev => ({
+    console.log("🔧 Updating setup data:", updates);
+    setStageData((prev) => ({
       ...prev,
       setup: {
         ...prev.setup,
-        ...updates
-      }
+        ...updates,
+      },
     }));
   };
-  
+
   const updateRecordingData = (updates) => {
-    setStageData(prev => ({
+    setStageData((prev) => ({
       ...prev,
       recording: {
         ...prev.recording,
-        ...updates
-      }
+        ...updates,
+      },
     }));
   };
-  
+
   const updateUploadingData = (updates) => {
-    setStageData(prev => ({
+    setStageData((prev) => ({
       ...prev,
       uploading: {
         ...prev.uploading,
-        ...updates
-      }
+        ...updates,
+      },
     }));
   };
-  
+
   const updateAudioPlayData = (updates) => {
-    setStageData(prev => ({
+    setStageData((prev) => ({
       ...prev,
       audioPlay: {
         ...prev.audioPlay,
-        ...updates
-      }
+        ...updates,
+      },
     }));
   };
-  
+
   const updateThinkingData = (updates) => {
-    setStageData(prev => ({
+    setStageData((prev) => ({
       ...prev,
       thinking: {
         ...prev.thinking,
-        ...updates
-      }
+        ...updates,
+      },
     }));
   };
-  
 
-  
   // Stage validation functions
   const canAdvanceToSetup = () => {
     return stageData.audioDownloaded && !stageData.audioDownloadError;
   };
-  
+
   const canAdvanceToAudioPlay = () => {
     const setup = stageData.setup;
-    return setup.microphonePermission && 
-           setup.fullscreenEnabled;
+    return setup.microphonePermission && setup.fullscreenEnabled;
   };
-  
+
   const canAdvanceToThinking = () => {
     return stageData.audioPlay.hasPlayed && !stageData.audioPlay.playError;
   };
-  
+
   const canAdvanceToRecording = () => {
     // If thinking time is 0 or less, skip thinking stage
     if (thinkingTime <= 0) {
@@ -296,57 +290,60 @@ export default function AudioRecorder() {
     }
     return stageData.thinking.thinkingComplete;
   };
-  
+
   const canAdvanceToUploading = () => {
-    return stageData.recording.hasRecorded && 
-           stageData.recording.recordingBlob && 
-           !stageData.recording.recordingError;
+    return (
+      stageData.recording.hasRecorded &&
+      stageData.recording.recordingBlob &&
+      !stageData.recording.recordingError
+    );
   };
-  
+
   // Check current permissions for room restart optimization
   const checkCurrentPermissions = async () => {
-    console.log('🔍 Checking current permissions for room restart...');
-    
+    console.log("🔍 Checking current permissions for room restart...");
+
     // Check microphone permission
     let microphonePermission = false;
     try {
-      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const micStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
       microphonePermission = true;
-      micStream.getTracks().forEach(track => track.stop()); // Clean up
+      micStream.getTracks().forEach((track) => track.stop()); // Clean up
     } catch (error) {
-      console.log('❌ Microphone permission not available:', error.message);
+      console.log("❌ Microphone permission not available:", error.message);
     }
-    
+
     // Check fullscreen status
     const fullscreenEnabled = !!document.fullscreenElement;
-    
-    console.log('🔍 Current permissions:', {
+
+    console.log("🔍 Current permissions:", {
       microphonePermission,
       fullscreenEnabled,
-      isRoomRestart: !!lastRoomRestart
+      isRoomRestart: !!lastRoomRestart,
     });
-    
+
     return { microphonePermission, fullscreenEnabled };
   };
-  
+
   // Determine if setup can be skipped for room restart
   const canSkipSetupForRestart = async () => {
     if (!lastRoomRestart) return false;
-    
+
     const permissions = await checkCurrentPermissions();
-    const bothPermissionsAvailable = permissions.microphonePermission && permissions.fullscreenEnabled;
-    
-    console.log('🔍 Can skip setup for restart:', {
+    const bothPermissionsAvailable =
+      permissions.microphonePermission && permissions.fullscreenEnabled;
+
+    console.log("🔍 Can skip setup for restart:", {
       isRoomRestart: !!lastRoomRestart,
       bothPermissionsAvailable,
-      permissions
+      permissions,
     });
-    
+
     return bothPermissionsAvailable;
   };
-  
 
-  
   // Real-time communication
   const {
     isConnected,
@@ -366,7 +363,7 @@ export default function AudioRecorder() {
     uploadStarted,
     uploadCompleted,
     reportError,
-    reconnect
+    reconnect,
   } = useRealTimeCommunication();
 
   // Media recorder setup - we'll handle permissions manually
@@ -402,21 +399,21 @@ export default function AudioRecorder() {
       // Try to reconnect with existing token
       const existingToken = tokenManager.getStudentToken();
       if (existingToken) {
-        console.log('🔄 Connecting with stored token...');
+        console.log("🔄 Connecting with stored token...");
         connectForReconnect(existingToken);
       } else {
-        console.error('❌ No token available for connection');
+        console.error("❌ No token available for connection");
       }
-      
+
       // Set up event listeners
       const handleRoomStarted = (payload) => {
-        console.log('🎯 Room started:', payload);
-        updateStudentStatus('exam_started');
+        console.log("🎯 Room started:", payload);
+        updateStudentStatus("exam_started");
         // Handle room start - could trigger question audio playback
       };
-      
+
       const handleQuestionChange = (payload) => {
-        console.log('🔄 Question changed:', payload);
+        console.log("🔄 Question changed:", payload);
         questionStarted(payload.questionIndex);
         // Handle question change - reset recording state
         setIsRecording(false);
@@ -428,59 +425,65 @@ export default function AudioRecorder() {
           timer.current = -1;
         }
       };
-      
+
       const handleRoomRestart = (payload) => {
-        console.log('🔄 Room restarted:', payload);
-        
+        console.log("🔄 Room restarted:", payload);
+
         // Extract new token and room information - handle multiple formats
         const { newToken, newRoomCode, participant, latestToken } = payload;
-        
+
         // Determine which token to use
         const tokenToUse = newToken || latestToken;
         const roomCodeToUse = newRoomCode;
-        
+
         if (tokenToUse && participant) {
           // Get current room code from token
           const currentInfo = tokenManager.getStudentInfo();
           const currentRoomCode = currentInfo?.roomCode;
-          
+
           // Decode the token to get the room code if not provided
           const tokenInfo = tokenManager.decodeStudentToken(tokenToUse);
           const actualNewRoomCode = roomCodeToUse || tokenInfo?.roomCode;
-          
-          console.log('🔄 Room restart comparison:', {
+
+          console.log("🔄 Room restart comparison:", {
             currentRoomCode,
             actualNewRoomCode,
             roomCodeChanged: currentRoomCode !== actualNewRoomCode,
-            isNewer: isNewerRoomCode(actualNewRoomCode, currentRoomCode)
+            isNewer: isNewerRoomCode(actualNewRoomCode, currentRoomCode),
           });
-          
+
           // Only proceed if the new room code is actually newer
           if (isNewerRoomCode(actualNewRoomCode, currentRoomCode)) {
-            console.log('🔄 New room code is newer, proceeding with restart');
-            
+            console.log("🔄 New room code is newer, proceeding with restart");
+
             // Track this room restart
             setLastRoomRestart({
               timestamp: Date.now(),
               newRoomCode: actualNewRoomCode,
               newToken: tokenToUse,
-              participant
+              participant,
             });
-            
+
             // Always update token in localStorage
             tokenManager.setStudentToken(tokenToUse);
-            
+
             // New question - reset state and continue
             toast.success("New question received - preparing...");
             console.log("Room code changed, resetting for new question...");
             resetForNewQuestion();
           } else {
-            console.log('🔄 Room restart ignored - new room code is not newer than current');
-            console.log('🔍 Room code analysis:', {
+            console.log(
+              "🔄 Room restart ignored - new room code is not newer than current"
+            );
+            console.log("🔍 Room code analysis:", {
               current: currentRoomCode,
               new: actualNewRoomCode,
-              currentSuffix: currentRoomCode ? currentRoomCode.slice(8) : 'none',
-              newSuffix: actualNewRoomCode ? actualNewRoomCode.slice(8) : 'none'
+              currentSuffix: currentRoomCode
+                ? currentRoomCode.slice(8)
+                : "none",
+              newSuffix: actualNewRoomCode
+                ? actualNewRoomCode.slice(8)
+                : "none",
             });
           }
         } else {
@@ -490,31 +493,31 @@ export default function AudioRecorder() {
           window.location.reload();
         }
       };
-      
+
       const handleParticipantUpdate = (payload) => {
-        console.log('👥 Participant update:', payload);
+        console.log("👥 Participant update:", payload);
         // Handle participant status updates
       };
-      
+
       const handleExamStarted = (payload) => {
-        console.log('🎯 Exam started:', payload);
-        updateStudentStatus('exam_started');
+        console.log("🎯 Exam started:", payload);
+        updateStudentStatus("exam_started");
       };
-      
+
       const handleReconnectNeeded = (payload) => {
-        console.log('🔄 Reconnection needed:', payload);
+        console.log("🔄 Reconnection needed:", payload);
         // Try to reconnect automatically
         reconnect();
       };
-      
+
       const handleRoomStateSync = (payload) => {
-        console.log('📊 Room state sync received:', payload);
-        
-        const { 
-          roomCode, 
-          participant, 
-          roomStarted, 
-          examStarted, 
+        console.log("📊 Room state sync received:", payload);
+
+        const {
+          roomCode,
+          participant,
+          roomStarted,
+          examStarted,
           currentQuestion,
           timeLimit,
           thinkingTime,
@@ -522,9 +525,9 @@ export default function AudioRecorder() {
           latestToken,
           roomRestarted,
           newRoomCode,
-          newToken
+          newToken,
         } = payload;
-        
+
         // Update time limit if provided (only if recording hasn't finished)
         if (timeLimit !== undefined) {
           setTimeLimit(timeLimit);
@@ -537,7 +540,7 @@ export default function AudioRecorder() {
           }
           // If recording has finished, keep timer at "xx:xx"
         }
-        
+
         // Update other settings
         if (thinkingTime !== undefined) {
           setThinkingTime(thinkingTime);
@@ -545,96 +548,107 @@ export default function AudioRecorder() {
         if (allowRepeat !== undefined) {
           setAllowRepeat(allowRepeat);
         }
-        
+
         // Enhanced room restart detection - check multiple indicators
-        const hasRoomRestartInfo = roomRestarted || newRoomCode || newToken || latestToken;
+        const hasRoomRestartInfo =
+          roomRestarted || newRoomCode || newToken || latestToken;
         const hasTokenInfo = latestToken || newToken;
-        
+
         if (hasRoomRestartInfo && hasTokenInfo) {
-          console.log('🔄 Room restart detected in state sync:', {
+          console.log("🔄 Room restart detected in state sync:", {
             roomRestarted,
             newRoomCode,
             hasNewToken: !!newToken,
-            hasLatestToken: !!latestToken
+            hasLatestToken: !!latestToken,
           });
-          
+
           // Determine which token to use
           const tokenToUse = newToken || latestToken;
-          
+
           // Get current room info from token
           const currentTokenInfo = tokenManager.getStudentInfo();
           const currentRoomCode = currentTokenInfo?.roomCode;
-          
+
           // Decode the new token to get the new room code
           const newTokenInfo = tokenManager.decodeStudentToken(tokenToUse);
           const actualNewRoomCode = newRoomCode || newTokenInfo?.roomCode;
-          
-          console.log('🔍 Room code comparison:', {
+
+          console.log("🔍 Room code comparison:", {
             current: currentRoomCode,
             new: actualNewRoomCode,
             changed: currentRoomCode !== actualNewRoomCode,
-            isNewer: isNewerRoomCode(actualNewRoomCode, currentRoomCode)
+            isNewer: isNewerRoomCode(actualNewRoomCode, currentRoomCode),
           });
-          
+
           // Only proceed if the new room code is actually newer
           if (isNewerRoomCode(actualNewRoomCode, currentRoomCode)) {
-            console.log('🔄 New room code is newer, proceeding with restart');
-            
+            console.log("🔄 New room code is newer, proceeding with restart");
+
             // Track this room restart
             setLastRoomRestart({
               timestamp: Date.now(),
               newRoomCode: actualNewRoomCode,
               newToken: tokenToUse,
-              participant: participant
+              participant: participant,
             });
-            
+
             // Always update token and reset for new question
-            console.log('🔄 Room restart detected, updating token and resetting for new question');
+            console.log(
+              "🔄 Room restart detected, updating token and resetting for new question"
+            );
             tokenManager.setStudentToken(tokenToUse);
-            
+
             toast.success("New question received - preparing...");
             resetForNewQuestion();
             return;
           } else {
-            console.log('🔄 Room restart ignored - new room code is not newer than current');
-            console.log('🔍 Room code analysis:', {
+            console.log(
+              "🔄 Room restart ignored - new room code is not newer than current"
+            );
+            console.log("🔍 Room code analysis:", {
               current: currentRoomCode,
               new: actualNewRoomCode,
-              currentSuffix: currentRoomCode ? currentRoomCode.slice(8) : 'none',
-              newSuffix: actualNewRoomCode ? actualNewRoomCode.slice(8) : 'none'
+              currentSuffix: currentRoomCode
+                ? currentRoomCode.slice(8)
+                : "none",
+              newSuffix: actualNewRoomCode
+                ? actualNewRoomCode.slice(8)
+                : "none",
             });
             return;
           }
         }
-        
+
         // Handle exam started state
         if (examStarted && roomStarted) {
-          console.log('🎯 Exam has started, navigating to record page');
+          console.log("🎯 Exam has started, navigating to record page");
           toast.success("Exam has started");
           navigate("/record");
           return;
         }
-        
+
         // Handle room started but not exam
         if (roomStarted && !examStarted) {
-          console.log('📊 Room has started but exam not yet begun');
+          console.log("📊 Room has started but exam not yet begun");
           // Stay on current page, wait for exam to start
         }
-        
+
         // Additional check: if we receive a state sync with a different room code than current,
         // it might indicate a room restart that wasn't explicitly flagged
         if (roomCode && participant) {
           const currentInfo = tokenManager.getStudentInfo();
           const currentRoomCode = currentInfo?.roomCode;
-          
+
           if (currentRoomCode && roomCode !== currentRoomCode) {
-            console.log('🔄 Room code mismatch detected in state sync - possible room restart');
-            console.log('🔍 Room code comparison:', {
+            console.log(
+              "🔄 Room code mismatch detected in state sync - possible room restart"
+            );
+            console.log("🔍 Room code comparison:", {
               current: currentRoomCode,
               received: roomCode,
-              changed: true
+              changed: true,
             });
-            
+
             // This might be a room restart - force a reset
             toast.success("New question received - preparing...");
             resetForNewQuestion();
@@ -642,61 +656,73 @@ export default function AudioRecorder() {
           }
         }
       };
-      
+
       // Add event listeners
-      onWebSocketEvent('room_started', handleRoomStarted);
-      onWebSocketEvent('question_changed', handleQuestionChange);
-      onWebSocketEvent('room_restart', handleRoomRestart);
-      onWebSocketEvent('participant_update', handleParticipantUpdate);
-      onWebSocketEvent('exam_started', handleExamStarted);
-      onWebSocketEvent('reconnect_needed', handleReconnectNeeded);
-      onWebSocketEvent('room_state_sync', handleRoomStateSync);
-      
+      onWebSocketEvent("room_started", handleRoomStarted);
+      onWebSocketEvent("question_changed", handleQuestionChange);
+      onWebSocketEvent("room_restart", handleRoomRestart);
+      onWebSocketEvent("participant_update", handleParticipantUpdate);
+      onWebSocketEvent("exam_started", handleExamStarted);
+      onWebSocketEvent("reconnect_needed", handleReconnectNeeded);
+      onWebSocketEvent("room_state_sync", handleRoomStateSync);
+
       // Add additional handlers for different message types that might contain room restart info
       const handleReconnectSuccess = (payload) => {
-        console.log('🔄 Reconnect success:', payload);
+        console.log("🔄 Reconnect success:", payload);
         // Check if this reconnect contains room restart information
-        if (payload.roomRestarted || payload.latestToken || payload.newToken || payload.newRoomCode) {
-          console.log('🔄 Reconnect success contains room restart info');
+        if (
+          payload.roomRestarted ||
+          payload.latestToken ||
+          payload.newToken ||
+          payload.newRoomCode
+        ) {
+          console.log("🔄 Reconnect success contains room restart info");
           handleRoomRestart(payload);
         }
       };
-      
+
       const handleStateSync = (payload) => {
-        console.log('📊 State sync received:', payload);
+        console.log("📊 State sync received:", payload);
         // Check if this state sync contains room restart information
-        if (payload.roomRestarted || payload.latestToken || payload.newToken || payload.newRoomCode) {
-          console.log('🔄 State sync contains room restart info');
+        if (
+          payload.roomRestarted ||
+          payload.latestToken ||
+          payload.newToken ||
+          payload.newRoomCode
+        ) {
+          console.log("🔄 State sync contains room restart info");
           handleRoomStateSync(payload);
         }
       };
-      
-      onWebSocketEvent('reconnect_success', handleReconnectSuccess);
-      onWebSocketEvent('state_sync', handleStateSync);
-      
 
-      
+      onWebSocketEvent("reconnect_success", handleReconnectSuccess);
+      onWebSocketEvent("state_sync", handleStateSync);
+
       return () => {
         // Cleanup event listeners
-        offWebSocketEvent('room_started', handleRoomStarted);
-        offWebSocketEvent('question_changed', handleQuestionChange);
-        offWebSocketEvent('room_restart', handleRoomRestart);
-        offWebSocketEvent('participant_update', handleParticipantUpdate);
-        offWebSocketEvent('exam_started', handleExamStarted);
-        offWebSocketEvent('reconnect_needed', handleReconnectNeeded);
-        offWebSocketEvent('room_state_sync', handleRoomStateSync);
-        
-        // Clean up additional event listeners
-        offWebSocketEvent('reconnect_success', handleReconnectSuccess);
-        offWebSocketEvent('state_sync', handleStateSync);
-        
+        offWebSocketEvent("room_started", handleRoomStarted);
+        offWebSocketEvent("question_changed", handleQuestionChange);
+        offWebSocketEvent("room_restart", handleRoomRestart);
+        offWebSocketEvent("participant_update", handleParticipantUpdate);
+        offWebSocketEvent("exam_started", handleExamStarted);
+        offWebSocketEvent("reconnect_needed", handleReconnectNeeded);
+        offWebSocketEvent("room_state_sync", handleRoomStateSync);
 
-        
+        // Clean up additional event listeners
+        offWebSocketEvent("reconnect_success", handleReconnectSuccess);
+        offWebSocketEvent("state_sync", handleStateSync);
+
         // Clean up WebSocket service properly
         websocketService.cleanup();
       };
     }
-  }, [connectForReconnect, disconnectWebSocket, onWebSocketEvent, offWebSocketEvent, reconnect]);
+  }, [
+    connectForReconnect,
+    disconnectWebSocket,
+    onWebSocketEvent,
+    offWebSocketEvent,
+    reconnect,
+  ]);
 
   // Update display time when remaining time changes (only if recording hasn't finished)
   useEffect(() => {
@@ -714,61 +740,73 @@ export default function AudioRecorder() {
   useEffect(() => {
     const handleStageTransitions = async () => {
       // Auto-advance to thinking when audio play is complete (only if there's thinking time)
-      if (currentStage === 'audio_play' && canAdvanceToThinking() && thinkingTime > 0) {
-        advanceStage('thinking');
+      if (
+        currentStage === "audio_play" &&
+        canAdvanceToThinking() &&
+        thinkingTime > 0
+      ) {
+        advanceStage("thinking");
       }
-      
+
       // Auto-advance directly to recording when audio play is complete and no thinking time
-      if (currentStage === 'audio_play' && canAdvanceToRecording() && thinkingTime <= 0) {
+      if (
+        currentStage === "audio_play" &&
+        canAdvanceToRecording() &&
+        thinkingTime <= 0
+      ) {
         try {
           // Start recording BEFORE switching to recording stage for minimal delay
-          console.log('🎙️ Starting recording before stage switch (no thinking time)...');
+          console.log(
+            "🎙️ Starting recording before stage switch (no thinking time)..."
+          );
           await startRecording();
-          updateRecordingData({ 
+          updateRecordingData({
             isRecording: true,
             hasRecorded: false,
-            recordingError: null 
+            recordingError: null,
           });
-          
+
           // Now advance to recording stage
-          advanceStage('recording');
+          advanceStage("recording");
         } catch (error) {
-          console.error('❌ Failed to start recording:', error);
-          updateRecordingData({ 
+          console.error("❌ Failed to start recording:", error);
+          updateRecordingData({
             isRecording: false,
             hasRecorded: false,
-            recordingError: error.message 
+            recordingError: error.message,
           });
         }
       }
-      
+
       // Auto-advance to recording when thinking is complete
-      if (currentStage === 'thinking' && canAdvanceToRecording()) {
+      if (currentStage === "thinking" && canAdvanceToRecording()) {
         try {
           // Start recording BEFORE switching to recording stage for minimal delay
-          console.log('🎙️ Starting recording before stage switch (after thinking)...');
+          console.log(
+            "🎙️ Starting recording before stage switch (after thinking)..."
+          );
           await startRecording();
-          updateRecordingData({ 
+          updateRecordingData({
             isRecording: true,
             hasRecorded: false,
-            recordingError: null 
+            recordingError: null,
           });
-          
+
           // Now advance to recording stage
-          advanceStage('recording');
+          advanceStage("recording");
         } catch (error) {
-          console.error('❌ Failed to start recording:', error);
-          updateRecordingData({ 
+          console.error("❌ Failed to start recording:", error);
+          updateRecordingData({
             isRecording: false,
             hasRecorded: false,
-            recordingError: error.message 
+            recordingError: error.message,
           });
         }
       }
-      
+
       // Auto-advance to uploading when recording is complete
-      if (currentStage === 'recording' && canAdvanceToUploading()) {
-        advanceStage('uploading');
+      if (currentStage === "recording" && canAdvanceToUploading()) {
+        advanceStage("uploading");
       }
     };
 
@@ -777,33 +815,57 @@ export default function AudioRecorder() {
 
   // Start audio download when component mounts
   useEffect(() => {
-    if (currentStage === 'initializing' && !stageData.audioDownloaded && !stageData.audioDownloadError) {
-      console.log('🎵 Starting audio download...');
+    if (
+      currentStage === "initializing" &&
+      !stageData.audioDownloaded &&
+      !stageData.audioDownloadError
+    ) {
+      console.log("🎵 Starting audio download...");
       makeResponse();
     }
   }, [currentStage, stageData.audioDownloaded, stageData.audioDownloadError]);
 
   // Fallback: If we're in initializing stage but no download has started, trigger it
   useEffect(() => {
-    if (currentStage === 'initializing' && !fetching && !stageData.audioDownloaded && !stageData.audioDownloadError) {
-      console.log('🎵 Fallback: Starting audio download...');
+    if (
+      currentStage === "initializing" &&
+      !fetching &&
+      !stageData.audioDownloaded &&
+      !stageData.audioDownloadError
+    ) {
+      console.log("🎵 Fallback: Starting audio download...");
       makeResponse();
     }
-  }, [currentStage, fetching, stageData.audioDownloaded, stageData.audioDownloadError]);
+  }, [
+    currentStage,
+    fetching,
+    stageData.audioDownloaded,
+    stageData.audioDownloadError,
+  ]);
 
   // Periodic check for state sync when stuck
   useEffect(() => {
     const checkForStuckState = () => {
       // If we're in initializing for too long without progress, force a refresh
-      if (currentStage === 'initializing' && !fetching && !stageData.audioDownloaded) {
-        console.log('🔄 Periodic check: Stuck in initializing, forcing audio download...');
+      if (
+        currentStage === "initializing" &&
+        !fetching &&
+        !stageData.audioDownloaded
+      ) {
+        console.log(
+          "🔄 Periodic check: Stuck in initializing, forcing audio download..."
+        );
         makeResponse();
       }
-      
+
       // Additional check: if we're in any stage for too long without progress, request state sync
-      const timeInCurrentStage = Date.now() - (window.stageStartTime || Date.now());
-      if (timeInCurrentStage > 30000) { // 30 seconds
-        console.log('🔄 Periodic check: Been in current stage too long, requesting state sync...');
+      const timeInCurrentStage =
+        Date.now() - (window.stageStartTime || Date.now());
+      if (timeInCurrentStage > 30000) {
+        // 30 seconds
+        console.log(
+          "🔄 Periodic check: Been in current stage too long, requesting state sync..."
+        );
         // Request state sync from server
         if (window.websocketService) {
           window.websocketService.requestStateSync();
@@ -813,36 +875,34 @@ export default function AudioRecorder() {
 
     // Check every 10 seconds
     const interval = setInterval(checkForStuckState, 10000);
-    
+
     return () => clearInterval(interval);
   }, [currentStage, fetching, stageData.audioDownloaded]);
-  
-
 
   // Start thinking timer when thinking stage begins
   useEffect(() => {
-    if (currentStage === 'thinking' && thinkingTime > 0) {
-      console.log('🤔 Starting thinking timer...');
-      
+    if (currentStage === "thinking" && thinkingTime > 0) {
+      console.log("🤔 Starting thinking timer...");
+
       const startTime = Date.now();
       const totalDuration = thinkingTime * 1000; // Convert to milliseconds
-      
+
       // Initialize thinking time
-      updateThinkingData({ 
+      updateThinkingData({
         thinkingTimeRemaining: thinkingTime,
-        thinkingComplete: false 
+        thinkingComplete: false,
       });
-      
+
       // Smooth animation timer (updates every 16ms for 60fps)
       const smoothInterval = setInterval(() => {
         const elapsed = Date.now() - startTime;
         const remaining = Math.max(0, totalDuration - elapsed);
         const remainingSeconds = Math.ceil(remaining / 1000);
         const progress = remaining / totalDuration; // 1 to 0
-        
+
         setThinkingProgress(progress);
-        
-        setStageData(prev => {
+
+        setStageData((prev) => {
           if (remaining <= 0) {
             // Thinking time complete
             clearInterval(smoothInterval);
@@ -850,21 +910,21 @@ export default function AudioRecorder() {
               ...prev,
               thinking: {
                 thinkingTimeRemaining: 0,
-                thinkingComplete: true
-              }
+                thinkingComplete: true,
+              },
             };
           }
-          
+
           return {
             ...prev,
             thinking: {
               thinkingTimeRemaining: remainingSeconds,
-              thinkingComplete: false
-            }
+              thinkingComplete: false,
+            },
           };
         });
       }, 16); // 60fps for smooth animation
-      
+
       // Cleanup interval on unmount or stage change
       return () => {
         clearInterval(smoothInterval);
@@ -875,23 +935,27 @@ export default function AudioRecorder() {
   // Fallback: Auto-start recording if somehow we're in recording stage without recording started
   useEffect(() => {
     const handleFallbackRecording = async () => {
-      if (currentStage === 'recording' && !stageData.recording.isRecording && !stageData.recording.hasRecorded) {
+      if (
+        currentStage === "recording" &&
+        !stageData.recording.isRecording &&
+        !stageData.recording.hasRecorded
+      ) {
         try {
-          console.log('🎙️ Fallback: Starting recording in recording stage...');
-          
+          console.log("🎙️ Fallback: Starting recording in recording stage...");
+
           // Start recording as fallback
           await startRecording();
-          updateRecordingData({ 
+          updateRecordingData({
             isRecording: true,
             hasRecorded: false,
-            recordingError: null 
+            recordingError: null,
           });
         } catch (error) {
-          console.error('❌ Fallback recording failed:', error);
-          updateRecordingData({ 
+          console.error("❌ Fallback recording failed:", error);
+          updateRecordingData({
             isRecording: false,
             hasRecorded: false,
-            recordingError: error.message 
+            recordingError: error.message,
           });
         }
       }
@@ -900,26 +964,24 @@ export default function AudioRecorder() {
     handleFallbackRecording();
   }, [currentStage]);
 
-
-
   const isStreamValid = (stream) => {
     if (!stream) return false;
     const tracks = stream.getAudioTracks();
-    return tracks.length > 0 && tracks[0].readyState === 'live';
+    return tracks.length > 0 && tracks[0].readyState === "live";
   };
 
   const requestPermissions = async () => {
     try {
       // Check if we already have a valid microphone stream
       if (microphoneStream && isStreamValid(microphoneStream)) {
-        console.log('🎤 Using existing microphone stream');
+        console.log("🎤 Using existing microphone stream");
         setHasPermissions(true);
         setError(null);
         setIsError(false);
         return { permissionGranted: true, stream: microphoneStream };
       }
 
-      console.log('🎤 Requesting new microphone stream');
+      console.log("🎤 Requesting new microphone stream");
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: false,
@@ -932,7 +994,7 @@ export default function AudioRecorder() {
       if (videoTracks.length > 0) {
         videoTracks[0].enabled = true;
       }
-      
+
       // Store the microphone stream for later reuse
       setMicrophoneStream(stream);
       setHasPermissions(true);
@@ -953,14 +1015,14 @@ export default function AudioRecorder() {
     console.log("Audio recording stopped:", blobUrl);
     const formData = new FormData();
     formData.append("audio", blob, "audio.wav");
-    
+
     // Update recording data with blob
-    updateRecordingData({ 
+    updateRecordingData({
       recordingBlob: blob,
       hasRecorded: true,
-      isRecording: false 
+      isRecording: false,
     });
-    
+
     // Start upload process
     await upload(formData);
     setAudioURL(blobUrl);
@@ -1028,11 +1090,11 @@ export default function AudioRecorder() {
     return () => {
       // Clean up microphone stream
       if (microphoneStream) {
-        microphoneStream.getTracks().forEach(track => track.stop());
+        microphoneStream.getTracks().forEach((track) => track.stop());
       }
       // Clean up screen stream
       if (screenStream) {
-        screenStream.getTracks().forEach(track => track.stop());
+        screenStream.getTracks().forEach((track) => track.stop());
       }
     };
   }, [microphoneStream, screenStream]);
@@ -1062,21 +1124,19 @@ export default function AudioRecorder() {
     }
   }, [audioStatus]);
 
-
-
   // Monitor fullscreen state and prevent suspicious activities
   useEffect(() => {
     const reportCheatingViaWebSocket = (messageText) => {
       if (websocketService && websocketService.isConnected) {
         console.log("🚨 Reporting cheating via WebSocket:", messageText);
         websocketService.reportCheating(messageText);
-        
+
         // Set flags to prevent multiple reports
-            if (messageText === "Fullscreen exit detected") {
-              setFullscreenViolationReported(true);
-            } else if (messageText === "Tab switch detected") {
-              setTabSwitchReported(true);
-            }
+        if (messageText === "Fullscreen exit detected") {
+          setFullscreenViolationReported(true);
+        } else if (messageText === "Tab switch detected") {
+          setTabSwitchReported(true);
+        }
       } else {
         console.error("WebSocket not connected, cannot report cheating");
       }
@@ -1091,16 +1151,22 @@ export default function AudioRecorder() {
         fullscreenViolationReported,
         currentStage,
         examStarted,
-        lastRoomRestart: !!lastRoomRestart
+        lastRoomRestart: !!lastRoomRestart,
       });
-      
+
       // If they exit fullscreen during setup, uncheck the fullscreen setup
-      if (!document.fullscreenElement && currentStage === 'setup' && stageData.setup.fullscreenEnabled) {
-        console.log("🔄 Fullscreen exited during setup - unchecking fullscreen");
+      if (
+        !document.fullscreenElement &&
+        currentStage === "setup" &&
+        stageData.setup.fullscreenEnabled
+      ) {
+        console.log(
+          "🔄 Fullscreen exited during setup - unchecking fullscreen"
+        );
         updateSetup({ fullscreenEnabled: false });
         return;
       }
-      
+
       // If they exit fullscreen during exam (after Continue to Question), report cheating
       // But don't flag them immediately if this is a room restart and they haven't clicked continue yet
       if (
@@ -1108,7 +1174,7 @@ export default function AudioRecorder() {
         examStarted &&
         !finishedRecording &&
         !fullscreenViolationReported &&
-        !(lastRoomRestart && currentStage === 'initializing') // Don't flag during room restart before continue
+        !(lastRoomRestart && currentStage === "initializing") // Don't flag during room restart before continue
       ) {
         console.log("🚨 Fullscreen exit detected during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
@@ -1116,7 +1182,8 @@ export default function AudioRecorder() {
         cuteToast({
           type: "error",
           title: "Fullscreen exit detected",
-          description: "Exiting fullscreen is not allowed. This will be reported to your teacher."
+          description:
+            "Exiting fullscreen is not allowed. This will be reported to your teacher.",
         });
       }
     };
@@ -1129,15 +1196,15 @@ export default function AudioRecorder() {
         tabSwitchReported,
         currentStage,
         examStarted,
-        lastRoomRestart: !!lastRoomRestart
+        lastRoomRestart: !!lastRoomRestart,
       });
-      
+
       if (
         document.hidden &&
         examStarted &&
         !finishedRecording &&
         !tabSwitchReported &&
-        !(lastRoomRestart && currentStage === 'initializing') // Don't flag during room restart before continue
+        !(lastRoomRestart && currentStage === "initializing") // Don't flag during room restart before continue
       ) {
         console.log("🚨 Tab switch detected during exam!");
         setTabSwitchReported(true); // Set flag to prevent multiple alerts
@@ -1145,7 +1212,8 @@ export default function AudioRecorder() {
         cuteToast({
           type: "error",
           title: "Tab switch detected",
-          description: "You switched tabs or went out of the window. This will be reported to your teacher."
+          description:
+            "You switched tabs or went out of the window. This will be reported to your teacher.",
         });
       }
     };
@@ -1180,8 +1248,10 @@ export default function AudioRecorder() {
         examStarted &&
         !finishedRecording &&
         !fullscreenViolationReported &&
-        (!document.fullscreenElement || document.hidden || document.hasFocus() === false) &&
-        !(lastRoomRestart && currentStage === 'initializing') // Don't flag during room restart before continue
+        (!document.fullscreenElement ||
+          document.hidden ||
+          document.hasFocus() === false) &&
+        !(lastRoomRestart && currentStage === "initializing") // Don't flag during room restart before continue
       ) {
         console.log("🚨 Focus or fullscreen lost during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
@@ -1189,7 +1259,8 @@ export default function AudioRecorder() {
         cuteToast({
           type: "error",
           title: "Focus or fullscreen lost",
-          description: "You lost focus or exited fullscreen. This will be reported to your teacher."
+          description:
+            "You lost focus or exited fullscreen. This will be reported to your teacher.",
         });
       }
     };
@@ -1205,8 +1276,16 @@ export default function AudioRecorder() {
     return () => {
       console.log("🔒 Cleaning up anti-cheat event listeners");
       clearInterval(focusCheckInterval);
-      document.removeEventListener("fullscreenchange", onFullscreenChange, true);
-      document.removeEventListener("visibilitychange", onVisibilityChange, true);
+      document.removeEventListener(
+        "fullscreenchange",
+        onFullscreenChange,
+        true
+      );
+      document.removeEventListener(
+        "visibilitychange",
+        onVisibilityChange,
+        true
+      );
       document.removeEventListener("keydown", preventKeyShortcuts, true);
       document.removeEventListener("contextmenu", preventContextMenu, true);
     };
@@ -1228,9 +1307,17 @@ export default function AudioRecorder() {
       examStarted,
       finishedRecording,
       fullscreenViolationReported,
-      tabSwitchReported
+      tabSwitchReported,
     });
-  }, [currentStage, isRecording, isFullscreen, examStarted, finishedRecording, fullscreenViolationReported, tabSwitchReported]);
+  }, [
+    currentStage,
+    isRecording,
+    isFullscreen,
+    examStarted,
+    finishedRecording,
+    fullscreenViolationReported,
+    tabSwitchReported,
+  ]);
 
   const pulse = keyframes`
     0% {
@@ -1243,8 +1330,6 @@ export default function AudioRecorder() {
       transform: scale(1);
     }
   `;
-
-
 
   const animation = (props) => css`
     ${pulse} 1.1s infinite;
@@ -1283,16 +1368,16 @@ export default function AudioRecorder() {
 
   const makeResponse = async () => {
     setFetching(true);
-    
+
     // Check if student is authenticated
     if (!tokenManager.isAuthenticated()) {
       toast.error("Please join the room first");
-          navigate("/join-room");
+      navigate("/join-room");
       return;
     }
 
     const token = tokenManager.getStudentToken();
-    
+
     try {
       const response = await fetch(
         `https://www.server.speakeval.org/receiveaudio?token=${token}&number=1`
@@ -1337,16 +1422,16 @@ export default function AudioRecorder() {
         // Use the presigned URL directly
         setAudioBlobURL(audioUrls[0]);
         questionIndex = receivedData.questionIndex;
-        
+
         // Mark audio as downloaded successfully
-        updateStageData({ 
-          audioDownloaded: true, 
-          audioDownloadError: null 
+        updateStageData({
+          audioDownloaded: true,
+          audioDownloadError: null,
         });
       } else {
-        updateStageData({ 
-          audioDownloaded: false, 
-          audioDownloadError: "No questions received" 
+        updateStageData({
+          audioDownloaded: false,
+          audioDownloadError: "No questions received",
         });
       }
 
@@ -1357,9 +1442,9 @@ export default function AudioRecorder() {
         "An error occurred while fetching the audio. Try reloading the page."
       );
       setIsError(true);
-      updateStageData({ 
-        audioDownloaded: false, 
-        audioDownloadError: "An error occurred while fetching the audio" 
+      updateStageData({
+        audioDownloaded: false,
+        audioDownloadError: "An error occurred while fetching the audio",
       });
     } finally {
       setFetching(false);
@@ -1397,7 +1482,7 @@ export default function AudioRecorder() {
         await el.requestFullscreen();
       }
     }
-    
+
     // Enable fullscreen monitoring
     setIsFullscreen(true);
     console.log("🔒 Anti-cheat system enabled for recording");
@@ -1408,29 +1493,32 @@ export default function AudioRecorder() {
       const permissionResult = await requestPermissions();
       if (!permissionResult.permissionGranted) {
         console.error("❌ Microphone permission not granted");
-        setError("Microphone permission is required to start recording. Please grant permission and try again.");
+        setError(
+          "Microphone permission is required to start recording. Please grant permission and try again."
+        );
         setIsError(true);
         setIsRecording(false);
-        
+
         // Show prominent error alert with reload instructions
         cuteAlert({
           type: "error",
           title: "Microphone Permission Required",
-          description: "We couldn't access your microphone. This is required to complete the exam. Please check your browser settings to allow microphone access for this site, then reload the page to try again.",
+          description:
+            "We couldn't access your microphone. This is required to complete the exam. Please check your browser settings to allow microphone access for this site, then reload the page to try again.",
           primaryButtonText: "Reload Page",
-          secondaryButtonText: "Cancel"
+          secondaryButtonText: "Cancel",
         }).then((event) => {
           if (event === "primaryButtonClicked") {
             console.log("🔄 Reloading page...");
             window.location.reload();
           }
         });
-        
+
         return;
       }
-      
+
       console.log("✅ Microphone permissions confirmed, starting recording...");
-      
+
       // Start recording - this will use the browser's MediaRecorder API
       // which should work with the permissions we've already granted
       try {
@@ -1448,39 +1536,38 @@ export default function AudioRecorder() {
           setError("Unable to access microphone after multiple attempts.");
           setIsError(true);
           setIsRecording(false);
-          
+
           // Show prominent error alert with reload instructions
           cuteAlert({
             type: "error",
             title: "Microphone Access Failed",
-            description: "We tried multiple times but couldn't access your microphone. Please check your browser settings to ensure microphone access is allowed for this site, then reload the page to try again.",
+            description:
+              "We tried multiple times but couldn't access your microphone. Please check your browser settings to ensure microphone access is allowed for this site, then reload the page to try again.",
             primaryButtonText: "Reload Page",
             secondaryButtonText: "Cancel",
             primaryButtonAction: () => {
               window.location.reload();
-            }
+            },
           });
-          
+
           return;
         }
       }
 
       // Notify server via WebSocket
       wsStartRecording();
-      updateStudentStatus('recording');
-      updateRoomStatus({ 
-        status: 'recording', 
+      updateStudentStatus("recording");
+      updateRoomStatus({
+        status: "recording",
         timestamp: currentTime,
-        participant: tokenManager.getStudentInfo()?.participant
+        participant: tokenManager.getStudentInfo()?.participant,
       });
-
-
 
       // Fix timer implementation
       if (timer.current !== -1) {
         clearInterval(timer.current);
       }
-      
+
       // Only start countdown if there's a time limit
       if (timeLimit > 0) {
         setRemainingTime(timeLimit); // Start with time limit
@@ -1488,31 +1575,41 @@ export default function AudioRecorder() {
         if (!finishedRecording) {
           setDisplayTime(formatTime(timeLimit * 1000)); // Set initial display time
         }
-        
+
         timer.current = setInterval(() => {
-          setRemainingTime(prevTime => {
+          setRemainingTime((prevTime) => {
             const newTime = prevTime - 1;
-            
+
             // Update display time only if recording hasn't finished
             if (!finishedRecording) {
               if (newTime > 0) {
                 setDisplayTime(formatTime(newTime * 1000));
               } else {
-          setDisplayTime("xx:xx");
+                setDisplayTime("xx:xx");
               }
             }
-            
+
             // Local time limit handling
             if (newTime <= 5 && newTime > 0) {
               // Warning: 5 seconds before time limit
-              if (!error || (!error.includes("Processing...") && !error.includes("Uploaded to server successfully.") && !finishedRecording)) {
-                setError("Reaching time limit. Please finish your response in the next 5 seconds. ");
+              if (
+                !error ||
+                (!error.includes("Processing...") &&
+                  !error.includes("Uploaded to server successfully.") &&
+                  !finishedRecording)
+              ) {
+                setError(
+                  "Reaching time limit. Please finish your response in the next 5 seconds. "
+                );
                 setIsError(true);
               }
             } else if (newTime <= 0) {
               // Time limit reached
               setDisplayTime("xx:xx");
-              if (error === "Reaching time limit. Please finish your response in the next 5 seconds. ") {
+              if (
+                error ===
+                "Reaching time limit. Please finish your response in the next 5 seconds. "
+              ) {
                 setError(
                   "You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
                 );
@@ -1520,16 +1617,15 @@ export default function AudioRecorder() {
               }
               stopRecording();
             }
-            
+
             return newTime;
           });
-      }, 1000);
+        }, 1000);
       } else {
         // No time limit - just show xx:xx
         setRemainingTime(-1);
         setDisplayTime("xx:xx");
       }
-
     } catch (err) {
       console.error("Error starting recording:", err);
       setError(
@@ -1537,7 +1633,7 @@ export default function AudioRecorder() {
       );
       setIsError(true);
     }
-    
+
     // Notify server about recording start (fallback)
     let success = false;
     while (!success) {
@@ -1562,29 +1658,29 @@ export default function AudioRecorder() {
 
   const upload = async (formData) => {
     console.log("Uploading audio...");
-    
+
     // Update uploading stage data
     updateUploadingData({
       isUploading: true,
       uploadProgress: 0,
       uploadComplete: false,
-      uploadError: null
+      uploadError: null,
     });
 
     // Disable anti-cheat system after upload starts (exam is complete)
     console.log("✅ Exam complete - disabling anti-cheat system");
     setIsFullscreen(false);
-    
+
     setError(
       "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
     );
     setIsError(false);
     setFinishedRecording(true);
-    
+
     // Notify WebSocket about upload start
     uploadStarted();
-    updateStudentStatus('uploading');
-    
+    updateStudentStatus("uploading");
+
     // Check if student is authenticated
     if (!tokenManager.isAuthenticated()) {
       toast.error("Please join the room first");
@@ -1594,10 +1690,10 @@ export default function AudioRecorder() {
 
     const token = tokenManager.getStudentToken();
     const info = tokenManager.getStudentInfo();
-    
+
     try {
       console.log("Uploading to server...");
-      
+
       // First, get a presigned URL for upload
       const uploadUrlResponse = await fetch(
         `https://www.server.speakeval.org/get-recording-upload-url?token=${token}`,
@@ -1605,13 +1701,13 @@ export default function AudioRecorder() {
           method: "GET",
         }
       );
-      
+
       if (!uploadUrlResponse.ok) {
         throw new Error("Failed to get upload URL");
       }
-      
+
       const { uploadUrl } = await uploadUrlResponse.json();
-      
+
       // Upload directly to S3 using presigned URL
       const uploadResponse = await fetch(uploadUrl, {
         method: "PUT",
@@ -1620,26 +1716,26 @@ export default function AudioRecorder() {
           "Content-Type": "audio/wav",
         },
       });
-      
+
       if (!uploadResponse.ok) {
         // Check if it's a CORS error
-        if (uploadResponse.status === 0 || uploadResponse.type === 'opaque') {
+        if (uploadResponse.status === 0 || uploadResponse.type === "opaque") {
           console.warn("CORS error detected, falling back to server upload");
           throw new Error("CORS_ERROR");
         }
         throw new Error("Failed to upload to S3");
       }
-      
+
       console.log("Direct S3 upload successful");
-      
+
       // Update to show upload complete, waiting for transcription
       updateUploadingData({
         isUploading: false,
         uploadComplete: false,
         uploadError: null,
-        waitingForTranscription: true
+        waitingForTranscription: true,
       });
-      
+
       // Notify server that upload is complete
       const response = await fetch(
         `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
@@ -1670,19 +1766,19 @@ export default function AudioRecorder() {
             clearInterval(retryInterval);
             const data = await retryResponse.json();
             setDisplayTime("xx:xx");
-            
+
             // Update uploading stage data with transcription
             updateUploadingData({
               isUploading: false,
               uploadComplete: true,
               uploadError: null,
               transcriptionText: data.transcription,
-              waitingForTranscription: false
+              waitingForTranscription: false,
             });
-            
+
             // Notify WebSocket about successful upload
             uploadCompleted();
-            updateStudentStatus('upload_completed');
+            updateStudentStatus("upload_completed");
             questionCompleted(questionIndex);
           }
         }, 10000);
@@ -1696,7 +1792,7 @@ export default function AudioRecorder() {
           updateUploadingData({
             isUploading: false,
             uploadComplete: false,
-            uploadError: data.error
+            uploadError: data.error,
           });
           return;
         }
@@ -1707,61 +1803,61 @@ export default function AudioRecorder() {
           uploadComplete: true,
           uploadError: null,
           transcriptionText: data.transcription,
-          waitingForTranscription: false
+          waitingForTranscription: false,
         });
-        
+
         // Notify WebSocket about successful upload
         uploadCompleted();
-        updateStudentStatus('upload_completed');
+        updateStudentStatus("upload_completed");
         questionCompleted(questionIndex);
       }
     } catch (error) {
       console.error("Error uploading audio:", error);
-        
-        // Handle CORS error with fallback
-        if (error.message === "CORS_ERROR") {
-          console.log("Attempting server-side upload fallback...");
-          try {
-            const fallbackResponse = await fetch(
-              `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
-              {
-                method: "POST",
-                body: formData,
-              }
-            );
-            
-            if (fallbackResponse.ok) {
-              const data = await fallbackResponse.json();
-              setFinishedRecording(true);
-              setDisplayTime("xx:xx");
-              
-              // Update uploading stage data with transcription
-              updateUploadingData({
-                isUploading: false,
-                uploadComplete: true,
-                uploadError: null,
-                transcriptionText: data.transcription,
-                waitingForTranscription: false
-              });
-              
-              // Notify WebSocket about successful upload
-              uploadCompleted();
-              updateStudentStatus('upload_completed');
-              questionCompleted(questionIndex);
-              return;
+
+      // Handle CORS error with fallback
+      if (error.message === "CORS_ERROR") {
+        console.log("Attempting server-side upload fallback...");
+        try {
+          const fallbackResponse = await fetch(
+            `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
+            {
+              method: "POST",
+              body: formData,
             }
-          } catch (fallbackErr) {
-            console.error("Fallback upload also failed:", fallbackErr);
+          );
+
+          if (fallbackResponse.ok) {
+            const data = await fallbackResponse.json();
+            setFinishedRecording(true);
+            setDisplayTime("xx:xx");
+
+            // Update uploading stage data with transcription
+            updateUploadingData({
+              isUploading: false,
+              uploadComplete: true,
+              uploadError: null,
+              transcriptionText: data.transcription,
+              waitingForTranscription: false,
+            });
+
+            // Notify WebSocket about successful upload
+            uploadCompleted();
+            updateStudentStatus("upload_completed");
+            questionCompleted(questionIndex);
+            return;
           }
+        } catch (fallbackErr) {
+          console.error("Fallback upload also failed:", fallbackErr);
         }
-        
+      }
+
       setError("Failed to upload audio. Please try again.");
       setIsError(true);
-        updateUploadingData({
-          isUploading: false,
-          uploadComplete: false,
-          uploadError: "Failed to upload audio. Please try again."
-        });
+      updateUploadingData({
+        isUploading: false,
+        uploadComplete: false,
+        uploadError: "Failed to upload audio. Please try again.",
+      });
     }
 
     if (interval) {
@@ -1780,7 +1876,7 @@ export default function AudioRecorder() {
         console.error("No token available for screen upload");
         return;
       }
-      
+
       await fetch(
         `https://www.server.speakeval.org/upload_screen?token=${token}&index=${questionIndex}`,
         {
@@ -1799,7 +1895,7 @@ export default function AudioRecorder() {
     setPlaying(true);
     setHasPlayed(true);
     played = true;
-    
+
     // Notify WebSocket about audio playback
     audioPlaybackStarted();
 
@@ -1807,7 +1903,7 @@ export default function AudioRecorder() {
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
         audioRef.current.play();
-        
+
         // Notify WebSocket when audio playback completes
         audioRef.current.onended = () => {
           audioPlaybackCompleted();
@@ -1844,11 +1940,11 @@ export default function AudioRecorder() {
 
     // Notify server via WebSocket
     wsStopRecording();
-    updateStudentStatus('stopped_recording');
-    updateRoomStatus({ 
-      status: 'stopped_recording', 
+    updateStudentStatus("stopped_recording");
+    updateRoomStatus({
+      status: "stopped_recording",
       timestamp: Date.now(),
-      participant: tokenManager.getStudentInfo()?.participant
+      participant: tokenManager.getStudentInfo()?.participant,
     });
   };
 
@@ -1856,8 +1952,8 @@ export default function AudioRecorder() {
     timer.current = time;
     // Only update display time if recording hasn't finished
     if (!finishedRecording) {
-    setDisplayTime(formatTime(time));
-    if (time < 0) setDisplayTime("xx:xx");
+      setDisplayTime(formatTime(time));
+      if (time < 0) setDisplayTime("xx:xx");
     }
     // If recording has finished, keep timer at "xx:xx"
   };
@@ -1879,7 +1975,7 @@ export default function AudioRecorder() {
       "You are now in fullscreen mode. You may not exit or switch to any other tabs, or this will be reported to your teacher and they may choose to administer a zero.",
       {
         autoClose: 5000,
-        position: "top-center"
+        position: "top-center",
       }
     );
   };
@@ -1888,833 +1984,1085 @@ export default function AudioRecorder() {
 
   return (
     <>
-
-      
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        backgroundColor: "#bfdbfe",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        minHeight: "100vh",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: "80px",
-          fontSize: "48px",
-          fontWeight: "bold",
-          color:
-            displayTime !== "xx:xx" && 
-            remainingTime > 0 && 
-            remainingTime <= 5 ? "red" : "#374151",
-        }}
-      >
-        {displayTime}
-      </div>
-
-      {/* Stage-based content */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
+          height: "100%",
+          backgroundColor: "#bfdbfe",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "white",
-          padding: "40px",
-          borderRadius: "24px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-          width: "90%",
-          maxWidth: "700px",
-          textAlign: "center",
-          transform: "translateY(10%)",
-          minHeight: "400px", // Make it taller to support all stages
+          padding: "20px",
+          minHeight: "100vh",
         }}
       >
-        {/* Stage content */}
-        {currentStage === 'initializing' && (
-          <div style={{ marginTop: "16px" }}>
-            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "16px" }}>
-              {stageData.audioDownloaded ? "Downloaded Exam" : "Downloading Exam..."}
-        </h1>
+        <div
+          style={{
+            position: "absolute",
+            top: "80px",
+            fontSize: "48px",
+            fontWeight: "bold",
+            color:
+              displayTime !== "xx:xx" && remainingTime > 0 && remainingTime <= 5
+                ? "red"
+                : "#374151",
+          }}
+        >
+          {displayTime}
+        </div>
 
-            {/* Download Animation with Custom Images */}
-            <div style={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              alignItems: "center", 
-              marginBottom: "16px" 
-            }}>
-              {/* Fixed Content Container - This won't move */}
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                minHeight: "160px" // Reserve space for content + button
-              }}>
-                {/* Image Container */}
-                <div style={{
+        {/* Stage-based content */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "white",
+            padding: "40px",
+            borderRadius: "24px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+            width: "90%",
+            maxWidth: "700px",
+            textAlign: "center",
+            transform: "translateY(10%)",
+            minHeight: "400px", // Make it taller to support all stages
+          }}
+        >
+          {/* Stage content */}
+          {currentStage === "initializing" && (
+            <div style={{ marginTop: "16px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
                   marginBottom: "16px",
+                }}
+              >
+                {stageData.audioDownloaded
+                  ? "Downloaded Exam"
+                  : "Downloading Exam..."}
+              </h1>
+
+              {/* Download Animation with Custom Images */}
+              <div
+                style={{
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
-                  justifyContent: "center"
-                }}>
-                  {!stageData.audioDownloaded ? (
-                    <img 
-                      src="/download-load.gif" 
-                      alt="Downloading exam" 
-            style={{
-                        width: "120px",
-                        height: "120px",
-                        objectFit: "contain"
+                  marginBottom: "16px",
+                }}
+              >
+                {/* Fixed Content Container - This won't move */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    minHeight: "160px", // Reserve space for content + button
+                  }}
+                >
+                  {/* Image Container */}
+                  <div
+                    style={{
+                      marginBottom: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {!stageData.audioDownloaded ? (
+                      <img
+                        src="/download-load.gif"
+                        alt="Downloading exam"
+                        style={{
+                          width: "120px",
+                          height: "120px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src="/download-done.png"
+                        alt="Download complete"
+                        style={{
+                          width: "120px",
+                          height: "120px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Error Message */}
+                  {stageData.audioDownloadError && (
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#EF4444",
+                        margin: "8px 0 0 0",
+                        textAlign: "center",
                       }}
-                    />
-                  ) : (
-                    <img 
-                      src="/download-done.png" 
-                      alt="Download complete" 
-              style={{
-                        width: "120px",
-                        height: "120px",
-                        objectFit: "contain"
-                      }}
-                    />
+                    >
+                      {stageData.audioDownloadError}
+                    </p>
                   )}
+
+                  {/* Continue Button - always takes up space, just invisible when not needed */}
+                  <div
+                    style={{
+                      height: "44px", // Fixed height for button + margin
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity:
+                        stageData.audioDownloaded &&
+                        !stageData.audioDownloadError
+                          ? 1
+                          : 0,
+                      transition: "opacity 0.3s ease",
+                    }}
+                  >
+                    {stageData.audioDownloaded &&
+                      !stageData.audioDownloadError && (
+                        <button
+                          onClick={async () => {
+                            // Check if we can skip setup for room restart
+                            const canSkipSetup = await canSkipSetupForRestart();
+
+                            if (canSkipSetup) {
+                              console.log(
+                                "🚀 Room restart detected with permissions available - skipping setup"
+                              );
+                              // Update setup data with current permissions
+                              const permissions =
+                                await checkCurrentPermissions();
+                              updateSetup({
+                                microphonePermission:
+                                  permissions.microphonePermission,
+                                fullscreenEnabled:
+                                  permissions.fullscreenEnabled,
+                              });
+
+                              // Enable anticheat and go directly to audio play
+                              setIsFullscreen(true);
+                              setExamStarted(true);
+                              advanceStage("audio_play");
+                            } else {
+                              console.log("🔄 Proceeding to setup stage");
+                              advanceStage("setup");
+                            }
+                          }}
+                          style={{
+                            padding: "10px 24px",
+                            fontSize: "15px",
+                            fontWeight: "600",
+                            color: "white",
+                            backgroundColor: "#10B981",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            transition: "background-color 0.3s ease",
+                            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                          }}
+                          onMouseOver={(e) =>
+                            (e.target.style.backgroundColor = "#059669")
+                          }
+                          onMouseOut={(e) =>
+                            (e.target.style.backgroundColor = "#10B981")
+                          }
+                        >
+                          Continue
+                        </button>
+                      )}
+                  </div>
                 </div>
-                
-                {/* Error Message */}
-                {stageData.audioDownloadError && (
-                  <p style={{ 
-                    fontSize: "14px", 
-                    color: "#EF4444",
-                    margin: "8px 0 0 0",
-                    textAlign: "center"
-                  }}>
-                    {stageData.audioDownloadError}
-                  </p>
-                )}
-                
-                {/* Continue Button - always takes up space, just invisible when not needed */}
-                <div style={{
-                  height: "44px", // Fixed height for button + margin
+              </div>
+            </div>
+          )}
+
+          {/* Setup Stage */}
+          {currentStage === "setup" && (
+            <div style={{ marginTop: "20px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                Exam Setup
+              </h1>
+              <p
+                style={{
+                  fontSize: "16px",
+                  color: "#6B7280",
+                  marginBottom: "24px",
+                }}
+              >
+                Please complete the following setup steps before starting your
+                exam:
+              </p>
+
+              {/* Setup Checklist with Reserved Button Space */}
+              <div
+                style={{
+                  maxWidth: "500px",
+                  margin: "0 auto",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: stageData.audioDownloaded && !stageData.audioDownloadError ? 1 : 0,
-                  transition: "opacity 0.3s ease"
-                }}>
-                  {stageData.audioDownloaded && !stageData.audioDownloadError && (
-                    <button
-                      onClick={async () => {
-                        // Check if we can skip setup for room restart
-                        const canSkipSetup = await canSkipSetupForRestart();
-                        
-                        if (canSkipSetup) {
-                          console.log('🚀 Room restart detected with permissions available - skipping setup');
-                          // Update setup data with current permissions
-                          const permissions = await checkCurrentPermissions();
-                          updateSetup({
-                            microphonePermission: permissions.microphonePermission,
-                            fullscreenEnabled: permissions.fullscreenEnabled
-                          });
-                          
-                          // Enable anticheat and go directly to audio play
-                          setIsFullscreen(true);
-                          setExamStarted(true);
-                          advanceStage('audio_play');
-                        } else {
-                          console.log('🔄 Proceeding to setup stage');
-                          advanceStage('setup');
+                  flexDirection: "column",
+                  minHeight: "200px", // Reserve space for checklist + button
+                }}
+              >
+                {/* Checklist Items */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    flex: 1,
+                  }}
+                >
+                  {/* Microphone Permission */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "16px",
+                      backgroundColor: "#F9FAFB",
+                      borderRadius: "8px",
+                      border: "1px solid #E5E7EB",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "50%",
+                          backgroundColor: stageData.setup.microphonePermission
+                            ? "#10B981"
+                            : setupLoading.microphone
+                            ? "#3B82F6"
+                            : "#D1D5DB",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {stageData.setup.microphonePermission && (
+                          <span
+                            style={{
+                              color: "white",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                        {setupLoading.microphone && (
+                          <div
+                            style={{
+                              width: "12px",
+                              height: "12px",
+                              border: "2px solid transparent",
+                              borderTop: "2px solid white",
+                              borderRadius: "50%",
+                              animation: "spin 1s linear infinite",
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <p
+                          style={{
+                            fontSize: "16px",
+                            fontWeight: "500",
+                            color: "#374151",
+                            margin: "0 0 2px 0",
+                          }}
+                        >
+                          Microphone Permission
+                        </p>
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            color: "#6B7280",
+                            margin: "0",
+                          }}
+                        >
+                          Allow microphone access for recording
+                        </p>
+                      </div>
+                    </div>
+                    {!stageData.setup.microphonePermission && (
+                      <button
+                        onClick={async () => {
+                          console.log("🎤 Granting microphone permission...");
+                          setSetupLoading((prev) => ({
+                            ...prev,
+                            microphone: true,
+                          }));
+                          const perms = await requestPermissions();
+                          if (perms.permissionGranted) {
+                            console.log(
+                              "✅ Microphone permission granted, updating setup"
+                            );
+                            updateSetup({ microphonePermission: true });
+                          }
+                          setSetupLoading((prev) => ({
+                            ...prev,
+                            microphone: false,
+                          }));
+                        }}
+                        style={{
+                          padding: "8px 16px",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "white",
+                          backgroundColor: "#3B82F6",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          transition: "background-color 0.2s ease",
+                        }}
+                        onMouseOver={(e) =>
+                          (e.target.style.backgroundColor = "#2563EB")
                         }
+                        onMouseOut={(e) =>
+                          (e.target.style.backgroundColor = "#3B82F6")
+                        }
+                      >
+                        Grant Access
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Fullscreen Mode */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "16px",
+                      backgroundColor: "#F9FAFB",
+                      borderRadius: "8px",
+                      border: "1px solid #E5E7EB",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "50%",
+                          backgroundColor: stageData.setup.fullscreenEnabled
+                            ? "#10B981"
+                            : setupLoading.fullscreen
+                            ? "#3B82F6"
+                            : "#D1D5DB",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {stageData.setup.fullscreenEnabled && (
+                          <span
+                            style={{
+                              color: "white",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                        {setupLoading.fullscreen && (
+                          <div
+                            style={{
+                              width: "12px",
+                              height: "12px",
+                              border: "2px solid transparent",
+                              borderTop: "2px solid white",
+                              borderRadius: "50%",
+                              animation: "spin 1s linear infinite",
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <p
+                          style={{
+                            fontSize: "16px",
+                            fontWeight: "500",
+                            color: "#374151",
+                            margin: "0 0 2px 0",
+                          }}
+                        >
+                          Fullscreen Mode
+                        </p>
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            color: "#6B7280",
+                            margin: "0",
+                          }}
+                        >
+                          Enter fullscreen for exam security
+                        </p>
+                      </div>
+                    </div>
+                    {!stageData.setup.fullscreenEnabled && (
+                      <button
+                        onClick={async () => {
+                          console.log("🖥️ Entering fullscreen...");
+                          setSetupLoading((prev) => ({
+                            ...prev,
+                            fullscreen: true,
+                          }));
+                          console.log(
+                            "🖥️ Entering fullscreen - starting monitoring"
+                          );
+                          setIsFullscreen(true); // Enable fullscreen monitoring
+                          enterFullscreen();
+                          console.log("✅ Fullscreen enabled, updating setup");
+                          updateSetup({ fullscreenEnabled: true });
+                          setSetupLoading((prev) => ({
+                            ...prev,
+                            fullscreen: false,
+                          }));
+                        }}
+                        style={{
+                          padding: "8px 16px",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "white",
+                          backgroundColor: "#3B82F6",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          transition: "background-color 0.2s ease",
+                        }}
+                        onMouseOver={(e) =>
+                          (e.target.style.backgroundColor = "#2563EB")
+                        }
+                        onMouseOut={(e) =>
+                          (e.target.style.backgroundColor = "#3B82F6")
+                        }
+                      >
+                        Enter Fullscreen
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Continue Button - always takes up space, just invisible when not needed */}
+                <div
+                  style={{
+                    height: "80px", // Increased height for button + margin
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: canAdvanceToAudioPlay() ? 1 : 0,
+                    transition: "opacity 0.3s ease",
+                  }}
+                >
+                  {canAdvanceToAudioPlay() && (
+                    <button
+                      onClick={() => {
+                        console.log(
+                          "🎬 Starting anti-cheat system for question"
+                        );
+                        setIsFullscreen(true); // Enable fullscreen monitoring
+                        setExamStarted(true); // Mark exam as started
+                        advanceStage("audio_play");
                       }}
                       style={{
-                        padding: "10px 24px",
-                        fontSize: "15px",
+                        padding: "12px 32px",
+                        fontSize: "16px",
                         fontWeight: "600",
                         color: "white",
                         backgroundColor: "#10B981",
                         border: "none",
-                        borderRadius: "6px",
+                        borderRadius: "8px",
                         cursor: "pointer",
                         transition: "background-color 0.3s ease",
-                        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
+                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
                       }}
-                      onMouseOver={(e) => (e.target.style.backgroundColor = "#059669")}
-                      onMouseOut={(e) => (e.target.style.backgroundColor = "#10B981")}
+                      onMouseOver={(e) =>
+                        (e.target.style.backgroundColor = "#059669")
+                      }
+                      onMouseOut={(e) =>
+                        (e.target.style.backgroundColor = "#10B981")
+                      }
                     >
-                      Continue
+                      Continue to Question
                     </button>
                   )}
                 </div>
               </div>
             </div>
-          </div>
-        )}
-        
-        {/* Setup Stage */}
-        {currentStage === 'setup' && (
-          <div style={{ marginTop: "20px" }}>
-            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
-              Exam Setup
-            </h1>
-            <p style={{ fontSize: "16px", color: "#6B7280", marginBottom: "24px" }}>
-              Please complete the following setup steps before starting your exam:
-            </p>
-            
-            {/* Setup Checklist with Reserved Button Space */}
-            <div style={{ 
-              maxWidth: "500px", 
-              margin: "0 auto",
-              display: "flex",
-              flexDirection: "column",
-              minHeight: "200px" // Reserve space for checklist + button
-            }}>
-              {/* Checklist Items */}
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                flex: 1
-              }}>
-                {/* Microphone Permission */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "16px",
-                  backgroundColor: "#F9FAFB",
-                  borderRadius: "8px",
-                  border: "1px solid #E5E7EB"
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <div style={{
-                      width: "20px",
-                      height: "20px",
-                      borderRadius: "50%",
-                      backgroundColor: stageData.setup.microphonePermission ? "#10B981" : setupLoading.microphone ? "#3B82F6" : "#D1D5DB",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center"
-                    }}>
-                      {stageData.setup.microphonePermission && (
-                        <span style={{ color: "white", fontSize: "12px", fontWeight: "bold" }}>✓</span>
-                      )}
-                      {setupLoading.microphone && (
-                        <div style={{
-                          width: "12px",
-                          height: "12px",
-                          border: "2px solid transparent",
-                          borderTop: "2px solid white",
-                          borderRadius: "50%",
-                          animation: "spin 1s linear infinite"
-                        }} />
-                      )}
-                    </div>
-                    <div>
-                      <p style={{ 
-                        fontSize: "16px", 
-                        fontWeight: "500", 
-                        color: "#374151",
-                        margin: "0 0 2px 0"
-                      }}>
-                        Microphone Permission
-                      </p>
-                      <p style={{ 
-                        fontSize: "14px", 
-                        color: "#6B7280",
-                        margin: "0"
-                      }}>
-                        Allow microphone access for recording
-                      </p>
-                    </div>
-                  </div>
-                  {!stageData.setup.microphonePermission && (
-            <button
-              onClick={async () => {
-                        console.log('🎤 Granting microphone permission...');
-                        setSetupLoading(prev => ({ ...prev, microphone: true }));
-                const perms = await requestPermissions();
-                        if (perms.permissionGranted) {
-                          console.log('✅ Microphone permission granted, updating setup');
-                          updateSetup({ microphonePermission: true });
-                        }
-                        setSetupLoading(prev => ({ ...prev, microphone: false }));
-              }}
-              style={{
-                        padding: "8px 16px",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                color: "white",
-                        backgroundColor: "#3B82F6",
-                border: "none",
-                        borderRadius: "6px",
-                cursor: "pointer",
-                        transition: "background-color 0.2s ease"
-              }}
-                      onMouseOver={(e) => (e.target.style.backgroundColor = "#2563EB")}
-                      onMouseOut={(e) => (e.target.style.backgroundColor = "#3B82F6")}
-            >
-                      Grant Access
-            </button>
-                  )}
-                </div>
+          )}
 
-                {/* Fullscreen Mode */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "16px",
-                  backgroundColor: "#F9FAFB",
-                  borderRadius: "8px",
-                  border: "1px solid #E5E7EB"
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <div style={{
-                      width: "20px",
-                      height: "20px",
-                      borderRadius: "50%",
-                      backgroundColor: stageData.setup.fullscreenEnabled ? "#10B981" : setupLoading.fullscreen ? "#3B82F6" : "#D1D5DB",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center"
-                    }}>
-                      {stageData.setup.fullscreenEnabled && (
-                        <span style={{ color: "white", fontSize: "12px", fontWeight: "bold" }}>✓</span>
-                      )}
-                      {setupLoading.fullscreen && (
-                        <div style={{
-                          width: "12px",
-                          height: "12px",
-                          border: "2px solid transparent",
-                          borderTop: "2px solid white",
-                          borderRadius: "50%",
-                          animation: "spin 1s linear infinite"
-                        }} />
-                      )}
-                    </div>
-                    <div>
-                      <p style={{ 
-                        fontSize: "16px", 
-                        fontWeight: "500", 
-                color: "#374151",
-                        margin: "0 0 2px 0"
-                      }}>
-                        Fullscreen Mode
-                      </p>
-                      <p style={{ 
-                        fontSize: "14px", 
-                        color: "#6B7280",
-                        margin: "0"
-                      }}>
-                        Enter fullscreen for exam security
-                      </p>
-                    </div>
-                  </div>
-                  {!stageData.setup.fullscreenEnabled && (
-              <button
-                onClick={async () => {
-                        console.log("🖥️ Entering fullscreen...");
-                        setSetupLoading(prev => ({ ...prev, fullscreen: true }));
-                        console.log("🖥️ Entering fullscreen - starting monitoring");
-                        setIsFullscreen(true); // Enable fullscreen monitoring
-                  enterFullscreen();
-                        console.log("✅ Fullscreen enabled, updating setup");
-                        updateSetup({ fullscreenEnabled: true });
-                        setSetupLoading(prev => ({ ...prev, fullscreen: false }));
-                }}
+          {/* Audio Play Stage */}
+          {currentStage === "audio_play" && (
+            <div style={{ marginTop: "20px" }}>
+              <h1
                 style={{
-                        padding: "8px 16px",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        color: "white",
-                        backgroundColor: "#3B82F6",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        transition: "background-color 0.2s ease"
-                      }}
-                      onMouseOver={(e) => (e.target.style.backgroundColor = "#2563EB")}
-                      onMouseOut={(e) => (e.target.style.backgroundColor = "#3B82F6")}
-                    >
-                      Enter Fullscreen
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Continue Button - always takes up space, just invisible when not needed */}
-              <div style={{
-                height: "80px", // Increased height for button + margin
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: canAdvanceToAudioPlay() ? 1 : 0,
-                transition: "opacity 0.3s ease"
-              }}>
-                {canAdvanceToAudioPlay() && (
-                  <button
-                    onClick={() => {
-                      console.log("🎬 Starting anti-cheat system for question");
-                      setIsFullscreen(true); // Enable fullscreen monitoring
-                      setExamStarted(true); // Mark exam as started
-                      advanceStage('audio_play');
-                    }}
-                    style={{
-                      padding: "12px 32px",
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                Listen to Question
+              </h1>
+              <p
+                style={{
                   fontSize: "16px",
-                      fontWeight: "600",
-                  color: "white",
-                      backgroundColor: "#10B981",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                      transition: "background-color 0.3s ease",
-                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)"
-                    }}
-                    onMouseOver={(e) => (e.target.style.backgroundColor = "#059669")}
-                    onMouseOut={(e) => (e.target.style.backgroundColor = "#10B981")}
-                  >
-                    Continue to Question
-              </button>
-            )}
-              </div>
-            </div>
-          </div>
-        )}
+                  color: "#6B7280",
+                  marginBottom: "24px",
+                }}
+              >
+                Please listen to the question carefully before recording your
+                response.
+              </p>
 
-        {/* Audio Play Stage */}
-        {currentStage === 'audio_play' && (
-          <div style={{ marginTop: "20px" }}>
-            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
-              Listen to Question
-            </h1>
-            <p style={{ fontSize: "16px", color: "#6B7280", marginBottom: "24px" }}>
-              Please listen to the question carefully before recording your response.
-            </p>
-            
-            {/* Audio Player */}
-            <div style={{ 
-              maxWidth: "500px", 
-              margin: "0 auto",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "20px"
-            }}>
-              {/* Audio Controls */}
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                marginBottom: "20px"
-              }}>
-          <PulseButton
-                  onClick={() => {
-                    if (audioRef.current && audioRef.current.paused) {
-                      audioRef.current.play();
-                      updateAudioPlayData({ isPlaying: true });
-                    }
+              {/* Audio Player */}
+              <div
+                style={{
+                  maxWidth: "500px",
+                  margin: "0 auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "20px",
+                }}
+              >
+                {/* Audio Controls */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginBottom: "20px",
                   }}
-            style={{
-              width: "80px",
-              height: "80px",
-              borderRadius: "50%",
-              backgroundColor: "#28a745",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "background-color 0.3s",
-              animation: "none",
-            }}
-          >
-            <Play size={24} color="white" fill="white" />
-          </PulseButton>
-
-                {stageData.audioPlay.hasPlayed && (
-                  <button
-            onClick={() => {
-                      if (audioRef.current) {
-                        audioRef.current.currentTime = 0;
+                >
+                  <PulseButton
+                    onClick={() => {
+                      if (audioRef.current && audioRef.current.paused) {
                         audioRef.current.play();
                         updateAudioPlayData({ isPlaying: true });
                       }
                     }}
-            style={{
-                      padding: "8px 16px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "#3B82F6",
-                      backgroundColor: "transparent",
-                      border: "2px solid #3B82F6",
-                      borderRadius: "6px",
+                    style={{
+                      width: "80px",
+                      height: "80px",
+                      borderRadius: "50%",
+                      backgroundColor: "#28a745",
+                      border: "none",
                       cursor: "pointer",
-                      transition: "all 0.2s ease"
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.backgroundColor = "#3B82F6";
-                      e.target.style.color = "white";
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.backgroundColor = "transparent";
-                      e.target.style.color = "#3B82F6";
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "background-color 0.3s",
+                      animation: "none",
                     }}
                   >
-                    Replay
-                  </button>
-                )}
-              </div>
-              
-              {/* Hidden Audio Element */}
-            <audio
-                ref={audioRef}
-                style={{ display: "none" }}
-              onPlay={() => {
-                  updateAudioPlayData({ isPlaying: true });
-                }}
-                onPause={() => {
-                  updateAudioPlayData({ isPlaying: false });
-              }}
-              onEnded={() => {
-                  updateAudioPlayData({ 
-                    isPlaying: false, 
-                    hasPlayed: true 
-                  });
-                }}
-                onError={() => {
-                  updateAudioPlayData({ 
-                    isPlaying: false, 
-                    playError: "Failed to load audio" 
-                  });
-                }}
-                src={audioBlobURL}
-            >
-              Your browser does not support the audio element.
-            </audio>
-              
-              {/* Status Message */}
-              <div style={{ textAlign: "center" }}>
-                {stageData.audioPlay.playError && (
-                  <p style={{ 
-                    fontSize: "14px", 
-                    color: "#EF4444",
-                    margin: "8px 0"
-                  }}>
-                    {stageData.audioPlay.playError}
-                  </p>
-                )}
-                
-                {stageData.audioPlay.hasPlayed && !stageData.audioPlay.playError && (
-                  <p style={{ 
-                    fontSize: "16px", 
-                    color: "#10B981",
-                    fontWeight: "500",
-                    margin: "8px 0"
-                  }}>
-                    ✓ Question played successfully
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Thinking Stage */}
-        {currentStage === 'thinking' && (
-          <div style={{ marginTop: "20px" }}>
-            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
-              Thinking Time
-            </h1>
-            <p style={{ fontSize: "16px", color: "#6B7280", marginBottom: "32px" }}>
-              Take a moment to think about your response before recording begins.
-            </p>
-            
-            {/* Countdown Display */}
-            <div style={{ 
-              textAlign: "center",
-              marginBottom: "32px"
-            }}>
-              <div style={{
-                fontSize: "48px",
-              fontWeight: "bold",
-                color: "#EF4444",
-                marginBottom: "16px"
-              }}>
-                {stageData.thinking.thinkingTimeRemaining}
-              </div>
-              <p style={{
-                fontSize: "16px",
-                color: "#6B7280",
-                margin: "0"
-              }}>
-                seconds remaining
-              </p>
-            </div>
-            
-            {/* Progress Bar */}
-            <div style={{
-              width: "100%",
-              maxWidth: "400px",
-              margin: "0 auto",
-              position: "relative"
-            }}>
-              {/* Background Bar */}
-              <div style={{
-                width: "100%",
-                height: "8px",
-                backgroundColor: "#FEE2E2",
-                borderRadius: "4px",
-                position: "relative"
-              }}>
-                {/* Progress Bar - shrinks from both sides */}
-                <div style={{
-                  position: "absolute",
-                  left: `${(1 - thinkingProgress) * 50}%`,
-                  right: `${(1 - thinkingProgress) * 50}%`,
-                  height: "100%",
-                  backgroundColor: "#EF4444",
-                  borderRadius: "4px",
-                  transition: "none" // Remove transition for smooth animation
-                }} />
-              </div>
-            </div>
-            
-            {/* Instructions */}
-            <div style={{
-              marginTop: "24px",
-              textAlign: "center"
-            }}>
-              <p style={{
-                fontSize: "14px",
-                color: "#6B7280",
-                margin: "0"
-              }}>
-                Recording will start automatically when the timer reaches zero
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {/* Recording Stage */}
-        {currentStage === 'recording' && (
-          <div style={{ marginTop: "20px" }}>
-            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
-              Recording Your Response
-            </h1>
-            
-            {/* Recording Button */}
-            <div style={{ 
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "20px"
-            }}>
-              {!stageData.recording.isRecording && !stageData.recording.hasRecorded && (
-                <div style={{ textAlign: "center" }}>
-                  <p style={{ 
-              fontSize: "16px",
-                    color: "#6B7280",
-                    margin: "8px 0"
-                  }}>
-                    Preparing to record...
-                  </p>
-                </div>
-              )}
+                    <Play size={24} color="white" fill="white" />
+                  </PulseButton>
 
-              {stageData.recording.isRecording && (
-                <PulseButton
-                  onClick={() => {
-                    stopRecording();
-                    updateRecordingData({ 
-                      isRecording: false,
-                      hasRecorded: true 
-                    });
-                  }}
-                  style={recordStyle}
-                />
-              )}
-
-              {stageData.recording.hasRecorded && !stageData.recording.isRecording && (
-                <div style={{ textAlign: "center" }}>
-                  <p style={{ 
-                    fontSize: "16px", 
-                    color: "#10B981",
-                    fontWeight: "500",
-                    margin: "8px 0"
-                  }}>
-                    ✓ Recording completed successfully
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {/* Uploading Stage */}
-        {currentStage === 'uploading' && (
-          <div style={{ marginTop: "20px" }}>
-            <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
-              {stageData.uploading.waitingForTranscription 
-                ? "Waiting for Transcription"
-                : stageData.uploading.uploadComplete 
-                  ? "Upload Complete"
-                  : "Uploading Response"
-              }
-            </h1>
-            <p style={{ fontSize: "16px", color: "#6B7280", marginBottom: "24px" }}>
-              {stageData.uploading.waitingForTranscription
-                ? "Your response has been uploaded successfully. We're now waiting for the transcription to be processed..."
-                : stageData.uploading.uploadComplete 
-                  ? "Your response has been uploaded and transcribed successfully."
-                  : "Please wait while we upload your recording..."
-              }
-            </p>
-            
-            {/* Transcription Results */}
-            {stageData.uploading.uploadComplete && stageData.uploading.transcriptionText && (
-              <div style={{
-                backgroundColor: "#F0F9FF",
-                border: "1px solid #0EA5E9",
-                    borderRadius: "12px",
-                padding: "20px",
-                marginBottom: "24px",
-                maxWidth: "500px",
-                margin: "0 auto 24px auto"
-              }}>
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  marginBottom: "12px"
-                }}>
-                  <div style={{
-                    width: "20px",
-                    height: "20px",
-                    borderRadius: "50%",
-                    backgroundColor: "#10B981",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}>
-                    <span style={{ color: "white", fontSize: "12px", fontWeight: "bold" }}>✓</span>
-                  </div>
-                  <h3 style={{
-                    fontSize: "18px",
-                    fontWeight: "600",
-                    color: "#0F172A",
-                    margin: "0"
-                  }}>
-                    Tentative Transcription
-                  </h3>
-                </div>
-                <p style={{
-                  fontSize: "16px",
-                  color: "#374151",
-                  lineHeight: "1.5",
-                  margin: "0 0 16px 0",
-                  fontStyle: "italic"
-                }}>
-                  "{stageData.uploading.transcriptionText}"
-                </p>
-                
-                {/* Relisten Button and Disclaimer */}
-                <div style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                  marginTop: "12px"
-                }}>
-                  <span style={{
-                    fontSize: "12px",
-                    color: "#6B7280",
-                    fontStyle: "italic"
-                  }}>
-                    This is an AI-generated transcription and may not be 100% accurate
-                  </span>
-                </div>
-          </div>
-        )}
-            
-            {/* Upload Animation with Custom Images */}
-            <div style={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              alignItems: "center", 
-              marginBottom: "16px" 
-            }}>
-              {/* Fixed Content Container - This won't move */}
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                minHeight: "160px" // Reserve space for content + button
-              }}>
-                {/* Image Container */}
-                <div style={{
-                  marginBottom: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}>
-                  {stageData.uploading.uploadComplete || stageData.uploading.waitingForTranscription ? (
-                    <img 
-                      src="/upload-done.png" 
-                      alt="Upload complete" 
-            style={{
-                        width: "120px",
-                        height: "120px",
-                        objectFit: "contain"
+                  {stageData.audioPlay.hasPlayed && (
+                    <button
+                      onClick={() => {
+                        if (audioRef.current) {
+                          audioRef.current.currentTime = 0;
+                          audioRef.current.play();
+                          updateAudioPlayData({ isPlaying: true });
+                        }
                       }}
-                    />
-                  ) : (
-                    <img 
-                      src="/upload-load.gif" 
-                      alt="Uploading response" 
-              style={{
-                        width: "120px",
-                        height: "120px",
-                        objectFit: "contain"
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "#3B82F6",
+                        backgroundColor: "transparent",
+                        border: "2px solid #3B82F6",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
                       }}
-                    />
+                      onMouseOver={(e) => {
+                        e.target.style.backgroundColor = "#3B82F6";
+                        e.target.style.color = "white";
+                      }}
+                      onMouseOut={(e) => {
+                        e.target.style.backgroundColor = "transparent";
+                        e.target.style.color = "#3B82F6";
+                      }}
+                    >
+                      Replay
+                    </button>
                   )}
                 </div>
-                
-                {/* Error Message */}
-                {stageData.uploading.uploadError && (
-                  <p style={{ 
-                    fontSize: "14px", 
-                    color: "#EF4444",
-                    margin: "8px 0 0 0",
-                    textAlign: "center"
-                  }}>
-                    {stageData.uploading.uploadError}
-                  </p>
-                )}
-                
-                {/* Success Message */}
-                {stageData.uploading.uploadComplete && !stageData.uploading.uploadError && (
-                  <p style={{ 
-                    fontSize: "16px", 
-                    color: "#10B981",
-                    fontWeight: "500",
-                    margin: "8px 0 0 0",
-                    textAlign: "center"
-                  }}>
-                    ✓ Upload and transcription completed
-                  </p>
-                )}
+
+                {/* Hidden Audio Element */}
+                <audio
+                  ref={audioRef}
+                  style={{ display: "none" }}
+                  onPlay={() => {
+                    updateAudioPlayData({ isPlaying: true });
+                  }}
+                  onPause={() => {
+                    updateAudioPlayData({ isPlaying: false });
+                  }}
+                  onEnded={() => {
+                    updateAudioPlayData({
+                      isPlaying: false,
+                      hasPlayed: true,
+                    });
+                  }}
+                  onError={() => {
+                    updateAudioPlayData({
+                      isPlaying: false,
+                      playError: "Failed to load audio",
+                    });
+                  }}
+                  src={audioBlobURL}
+                >
+                  Your browser does not support the audio element.
+                </audio>
+
+                {/* Status Message */}
+                <div style={{ textAlign: "center" }}>
+                  {stageData.audioPlay.playError && (
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#EF4444",
+                        margin: "8px 0",
+                      }}
+                    >
+                      {stageData.audioPlay.playError}
+                    </p>
+                  )}
+
+                  {stageData.audioPlay.hasPlayed &&
+                    !stageData.audioPlay.playError && (
+                      <p
+                        style={{
+                          fontSize: "16px",
+                          color: "#10B981",
+                          fontWeight: "500",
+                          margin: "8px 0",
+                        }}
+                      >
+                        ✓ Question played successfully
+                      </p>
+                    )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Thinking Stage */}
+          {currentStage === "thinking" && (
+            <div style={{ marginTop: "20px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                Thinking Time
+              </h1>
+              <p
+                style={{
+                  fontSize: "16px",
+                  color: "#6B7280",
+                  marginBottom: "32px",
+                }}
+              >
+                Take a moment to think about your response before recording
+                begins.
+              </p>
+
+              {/* Countdown Display */}
+              <div
+                style={{
+                  textAlign: "center",
+                  marginBottom: "32px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "48px",
+                    fontWeight: "bold",
+                    color: "#EF4444",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {stageData.thinking.thinkingTimeRemaining}
+                </div>
+                <p
+                  style={{
+                    fontSize: "16px",
+                    color: "#6B7280",
+                    margin: "0",
+                  }}
+                >
+                  seconds remaining
+                </p>
+              </div>
+
+              {/* Progress Bar */}
+              <div
+                style={{
+                  width: "100%",
+                  maxWidth: "400px",
+                  margin: "0 auto",
+                  position: "relative",
+                }}
+              >
+                {/* Background Bar */}
+                <div
+                  style={{
+                    width: "100%",
+                    height: "8px",
+                    backgroundColor: "#FEE2E2",
+                    borderRadius: "4px",
+                    position: "relative",
+                  }}
+                >
+                  {/* Progress Bar - shrinks from both sides */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: `${(1 - thinkingProgress) * 50}%`,
+                      right: `${(1 - thinkingProgress) * 50}%`,
+                      height: "100%",
+                      backgroundColor: "#EF4444",
+                      borderRadius: "4px",
+                      transition: "none", // Remove transition for smooth animation
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div
+                style={{
+                  marginTop: "24px",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#6B7280",
+                    margin: "0",
+                  }}
+                >
+                  Recording will start automatically when the timer reaches zero
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Recording Stage */}
+          {currentStage === "recording" && (
+            <div style={{ marginTop: "20px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                Recording Your Response
+              </h1>
+
+              {/* Recording Button */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "20px",
+                }}
+              >
+                {!stageData.recording.isRecording &&
+                  !stageData.recording.hasRecorded && (
+                    <div style={{ textAlign: "center" }}>
+                      <p
+                        style={{
+                          fontSize: "16px",
+                          color: "#6B7280",
+                          margin: "8px 0",
+                        }}
+                      >
+                        Preparing to record...
+                      </p>
+                    </div>
+                  )}
+
+                {stageData.recording.isRecording && (
+                  <PulseButton
+                    onClick={() => {
+                      stopRecording();
+                      updateRecordingData({
+                        isRecording: false,
+                        hasRecorded: true,
+                      });
+                    }}
+                    style={recordStyle}
+                  />
+                )}
+
+                {stageData.recording.hasRecorded &&
+                  !stageData.recording.isRecording && (
+                    <div style={{ textAlign: "center" }}>
+                      <p
+                        style={{
+                          fontSize: "16px",
+                          color: "#10B981",
+                          fontWeight: "500",
+                          margin: "8px 0",
+                        }}
+                      >
+                        ✓ Recording completed successfully
+                      </p>
+                    </div>
+                  )}
+              </div>
+            </div>
+          )}
+
+          {/* Uploading Stage */}
+          {currentStage === "uploading" && (
+            <div style={{ marginTop: "20px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                {stageData.uploading.waitingForTranscription
+                  ? "Waiting for Transcription"
+                  : stageData.uploading.uploadComplete
+                  ? "Upload Complete"
+                  : "Uploading Response"}
+              </h1>
+              <p
+                style={{
+                  fontSize: "16px",
+                  color: "#6B7280",
+                  marginBottom: "24px",
+                }}
+              >
+                {stageData.uploading.waitingForTranscription
+                  ? "Your response has been uploaded successfully. We're now waiting for the transcription to be processed..."
+                  : stageData.uploading.uploadComplete
+                  ? "Your response has been uploaded and transcribed successfully."
+                  : "Please wait while we upload your recording..."}
+              </p>
+
+              {/* Transcription Results */}
+              {stageData.uploading.uploadComplete &&
+                stageData.uploading.transcriptionText && (
+                  <div
+                    style={{
+                      backgroundColor: "#F0F9FF",
+                      border: "1px solid #0EA5E9",
+                      borderRadius: "12px",
+                      padding: "20px",
+                      marginBottom: "24px",
+                      maxWidth: "500px",
+                      margin: "0 auto 24px auto",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "50%",
+                          backgroundColor: "#10B981",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "white",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          ✓
+                        </span>
+                      </div>
+                      <h3
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: "600",
+                          color: "#0F172A",
+                          margin: "0",
+                        }}
+                      >
+                        Tentative Transcription
+                      </h3>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: "16px",
+                        color: "#374151",
+                        lineHeight: "1.5",
+                        margin: "0 0 16px 0",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      "{stageData.uploading.transcriptionText}"
+                    </p>
+
+                    {/* Relisten Button and Disclaimer */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                        marginTop: "12px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: "#6B7280",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        This is an AI-generated transcription and may not be
+                        100% accurate
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+              {/* Upload Animation with Custom Images */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                {/* Fixed Content Container - This won't move */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    minHeight: "160px", // Reserve space for content + button
+                  }}
+                >
+                  {/* Image Container */}
+                  <div
+                    style={{
+                      marginBottom: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {stageData.uploading.uploadComplete ||
+                    stageData.uploading.waitingForTranscription ? (
+                      <img
+                        src="/upload-done.png"
+                        alt="Upload complete"
+                        style={{
+                          width: "120px",
+                          height: "120px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src="/upload-load.gif"
+                        alt="Uploading response"
+                        style={{
+                          width: "120px",
+                          height: "120px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Error Message */}
+                  {stageData.uploading.uploadError && (
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#EF4444",
+                        margin: "8px 0 0 0",
+                        textAlign: "center",
+                      }}
+                    >
+                      {stageData.uploading.uploadError}
+                    </p>
+                  )}
+
+                  {/* Success Message */}
+                  {stageData.uploading.uploadComplete &&
+                    !stageData.uploading.uploadError && (
+                      <p
+                        style={{
+                          fontSize: "16px",
+                          color: "#10B981",
+                          fontWeight: "500",
+                          margin: "8px 0 0 0",
+                          textAlign: "center",
+                        }}
+                      >
+                        ✓ Upload and transcription completed
+                      </p>
+                    )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </>
   );
 }
