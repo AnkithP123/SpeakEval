@@ -36,7 +36,7 @@ export default function AudioRecorder() {
   const [allowRepeat, setAllowRepeat] = useState(true);
   const [timeLimit, setTimeLimit] = useState(-1); // Time limit in seconds (-1 means no limit)
   const [remainingTime, setRemainingTime] = useState(-1); // Current remaining time in seconds
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true);
   const [examStarted, setExamStarted] = useState(false); // Track when exam has actually started
   const [finishedRecording, setFinishedRecording] = useState(false);
   const [hasScreenPermission, setHasScreenPermission] = useState(true); // temporarily set to true
