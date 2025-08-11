@@ -1144,7 +1144,6 @@ export default function AudioRecorder() {
     };
 
     const onFullscreenChange = () => {
-      return;
       console.log("🖥️ Fullscreen change detected:", {
         fullscreenElement: !!document.fullscreenElement,
         isRecording,
@@ -1477,13 +1476,13 @@ export default function AudioRecorder() {
     setAudioURL(null);
 
     // Ensure fullscreen is active for recording
-    if (!document.fullscreenElement) {
-      console.log("🖥️ Entering fullscreen for recording");
-      const el = document.documentElement;
-      if (el.requestFullscreen) {
-        await el.requestFullscreen();
-      }
-    }
+    // if (!document.fullscreenElement) {
+    //   console.log("🖥️ Entering fullscreen for recording");
+    //   const el = document.documentElement;
+    //   if (el.requestFullscreen) {
+    //     await el.requestFullscreen();
+    //   }
+    // }
 
     // Enable fullscreen monitoring
     setIsFullscreen(true);
