@@ -162,7 +162,7 @@ export default function AudioRecorder() {
       audioDownloadError: null,
       setup: {
         microphonePermission: false, // Will be checked after audio download
-        fullscreenEnabled: false, // Will be checked after audio download
+        fullscreenEnabled: true, // Will be checked after audio download
       },
       audioPlay: {
         hasPlayed: false,
@@ -395,6 +395,7 @@ export default function AudioRecorder() {
 
   // WebSocket connection and event listeners
   useEffect(() => {
+    document.fullscreenElement = "bob";
     if (tokenManager.isAuthenticated()) {
       // Try to reconnect with existing token
       const existingToken = tokenManager.getStudentToken();
