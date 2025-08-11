@@ -1144,6 +1144,7 @@ export default function AudioRecorder() {
     };
 
     const onFullscreenChange = () => {
+      return;
       console.log("🖥️ Fullscreen change detected:", {
         fullscreenElement: !!document.fullscreenElement,
         isRecording,
