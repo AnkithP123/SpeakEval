@@ -54,6 +54,7 @@ export default function AudioRecorder() {
   const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [examLanguage, setExamLanguage] = useState("en-US"); // Default to English
+  const finalRecognizedTextRef = useRef(""); // Ref to store final recognized text for immediate access
   
   let questionIndex;
   let played = false;
@@ -147,14 +148,25 @@ export default function AudioRecorder() {
   const resetForNewQuestion = () => {
     console.log("🔄 Resetting state for new question...");
 
-    // Stop speech recognition if active
+    // Stop speech recognition if active and capture any remaining text
     if (speechRecognition && isListening) {
+      // Capture any remaining interim text before stopping
+      if (speechRecognition.lastInterimText) {
+        setRecognizedText(prev => {
+          const newText = prev + speechRecognition.lastInterimText;
+          console.log("🎤 Capturing final interim text for new question:", speechRecognition.lastInterimText);
+          console.log("🎤 Final total recognized text for new question:", newText);
+          return newText;
+        });
+      }
+      
       speechRecognition.stop();
       console.log("🎤 Stopped speech recognition for new question");
     }
     
     // Reset speech recognition states
     setRecognizedText("");
+    finalRecognizedTextRef.current = ""; // Reset ref as well
     setIsListening(false);
     setSpeechRecognition(null);
 
@@ -1025,10 +1037,21 @@ export default function AudioRecorder() {
       if (finalTranscript) {
         setRecognizedText(prev => {
           const newText = prev + finalTranscript;
-          console.log("🎤 Speech recognized:", finalTranscript);
+          console.log("🎤 Speech recognized (final):", finalTranscript);
           console.log("🎤 Total recognized text so far:", newText);
+          
+          // Update the ref immediately for synchronous access
+          finalRecognizedTextRef.current = newText;
+          
           return newText;
         });
+      }
+      
+      // Store interim results separately so we can capture them when stopping
+      if (interimTranscript) {
+        // Store interim text in a ref so it persists and can be accessed when stopping
+        recognition.lastInterimText = interimTranscript;
+        console.log("🎤 Interim speech:", interimTranscript);
       }
     };
     
@@ -1043,12 +1066,29 @@ export default function AudioRecorder() {
     // Handle end of recognition
     recognition.onend = () => {
       console.log("🎤 Speech recognition ended");
+      
+      // Capture any remaining interim text as final text when recognition ends
+      if (recognition.lastInterimText) {
+        setRecognizedText(prev => {
+          const newText = prev + recognition.lastInterimText;
+          console.log("🎤 Capturing final interim text on end:", recognition.lastInterimText);
+          console.log("🎤 Final total recognized text:", newText);
+          
+          // Update the ref immediately for synchronous access
+          finalRecognizedTextRef.current = newText;
+          
+          return newText;
+        });
+        recognition.lastInterimText = ""; // Clear interim text
+      }
+      
       setIsListening(false);
     };
     
     // Handle start of recognition
     recognition.onstart = () => {
       console.log("🎤 Speech recognition started");
+      recognition.lastInterimText = ""; // Clear any previous interim text
       setIsListening(true);
     };
     
@@ -1075,8 +1115,23 @@ export default function AudioRecorder() {
   // Stop speech recognition
   const stopSpeechRecognition = () => {
     if (speechRecognition && isListening) {
+      // Capture any remaining interim text before stopping
+      if (speechRecognition.lastInterimText) {
+        const finalText = finalRecognizedTextRef.current + speechRecognition.lastInterimText;
+        finalRecognizedTextRef.current = finalText;
+        
+        setRecognizedText(prev => {
+          const newText = prev + speechRecognition.lastInterimText;
+          console.log("🎤 Capturing final interim text before stop:", speechRecognition.lastInterimText);
+          console.log("🎤 Final total recognized text before stop:", newText);
+          return newText;
+        });
+        speechRecognition.lastInterimText = ""; // Clear interim text
+      }
+      
       speechRecognition.stop();
       console.log("🎤 Speech recognition stopped manually");
+      console.log("🎤 Final text in ref after stop:", finalRecognizedTextRef.current);
     }
   };
 
@@ -1688,6 +1743,7 @@ export default function AudioRecorder() {
 
     // Reset recognized text for new recording
     setRecognizedText("");
+    finalRecognizedTextRef.current = ""; // Reset ref as well
     console.log("🎤 Reset recognized text for new recording");
 
     // Ensure fullscreen is active for recording
@@ -1961,11 +2017,13 @@ export default function AudioRecorder() {
       // Notify server that upload is complete with speech recognition results
       const uploadData = { 
         uploaded: true,
-        speechRecognitionText: recognizedText || null, // Include recognized speech text
+        speechRecognitionText: finalRecognizedTextRef.current || recognizedText || null, // Use ref first, then state as fallback
         recognitionLanguage: examLanguage
       };
       
       console.log("📤 Sending to upload endpoint:", uploadData);
+      console.log("📤 Speech text from ref:", finalRecognizedTextRef.current);
+      console.log("📤 Speech text from state:", recognizedText);
       
       const response = await fetch(
         `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
@@ -1983,7 +2041,7 @@ export default function AudioRecorder() {
         const retryInterval = setInterval(async () => {
           const retryUploadData = { 
             uploaded: true,
-            speechRecognitionText: recognizedText || null,
+            speechRecognitionText: finalRecognizedTextRef.current || recognizedText || null,
             recognitionLanguage: examLanguage
           };
           
@@ -2005,9 +2063,9 @@ export default function AudioRecorder() {
             
             // Console log both speech recognition and server transcription results
             console.log("🎤 Web Speech API Recognition Results (retry):", {
-              recognizedText: recognizedText || "(no text recognized)",
+              recognizedText: finalRecognizedTextRef.current || recognizedText || "(no text recognized)",
               language: examLanguage,
-              textLength: recognizedText ? recognizedText.length : 0
+              textLength: (finalRecognizedTextRef.current || recognizedText || "").length
             });
             
             console.log("🎵 Server Transcription Results (retry):", {
@@ -2036,9 +2094,9 @@ export default function AudioRecorder() {
         
         // Console log both speech recognition and server transcription results
         console.log("🎤 Web Speech API Recognition Results:", {
-          recognizedText: recognizedText || "(no text recognized)",
+          recognizedText: finalRecognizedTextRef.current || recognizedText || "(no text recognized)",
           language: examLanguage,
-          textLength: recognizedText ? recognizedText.length : 0
+          textLength: (finalRecognizedTextRef.current || recognizedText || "").length
         });
         
         console.log("🎵 Server Transcription Results:", {
@@ -2093,9 +2151,9 @@ export default function AudioRecorder() {
             
             // Console log both speech recognition and server transcription results
             console.log("🎤 Web Speech API Recognition Results (fallback):", {
-              recognizedText: recognizedText || "(no text recognized)",
+              recognizedText: finalRecognizedTextRef.current || recognizedText || "(no text recognized)",
               language: examLanguage,
-              textLength: recognizedText ? recognizedText.length : 0
+              textLength: (finalRecognizedTextRef.current || recognizedText || "").length
             });
             
             console.log("🎵 Server Transcription Results (fallback):", {
@@ -2192,9 +2250,21 @@ export default function AudioRecorder() {
     setStopped(true);
     setIsRecording(false);
 
-    // Stop speech recognition
+    // Stop speech recognition and log final text after a small delay
     console.log("🎤 Stopping speech recognition...");
+    
+    // Capture current recognized text before stopping recognition
+    const currentRecognizedText = recognizedText;
+    console.log("🎤 Current recognized text before stopping:", currentRecognizedText);
+    
     stopSpeechRecognition();
+    
+    // Log final text with a small delay to ensure state updates are processed
+    setTimeout(() => {
+      const finalText = finalRecognizedTextRef.current || recognizedText || currentRecognizedText;
+      console.log("🎤 Final recognized speech text after stopping:", finalText);
+      console.log("🎤 Text length:", finalText.length);
+    }, 100);
 
     // Stop the media recorders - this will trigger handleAudioStop
     stopAudioRecording();
@@ -2213,9 +2283,6 @@ export default function AudioRecorder() {
     // Disable fullscreen monitoring when recording stops
     setIsFullscreen(false);
     console.log("🔒 Anti-cheat system disabled");
-
-    // Console log final recognized text
-    console.log("🎤 Final recognized speech text:", recognizedText);
 
     // Notify server via WebSocket
     wsStopRecording();

@@ -265,6 +265,7 @@
         let recognition = null;
         let isListening = false;
         let recognizedText = "";
+        let finalRecognizedTextRef = ""; // Simulate the ref from AudioRecorder
         let selectedLanguage = "en-US";
         
         // Elements
@@ -305,7 +306,7 @@
             return true;
         }
         
-        // Initialize speech recognition
+        // Initialize speech recognition (matches new AudioRecorder implementation)
         function initializeSpeechRecognition() {
             if (!checkSpeechSupport()) return null;
             
@@ -319,7 +320,7 @@
             
             addToConsole(`🌐 Speech recognition initialized with language: ${selectedLanguage}`);
             
-            // Handle recognition results
+            // Handle recognition results (matches new implementation)
             newRecognition.onresult = (event) => {
                 let finalTranscript = "";
                 let interimTranscript = "";
@@ -334,22 +335,27 @@
                     }
                 }
                 
-                // Update interim results
-                if (interimTranscript) {
-                    interimText.textContent = `"${interimTranscript}"`;
-                    liveResultsDiv.style.display = 'block';
-                }
-                
-                // Update final results (same as AudioRecorder.jsx)
+                // Update recognized text with final results (same as AudioRecorder.jsx)
                 if (finalTranscript) {
                     recognizedText += finalTranscript;
+                    finalRecognizedTextRef = recognizedText; // Update ref immediately
+                    
                     finalText.textContent = `"${recognizedText}"`;
                     finalMeta.textContent = `Language: ${selectedLanguage} | Total length: ${recognizedText.length} characters`;
                     finalResultsDiv.style.display = 'block';
                     
                     // Console log (same as AudioRecorder.jsx)
-                    addToConsole(`🎤 Speech recognized: "${finalTranscript}"`);
+                    addToConsole(`🎤 Speech recognized (final): "${finalTranscript}"`);
                     addToConsole(`🎤 Total recognized text so far: "${recognizedText}"`);
+                }
+                
+                // Store interim results separately so we can capture them when stopping
+                if (interimTranscript) {
+                    // Store interim text so it persists and can be accessed when stopping
+                    newRecognition.lastInterimText = interimTranscript;
+                    interimText.textContent = `"${interimTranscript}"`;
+                    liveResultsDiv.style.display = 'block';
+                    addToConsole(`🎤 Interim speech: "${interimTranscript}"`);
                 }
             };
             
@@ -363,9 +369,25 @@
                 }
             };
             
-            // Handle end of recognition (same as AudioRecorder.jsx)
+            // Handle end of recognition (matches new implementation)
             newRecognition.onend = () => {
                 addToConsole('🎤 Speech recognition ended');
+                
+                // Capture any remaining interim text as final text when recognition ends
+                if (newRecognition.lastInterimText) {
+                    recognizedText += newRecognition.lastInterimText;
+                    finalRecognizedTextRef = recognizedText; // Update ref immediately
+                    
+                    finalText.textContent = `"${recognizedText}"`;
+                    finalMeta.textContent = `Language: ${selectedLanguage} | Total length: ${recognizedText.length} characters`;
+                    finalResultsDiv.style.display = 'block';
+                    
+                    addToConsole(`🎤 Capturing final interim text on end: "${newRecognition.lastInterimText}"`);
+                    addToConsole(`🎤 Final total recognized text: "${recognizedText}"`);
+                    
+                    newRecognition.lastInterimText = ""; // Clear interim text
+                }
+                
                 isListening = false;
                 updateUI();
             };
@@ -373,6 +395,7 @@
             // Handle start of recognition (same as AudioRecorder.jsx)
             newRecognition.onstart = () => {
                 addToConsole('🎤 Speech recognition started');
+                newRecognition.lastInterimText = ""; // Clear any previous interim text
                 isListening = true;
                 updateUI();
             };
@@ -414,47 +437,74 @@
             }
         }
         
-        // Stop speech recognition
+        // Stop speech recognition (matches new implementation)
         function stopSpeechRecognition() {
             if (recognition && isListening) {
+                // Capture any remaining interim text before stopping (same as new AudioRecorder.jsx)
+                if (recognition.lastInterimText) {
+                    recognizedText += recognition.lastInterimText;
+                    finalRecognizedTextRef = recognizedText; // Update ref immediately
+                    
+                    finalText.textContent = `"${recognizedText}"`;
+                    finalMeta.textContent = `Language: ${selectedLanguage} | Total length: ${recognizedText.length} characters`;
+                    finalResultsDiv.style.display = 'block';
+                    
+                    addToConsole(`🎤 Capturing final interim text before stop: "${recognition.lastInterimText}"`);
+                    addToConsole(`🎤 Final total recognized text before stop: "${recognizedText}"`);
+                    recognition.lastInterimText = ""; // Clear interim text
+                }
+                
                 recognition.stop();
                 addToConsole('🎤 Speech recognition stopped manually');
+                addToConsole(`🎤 Final text in ref after stop: "${finalRecognizedTextRef}"`);
                 
-                // Simulate the console output from AudioRecorder.jsx
-                if (recognizedText) {
-                    addToConsole('🎤 Final recognized speech text: "' + recognizedText + '"');
+                // Simulate the console output from AudioRecorder.jsx (using ref)
+                setTimeout(() => {
+                    const finalTextFromRef = finalRecognizedTextRef || recognizedText;
                     
-                    // Simulate what would be sent to backend
-                    const uploadData = {
-                        uploaded: true,
-                        speechRecognitionText: recognizedText || null,
-                        recognitionLanguage: selectedLanguage
-                    };
-                    addToConsole('📤 Data that would be sent to backend: ' + JSON.stringify(uploadData, null, 2));
-                    
-                    // Simulate server response logging
-                    setTimeout(() => {
-                        addToConsole('🎤 Web Speech API Recognition Results: ' + JSON.stringify({
-                            recognizedText: recognizedText || "(no text recognized)",
-                            language: selectedLanguage,
-                            textLength: recognizedText ? recognizedText.length : 0
-                        }, null, 2));
+                    if (finalTextFromRef) {
+                        addToConsole(`🎤 Final recognized speech text after stopping: "${finalTextFromRef}"`);
+                        addToConsole(`🎤 Text length: ${finalTextFromRef.length}`);
                         
-                        // Simulate server transcription comparison
-                        addToConsole('🎵 Server Transcription Results: ' + JSON.stringify({
-                            transcription: "[would come from server AI transcription]",
-                            textLength: "[server transcription length]"
-                        }, null, 2));
-                    }, 1000);
-                } else {
-                    addToConsole('🎤 No speech was recognized');
-                }
+                        // Simulate what would be sent to backend (same as AudioRecorder.jsx)
+                        const uploadData = {
+                            uploaded: true,
+                            speechRecognitionText: finalTextFromRef || null,
+                            recognitionLanguage: selectedLanguage
+                        };
+                        addToConsole('📤 Data that would be sent to backend:');
+                        addToConsole(JSON.stringify(uploadData, null, 2));
+                        addToConsole('📤 Speech text from ref: "' + finalRecognizedTextRef + '"');
+                        addToConsole('📤 Speech text from state: "' + recognizedText + '"');
+                        
+                        // Simulate server response logging (same as AudioRecorder.jsx)
+                        setTimeout(() => {
+                            addToConsole('🎤 Web Speech API Recognition Results:');
+                            addToConsole(JSON.stringify({
+                                recognizedText: finalTextFromRef || "(no text recognized)",
+                                language: selectedLanguage,
+                                textLength: finalTextFromRef ? finalTextFromRef.length : 0
+                            }, null, 2));
+                            
+                            // Simulate server transcription comparison
+                            addToConsole('🎵 Server Transcription Results:');
+                            addToConsole(JSON.stringify({
+                                transcription: "[would come from server AI transcription]",
+                                textLength: "[server transcription length]"
+                            }, null, 2));
+                        }, 1000);
+                    } else {
+                        addToConsole('🎤 No speech was recognized');
+                        addToConsole('🎤 Final recognized speech text after stopping: "(no text detected)"');
+                    }
+                }, 100); // Same delay as AudioRecorder.jsx
             }
         }
         
         // Clear all results
         function clearResults() {
             recognizedText = "";
+            finalRecognizedTextRef = ""; // Clear ref as well
             finalText.textContent = "";
             finalMeta.textContent = "";
             interimText.textContent = "Listening for speech...";
@@ -465,7 +515,14 @@
         }
         
         // Event listeners
-        startBtn.addEventListener('click', startSpeechRecognition);
+        startBtn.addEventListener('click', () => {
+            // Reset recognized text for new recording (same as AudioRecorder.jsx)
+            recognizedText = "";
+            finalRecognizedTextRef = ""; // Reset ref as well
+            addToConsole('🎤 Reset recognized text for new recording');
+            
+            startSpeechRecognition();
+        });
         stopBtn.addEventListener('click', stopSpeechRecognition);
         clearBtn.addEventListener('click', clearResults);
         
@@ -487,6 +544,7 @@
         updateUI();
         addToConsole('🎤 Web Speech API Test initialized');
         addToConsole('🎤 This demonstrates the same functionality implemented in AudioRecorder.jsx');
+        addToConsole('🎤 Updated to match the new ref-based implementation');
     </script>
 </body>
 </html>
