@@ -877,37 +877,87 @@ const Config = ({
       }
 
       if (isUpdate) {
-        // Update existing config
-        const formData = new FormData();
-        for (let i = 0; i < questions.length; i++) {
-          const res = await fetch(questions[i]);
-          const blob = await res.blob();
-          formData.append(`question${i}`, blob, `question${i}.webm`);
-        }
-
-        const res = await fetch(
-          `https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&length=${
-            questions.length
-          }&rubric=${encodeURIComponent(
+        // Update existing config using the same S3-based system as creation
+        toast.success("Updating configuration...");
+        
+        // First, update the config metadata
+        const updateResponse = await fetch(
+          `https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&rubric=${encodeURIComponent(
             rubricString
           )}&limit=${maxTime}&language=${language}`,
           {
             method: "POST",
-            body: formData,
           }
         );
 
-        const response = await res.json();
+        const updateResult = await updateResponse.json();
 
-        if (res.ok && !response.error) {
-          toast.success("Configuration updated successfully");
-          setIsConfigRegistered(true);
-        } else {
-          toast.error(
-            "Failed to update configuration" +
-              (response.error ? `: ${response.error}` : "")
-          );
+        if (!updateResponse.ok || updateResult.error) {
+          throw new Error(updateResult.error || "Failed to update config");
         }
+
+        toast.success("Config updated successfully, uploading questions...");
+
+        // Upload questions using the same S3-based system as creation
+        for (let i = 0; i < questions.length; i++) {
+          const res = await fetch(questions[i]);
+          const blob = await res.blob();
+
+          // First, get a presigned URL for upload
+          const uploadUrlResponse = await fetch(
+            `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}`,
+            {
+              method: "GET",
+            }
+          );
+
+          if (!uploadUrlResponse.ok) {
+            throw new Error("Failed to get upload URL");
+          }
+
+          const { url, fields } = await uploadUrlResponse.json();
+          const formData = new FormData();
+          Object.entries(fields).forEach(([key, value]) => {
+            formData.append(key, value);
+          });
+          formData.append("file", blob);
+          formData.append("content-type", "audio/wav");
+
+          // Send the POST request to S3
+          const uploadResponse = await fetch(url, {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error("Failed to upload to S3");
+          }
+
+          // Notify server that upload is complete
+          const questionResponse = await fetch(
+            `https://www.server.speakeval.org/uploadquestion?pin=${userId}&id=${id}&index=${i}&language=${language}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ uploaded: true }),
+            }
+          );
+
+          const questionResult = await questionResponse.json();
+
+          if (!questionResponse.ok || questionResult.error) {
+            throw new Error(
+              questionResult.error || `Failed to upload question ${i + 1}`
+            );
+          }
+
+          setUploadProgress(Math.round(((i + 1) / questions.length) * 100));
+        }
+
+        toast.success("Configuration updated successfully");
+        setIsConfigRegistered(true);
       } else {
         // Create new config
         const configResponse = await fetch(
@@ -1001,11 +1051,6 @@ const Config = ({
         });
       }
 
-      toast.success(
-        isUpdate
-          ? "Configuration updated successfully"
-          : "Question set registered successfully"
-      );
       setIsConfigRegistered(true);
       setIsUploading(false);
     } catch (err) {

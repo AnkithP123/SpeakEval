@@ -21,7 +21,6 @@ import {
 } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import { getPin, setPin, setUserName } from "./components/Navbar";
-import RoomAndConfigPage from "./pages/UpdateConfig";
 import VerifyPage from "./pages/VerifyPage";
 import ProfileCard from "./components/StatsCard";
 import Download from "./pages/Download";
