@@ -90,25 +90,25 @@ class WebSocketService {
             this.handleMessage(data);
             this.lastActivityTime = Date.now();
           } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
+            logger.error('Error parsing WebSocket message:', error);
           }
         };
 
         this.ws.onclose = (event) => {
-          console.log('❌ WebSocket disconnected:', event.code, event.reason);
+          logger.log('❌ WebSocket disconnected:', event.code, event.reason);
           this.isConnected = false;
           this.connectionPromise = null;
           this.attemptReconnect();
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          logger.error('WebSocket error:', error);
           this.connectionPromise = null;
           reject(error);
         };
 
       } catch (error) {
-        console.error('Error creating WebSocket:', error);
+        logger.error('Error creating WebSocket:', error);
         this.connectionPromise = null;
         reject(error);
       }
@@ -132,13 +132,12 @@ class WebSocketService {
       try {
         // Build URL with token parameter
         const url = `${this.serverUrl}?token=${token}`;
-        console.log('🔗 Connecting for reconnection with token:', token.substring(0, 20) + '...');
-        console.log('🔗 WebSocket URL:', url);
+        logger.log('Connecting for reconnection with token');
         
         this.ws = new WebSocket(url);
         
         this.ws.onopen = () => {
-          console.log('✅ WebSocket connected for reconnection');
+          logger.log('WebSocket connected for reconnection');
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.connectionPromise = null;
@@ -153,25 +152,25 @@ class WebSocketService {
             this.handleMessage(data);
             this.lastActivityTime = Date.now();
           } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
+            logger.error('Error parsing WebSocket message', error);
           }
         };
 
         this.ws.onclose = (event) => {
-          console.log('❌ WebSocket disconnected:', event.code, event.reason);
+          logger.log('WebSocket disconnected', { code: event.code, reason: event.reason });
           this.isConnected = false;
           this.connectionPromise = null;
           this.attemptReconnect();
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          logger.error('WebSocket error', error);
           this.connectionPromise = null;
           reject(error);
         };
 
       } catch (error) {
-        console.error('Error creating WebSocket:', error);
+        logger.error('Error creating WebSocket', error);
         this.connectionPromise = null;
         reject(error);
       }
@@ -186,7 +185,7 @@ class WebSocketService {
       return this.connectForReconnect(token);
     } else if (roomCode) {
       // This should only be used for initial joins, but we need participant name
-      console.warn('Legacy connect called with roomCode but no participant name');
+      logger.warn('Legacy connect called with roomCode but no participant name');
       return Promise.reject(new Error('Use connectForJoin for initial connections'));
     } else {
       return Promise.reject(new Error('No roomCode or token provided'));
@@ -196,36 +195,35 @@ class WebSocketService {
   attemptReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+      logger.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
       
       setTimeout(() => {
         // Always try to reconnect with stored token first
         const token = tokenManager.getStudentToken();
-        console.log('🔍 Token check for reconnection:', {
+        logger.log('Token check for reconnection', {
           hasToken: !!token,
-          tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
           tokenLength: token ? token.length : 0
         });
         
         if (token) {
-          console.log('🔄 Reconnecting with stored token...');
+          logger.log('Reconnecting with stored token');
           this.connectForReconnect(token)
             .catch(error => {
-              console.error('Token reconnection failed:', error);
+              logger.error('Token reconnection failed', error);
               // If token reconnection fails, we can't reconnect with room code
               // because we need participant name for initial join
             });
         } else {
-          console.error('❌ No token available for reconnection');
-          console.log('🔍 TokenManager state:', {
+          logger.error('No token available for reconnection');
+          logger.log('TokenManager state', {
             isAuthenticated: tokenManager.isAuthenticated(),
-            studentInfo: tokenManager.getStudentInfo(),
-            roomSession: tokenManager.getRoomSession()
+            hasStudentInfo: !!tokenManager.getStudentInfo(),
+            hasRoomSession: !!tokenManager.getRoomSession()
           });
         }
       }, this.reconnectDelay * this.reconnectAttempts);
     } else {
-      console.error('Max reconnection attempts reached');
+      logger.error('Max reconnection attempts reached');
     }
   }
 
@@ -256,21 +254,21 @@ class WebSocketService {
 
   send(message) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log('📤 Sending WebSocket message:', message);
+      logger.log('Sending WebSocket message', { type: message.type });
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket not connected, message not sent:', message);
+      logger.warn('WebSocket not connected, message not sent', { type: message.type });
     }
   }
 
   handleMessage(data) {
     const { type, payload, messageId } = data;
     
-    console.log(`📨 Received WebSocket message: ${type}`, payload);
+    logger.log(`📨 Received WebSocket message: ${type}`, payload);
     
     // Handle message acknowledgments
     if (messageId) {
-      console.log('✅ Sending acknowledgment for message:', messageId);
+      logger.log('✅ Sending acknowledgment for message:', messageId);
       this.send({
         type: 'message_ack',
         payload: {
@@ -281,7 +279,7 @@ class WebSocketService {
     
     // Handle ping from server
     if (type === 'ping') {
-      console.log('🏓 Received ping from server, sending pong response');
+      logger.log('🏓 Received ping from server, sending pong response');
       this.send({
         type: 'pong',
         payload: {
@@ -296,7 +294,7 @@ class WebSocketService {
     
     // Handle pong acknowledgment from server
     if (type === 'pong_ack') {
-      console.log('🏓 Received pong acknowledgment from server:', {
+      logger.log('🏓 Received pong acknowledgment from server:', {
         latency: payload.latency,
         serverTime: payload.serverTime,
         clientTime: payload.clientTime
@@ -306,7 +304,7 @@ class WebSocketService {
     
     // Handle kick message from server
     if (type === 'kicked') {
-      console.log('🚫 Kicked by server:', payload.reason);
+      logger.log('🚫 Kicked by server:', payload.reason);
       this.handleKick(payload);
       return; // Don't trigger listeners for kicked
     }
@@ -316,11 +314,11 @@ class WebSocketService {
         try {
           callback(payload);
         } catch (error) {
-          console.error(`Error in ${type} listener:`, error);
+          logger.error(`Error in ${type} listener:`, error);
         }
       });
     } else {
-      console.log(`⚠️ No listeners found for event type: ${type}`);
+      logger.log(`⚠️ No listeners found for event type: ${type}`);
     }
   }
 
@@ -500,12 +498,12 @@ class WebSocketService {
     
     this.clientPingInterval = setInterval(() => {
       if (this.isConnected) {
-        console.log('🏓 Client sending ping to server');
+        logger.log('🏓 Client sending ping to server');
         this.sendPing();
       }
     }, intervalMs);
     
-    console.log(`🏓 Client ping started with ${intervalMs}ms interval`);
+    logger.log(`🏓 Client ping started with ${intervalMs}ms interval`);
   }
 
   // Stop client-side ping interval
@@ -513,13 +511,13 @@ class WebSocketService {
     if (this.clientPingInterval) {
       clearInterval(this.clientPingInterval);
       this.clientPingInterval = null;
-      console.log('🏓 Client ping stopped');
+      logger.log('🏓 Client ping stopped');
     }
   }
 
   // Handle kick from server
   handleKick(payload) {
-    console.log('🚫 Handling server kick:', payload);
+    logger.log('🚫 Handling server kick:', payload);
     
     // Disconnect from WebSocket
     this.disconnect();
@@ -535,7 +533,7 @@ class WebSocketService {
         try {
           callback(payload);
         } catch (error) {
-          console.error('Error in kicked listener:', error);
+          logger.error('Error in kicked listener:', error);
         }
       });
     }
@@ -582,18 +580,18 @@ class WebSocketService {
   // Enhanced reconnection method
   reconnect() {
     const token = tokenManager.getStudentToken();
-    console.log('🔍 Token check for manual reconnect:', {
+    logger.log('🔍 Token check for manual reconnect:', {
       hasToken: !!token,
       tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
       tokenLength: token ? token.length : 0
     });
     
     if (token) {
-      console.log('🔄 Reconnecting with stored token...');
+      logger.log('🔄 Reconnecting with stored token...');
       return this.connectForReconnect(token);
     } else {
-      console.error('❌ No token available for manual reconnection');
-      console.log('🔍 TokenManager state:', {
+      logger.error('❌ No token available for manual reconnection');
+      logger.log('🔍 TokenManager state:', {
         isAuthenticated: tokenManager.isAuthenticated(),
         studentInfo: tokenManager.getStudentInfo(),
         roomSession: tokenManager.getRoomSession()
