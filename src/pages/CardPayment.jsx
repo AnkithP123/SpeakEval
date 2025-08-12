@@ -5,8 +5,9 @@ import { loadStripe } from '@stripe/stripe-js';
 import { FaEnvelope } from 'react-icons/fa';    
 import { toast } from 'react-toastify';
 import { cuteAlert } from 'cute-alert';
+import { securityConfig, logger } from '../utils/securityConfig';
 
-const stripePromise = loadStripe('pk_test_51QCpfHGxVnRgHRhaU2TgiigH5ewsnLfrzD7lrsNqYajRwibsFhJdSfu5xvNsPDQfj0UMxltdhnt9i54GngVp1q6900QGJZqNGP');
+const stripePromise = loadStripe(securityConfig.getStripePublishableKey());
 
 const CardPaymentPanel = () => {
     const location = useLocation();
@@ -19,13 +20,20 @@ const CardPaymentPanel = () => {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
 
-    console.log(subscriptionData, teacherPin);
+    logger.log('Payment component initialized', { subscriptionData: subscriptionData?.tier });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true); // Start loading state
 
         if (!stripe || !elements) {
+            return;
+        }
+
+        // Validate email input
+        if (!securityConfig.validateEmail(email)) {
+            toast.error('Please enter a valid email address.');
+            setLoading(false);
             return;
         }
 
@@ -37,20 +45,20 @@ const CardPaymentPanel = () => {
             card: cardElement,
             billing_details: {
                 name: 'Customer Name', // Replace with real customer name
-                email: email, // Add email to billing details
+                email: securityConfig.sanitizeInput(email), // Sanitize email input
             },
         });
 
         if (error) {
-            console.error('[Error]', error);
+            logger.error('Stripe payment method creation failed', error);
             setLoading(false); // Stop loading if there is an error
         } else {
-            console.log('[PaymentMethod]', paymentMethod);
+            logger.log('Payment method created successfully');
 
             if (subscriptionData.planType === 'subscribe') {
             // Send the payment method, subscription data, teacherPin, and email to your backend
                 try {
-                    const response = await fetch('https://www.server.speakeval.org/create-session', {
+                    const response = await fetch(`${securityConfig.getServerUrl()}/create-session`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -59,17 +67,17 @@ const CardPaymentPanel = () => {
                             paymentMethodId: paymentMethod.id,
                             subscriptionData,
                             teacherPin,
-                            email,
+                            email: securityConfig.sanitizeInput(email),
                         }),
                     });
 
                     const result = await response.json();
                     
-                    console.log(result);
+                    logger.log('Payment processing result received');
 
                     // Redirect to success page if payment is successful
                     if (result.error) {
-                        console.error(result.error);
+                        logger.error('Payment processing error', { error: result.error });
                         toast.error('Error processing payment: ' + result.error);
                         cuteAlert({
                             type: 'error',
@@ -88,14 +96,14 @@ const CardPaymentPanel = () => {
                         primaryButtonText: 'OK'
                     });
                 } catch (err) {
-                    console.error('Error processing payment:', err);
+                    logger.error('Error processing payment', err);
                 } finally {
                     setLoading(false); // Stop loading after processing
                 }
             } else {
                 // Send the payment method, subscription data, and email to your backend
                 try {
-                    const response = await fetch('https://www.server.speakeval.org/create-session', {
+                    const response = await fetch(`${securityConfig.getServerUrl()}/create-session`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -104,18 +112,18 @@ const CardPaymentPanel = () => {
                             paymentMethodId: paymentMethod.id,
                             subscriptionData,
                             teacherPin,
-                            email,
+                            email: securityConfig.sanitizeInput(email),
                         }),
                         
                     });
 
                     const result = await response.json();
                     
-                    console.log(result);
+                    logger.log('Payment processing result received');
 
                     // Redirect to success page if payment is successful
                     if (result.error) {
-                        console.error(result.error);
+                        logger.error('Payment processing error', { error: result.error });
                         toast.error('Error processing payment: ' + result.error);
                         cuteAlert({
                             type: 'error',
@@ -134,7 +142,7 @@ const CardPaymentPanel = () => {
                         primaryButtonText: 'OK'
                     });
                 } catch (err) {
-                    console.error('Error processing payment:', err);
+                    logger.error('Error processing payment', err);
                 } finally {
                     setLoading(false); // Stop loading after processing
                 }

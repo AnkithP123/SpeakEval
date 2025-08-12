@@ -13,6 +13,7 @@ import Card from "../components/Card";
 import "../styles/globals.css";
 import tokenManager from "../utils/tokenManager";
 import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
+import { securityConfig, logger } from "../utils/securityConfig";
 
 function JoinRoomContent() {
   const [name, setName] = useState("");
@@ -52,22 +53,22 @@ function JoinRoomContent() {
           return;
         }
 
-        console.log('🔍 Checking for existing token for rejoin...');
+        logger.log('Checking for existing token for rejoin');
         
         // Validate the token with the server
-        const response = await fetch(`https://server.speakeval.org/validate_token?token=${existingToken}`);
+        const response = await fetch(`${securityConfig.getServerUrl()}/validate_token?token=${existingToken}`);
         const data = await response.json();
         
         if (data.valid) {
-          console.log('✅ Valid token found for rejoin:', data);
+          logger.log('Valid token found for rejoin');
           setRejoinData(data);
         } else {
-          console.log('❌ Token validation failed:', data.error);
+          logger.log('Token validation failed', { error: data.error });
           // Clear invalid token
           tokenManager.clearStudentToken();
         }
       } catch (error) {
-        console.error('Error checking for rejoin:', error);
+        logger.error('Error checking for rejoin', error);
       } finally {
         setCheckingRejoin(false);
       }
@@ -82,7 +83,7 @@ function JoinRoomContent() {
     setLoading(true);
     
     try {
-      console.log('🔄 Attempting to rejoin room:', rejoinData.roomCode);
+      logger.log('Attempting to rejoin room', { roomCode: rejoinData.roomCode });
       
       // Connect using the existing token
       await connectForJoin(rejoinData.roomCode, rejoinData.participant);
@@ -91,7 +92,7 @@ function JoinRoomContent() {
       navigate(`/room/${rejoinData.roomCode}`);
       
     } catch (error) {
-      console.error('Error rejoining room:', error);
+      logger.error('Error rejoining room', error);
       toast.error('Failed to rejoin room. Please try joining again.');
       setLoading(false);
     }
@@ -102,36 +103,43 @@ function JoinRoomContent() {
     const roomCode = Number.parseInt(code.toString() + "001");
     const participantName = useGoogle ? googleName : name;
 
+    // Validate inputs
+    if (!securityConfig.validateRoomCode(code.toString())) {
+      toast.error("Please enter a valid room code.");
+      setLoading(false);
+      return;
+    }
+
+    if (!securityConfig.validateParticipantName(participantName)) {
+      toast.error("Please enter a valid name (letters, numbers, spaces, and hyphens only).");
+      setLoading(false);
+      return;
+    }
+
     if (participantName && roomCode) {
-      console.log(
-        "Joining room with name:",
-        participantName,
-        "and room code:",
-        roomCode
-      );
+      logger.log("Joining room", {
+        participantName: participantName,
+        roomCode: roomCode
+      });
 
       try {
         // Check if we have a stored token for reconnection
         const existingToken = tokenManager.getStudentToken();
         
         if (existingToken) {
-          console.log('🔄 Reconnecting with existing token...');
+          logger.log('Reconnecting with existing token');
           // For reconnection, we'll use the token-based connection
           // But since this is the join page, we should do a fresh join
-          console.log('🔄 Fresh join requested on join page');
+          logger.log('Fresh join requested on join page');
         }
         
         // Set up event listeners for join response
         const handleJoinSuccess = (payload) => {
-          console.log('✅ Join room successful:', payload);
+          logger.log('Join room successful');
           
           // Store the JWT token and session info
           const token = payload.token;
-          console.log('🔍 Storing token:', {
-            hasToken: !!token,
-            tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
-            tokenLength: token ? token.length : 0
-          });
+          logger.log('Storing token');
           
           tokenManager.setStudentToken(token);
           tokenManager.setRoomSession({
@@ -140,11 +148,11 @@ function JoinRoomContent() {
             timestamp: Date.now()
           });
           
-          console.log("Stored token and session info");
-          console.log('🔍 TokenManager state after storage:', {
+          logger.log("Stored token and session info");
+          logger.log('TokenManager state after storage', {
             isAuthenticated: tokenManager.isAuthenticated(),
-            studentInfo: tokenManager.getStudentInfo(),
-            roomSession: tokenManager.getRoomSession()
+            hasStudentInfo: !!tokenManager.getStudentInfo(),
+            hasRoomSession: !!tokenManager.getRoomSession()
           });
           
           // Navigate to room
@@ -230,9 +238,17 @@ function JoinRoomContent() {
 
   const handleNextStep = async () => {
     setLoading(true);
+    
+    // Validate room code format first
+    if (!securityConfig.validateRoomCode(code)) {
+      toast.error("Please enter a valid room code (8-12 alphanumeric characters).");
+      setLoading(false);
+      return;
+    }
+    
     // Verify room code here
     const res = await fetch(
-      `https://www.server.speakeval.org/verify_room_code?code=${code}`
+      `${securityConfig.getServerUrl()}/verify_room_code?code=${securityConfig.sanitizeInput(code)}`
     );
     const parsedData = await res.json();
     setLoading(false);

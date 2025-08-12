@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useStripe, Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
+import { securityConfig } from '../utils/securityConfig';
 
 // Initialize Stripe outside of component
-const stripePromise = loadStripe('pk_test_51QCpfHGxVnRgHRhaU2TgiigH5ewsnLfrzD7lrsNqYajRwibsFhJdSfu5xvNsPDQfj0UMxltdhnt9i54GngVp1q6900QGJZqNGP');
+const stripePromise = loadStripe(securityConfig.getStripePublishableKey());
 
 function UpgradePanelContent({ basicCard = true, onSubscribe }) {
     const stripe = useStripe();

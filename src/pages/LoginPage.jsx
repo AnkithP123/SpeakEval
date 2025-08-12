@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { toast } from "react-toastify";
+import { securityConfig, logger } from "../utils/securityConfig";
 import "./auth.css";
 
 function LoginPage({ set, setUltimate, setUsername, setPin }) {
@@ -23,7 +24,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
       if (token) {
         try {
           const response = await fetch(
-            "https://www.server.speakeval.org/expired-token?token=" + token
+            `${securityConfig.getServerUrl()}/expired-token?token=${token}`
           );
           const tokenExpiredJson = await response.json();
 
@@ -35,7 +36,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
             navigate(redirect || "/");
           }
         } catch (error) {
-          console.error("Token check failed:", error);
+          logger.error("Token check failed", error);
           localStorage.removeItem("token");
           localStorage.removeItem("username");
         }
@@ -56,12 +57,23 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
       return;
     }
 
+    // Basic input validation
+    if (!securityConfig.validateParticipantName(usernameInput)) {
+      toast.error("Please enter a valid username (letters, numbers, spaces, and hyphens only).");
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const res = await fetch("https://www.server.speakeval.org/login", {
+      const res = await fetch(`${securityConfig.getServerUrl()}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: usernameInput, password }),
+        body: JSON.stringify({ 
+          username: securityConfig.sanitizeInput(usernameInput), 
+          password: securityConfig.sanitizeInput(password) 
+        }),
       });
 
       const data = await res.json();
@@ -90,7 +102,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
         navigate(redirect || "/");
       }
     } catch (err) {
-      console.error("Login Error:", err);
+      logger.error("Login Error", err);
       toast.error(err.message || "Failed to login. Please try again.");
       setShake(true);
       setTimeout(() => setShake(false), 500);
@@ -107,12 +119,21 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
       setTimeout(() => setShake(false), 500);
       return;
     }
+
+    // Validate email format
+    if (!securityConfig.validateEmail(email)) {
+      toast.error("Please enter a valid email address.");
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
+    }
+
     let res = await fetch(
-      "https://www.server.speakeval.org/reset-password-email",
+      `${securityConfig.getServerUrl()}/reset-password-email`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: securityConfig.sanitizeInput(email) }),
       }
     );
     let data = await res.json();

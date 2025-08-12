@@ -1,4 +1,5 @@
 import tokenManager from './tokenManager';
+import { securityConfig, logger } from './securityConfig';
 
 class WebSocketService {
   constructor() {
@@ -8,7 +9,7 @@ class WebSocketService {
     this.reconnectDelay = 1000;
     this.listeners = new Map();
     this.isConnected = false;
-    this.serverUrl = 'wss://www.server.speakeval.org/ws';
+    this.serverUrl = securityConfig.getWebSocketUrl();
     this.currentRoom = null;
     this.currentParticipant = null;
     this.connectionPromise = null;
@@ -22,11 +23,11 @@ class WebSocketService {
     // Set up Page Visibility API detection
     this.visibilityChangeHandler = () => {
       if (document.visibilityState === 'visible') {
-        console.log('👁️ Tab became visible - requesting state sync');
+        logger.log('Tab became visible - requesting state sync');
         this.requestStateSync();
         this.lastActivityTime = Date.now();
       } else {
-        console.log('👁️ Tab became hidden');
+        logger.log('Tab became hidden');
       }
     };
 
@@ -35,7 +36,7 @@ class WebSocketService {
 
   requestStateSync() {
     if (this.isConnected) {
-      console.log('🔄 Requesting state sync from server');
+      logger.log('Requesting state sync from server');
       this.send({
         type: 'request_state_sync',
         payload: {
@@ -67,13 +68,13 @@ class WebSocketService {
         });
         
         const url = `${this.serverUrl}?${params.toString()}`;
-        console.log('🔗 Connecting for initial join:', { roomCode, participantName });
-        console.log('🔗 WebSocket URL:', url);
+        logger.log('Connecting for initial join', { roomCode, participantName });
+        logger.log('WebSocket URL configured');
         
         this.ws = new WebSocket(url);
         
         this.ws.onopen = () => {
-          console.log('✅ WebSocket connected for join');
+          logger.log('WebSocket connected for join');
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.connectionPromise = null;
