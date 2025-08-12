@@ -48,6 +48,14 @@ export default function AudioRecorder() {
   const [screenStream, setScreenStream] = useState(null);
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
+  
+  // Web Speech API states
+  const [speechRecognition, setSpeechRecognition] = useState(null);
+  const [recognizedText, setRecognizedText] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [examLanguage, setExamLanguage] = useState(null); // Will be set from API response
+  const finalRecognizedTextRef = useRef(""); // Ref to store final recognized text for immediate access
+  
   let questionIndex;
   let played = false;
 
@@ -139,6 +147,29 @@ export default function AudioRecorder() {
   // Reset state for new question
   const resetForNewQuestion = () => {
     console.log("🔄 Resetting state for new question...");
+
+    // Stop speech recognition if active and capture any remaining text
+    if (speechRecognition && isListening) {
+      // Capture any remaining interim text before stopping
+      if (speechRecognition.lastInterimText) {
+        setRecognizedText(prev => {
+          const newText = prev + speechRecognition.lastInterimText;
+          console.log("🎤 Capturing final interim text for new question:", speechRecognition.lastInterimText);
+          console.log("🎤 Final total recognized text for new question:", newText);
+          return newText;
+        });
+      }
+      
+      speechRecognition.stop();
+      console.log("🎤 Stopped speech recognition for new question");
+    }
+    
+    // Reset speech recognition states
+    setRecognizedText("");
+    finalRecognizedTextRef.current = ""; // Reset ref as well
+    setIsListening(false);
+    setSpeechRecognition(null);
+    setExamLanguage(null); // Reset language to null
 
     // Reset all recording-related states
     setIsRecording(false);
@@ -971,6 +1002,182 @@ export default function AudioRecorder() {
     return tracks.length > 0 && tracks[0].readyState === "live";
   };
 
+  // Initialize Web Speech API
+  const initializeSpeechRecognition = () => {
+    // Check if Web Speech API is supported
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      console.warn("Web Speech API not supported in this browser");
+      return null;
+    }
+
+    const recognition = new SpeechRecognition();
+    
+    // Configure recognition settings
+    recognition.continuous = true; // Keep listening until manually stopped
+    recognition.interimResults = false; // Only get final results to avoid duplication
+    recognition.lang = examLanguage; // Set language for recognition
+    
+    // Handle recognition results
+    recognition.onresult = (event) => {
+      let finalTranscript = "";
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      
+      // Update recognized text with final results only
+      if (finalTranscript) {
+        setRecognizedText(prev => {
+          const newText = prev + finalTranscript;
+          console.log("🎤 Speech recognized (final):", finalTranscript);
+          console.log("🎤 Total recognized text so far:", newText);
+          
+          // Update the ref immediately for synchronous access
+          finalRecognizedTextRef.current = newText;
+          
+          return newText;
+        });
+      }
+    };
+    
+    // Handle errors
+    recognition.onerror = (event) => {
+      console.error("🎤 Speech recognition error:", event.error);
+      if (event.error === 'not-allowed') {
+        console.error("🎤 Microphone access denied for speech recognition");
+      }
+    };
+    
+    // Handle end of recognition
+    recognition.onend = () => {
+      console.log("🎤 Speech recognition ended");
+      setIsListening(false);
+    };
+    
+    // Handle start of recognition
+    recognition.onstart = () => {
+      console.log("🎤 Speech recognition started");
+      setIsListening(true);
+    };
+    
+    return recognition;
+  };
+
+  // Start speech recognition
+  const startSpeechRecognition = () => {
+    if (!speechRecognition) {
+      const recognition = initializeSpeechRecognition();
+      if (recognition) {
+        setSpeechRecognition(recognition);
+        recognition.start();
+      }
+    } else {
+      try {
+        speechRecognition.start();
+      } catch (error) {
+        console.error("🎤 Error starting speech recognition:", error);
+      }
+    }
+  };
+
+  // Stop speech recognition
+  const stopSpeechRecognition = () => {
+    if (speechRecognition && isListening) {
+      speechRecognition.stop();
+      console.log("🎤 Speech recognition stopped manually");
+      console.log("🎤 Final recognized text:", finalRecognizedTextRef.current);
+    }
+  };
+
+  // Map exam language to speech recognition language codes
+  const mapLanguageToSpeechRecognition = (examLang) => {
+    const languageMap = {
+      // English variants
+      'English': 'en-US',
+      'english': 'en-US',
+      'en': 'en-US',
+      'en-US': 'en-US',
+      'en-GB': 'en-GB',
+      
+      // Spanish variants  
+      'Spanish': 'es-ES',
+      'spanish': 'es-ES',
+      'es': 'es-ES',
+      'es-ES': 'es-ES',
+      'es-US': 'es-US',
+      'es-MX': 'es-MX',
+      
+      // French variants
+      'French': 'fr-FR',
+      'french': 'fr-FR',
+      'fr': 'fr-FR',
+      'fr-FR': 'fr-FR',
+      'fr-CA': 'fr-CA',
+      
+      // German variants
+      'German': 'de-DE',
+      'german': 'de-DE',
+      'de': 'de-DE',
+      'de-DE': 'de-DE',
+      
+      // Italian variants
+      'Italian': 'it-IT',
+      'italian': 'it-IT',
+      'it': 'it-IT',
+      'it-IT': 'it-IT',
+      
+      // Portuguese variants
+      'Portuguese': 'pt-BR',
+      'portuguese': 'pt-BR',
+      'pt': 'pt-BR',
+      'pt-BR': 'pt-BR',
+      'pt-PT': 'pt-PT',
+      
+      // Chinese variants
+      'Chinese': 'zh-CN',
+      'chinese': 'zh-CN',
+      'zh': 'zh-CN',
+      'zh-CN': 'zh-CN',
+      'zh-TW': 'zh-TW',
+      
+      // Japanese
+      'Japanese': 'ja-JP',
+      'japanese': 'ja-JP',
+      'ja': 'ja-JP',
+      'ja-JP': 'ja-JP',
+      
+      // Korean
+      'Korean': 'ko-KR',
+      'korean': 'ko-KR',
+      'ko': 'ko-KR',
+      'ko-KR': 'ko-KR',
+      
+      // Russian
+      'Russian': 'ru-RU',
+      'russian': 'ru-RU',
+      'ru': 'ru-RU',
+      'ru-RU': 'ru-RU',
+      
+      // Arabic
+      'Arabic': 'ar-SA',
+      'arabic': 'ar-SA',
+      'ar': 'ar-SA',
+      'ar-SA': 'ar-SA',
+      
+      // Hindi
+      'Hindi': 'hi-IN',
+      'hindi': 'hi-IN',
+      'hi': 'hi-IN',
+      'hi-IN': 'hi-IN',
+    };
+    
+    return languageMap[examLang] || examLang || 'en-US';
+  };
+
   const requestPermissions = async () => {
     try {
       // Check if we already have a valid microphone stream
@@ -1097,8 +1304,13 @@ export default function AudioRecorder() {
       if (screenStream) {
         screenStream.getTracks().forEach((track) => track.stop());
       }
+      // Clean up speech recognition
+      if (speechRecognition && isListening) {
+        speechRecognition.stop();
+        console.log("🎤 Stopped speech recognition on component unmount");
+      }
     };
-  }, [microphoneStream, screenStream]);
+  }, [microphoneStream, screenStream, speechRecognition, isListening]);
 
   // Initialize setup on component mount
   useEffect(() => {
@@ -1419,6 +1631,17 @@ export default function AudioRecorder() {
         // If recording has finished, keep timer at "xx:xx"
       }
 
+      // Extract language information if available
+      if (receivedData.language) {
+        const language = mapLanguageToSpeechRecognition(receivedData.language);
+        setExamLanguage(language);
+        console.log("🌐 Exam language detected:", receivedData.language, "→ Speech recognition language:", language);
+      } else {
+        // Don't enable speech recognition if language can't be determined
+        setExamLanguage(null);
+        console.log("🌐 No language information provided - speech recognition disabled");
+      }
+
       if (audioUrls && audioUrls.length > 0) {
         // Use the presigned URL directly
         setAudioBlobURL(audioUrls[0]);
@@ -1475,6 +1698,11 @@ export default function AudioRecorder() {
     setIsRecording(true);
     setAudioURL(null);
 
+    // Reset recognized text for new recording
+    setRecognizedText("");
+    finalRecognizedTextRef.current = ""; // Reset ref as well
+    console.log("🎤 Reset recognized text for new recording");
+
     // Ensure fullscreen is active for recording
     // if (!document.fullscreenElement) {
     //   console.log("🖥️ Entering fullscreen for recording");
@@ -1524,6 +1752,15 @@ export default function AudioRecorder() {
       // which should work with the permissions we've already granted
       try {
         startAudioRecording();
+        
+        // Start speech recognition only if language is available from API
+        if (examLanguage) {
+          console.log("🎤 Starting speech recognition with language:", examLanguage);
+          startSpeechRecognition();
+        } else {
+          console.log("🎤 Speech recognition disabled - no language information available");
+        }
+        
       } catch (recordingError) {
         console.error("❌ Failed to start audio recording:", recordingError);
         // If recording fails, try to refresh permissions and try again
@@ -1532,6 +1769,9 @@ export default function AudioRecorder() {
         const refreshResult = await requestPermissions();
         if (refreshResult.permissionGranted) {
           startAudioRecording();
+          if (examLanguage) {
+            startSpeechRecognition();
+          }
         } else {
           console.error("❌ Failed to refresh microphone permissions");
           setError("Unable to access microphone after multiple attempts.");
@@ -1737,7 +1977,17 @@ export default function AudioRecorder() {
         waitingForTranscription: true,
       });
 
-      // Notify server that upload is complete
+      // Notify server that upload is complete with speech recognition results
+      const uploadData = { 
+        uploaded: true,
+        speechRecognitionText: finalRecognizedTextRef.current || recognizedText || null, // Use ref first, then state as fallback
+        recognitionLanguage: examLanguage
+      };
+      
+      console.log("📤 Sending to upload endpoint:", uploadData);
+      console.log("📤 Speech text from ref:", finalRecognizedTextRef.current);
+      console.log("📤 Speech text from state:", recognizedText);
+      
       const response = await fetch(
         `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
         {
@@ -1745,13 +1995,19 @@ export default function AudioRecorder() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ uploaded: true }),
+          body: JSON.stringify(uploadData),
         }
       );
       console.log("Response status:", response.status);
 
       if (!response.ok) {
         const retryInterval = setInterval(async () => {
+          const retryUploadData = { 
+            uploaded: true,
+            speechRecognitionText: finalRecognizedTextRef.current || recognizedText || null,
+            recognitionLanguage: examLanguage
+          };
+          
           const retryResponse = await fetch(
             `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
             {
@@ -1759,7 +2015,7 @@ export default function AudioRecorder() {
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ uploaded: true }),
+              body: JSON.stringify(retryUploadData),
             }
           );
           if (retryResponse.ok) {
@@ -1767,6 +2023,18 @@ export default function AudioRecorder() {
             clearInterval(retryInterval);
             const data = await retryResponse.json();
             setDisplayTime("xx:xx");
+            
+            // Console log both speech recognition and server transcription results
+            console.log("🎤 Web Speech API Recognition Results (retry):", {
+              recognizedText: finalRecognizedTextRef.current || recognizedText || "(no text recognized)",
+              language: examLanguage,
+              textLength: (finalRecognizedTextRef.current || recognizedText || "").length
+            });
+            
+            console.log("🎵 Server Transcription Results (retry):", {
+              transcription: data.transcription || "(no transcription received)",
+              textLength: data.transcription ? data.transcription.length : 0
+            });
 
             // Update uploading stage data with transcription
             updateUploadingData({
@@ -1786,6 +2054,18 @@ export default function AudioRecorder() {
       } else {
         setFinishedRecording(true);
         const data = await response.json();
+        
+        // Console log both speech recognition and server transcription results
+        console.log("🎤 Web Speech API Recognition Results:", {
+          recognizedText: finalRecognizedTextRef.current || recognizedText || "(no text recognized)",
+          language: examLanguage,
+          textLength: (finalRecognizedTextRef.current || recognizedText || "").length
+        });
+        
+        console.log("🎵 Server Transcription Results:", {
+          transcription: data.transcription || "(no transcription received)",
+          textLength: data.transcription ? data.transcription.length : 0
+        });
 
         if (data.error) {
           setError(data.error);
@@ -1831,6 +2111,18 @@ export default function AudioRecorder() {
             const data = await fallbackResponse.json();
             setFinishedRecording(true);
             setDisplayTime("xx:xx");
+            
+            // Console log both speech recognition and server transcription results
+            console.log("🎤 Web Speech API Recognition Results (fallback):", {
+              recognizedText: finalRecognizedTextRef.current || recognizedText || "(no text recognized)",
+              language: examLanguage,
+              textLength: (finalRecognizedTextRef.current || recognizedText || "").length
+            });
+            
+            console.log("🎵 Server Transcription Results (fallback):", {
+              transcription: data.transcription || "(no transcription received)",
+              textLength: data.transcription ? data.transcription.length : 0
+            });
 
             // Update uploading stage data with transcription
             updateUploadingData({
@@ -1921,6 +2213,22 @@ export default function AudioRecorder() {
     setStopped(true);
     setIsRecording(false);
 
+    // Stop speech recognition and log final text after a small delay
+    console.log("🎤 Stopping speech recognition...");
+    
+    // Capture current recognized text before stopping recognition
+    const currentRecognizedText = recognizedText;
+    console.log("🎤 Current recognized text before stopping:", currentRecognizedText);
+    
+    stopSpeechRecognition();
+    
+    // Log final text with a small delay to ensure state updates are processed
+    setTimeout(() => {
+      const finalText = finalRecognizedTextRef.current || recognizedText || currentRecognizedText;
+      console.log("🎤 Final recognized speech text after stopping:", finalText);
+      console.log("🎤 Text length:", finalText.length);
+    }, 100);
+
     // Stop the media recorders - this will trigger handleAudioStop
     stopAudioRecording();
     stopScreenRecording();
@@ -1985,6 +2293,27 @@ export default function AudioRecorder() {
 
   return (
     <>
+      {/* CSS animations */}
+      <style>
+        {`
+          @keyframes pulse {
+            0%, 100% {
+              transform: scale(1);
+              opacity: 1;
+            }
+            50% {
+              transform: scale(1.1);
+              opacity: 0.7;
+            }
+          }
+          
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+      
       <div
         style={{
           display: "flex",
@@ -2852,6 +3181,50 @@ export default function AudioRecorder() {
                       >
                         ✓ Recording completed successfully
                       </p>
+                      {recognizedText && examLanguage && (
+                        <div
+                          style={{
+                            backgroundColor: "#F0F9FF",
+                            border: "1px solid #0EA5E9",
+                            borderRadius: "12px",
+                            padding: "16px",
+                            marginTop: "16px",
+                            maxWidth: "500px",
+                            margin: "16px auto 0 auto",
+                          }}
+                        >
+                          <h4
+                            style={{
+                              fontSize: "16px",
+                              fontWeight: "600",
+                              color: "#0F172A",
+                              margin: "0 0 8px 0",
+                            }}
+                          >
+                            Speech Recognition Results
+                          </h4>
+                          <p
+                            style={{
+                              fontSize: "14px",
+                              color: "#374151",
+                              lineHeight: "1.5",
+                              margin: "0",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            "{recognizedText}"
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              color: "#6B7280",
+                              margin: "8px 0 0 0",
+                            }}
+                          >
+                            Detected in: {examLanguage}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
               </div>
