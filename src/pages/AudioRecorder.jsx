@@ -48,6 +48,13 @@ export default function AudioRecorder() {
   const [screenStream, setScreenStream] = useState(null);
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
+  
+  // Web Speech API states
+  const [speechRecognition, setSpeechRecognition] = useState(null);
+  const [recognizedText, setRecognizedText] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [examLanguage, setExamLanguage] = useState("en-US"); // Default to English
+  
   let questionIndex;
   let played = false;
 
@@ -139,6 +146,17 @@ export default function AudioRecorder() {
   // Reset state for new question
   const resetForNewQuestion = () => {
     console.log("🔄 Resetting state for new question...");
+
+    // Stop speech recognition if active
+    if (speechRecognition && isListening) {
+      speechRecognition.stop();
+      console.log("🎤 Stopped speech recognition for new question");
+    }
+    
+    // Reset speech recognition states
+    setRecognizedText("");
+    setIsListening(false);
+    setSpeechRecognition(null);
 
     // Reset all recording-related states
     setIsRecording(false);
@@ -971,6 +989,182 @@ export default function AudioRecorder() {
     return tracks.length > 0 && tracks[0].readyState === "live";
   };
 
+  // Initialize Web Speech API
+  const initializeSpeechRecognition = () => {
+    // Check if Web Speech API is supported
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      console.warn("Web Speech API not supported in this browser");
+      return null;
+    }
+
+    const recognition = new SpeechRecognition();
+    
+    // Configure recognition settings
+    recognition.continuous = true; // Keep listening until manually stopped
+    recognition.interimResults = true; // Get partial results
+    recognition.lang = examLanguage; // Set language for recognition
+    
+    // Handle recognition results
+    recognition.onresult = (event) => {
+      let finalTranscript = "";
+      let interimTranscript = "";
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      
+      // Update recognized text with final results
+      if (finalTranscript) {
+        setRecognizedText(prev => {
+          const newText = prev + finalTranscript;
+          console.log("🎤 Speech recognized:", finalTranscript);
+          console.log("🎤 Total recognized text so far:", newText);
+          return newText;
+        });
+      }
+    };
+    
+    // Handle errors
+    recognition.onerror = (event) => {
+      console.error("🎤 Speech recognition error:", event.error);
+      if (event.error === 'not-allowed') {
+        console.error("🎤 Microphone access denied for speech recognition");
+      }
+    };
+    
+    // Handle end of recognition
+    recognition.onend = () => {
+      console.log("🎤 Speech recognition ended");
+      setIsListening(false);
+    };
+    
+    // Handle start of recognition
+    recognition.onstart = () => {
+      console.log("🎤 Speech recognition started");
+      setIsListening(true);
+    };
+    
+    return recognition;
+  };
+
+  // Start speech recognition
+  const startSpeechRecognition = () => {
+    if (!speechRecognition) {
+      const recognition = initializeSpeechRecognition();
+      if (recognition) {
+        setSpeechRecognition(recognition);
+        recognition.start();
+      }
+    } else {
+      try {
+        speechRecognition.start();
+      } catch (error) {
+        console.error("🎤 Error starting speech recognition:", error);
+      }
+    }
+  };
+
+  // Stop speech recognition
+  const stopSpeechRecognition = () => {
+    if (speechRecognition && isListening) {
+      speechRecognition.stop();
+      console.log("🎤 Speech recognition stopped manually");
+    }
+  };
+
+  // Map exam language to speech recognition language codes
+  const mapLanguageToSpeechRecognition = (examLang) => {
+    const languageMap = {
+      // English variants
+      'English': 'en-US',
+      'english': 'en-US',
+      'en': 'en-US',
+      'en-US': 'en-US',
+      'en-GB': 'en-GB',
+      
+      // Spanish variants  
+      'Spanish': 'es-ES',
+      'spanish': 'es-ES',
+      'es': 'es-ES',
+      'es-ES': 'es-ES',
+      'es-US': 'es-US',
+      'es-MX': 'es-MX',
+      
+      // French variants
+      'French': 'fr-FR',
+      'french': 'fr-FR',
+      'fr': 'fr-FR',
+      'fr-FR': 'fr-FR',
+      'fr-CA': 'fr-CA',
+      
+      // German variants
+      'German': 'de-DE',
+      'german': 'de-DE',
+      'de': 'de-DE',
+      'de-DE': 'de-DE',
+      
+      // Italian variants
+      'Italian': 'it-IT',
+      'italian': 'it-IT',
+      'it': 'it-IT',
+      'it-IT': 'it-IT',
+      
+      // Portuguese variants
+      'Portuguese': 'pt-BR',
+      'portuguese': 'pt-BR',
+      'pt': 'pt-BR',
+      'pt-BR': 'pt-BR',
+      'pt-PT': 'pt-PT',
+      
+      // Chinese variants
+      'Chinese': 'zh-CN',
+      'chinese': 'zh-CN',
+      'zh': 'zh-CN',
+      'zh-CN': 'zh-CN',
+      'zh-TW': 'zh-TW',
+      
+      // Japanese
+      'Japanese': 'ja-JP',
+      'japanese': 'ja-JP',
+      'ja': 'ja-JP',
+      'ja-JP': 'ja-JP',
+      
+      // Korean
+      'Korean': 'ko-KR',
+      'korean': 'ko-KR',
+      'ko': 'ko-KR',
+      'ko-KR': 'ko-KR',
+      
+      // Russian
+      'Russian': 'ru-RU',
+      'russian': 'ru-RU',
+      'ru': 'ru-RU',
+      'ru-RU': 'ru-RU',
+      
+      // Arabic
+      'Arabic': 'ar-SA',
+      'arabic': 'ar-SA',
+      'ar': 'ar-SA',
+      'ar-SA': 'ar-SA',
+      
+      // Hindi
+      'Hindi': 'hi-IN',
+      'hindi': 'hi-IN',
+      'hi': 'hi-IN',
+      'hi-IN': 'hi-IN',
+    };
+    
+    return languageMap[examLang] || examLang || 'en-US';
+  };
+
   const requestPermissions = async () => {
     try {
       // Check if we already have a valid microphone stream
@@ -1097,8 +1291,13 @@ export default function AudioRecorder() {
       if (screenStream) {
         screenStream.getTracks().forEach((track) => track.stop());
       }
+      // Clean up speech recognition
+      if (speechRecognition && isListening) {
+        speechRecognition.stop();
+        console.log("🎤 Stopped speech recognition on component unmount");
+      }
     };
-  }, [microphoneStream, screenStream]);
+  }, [microphoneStream, screenStream, speechRecognition, isListening]);
 
   // Initialize setup on component mount
   useEffect(() => {
@@ -1419,6 +1618,18 @@ export default function AudioRecorder() {
         // If recording has finished, keep timer at "xx:xx"
       }
 
+      // Extract language information if available
+      if (receivedData.language) {
+        const language = mapLanguageToSpeechRecognition(receivedData.language);
+        setExamLanguage(language);
+        console.log("🌐 Exam language detected:", receivedData.language, "→ Speech recognition language:", language);
+      } else {
+        // Fallback to browser language
+        const browserLang = navigator.language || 'en-US';
+        setExamLanguage(browserLang);
+        console.log("🌐 Using browser language for speech recognition:", browserLang);
+      }
+
       if (audioUrls && audioUrls.length > 0) {
         // Use the presigned URL directly
         setAudioBlobURL(audioUrls[0]);
@@ -1475,6 +1686,10 @@ export default function AudioRecorder() {
     setIsRecording(true);
     setAudioURL(null);
 
+    // Reset recognized text for new recording
+    setRecognizedText("");
+    console.log("🎤 Reset recognized text for new recording");
+
     // Ensure fullscreen is active for recording
     // if (!document.fullscreenElement) {
     //   console.log("🖥️ Entering fullscreen for recording");
@@ -1524,6 +1739,11 @@ export default function AudioRecorder() {
       // which should work with the permissions we've already granted
       try {
         startAudioRecording();
+        
+        // Start speech recognition for real-time transcription
+        console.log("🎤 Starting speech recognition with language:", examLanguage);
+        startSpeechRecognition();
+        
       } catch (recordingError) {
         console.error("❌ Failed to start audio recording:", recordingError);
         // If recording fails, try to refresh permissions and try again
@@ -1532,6 +1752,7 @@ export default function AudioRecorder() {
         const refreshResult = await requestPermissions();
         if (refreshResult.permissionGranted) {
           startAudioRecording();
+          startSpeechRecognition();
         } else {
           console.error("❌ Failed to refresh microphone permissions");
           setError("Unable to access microphone after multiple attempts.");
@@ -1737,7 +1958,15 @@ export default function AudioRecorder() {
         waitingForTranscription: true,
       });
 
-      // Notify server that upload is complete
+      // Notify server that upload is complete with speech recognition results
+      const uploadData = { 
+        uploaded: true,
+        speechRecognitionText: recognizedText || null, // Include recognized speech text
+        recognitionLanguage: examLanguage
+      };
+      
+      console.log("📤 Sending to upload endpoint:", uploadData);
+      
       const response = await fetch(
         `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
         {
@@ -1745,13 +1974,19 @@ export default function AudioRecorder() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ uploaded: true }),
+          body: JSON.stringify(uploadData),
         }
       );
       console.log("Response status:", response.status);
 
       if (!response.ok) {
         const retryInterval = setInterval(async () => {
+          const retryUploadData = { 
+            uploaded: true,
+            speechRecognitionText: recognizedText || null,
+            recognitionLanguage: examLanguage
+          };
+          
           const retryResponse = await fetch(
             `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
             {
@@ -1759,7 +1994,7 @@ export default function AudioRecorder() {
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ uploaded: true }),
+              body: JSON.stringify(retryUploadData),
             }
           );
           if (retryResponse.ok) {
@@ -1767,6 +2002,18 @@ export default function AudioRecorder() {
             clearInterval(retryInterval);
             const data = await retryResponse.json();
             setDisplayTime("xx:xx");
+            
+            // Console log both speech recognition and server transcription results
+            console.log("🎤 Web Speech API Recognition Results (retry):", {
+              recognizedText: recognizedText || "(no text recognized)",
+              language: examLanguage,
+              textLength: recognizedText ? recognizedText.length : 0
+            });
+            
+            console.log("🎵 Server Transcription Results (retry):", {
+              transcription: data.transcription || "(no transcription received)",
+              textLength: data.transcription ? data.transcription.length : 0
+            });
 
             // Update uploading stage data with transcription
             updateUploadingData({
@@ -1786,6 +2033,18 @@ export default function AudioRecorder() {
       } else {
         setFinishedRecording(true);
         const data = await response.json();
+        
+        // Console log both speech recognition and server transcription results
+        console.log("🎤 Web Speech API Recognition Results:", {
+          recognizedText: recognizedText || "(no text recognized)",
+          language: examLanguage,
+          textLength: recognizedText ? recognizedText.length : 0
+        });
+        
+        console.log("🎵 Server Transcription Results:", {
+          transcription: data.transcription || "(no transcription received)",
+          textLength: data.transcription ? data.transcription.length : 0
+        });
 
         if (data.error) {
           setError(data.error);
@@ -1831,6 +2090,18 @@ export default function AudioRecorder() {
             const data = await fallbackResponse.json();
             setFinishedRecording(true);
             setDisplayTime("xx:xx");
+            
+            // Console log both speech recognition and server transcription results
+            console.log("🎤 Web Speech API Recognition Results (fallback):", {
+              recognizedText: recognizedText || "(no text recognized)",
+              language: examLanguage,
+              textLength: recognizedText ? recognizedText.length : 0
+            });
+            
+            console.log("🎵 Server Transcription Results (fallback):", {
+              transcription: data.transcription || "(no transcription received)",
+              textLength: data.transcription ? data.transcription.length : 0
+            });
 
             // Update uploading stage data with transcription
             updateUploadingData({
@@ -1921,6 +2192,10 @@ export default function AudioRecorder() {
     setStopped(true);
     setIsRecording(false);
 
+    // Stop speech recognition
+    console.log("🎤 Stopping speech recognition...");
+    stopSpeechRecognition();
+
     // Stop the media recorders - this will trigger handleAudioStop
     stopAudioRecording();
     stopScreenRecording();
@@ -1938,6 +2213,9 @@ export default function AudioRecorder() {
     // Disable fullscreen monitoring when recording stops
     setIsFullscreen(false);
     console.log("🔒 Anti-cheat system disabled");
+
+    // Console log final recognized text
+    console.log("🎤 Final recognized speech text:", recognizedText);
 
     // Notify server via WebSocket
     wsStopRecording();
@@ -1985,6 +2263,27 @@ export default function AudioRecorder() {
 
   return (
     <>
+      {/* CSS animations */}
+      <style>
+        {`
+          @keyframes pulse {
+            0%, 100% {
+              transform: scale(1);
+              opacity: 1;
+            }
+            50% {
+              transform: scale(1.1);
+              opacity: 0.7;
+            }
+          }
+          
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+      
       <div
         style={{
           display: "flex",
@@ -2827,16 +3126,96 @@ export default function AudioRecorder() {
                   )}
 
                 {stageData.recording.isRecording && (
-                  <PulseButton
-                    onClick={() => {
-                      stopRecording();
-                      updateRecordingData({
-                        isRecording: false,
-                        hasRecorded: true,
-                      });
-                    }}
-                    style={recordStyle}
-                  />
+                  <>
+                    <PulseButton
+                      onClick={() => {
+                        stopRecording();
+                        updateRecordingData({
+                          isRecording: false,
+                          hasRecorded: true,
+                        });
+                      }}
+                      style={recordStyle}
+                    />
+                    
+                    {/* Speech Recognition Status */}
+                    <div style={{ textAlign: "center", marginTop: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            borderRadius: "50%",
+                            backgroundColor: isListening ? "#10B981" : "#EF4444",
+                            animation: isListening ? "pulse 2s infinite" : "none",
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: "14px",
+                            color: "#6B7280",
+                            fontWeight: "500",
+                          }}
+                        >
+                          Speech Recognition: {isListening ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#9CA3AF",
+                          margin: "4px 0",
+                        }}
+                      >
+                        Language: {examLanguage}
+                      </p>
+                      {recognizedText && (
+                        <div
+                          style={{
+                            backgroundColor: "#F0F9FF",
+                            border: "1px solid #0EA5E9",
+                            borderRadius: "8px",
+                            padding: "12px",
+                            marginTop: "12px",
+                            maxWidth: "400px",
+                            margin: "12px auto 0 auto",
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              color: "#0F172A",
+                              fontWeight: "500",
+                              margin: "0 0 4px 0",
+                            }}
+                          >
+                            Live Recognition:
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "14px",
+                              color: "#374151",
+                              lineHeight: "1.4",
+                              margin: "0",
+                              fontStyle: "italic",
+                              maxHeight: "60px",
+                              overflow: "auto",
+                            }}
+                          >
+                            "{recognizedText}"
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
 
                 {stageData.recording.hasRecorded &&
@@ -2852,6 +3231,50 @@ export default function AudioRecorder() {
                       >
                         ✓ Recording completed successfully
                       </p>
+                      {recognizedText && (
+                        <div
+                          style={{
+                            backgroundColor: "#F0F9FF",
+                            border: "1px solid #0EA5E9",
+                            borderRadius: "12px",
+                            padding: "16px",
+                            marginTop: "16px",
+                            maxWidth: "500px",
+                            margin: "16px auto 0 auto",
+                          }}
+                        >
+                          <h4
+                            style={{
+                              fontSize: "16px",
+                              fontWeight: "600",
+                              color: "#0F172A",
+                              margin: "0 0 8px 0",
+                            }}
+                          >
+                            Speech Recognition Results
+                          </h4>
+                          <p
+                            style={{
+                              fontSize: "14px",
+                              color: "#374151",
+                              lineHeight: "1.5",
+                              margin: "0",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            "{recognizedText}"
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              color: "#6B7280",
+                              margin: "8px 0 0 0",
+                            }}
+                          >
+                            Detected in: {examLanguage}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
               </div>
