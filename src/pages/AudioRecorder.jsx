@@ -1175,7 +1175,7 @@ export default function AudioRecorder() {
       'hi-IN': 'hi-IN',
     };
     
-    return languageMap[examLang] || examLang || 'en-US';
+    return languageMap[examLang] || examLang || null;
   };
 
   const requestPermissions = async () => {
