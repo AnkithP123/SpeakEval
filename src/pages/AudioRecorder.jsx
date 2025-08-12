@@ -53,7 +53,7 @@ export default function AudioRecorder() {
   const [speechRecognition, setSpeechRecognition] = useState(null);
   const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
-  const [examLanguage, setExamLanguage] = useState("en-US"); // Default to English
+  const [examLanguage, setExamLanguage] = useState(null); // Will be set from API response
   const finalRecognizedTextRef = useRef(""); // Ref to store final recognized text for immediate access
   
   let questionIndex;
@@ -169,6 +169,7 @@ export default function AudioRecorder() {
     finalRecognizedTextRef.current = ""; // Reset ref as well
     setIsListening(false);
     setSpeechRecognition(null);
+    setExamLanguage(null); // Reset language to null
 
     // Reset all recording-related states
     setIsRecording(false);
@@ -1015,25 +1016,20 @@ export default function AudioRecorder() {
     
     // Configure recognition settings
     recognition.continuous = true; // Keep listening until manually stopped
-    recognition.interimResults = true; // Get partial results
+    recognition.interimResults = false; // Only get final results to avoid duplication
     recognition.lang = examLanguage; // Set language for recognition
     
     // Handle recognition results
     recognition.onresult = (event) => {
       let finalTranscript = "";
-      let interimTranscript = "";
       
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        
         if (event.results[i].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
+          finalTranscript += event.results[i][0].transcript;
         }
       }
       
-      // Update recognized text with final results
+      // Update recognized text with final results only
       if (finalTranscript) {
         setRecognizedText(prev => {
           const newText = prev + finalTranscript;
@@ -1045,13 +1041,6 @@ export default function AudioRecorder() {
           
           return newText;
         });
-      }
-      
-      // Store interim results separately so we can capture them when stopping
-      if (interimTranscript) {
-        // Store interim text in a ref so it persists and can be accessed when stopping
-        recognition.lastInterimText = interimTranscript;
-        console.log("🎤 Interim speech:", interimTranscript);
       }
     };
     
@@ -1066,29 +1055,12 @@ export default function AudioRecorder() {
     // Handle end of recognition
     recognition.onend = () => {
       console.log("🎤 Speech recognition ended");
-      
-      // Capture any remaining interim text as final text when recognition ends
-      if (recognition.lastInterimText) {
-        setRecognizedText(prev => {
-          const newText = prev + recognition.lastInterimText;
-          console.log("🎤 Capturing final interim text on end:", recognition.lastInterimText);
-          console.log("🎤 Final total recognized text:", newText);
-          
-          // Update the ref immediately for synchronous access
-          finalRecognizedTextRef.current = newText;
-          
-          return newText;
-        });
-        recognition.lastInterimText = ""; // Clear interim text
-      }
-      
       setIsListening(false);
     };
     
     // Handle start of recognition
     recognition.onstart = () => {
       console.log("🎤 Speech recognition started");
-      recognition.lastInterimText = ""; // Clear any previous interim text
       setIsListening(true);
     };
     
@@ -1115,23 +1087,9 @@ export default function AudioRecorder() {
   // Stop speech recognition
   const stopSpeechRecognition = () => {
     if (speechRecognition && isListening) {
-      // Capture any remaining interim text before stopping
-      if (speechRecognition.lastInterimText) {
-        const finalText = finalRecognizedTextRef.current + speechRecognition.lastInterimText;
-        finalRecognizedTextRef.current = finalText;
-        
-        setRecognizedText(prev => {
-          const newText = prev + speechRecognition.lastInterimText;
-          console.log("🎤 Capturing final interim text before stop:", speechRecognition.lastInterimText);
-          console.log("🎤 Final total recognized text before stop:", newText);
-          return newText;
-        });
-        speechRecognition.lastInterimText = ""; // Clear interim text
-      }
-      
       speechRecognition.stop();
       console.log("🎤 Speech recognition stopped manually");
-      console.log("🎤 Final text in ref after stop:", finalRecognizedTextRef.current);
+      console.log("🎤 Final recognized text:", finalRecognizedTextRef.current);
     }
   };
 
@@ -1679,10 +1637,9 @@ export default function AudioRecorder() {
         setExamLanguage(language);
         console.log("🌐 Exam language detected:", receivedData.language, "→ Speech recognition language:", language);
       } else {
-        // Fallback to browser language
-        const browserLang = navigator.language || 'en-US';
-        setExamLanguage(browserLang);
-        console.log("🌐 Using browser language for speech recognition:", browserLang);
+        // Don't enable speech recognition if language can't be determined
+        setExamLanguage(null);
+        console.log("🌐 No language information provided - speech recognition disabled");
       }
 
       if (audioUrls && audioUrls.length > 0) {
@@ -1796,9 +1753,13 @@ export default function AudioRecorder() {
       try {
         startAudioRecording();
         
-        // Start speech recognition for real-time transcription
-        console.log("🎤 Starting speech recognition with language:", examLanguage);
-        startSpeechRecognition();
+        // Start speech recognition only if language is available from API
+        if (examLanguage) {
+          console.log("🎤 Starting speech recognition with language:", examLanguage);
+          startSpeechRecognition();
+        } else {
+          console.log("🎤 Speech recognition disabled - no language information available");
+        }
         
       } catch (recordingError) {
         console.error("❌ Failed to start audio recording:", recordingError);
@@ -1808,7 +1769,9 @@ export default function AudioRecorder() {
         const refreshResult = await requestPermissions();
         if (refreshResult.permissionGranted) {
           startAudioRecording();
-          startSpeechRecognition();
+          if (examLanguage) {
+            startSpeechRecognition();
+          }
         } else {
           console.error("❌ Failed to refresh microphone permissions");
           setError("Unable to access microphone after multiple attempts.");
@@ -3193,96 +3156,16 @@ export default function AudioRecorder() {
                   )}
 
                 {stageData.recording.isRecording && (
-                  <>
-                    <PulseButton
-                      onClick={() => {
-                        stopRecording();
-                        updateRecordingData({
-                          isRecording: false,
-                          hasRecorded: true,
-                        });
-                      }}
-                      style={recordStyle}
-                    />
-                    
-                    {/* Speech Recognition Status */}
-                    <div style={{ textAlign: "center", marginTop: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: "8px",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "12px",
-                            height: "12px",
-                            borderRadius: "50%",
-                            backgroundColor: isListening ? "#10B981" : "#EF4444",
-                            animation: isListening ? "pulse 2s infinite" : "none",
-                          }}
-                        />
-                        <span
-                          style={{
-                            fontSize: "14px",
-                            color: "#6B7280",
-                            fontWeight: "500",
-                          }}
-                        >
-                          Speech Recognition: {isListening ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#9CA3AF",
-                          margin: "4px 0",
-                        }}
-                      >
-                        Language: {examLanguage}
-                      </p>
-                      {recognizedText && (
-                        <div
-                          style={{
-                            backgroundColor: "#F0F9FF",
-                            border: "1px solid #0EA5E9",
-                            borderRadius: "8px",
-                            padding: "12px",
-                            marginTop: "12px",
-                            maxWidth: "400px",
-                            margin: "12px auto 0 auto",
-                          }}
-                        >
-                          <p
-                            style={{
-                              fontSize: "12px",
-                              color: "#0F172A",
-                              fontWeight: "500",
-                              margin: "0 0 4px 0",
-                            }}
-                          >
-                            Live Recognition:
-                          </p>
-                          <p
-                            style={{
-                              fontSize: "14px",
-                              color: "#374151",
-                              lineHeight: "1.4",
-                              margin: "0",
-                              fontStyle: "italic",
-                              maxHeight: "60px",
-                              overflow: "auto",
-                            }}
-                          >
-                            "{recognizedText}"
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </>
+                  <PulseButton
+                    onClick={() => {
+                      stopRecording();
+                      updateRecordingData({
+                        isRecording: false,
+                        hasRecorded: true,
+                      });
+                    }}
+                    style={recordStyle}
+                  />
                 )}
 
                 {stageData.recording.hasRecorded &&
@@ -3298,7 +3181,7 @@ export default function AudioRecorder() {
                       >
                         ✓ Recording completed successfully
                       </p>
-                      {recognizedText && (
+                      {recognizedText && examLanguage && (
                         <div
                           style={{
                             backgroundColor: "#F0F9FF",
