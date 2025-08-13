@@ -43,6 +43,7 @@ function ProfileCard({
   initialGrades,
   initialComment,
   initialTotalScore,
+  teacherPin = null,
 }) {
   // States used in both modes
   const [fetchedAudio, setFetchedAudio] = useState(false);
@@ -418,12 +419,18 @@ function ProfileCard({
         "Press the download button to fetch this student's data."
       );
     }
+    
+    if (!teacherPin) {
+      return toast.error("Teacher pin is required for grading");
+    }
+    
     try {
       const query = new URLSearchParams({
-        transcription: effectiveText,
         rubric: rubric,
         code: effectiveCode,
         index: index,
+        participant: effectiveName,
+        teacherPin: teacherPin,
       }).toString();
 
       const response = await fetch(

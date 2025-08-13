@@ -1373,6 +1373,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       initialTotalScore={
                                         responseData.totalScore
                                       }
+                                      teacherPin={pin}
                                       className=""
                                     />
                                   ) : (
@@ -1430,6 +1431,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             initialGrades={participant.grades}
                             initialComment={participant.teacherComment}
                             initialTotalScore={participant.totalScore}
+                            teacherPin={pin}
                             className=""
                           />
                         );
