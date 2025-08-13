@@ -50,6 +50,7 @@ function ProfileCard({
   const [aiButtonDisabled, setAiButtonDisabled] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGrading, setIsGrading] = useState(false);
   const [comment, setComment] = useState(initialComment || "");
   const [totalScore, setTotalScore] = useState(initialTotalScore || 0);
   const [grades, setGrades] = useState(initialGrades || {});
@@ -425,6 +426,8 @@ function ProfileCard({
       return toast.error("Teacher authentication required. Please log in again.");
     }
     
+    setIsGrading(true);
+    
     try {
       const query = new URLSearchParams({
         rubric: rubric,
@@ -476,6 +479,8 @@ function ProfileCard({
       );
     } catch (error) {
       console.error("Error getting grade:", error);
+    } finally {
+      setIsGrading(false);
     }
   };
 
@@ -881,10 +886,19 @@ Teacher's Comment: ${comment}`
               {!downloadMode && (
                 <>
                   <button
-                    className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-md shadow-purple-500/50"
+                    className={`p-2 ${
+                      isGrading 
+                        ? "bg-gradient-to-r from-gray-600 to-gray-700 cursor-not-allowed" 
+                        : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    } text-white rounded-full transition-all duration-300 shadow-md shadow-purple-500/50`}
                     onClick={handleAiButtonClick}
+                    disabled={isGrading}
                   >
-                    <FaRobot />
+                    {isGrading ? (
+                      <FaSpinner className="animate-spin" />
+                    ) : (
+                      <FaRobot />
+                    )}
                   </button>
                   <button
                     className={
@@ -944,21 +958,31 @@ Teacher's Comment: ${comment}`
                     return (
                       <div key={idx} className="flex items-center relative">
                         <span className="mr-2">{rubricItem}</span>
-                        <input
-                          type="text"
-                          className="bg-gray-800 border border-cyan-500/30 px-2 py-1 rounded w-20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300"
-                          placeholder="Points"
-                          value={grades[idx] || ""}
-                          onChange={(e) =>
-                            handleGradeChange(idx, e.target.value)
-                          }
-                        />
+                        <div className="relative">
+                          {isGrading ? (
+                            <div className="bg-gray-800 border border-cyan-500/30 px-2 py-1 rounded w-20 text-white flex items-center justify-center">
+                              <FaSpinner className="animate-spin text-cyan-400" />
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              className="bg-gray-800 border border-cyan-500/30 px-2 py-1 rounded w-20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300"
+                              placeholder="Points"
+                              value={grades[idx] || ""}
+                              onChange={(e) =>
+                                handleGradeChange(idx, e.target.value)
+                              }
+                            />
+                          )}
+                        </div>
                         <div className="relative group flex items-center">
                           <FaInfoCircle className="ml-2 text-blue-500" />
                           <div className="absolute left-full ml-0 w-64 p-2 bg-gray-700 text-white text-sm rounded hidden group-hover:block z-[100000000000]">
-                            {justifications[idx]
-                              ? justifications[idx]
-                              : "Press the AI button to receive an automated grade and view the reason here."}
+                            {isGrading 
+                              ? "Grading in progress..." 
+                              : justifications[idx]
+                                ? justifications[idx]
+                                : "Press the AI button to receive an automated grade and view the reason here."}
                           </div>
                         </div>
                         <div className="h-10"></div>
@@ -969,14 +993,31 @@ Teacher's Comment: ${comment}`
               <div className="mt-2 text-gray-300">
                 {rubric !== "" &&
                   effectiveText !== "" &&
-                  `Total Score: ${totalScore}`}
+                  (isGrading ? (
+                    <div className="flex items-center">
+                      <span>Total Score: </span>
+                      <FaSpinner className="animate-spin text-cyan-400 ml-2" />
+                    </div>
+                  ) : (
+                    `Total Score: ${totalScore}`
+                  ))}
               </div>
               <div className="flex justify-center mt-2 mb-2">
                 <button
-                  className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors duration-300 flex items-center justify-center"
+                  className={`p-2 ${
+                    isGrading 
+                      ? "bg-gray-600 cursor-not-allowed" 
+                      : "bg-blue-600 hover:bg-blue-700"
+                  } text-white rounded-full transition-colors duration-300 flex items-center justify-center`}
                   onClick={handleCopyComments}
+                  disabled={isGrading}
                 >
-                  <FaClipboard className="mr-2" /> Copy AI Comments
+                  {isGrading ? (
+                    <FaSpinner className="animate-spin mr-2" />
+                  ) : (
+                    <FaClipboard className="mr-2" />
+                  )}
+                  {isGrading ? "Grading..." : "Copy AI Comments"}
                 </button>
               </div>
 
