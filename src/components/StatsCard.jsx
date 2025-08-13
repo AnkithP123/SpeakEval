@@ -43,7 +43,6 @@ function ProfileCard({
   initialGrades,
   initialComment,
   initialTotalScore,
-  teacherPin = null,
 }) {
   // States used in both modes
   const [fetchedAudio, setFetchedAudio] = useState(false);
@@ -420,8 +419,10 @@ function ProfileCard({
       );
     }
     
-    if (!teacherPin) {
-      return toast.error("Teacher pin is required for grading");
+    // Get teacher token from localStorage
+    const teacherToken = localStorage.getItem("token");
+    if (!teacherToken) {
+      return toast.error("Teacher authentication required. Please log in again.");
     }
     
     try {
@@ -430,7 +431,7 @@ function ProfileCard({
         code: effectiveCode,
         index: index,
         participant: effectiveName,
-        teacherPin: teacherPin,
+        token: teacherToken,
       }).toString();
 
       const response = await fetch(
