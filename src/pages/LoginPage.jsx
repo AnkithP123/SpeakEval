@@ -160,7 +160,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
               <input
                 type="text"
                 className="auth-input"
-                placeholder="Username"
+                placeholder="Username or Email"
                 value={usernameInput}
                 onChange={(e) => setUsernameInput(e.target.value)}
               />
