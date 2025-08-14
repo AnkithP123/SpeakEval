@@ -77,8 +77,8 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
 
       if (data.token) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("username", usernameInput);
-        setUsername(usernameInput);
+        localStorage.setItem("username", data.username);
+        setUsername(data.username);
         setPin(data.token);
         if (data.subscription) {
           set(data.subscription !== "free");
