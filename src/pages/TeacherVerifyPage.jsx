@@ -164,10 +164,13 @@ function TeacherVerifyPage() {
       console.error("Verification Error:", err);
       cuteAlert({
         title: "Verification Error",
-        message:
+        description:
           err.message ||
           "Failed to submit teacher information. Please try again.",
         type: "error",
+        primaryButtonText: "Ok",
+        showCloseButton: true,
+        closeOnOutsideClick: true,
       });
       toast.error(
         err.message || "Failed to submit teacher information. Please try again."
