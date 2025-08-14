@@ -34,7 +34,7 @@ function RoomPanel({ roomCode, userId, config, setRoomCodes }) {
   const [studentUuid, setStudentUuid] = useState("");
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
   const [isLoadingNewQuestion, setIsLoadingNewQuestion] = useState(false);
-  const [questionsGiven, setQuestionsGiven] = useState(1);
+  const [questionsGiven, setQuestionsGiven] = useState(0);
   const navigate = useNavigate();
   const displayNameInputRef = useRef(null);
 
@@ -862,8 +862,8 @@ function RoomPanel({ roomCode, userId, config, setRoomCodes }) {
         </div>
 
         <div
-          className={`relative text-center ${
-            roomStarted ? "-translate-y-[170px]" : ""
+          className={`relative text-center mb-8 ${
+            roomStarted ? "-translate-y-[110px]" : ""
           }`}
         >
           <h2 className="text-4xl font-bold text-white mb-2">Room Code</h2>
@@ -872,7 +872,7 @@ function RoomPanel({ roomCode, userId, config, setRoomCodes }) {
           </span>
         </div>
 
-        <div className="min-h-60">
+        <div className={`min-h-60 ${roomStarted ? "-translate-y-[110px]" : ""}`}>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {cheaters.map((cheater, index) => (
               <ProfileCard
