@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import "./auth.css";
+import { cuteAlert } from "cute-alert";
 
 function TeacherVerifyPage() {
   const navigate = useNavigate();
@@ -161,6 +162,13 @@ function TeacherVerifyPage() {
       navigate("/login");
     } catch (err) {
       console.error("Verification Error:", err);
+      cuteAlert({
+        title: "Verification Error",
+        message:
+          err.message ||
+          "Failed to submit teacher information. Please try again.",
+        type: "error",
+      });
       toast.error(
         err.message || "Failed to submit teacher information. Please try again."
       );
