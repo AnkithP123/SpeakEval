@@ -49,6 +49,8 @@ export default function AudioRecorder() {
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
   
+
+  
   // Web Speech API states
   const [speechRecognition, setSpeechRecognition] = useState(null);
   const [recognizedText, setRecognizedText] = useState("");
@@ -378,7 +380,7 @@ export default function AudioRecorder() {
   // Real-time communication
   const {
     isConnected,
-    connectionStatus,
+
     connectForReconnect,
     disconnect: disconnectWebSocket,
     on: onWebSocketEvent,
@@ -698,9 +700,12 @@ export default function AudioRecorder() {
       onWebSocketEvent("reconnect_needed", handleReconnectNeeded);
       onWebSocketEvent("room_state_sync", handleRoomStateSync);
 
-      // Add additional handlers for different message types that might contain room restart info
+      // Handle reconnect success
       const handleReconnectSuccess = (payload) => {
         console.log("🔄 Reconnect success:", payload);
+        
+        // Silently handle reconnection success - no user notification needed
+        
         // Check if this reconnect contains room restart information
         if (
           payload.roomRestarted ||
@@ -711,6 +716,58 @@ export default function AudioRecorder() {
           console.log("🔄 Reconnect success contains room restart info");
           handleRoomRestart(payload);
         }
+        
+
+      };
+
+      // Handle reconnect errors
+      const handleReconnectError = (payload) => {
+        console.error("❌ Reconnect error:", payload);
+        
+        // Show error message to user
+        const errorMessage = payload.message || "Failed to reconnect to the room";
+        toast.error(errorMessage);
+        
+
+        
+        // If it's a critical error (like room not found), redirect to join page
+        if (payload.code === "room_not_found" || payload.code === "invalid_token") {
+          toast.error("Room no longer exists or your session has expired. Please rejoin.");
+          setTimeout(() => {
+            navigate("/join");
+          }, 3000);
+        }
+      };
+
+      // Handle being kicked from the room
+      const handleKicked = (payload) => {
+        console.log("🚫 Kicked from room:", payload);
+        
+        // Show kick message to user
+        const kickReason = payload.reason || "You have been removed from the room";
+        toast.error(kickReason);
+        
+
+        
+        // Clear any stored session data
+        if (typeof tokenManager !== 'undefined' && tokenManager.clearSession) {
+          tokenManager.clearSession();
+        }
+        
+        // Redirect to join page after a delay
+        setTimeout(() => {
+          navigate("/join");
+        }, 3000);
+      };
+
+      // Handle connection errors
+      const handleConnectionError = (payload) => {
+        console.error("❌ Connection error:", payload);
+        
+        const errorMessage = payload.message || "Connection error occurred";
+        toast.error(errorMessage);
+        
+
       };
 
       const handleStateSync = (payload) => {
@@ -728,6 +785,9 @@ export default function AudioRecorder() {
       };
 
       onWebSocketEvent("reconnect_success", handleReconnectSuccess);
+      onWebSocketEvent("reconnect_error", handleReconnectError);
+      onWebSocketEvent("kicked", handleKicked);
+      onWebSocketEvent("connection_error", handleConnectionError);
       onWebSocketEvent("state_sync", handleStateSync);
 
       return () => {
@@ -742,6 +802,9 @@ export default function AudioRecorder() {
 
         // Clean up additional event listeners
         offWebSocketEvent("reconnect_success", handleReconnectSuccess);
+        offWebSocketEvent("reconnect_error", handleReconnectError);
+        offWebSocketEvent("kicked", handleKicked);
+        offWebSocketEvent("connection_error", handleConnectionError);
         offWebSocketEvent("state_sync", handleStateSync);
 
         // Clean up WebSocket service properly
@@ -2340,6 +2403,8 @@ export default function AudioRecorder() {
         >
           {displayTime}
         </div>
+
+
 
         {/* Stage-based content */}
         <div

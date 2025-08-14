@@ -121,6 +121,47 @@ function Room() {
       // Try to reconnect automatically
       reconnect();
     };
+
+    const handleReconnectSuccess = (payload) => {
+      console.log('✅ Reconnect success:', payload);
+      // Silently handle reconnection success - no user notification needed
+    };
+
+    const handleReconnectError = (payload) => {
+      console.error('❌ Reconnect error:', payload);
+      const errorMessage = payload.message || "Failed to reconnect to the room";
+      toast.error(errorMessage);
+      
+      // If it's a critical error, redirect to join page
+      if (payload.code === "room_not_found" || payload.code === "invalid_token") {
+        toast.error("Room no longer exists or your session has expired. Please rejoin.");
+        setTimeout(() => {
+          navigate("/join");
+        }, 3000);
+      }
+    };
+
+    const handleKicked = (payload) => {
+      console.log('🚫 Kicked from room:', payload);
+      const kickReason = payload.reason || "You have been removed from the room";
+      toast.error(kickReason);
+      
+      // Clear session data
+      if (typeof tokenManager !== 'undefined' && tokenManager.clearSession) {
+        tokenManager.clearSession();
+      }
+      
+      // Redirect to join page
+      setTimeout(() => {
+        navigate("/join");
+      }, 3000);
+    };
+
+    const handleConnectionError = (payload) => {
+      console.error('❌ Connection error:', payload);
+      const errorMessage = payload.message || "Connection error occurred";
+      toast.error(errorMessage);
+    };
     
     const handleRoomStatusUpdate = (payload) => {
       console.log('📊 Room status update:', payload);
@@ -198,6 +239,10 @@ function Room() {
     onWebSocketEvent('room_restart', handleRoomRestart);
     onWebSocketEvent('participant_update', handleParticipantUpdate);
     onWebSocketEvent('reconnect_needed', handleReconnectNeeded);
+    onWebSocketEvent('reconnect_success', handleReconnectSuccess);
+    onWebSocketEvent('reconnect_error', handleReconnectError);
+    onWebSocketEvent('kicked', handleKicked);
+    onWebSocketEvent('connection_error', handleConnectionError);
     onWebSocketEvent('room_status_update', handleRoomStatusUpdate);
     onWebSocketEvent('student_status_update', handleStudentStatusUpdate);
     onWebSocketEvent('room_state_sync', handleRoomStateSync);
@@ -221,6 +266,10 @@ function Room() {
       offWebSocketEvent('room_restart', handleRoomRestart);
       offWebSocketEvent('participant_update', handleParticipantUpdate);
       offWebSocketEvent('reconnect_needed', handleReconnectNeeded);
+      offWebSocketEvent('reconnect_success', handleReconnectSuccess);
+      offWebSocketEvent('reconnect_error', handleReconnectError);
+      offWebSocketEvent('kicked', handleKicked);
+      offWebSocketEvent('connection_error', handleConnectionError);
       offWebSocketEvent('room_status_update', handleRoomStatusUpdate);
       offWebSocketEvent('student_status_update', handleStudentStatusUpdate);
       offWebSocketEvent('room_state_sync', handleRoomStateSync);
@@ -287,6 +336,9 @@ function Room() {
       <h1 className="text-4xl font-bold mb-4">
         Welcome to Room {roomCode.toString().slice(0, -3)}
       </h1>
+      
+
+      
       <p className="text-2xl mb-8">
         Hello, {studentInfo ? studentInfo.participant : "Student"}! Please wait until your instructor starts this oral
         examination. Watch this informational video while you wait. Please note

@@ -29,14 +29,7 @@ export const useRealTimeCommunication = () => {
       
       setIsConnected(true);
       setConnectionStatus('connected');
-      
-      // Start heartbeat
-      heartbeatInterval.current = setInterval(() => {
-        if (isConnected) {
-          websocketService.sendHeartbeat();
-        }
-      }, 30000); // Send heartbeat every 30 seconds
-      
+            
     } catch (error) {
       console.error('Failed to connect to WebSocket:', error);
       setConnectionStatus('error');
@@ -55,14 +48,7 @@ export const useRealTimeCommunication = () => {
       setConnectionStatus('connected');
       setCurrentRoom(roomCode);
       setCurrentParticipant(participantName);
-      
-      // Start heartbeat
-      heartbeatInterval.current = setInterval(() => {
-        if (isConnected) {
-          websocketService.sendHeartbeat();
-        }
-      }, 30000); // Send heartbeat every 30 seconds
-      
+            
     } catch (error) {
       console.error('Failed to connect for join:', error);
       setConnectionStatus('error');
@@ -79,14 +65,7 @@ export const useRealTimeCommunication = () => {
       
       setIsConnected(true);
       setConnectionStatus('connected');
-      
-      // Start heartbeat
-      heartbeatInterval.current = setInterval(() => {
-        if (isConnected) {
-          websocketService.sendHeartbeat();
-        }
-      }, 30000); // Send heartbeat every 30 seconds
-      
+            
     } catch (error) {
       console.error('Failed to connect for reconnection:', error);
       setConnectionStatus('error');

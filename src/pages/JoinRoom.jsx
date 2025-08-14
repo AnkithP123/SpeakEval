@@ -55,7 +55,7 @@ function JoinRoomContent() {
         console.log('🔍 Checking for existing token for rejoin...');
         
         // Validate the token with the server
-        const response = await fetch(`https://server.speakeval.org/validate_token?token=${existingToken}`);
+        const response = await fetch(`https://www.server.speakeval.org/validate_token?token=${existingToken}`);
         const data = await response.json();
         
         if (data.valid) {
@@ -74,6 +74,17 @@ function JoinRoomContent() {
     };
 
     checkForRejoin();
+
+    // Cleanup function
+    return () => {
+      // Clean up WebSocket event listeners
+      offWebSocketEvent('join_room_success', handleJoinSuccess);
+      offWebSocketEvent('join_room_error', handleJoinError);
+      offWebSocketEvent('connection_error', handleConnectionError);
+      offWebSocketEvent('reconnect_success', handleReconnectSuccess);
+      offWebSocketEvent('reconnect_error', handleReconnectError);
+      offWebSocketEvent('kicked', handleKicked);
+    };
   }, []);
 
   const handleRejoin = async () => {
@@ -95,6 +106,79 @@ function JoinRoomContent() {
       toast.error('Failed to rejoin room. Please try joining again.');
       setLoading(false);
     }
+  };
+
+  // WebSocket event handlers - defined outside to be accessible in cleanup
+  const handleJoinSuccess = (payload) => {
+    console.log('✅ Join room successful:', payload);
+    
+    // Store the JWT token and session info
+    const token = payload.token;
+    const roomCode = Number.parseInt(code.toString() + "001");
+    const participantName = useGoogle ? googleName : name;
+    
+    console.log('🔍 Storing token:', {
+      hasToken: !!token,
+      tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+      tokenLength: token ? token.length : 0
+    });
+    
+    tokenManager.setStudentToken(token);
+    tokenManager.setRoomSession({
+      roomCode: roomCode,
+      participantName: participantName,
+      timestamp: Date.now()
+    });
+    
+    console.log("Stored token and session info");
+    console.log('🔍 TokenManager state after storage:', {
+      isAuthenticated: tokenManager.isAuthenticated(),
+      studentInfo: tokenManager.getStudentInfo(),
+      roomSession: tokenManager.getRoomSession()
+    });
+    
+    // Navigate to room
+    navigate(`/room/${roomCode}`);
+  };
+  
+  const handleJoinError = (payload) => {
+    console.log('❌ Join room failed:', payload);
+    toast.error(payload.message || "Failed to join room");
+    setLoading(false);
+  };
+  
+  const handleConnectionError = (payload) => {
+    console.log('❌ Connection error:', payload);
+    toast.error(payload.message || "Connection failed");
+    setLoading(false);
+  };
+
+  const handleReconnectSuccess = (payload) => {
+    console.log('✅ Reconnect success:', payload);
+    // Silently handle reconnection success - no user notification needed
+  };
+
+  const handleReconnectError = (payload) => {
+    console.error('❌ Reconnect error:', payload);
+    const errorMessage = payload.message || "Failed to reconnect to the room";
+    toast.error(errorMessage);
+    setLoading(false);
+  };
+
+  const handleKicked = (payload) => {
+    console.log('🚫 Kicked from room:', payload);
+    const kickReason = payload.reason || "You have been removed from the room";
+    toast.error(kickReason);
+    
+    // Clear session data
+    if (typeof tokenManager !== 'undefined' && tokenManager.clearSession) {
+      tokenManager.clearSession();
+    }
+    
+    // Redirect to join page
+    setTimeout(() => {
+      window.location.href = "/join";
+    }, 3000);
   };
 
   const handleJoin = async () => {
@@ -121,53 +205,14 @@ function JoinRoomContent() {
           console.log('🔄 Fresh join requested on join page');
         }
         
-        // Set up event listeners for join response
-        const handleJoinSuccess = (payload) => {
-          console.log('✅ Join room successful:', payload);
-          
-          // Store the JWT token and session info
-          const token = payload.token;
-          console.log('🔍 Storing token:', {
-            hasToken: !!token,
-            tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
-            tokenLength: token ? token.length : 0
-          });
-          
-          tokenManager.setStudentToken(token);
-          tokenManager.setRoomSession({
-            roomCode: roomCode,
-            participantName: participantName,
-            timestamp: Date.now()
-          });
-          
-          console.log("Stored token and session info");
-          console.log('🔍 TokenManager state after storage:', {
-            isAuthenticated: tokenManager.isAuthenticated(),
-            studentInfo: tokenManager.getStudentInfo(),
-            roomSession: tokenManager.getRoomSession()
-          });
-          
-          // Navigate to room
-          navigate(`/room/${roomCode}`);
-        };
-        
-        const handleJoinError = (payload) => {
-          console.log('❌ Join room failed:', payload);
-          toast.error(payload.message || "Failed to join room");
-          setLoading(false);
-        };
-        
-        const handleConnectionError = (payload) => {
-          console.log('❌ Connection error:', payload);
-          toast.error(payload.message || "Connection failed");
-          setLoading(false);
-        };
-        
         // Add event listeners
         console.log('🎧 Adding event listeners...');
         onWebSocketEvent('join_room_success', handleJoinSuccess);
         onWebSocketEvent('join_room_error', handleJoinError);
         onWebSocketEvent('connection_error', handleConnectionError);
+        onWebSocketEvent('reconnect_success', handleReconnectSuccess);
+        onWebSocketEvent('reconnect_error', handleReconnectError);
+        onWebSocketEvent('kicked', handleKicked);
         
         // Connect and join room in one step
         console.log('📤 Connecting and joining room...');
@@ -178,7 +223,7 @@ function JoinRoomContent() {
       } catch (error) {
         console.error('❌ Failed to connect and join:', error);
         toast.error("Failed to connect to server");
-      setLoading(false);
+        setLoading(false);
       }
     } else {
       setLoading(false);
@@ -257,6 +302,8 @@ function JoinRoomContent() {
           Join Room
         </h2>
         
+
+        
         {/* Rejoin Section */}
         {checkingRejoin ? (
           <div className="text-center text-white mb-4">
@@ -269,7 +316,7 @@ function JoinRoomContent() {
               🎉 Welcome back, {rejoinData.participant}!
             </h3>
             <p className="text-green-300 text-sm mb-3">
-              You can rejoin room {rejoinData.roomCode} where you left off.
+              You can rejoin room {rejoinData.roomCode.slice(0, -3)} where you left off.
             </p>
             <div className="text-xs text-green-300/70 mb-3">
               <p>Room Status: {rejoinData.roomStarted ? 'Started' : 'Waiting'}</p>
