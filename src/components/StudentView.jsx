@@ -70,7 +70,7 @@ const StudentView = ({ onSwitchToTeacher }) => {
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Navigation Button for Teachers */}
-          {onSwitchToTeacher && (
+          {onSwitchToTeacher && localStorage.getItem('token') && (
             <div className="text-center mb-8">
               <button
                 onClick={onSwitchToTeacher}
