@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaPlay, FaPause, FaTimes, FaArrowLeft, FaVolumeUp, FaDownload } from "react-icons/fa";
 import { toast } from "react-toastify";
@@ -12,7 +12,7 @@ const PracticeExamResponses = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [playingAudio, setPlayingAudio] = useState(null);
-  const [audioRefs, setAudioRefs] = useState({});
+  const audioRefs = useRef({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   useEffect(() => {
@@ -57,23 +57,23 @@ const PracticeExamResponses = () => {
   const handleAudioPlay = (questionIndex) => {
     if (playingAudio === questionIndex) {
       // Stop current audio
-      if (audioRefs[questionIndex]) {
-        audioRefs[questionIndex].pause();
-        audioRefs[questionIndex].currentTime = 0;
+      if (audioRefs.current[questionIndex]) {
+        audioRefs.current[questionIndex].pause();
+        audioRefs.current[questionIndex].currentTime = 0;
       }
       setPlayingAudio(null);
     } else {
       // Stop any other playing audio
-      Object.keys(audioRefs).forEach(key => {
-        if (audioRefs[key] && key !== questionIndex.toString()) {
-          audioRefs[key].pause();
-          audioRefs[key].currentTime = 0;
+      Object.keys(audioRefs.current).forEach(key => {
+        if (audioRefs.current[key] && key !== questionIndex.toString()) {
+          audioRefs.current[key].pause();
+          audioRefs.current[key].currentTime = 0;
         }
       });
       
       // Play new audio
-      if (audioRefs[questionIndex]) {
-        audioRefs[questionIndex].play();
+      if (audioRefs.current[questionIndex]) {
+        audioRefs.current[questionIndex].play();
         setPlayingAudio(questionIndex);
       }
     }
@@ -83,14 +83,11 @@ const PracticeExamResponses = () => {
     setPlayingAudio(null);
   };
 
-  const setAudioRef = (questionIndex, ref) => {
+  const setAudioRef = useCallback((questionIndex, ref) => {
     if (ref) {
-      setAudioRefs(prev => ({
-        ...prev,
-        [questionIndex]: ref
-      }));
+      audioRefs.current[questionIndex] = ref;
     }
-  };
+  }, []);
 
   const downloadAudio = (audioUrl, questionIndex) => {
     const link = document.createElement('a');
@@ -195,15 +192,7 @@ const PracticeExamResponses = () => {
             </Card>
           )}
 
-          {/* Rubric */}
-          {responses.rubric && (
-            <Card color="cyan">
-              <h3 className="text-lg font-semibold text-white mb-4">Rubric</h3>
-              <div className="text-gray-300 whitespace-pre-wrap bg-black/20 p-4 rounded-lg border border-cyan-500/30">
-                {responses.rubric}
-              </div>
-            </Card>
-          )}
+
 
           {/* Responses */}
           <div className="space-y-6">

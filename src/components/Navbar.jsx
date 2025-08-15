@@ -155,17 +155,17 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
                     src={
                       setVar
                         ? setVar2
-                          ? "crownlogo.png"
-                          : "goldlogo.png"
-                        : "logo.png"
+                          ? "/crownlogo.png"
+                          : "/goldlogo.png"
+                        : "/logo.png"
                     }
                     alt=""
                     onError={(e) => {
                       e.target.src = setVar
                         ? setVar2
-                          ? "crownlogo.png"
-                          : "goldlogo.png"
-                        : "logo.png";
+                          ? "/crownlogo.png"
+                          : "/goldlogo.png"
+                        : "/logo.png";
                     }}
                   />
                 </div>
@@ -243,6 +243,12 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
                           className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
                         >
                           Manage Sets
+                        </button>
+                        <button
+                          onClick={() => window.location.href = "/practice-exams"}
+                          className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
+                        >
+                          Practice Exams
                         </button>
                       </div>
                     )}
