@@ -67,11 +67,43 @@ function Room() {
       console.error('❌ No token available for connection in Room component');
     }
     
+    // Check if student has already recorded for this question
+    const checkRecordingStatus = async () => {
+      try {
+        const response = await fetch(
+          `https://www.server.speakeval.org/receiveaudio?token=${token}&number=1`
+        );
+        
+        if (!response.ok) {
+          const data = await response.json();
+          if (data.code === "RECORDING_EXISTS") {
+            // Student has already recorded, show appropriate message
+            toast.info("You have already completed this question. Please wait for the next question or for your teacher to restart the room.");
+            return true; // Recording exists
+          }
+        }
+        return false; // No recording exists
+      } catch (error) {
+        console.error("Error checking recording status:", error);
+        return false;
+      }
+    };
+
+    // Check recording status when component mounts
+    checkRecordingStatus();
+
     // Set up WebSocket event listeners
     const handleExamStarted = (payload) => {
       console.log('🎯 Exam started:', payload);
       toast.success("Exam has started");
-      navigate("/record");
+      
+      // Check if student has already recorded before navigating
+      checkRecordingStatus().then((hasRecorded) => {
+        if (!hasRecorded) {
+          // Only navigate if they haven't recorded yet
+          navigate("/record");
+        }
+      });
     };
     
     const handleRoomRestart = (payload) => {

@@ -98,6 +98,25 @@ function JoinRoomContent() {
       // Connect using the existing token
       await connectForJoin(rejoinData.roomCode, rejoinData.participant);
       
+      // Check if student has already recorded for this question
+      try {
+        const token = tokenManager.getStudentToken();
+        const response = await fetch(
+          `https://www.server.speakeval.org/receiveaudio?token=${token}&number=1`
+        );
+        
+        if (!response.ok) {
+          const data = await response.json();
+          if (data.code === "RECORDING_EXISTS") {
+            // Student has already recorded, show appropriate message
+            toast.info("You have already completed this question. Please wait for the next question or for your teacher to restart the room.");
+            // Still navigate to room but they'll see the message there
+          }
+        }
+      } catch (error) {
+        console.error("Error checking recording status:", error);
+      }
+      
       // Navigate directly to the room
       navigate(`/room/${rejoinData.roomCode}`);
       
@@ -109,7 +128,7 @@ function JoinRoomContent() {
   };
 
   // WebSocket event handlers - defined outside to be accessible in cleanup
-  const handleJoinSuccess = (payload) => {
+  const handleJoinSuccess = async (payload) => {
     console.log('✅ Join room successful:', payload);
     
     // Store the JWT token and session info
@@ -136,6 +155,24 @@ function JoinRoomContent() {
       studentInfo: tokenManager.getStudentInfo(),
       roomSession: tokenManager.getRoomSession()
     });
+    
+    // Check if student has already recorded for this question
+    try {
+      const response = await fetch(
+        `https://www.server.speakeval.org/receiveaudio?token=${token}&number=1`
+      );
+      
+      if (!response.ok) {
+        const data = await response.json();
+        if (data.code === "RECORDING_EXISTS") {
+          // Student has already recorded, show appropriate message
+          toast.info("You have already completed this question. Please wait for the next question or for your teacher to restart the room.");
+          // Still navigate to room but they'll see the message there
+        }
+      }
+    } catch (error) {
+      console.error("Error checking recording status:", error);
+    }
     
     // Navigate to room
     navigate(`/room/${roomCode}`);

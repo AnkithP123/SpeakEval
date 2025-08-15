@@ -1658,14 +1658,27 @@ export default function AudioRecorder() {
       const response = await fetch(
         `https://www.server.speakeval.org/receiveaudio?token=${token}&number=1`
       );
+      
+      const receivedData = await response.json();
+      
       if (!response.ok) {
+        // Check if recording already exists
+        if (receivedData.code === "RECORDING_EXISTS") {
+          setError("You have already completed this question. Please wait for the next question or for your teacher to restart the room.");
+          setIsError(false); // This is not an error, just informational
+          updateStageData({ audioDownloadError: "Recording already completed" });
+          // Mark as finished since recording already exists
+          setFinishedRecording(true);
+          setCurrentStage("finished");
+          return;
+        }
+        
         setError("Failed to fetch audio");
         setIsError(true);
         updateStageData({ audioDownloadError: "Failed to fetch audio" });
         return;
       }
 
-      const receivedData = await response.json();
       const audioUrls = receivedData.audioUrls;
 
       if (receivedData.subscribed) {
@@ -2007,6 +2020,17 @@ export default function AudioRecorder() {
       );
 
       if (!uploadUrlResponse.ok) {
+        const errorData = await uploadUrlResponse.json();
+        
+        // Check if recording already exists
+        if (errorData.code === "RECORDING_EXISTS") {
+          setError("You have already completed this question. Please wait for the next question or for your teacher to restart the room.");
+          setIsError(false); // This is not an error, just informational
+          setFinishedRecording(true);
+          setCurrentStage("finished");
+          return;
+        }
+        
         throw new Error("Failed to get upload URL");
       }
 
