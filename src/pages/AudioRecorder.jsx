@@ -48,16 +48,14 @@ export default function AudioRecorder() {
   const [screenStream, setScreenStream] = useState(null);
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
-  
 
-  
   // Web Speech API states
   const [speechRecognition, setSpeechRecognition] = useState(null);
   const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [examLanguage, setExamLanguage] = useState(null); // Will be set from API response
   const finalRecognizedTextRef = useRef(""); // Ref to store final recognized text for immediate access
-  
+
   let questionIndex;
   let played = false;
 
@@ -154,18 +152,24 @@ export default function AudioRecorder() {
     if (speechRecognition && isListening) {
       // Capture any remaining interim text before stopping
       if (speechRecognition.lastInterimText) {
-        setRecognizedText(prev => {
+        setRecognizedText((prev) => {
           const newText = prev + speechRecognition.lastInterimText;
-          console.log("🎤 Capturing final interim text for new question:", speechRecognition.lastInterimText);
-          console.log("🎤 Final total recognized text for new question:", newText);
+          console.log(
+            "🎤 Capturing final interim text for new question:",
+            speechRecognition.lastInterimText
+          );
+          console.log(
+            "🎤 Final total recognized text for new question:",
+            newText
+          );
           return newText;
         });
       }
-      
+
       speechRecognition.stop();
       console.log("🎤 Stopped speech recognition for new question");
     }
-    
+
     // Reset speech recognition states
     setRecognizedText("");
     finalRecognizedTextRef.current = ""; // Reset ref as well
@@ -703,9 +707,9 @@ export default function AudioRecorder() {
       // Handle reconnect success
       const handleReconnectSuccess = (payload) => {
         console.log("🔄 Reconnect success:", payload);
-        
+
         // Silently handle reconnection success - no user notification needed
-        
+
         // Check if this reconnect contains room restart information
         if (
           payload.roomRestarted ||
@@ -716,23 +720,25 @@ export default function AudioRecorder() {
           console.log("🔄 Reconnect success contains room restart info");
           handleRoomRestart(payload);
         }
-        
-
       };
 
       // Handle reconnect errors
       const handleReconnectError = (payload) => {
         console.error("❌ Reconnect error:", payload);
-        
-        // Show error message to user
-        const errorMessage = payload.message || "Failed to reconnect to the room";
-        toast.error(errorMessage);
-        
 
-        
+        // Show error message to user
+        const errorMessage =
+          payload.message || "Failed to reconnect to the room";
+        toast.error(errorMessage);
+
         // If it's a critical error (like room not found), redirect to join page
-        if (payload.code === "room_not_found" || payload.code === "invalid_token") {
-          toast.error("Room no longer exists or your session has expired. Please rejoin.");
+        if (
+          payload.code === "room_not_found" ||
+          payload.code === "invalid_token"
+        ) {
+          toast.error(
+            "Room no longer exists or your session has expired. Please rejoin."
+          );
           setTimeout(() => {
             navigate("/join");
           }, 3000);
@@ -742,18 +748,17 @@ export default function AudioRecorder() {
       // Handle being kicked from the room
       const handleKicked = (payload) => {
         console.log("🚫 Kicked from room:", payload);
-        
-        // Show kick message to user
-        const kickReason = payload.reason || "You have been removed from the room";
-        toast.error(kickReason);
-        
 
-        
+        // Show kick message to user
+        const kickReason =
+          payload.reason || "You have been removed from the room";
+        toast.error(kickReason);
+
         // Clear any stored session data
-        if (typeof tokenManager !== 'undefined' && tokenManager.clearSession) {
+        if (typeof tokenManager !== "undefined" && tokenManager.clearSession) {
           tokenManager.clearSession();
         }
-        
+
         // Redirect to join page after a delay
         setTimeout(() => {
           navigate("/join");
@@ -763,11 +768,9 @@ export default function AudioRecorder() {
       // Handle connection errors
       const handleConnectionError = (payload) => {
         console.error("❌ Connection error:", payload);
-        
+
         const errorMessage = payload.message || "Connection error occurred";
         toast.error(errorMessage);
-        
-
       };
 
       const handleStateSync = (payload) => {
@@ -1068,65 +1071,66 @@ export default function AudioRecorder() {
   // Initialize Web Speech API
   const initializeSpeechRecognition = () => {
     // Check if Web Speech API is supported
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
       console.warn("Web Speech API not supported in this browser");
       return null;
     }
 
     const recognition = new SpeechRecognition();
-    
+
     // Configure recognition settings
     recognition.continuous = true; // Keep listening until manually stopped
     recognition.interimResults = false; // Only get final results to avoid duplication
     recognition.lang = examLanguage; // Set language for recognition
-    
+
     // Handle recognition results
     recognition.onresult = (event) => {
       let finalTranscript = "";
-      
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
           finalTranscript += event.results[i][0].transcript;
         }
       }
-      
+
       // Update recognized text with final results only
       if (finalTranscript) {
-        setRecognizedText(prev => {
+        setRecognizedText((prev) => {
           const newText = prev + finalTranscript;
           console.log("🎤 Speech recognized (final):", finalTranscript);
           console.log("🎤 Total recognized text so far:", newText);
-          
+
           // Update the ref immediately for synchronous access
           finalRecognizedTextRef.current = newText;
-          
+
           return newText;
         });
       }
     };
-    
+
     // Handle errors
     recognition.onerror = (event) => {
       console.error("🎤 Speech recognition error:", event.error);
-      if (event.error === 'not-allowed') {
+      if (event.error === "not-allowed") {
         console.error("🎤 Microphone access denied for speech recognition");
       }
     };
-    
+
     // Handle end of recognition
     recognition.onend = () => {
       console.log("🎤 Speech recognition ended");
       setIsListening(false);
     };
-    
+
     // Handle start of recognition
     recognition.onstart = () => {
       console.log("🎤 Speech recognition started");
       setIsListening(true);
     };
-    
+
     return recognition;
   };
 
@@ -1160,84 +1164,84 @@ export default function AudioRecorder() {
   const mapLanguageToSpeechRecognition = (examLang) => {
     const languageMap = {
       // English variants
-      'English': 'en-US',
-      'english': 'en-US',
-      'en': 'en-US',
-      'en-US': 'en-US',
-      'en-GB': 'en-GB',
-      
-      // Spanish variants  
-      'Spanish': 'es-ES',
-      'spanish': 'es-ES',
-      'es': 'es-ES',
-      'es-ES': 'es-ES',
-      'es-US': 'es-US',
-      'es-MX': 'es-MX',
-      
+      English: "en-US",
+      english: "en-US",
+      en: "en-US",
+      "en-US": "en-US",
+      "en-GB": "en-GB",
+
+      // Spanish variants
+      Spanish: "es-ES",
+      spanish: "es-ES",
+      es: "es-ES",
+      "es-ES": "es-ES",
+      "es-US": "es-US",
+      "es-MX": "es-MX",
+
       // French variants
-      'French': 'fr-FR',
-      'french': 'fr-FR',
-      'fr': 'fr-FR',
-      'fr-FR': 'fr-FR',
-      'fr-CA': 'fr-CA',
-      
+      French: "fr-FR",
+      french: "fr-FR",
+      fr: "fr-FR",
+      "fr-FR": "fr-FR",
+      "fr-CA": "fr-CA",
+
       // German variants
-      'German': 'de-DE',
-      'german': 'de-DE',
-      'de': 'de-DE',
-      'de-DE': 'de-DE',
-      
+      German: "de-DE",
+      german: "de-DE",
+      de: "de-DE",
+      "de-DE": "de-DE",
+
       // Italian variants
-      'Italian': 'it-IT',
-      'italian': 'it-IT',
-      'it': 'it-IT',
-      'it-IT': 'it-IT',
-      
+      Italian: "it-IT",
+      italian: "it-IT",
+      it: "it-IT",
+      "it-IT": "it-IT",
+
       // Portuguese variants
-      'Portuguese': 'pt-BR',
-      'portuguese': 'pt-BR',
-      'pt': 'pt-BR',
-      'pt-BR': 'pt-BR',
-      'pt-PT': 'pt-PT',
-      
+      Portuguese: "pt-BR",
+      portuguese: "pt-BR",
+      pt: "pt-BR",
+      "pt-BR": "pt-BR",
+      "pt-PT": "pt-PT",
+
       // Chinese variants
-      'Chinese': 'zh-CN',
-      'chinese': 'zh-CN',
-      'zh': 'zh-CN',
-      'zh-CN': 'zh-CN',
-      'zh-TW': 'zh-TW',
-      
+      Chinese: "zh-CN",
+      chinese: "zh-CN",
+      zh: "zh-CN",
+      "zh-CN": "zh-CN",
+      "zh-TW": "zh-TW",
+
       // Japanese
-      'Japanese': 'ja-JP',
-      'japanese': 'ja-JP',
-      'ja': 'ja-JP',
-      'ja-JP': 'ja-JP',
-      
+      Japanese: "ja-JP",
+      japanese: "ja-JP",
+      ja: "ja-JP",
+      "ja-JP": "ja-JP",
+
       // Korean
-      'Korean': 'ko-KR',
-      'korean': 'ko-KR',
-      'ko': 'ko-KR',
-      'ko-KR': 'ko-KR',
-      
+      Korean: "ko-KR",
+      korean: "ko-KR",
+      ko: "ko-KR",
+      "ko-KR": "ko-KR",
+
       // Russian
-      'Russian': 'ru-RU',
-      'russian': 'ru-RU',
-      'ru': 'ru-RU',
-      'ru-RU': 'ru-RU',
-      
+      Russian: "ru-RU",
+      russian: "ru-RU",
+      ru: "ru-RU",
+      "ru-RU": "ru-RU",
+
       // Arabic
-      'Arabic': 'ar-SA',
-      'arabic': 'ar-SA',
-      'ar': 'ar-SA',
-      'ar-SA': 'ar-SA',
-      
+      Arabic: "ar-SA",
+      arabic: "ar-SA",
+      ar: "ar-SA",
+      "ar-SA": "ar-SA",
+
       // Hindi
-      'Hindi': 'hi-IN',
-      'hindi': 'hi-IN',
-      'hi': 'hi-IN',
-      'hi-IN': 'hi-IN',
+      Hindi: "hi-IN",
+      hindi: "hi-IN",
+      hi: "hi-IN",
+      "hi-IN": "hi-IN",
     };
-    
+
     return languageMap[examLang] || examLang || null;
   };
 
@@ -1658,21 +1662,25 @@ export default function AudioRecorder() {
       const response = await fetch(
         `https://www.server.speakeval.org/receiveaudio?token=${token}&number=1`
       );
-      
+
       const receivedData = await response.json();
-      
+
       if (!response.ok) {
         // Check if recording already exists
         if (receivedData.code === "RECORDING_EXISTS") {
-          setError("You have already completed this question. Please wait for the next question or for your teacher to restart the room.");
+          setError(
+            "You have already completed this question. Please wait for the next question or for your teacher to restart the room."
+          );
           setIsError(false); // This is not an error, just informational
-          updateStageData({ audioDownloadError: "Recording already completed" });
+          updateStageData({
+            audioDownloadError: "Recording already completed",
+          });
           // Mark as finished since recording already exists
           setFinishedRecording(true);
           setCurrentStage("finished");
           return;
         }
-        
+
         setError("Failed to fetch audio");
         setIsError(true);
         updateStageData({ audioDownloadError: "Failed to fetch audio" });
@@ -1711,11 +1719,18 @@ export default function AudioRecorder() {
       if (receivedData.language) {
         const language = mapLanguageToSpeechRecognition(receivedData.language);
         setExamLanguage(language);
-        console.log("🌐 Exam language detected:", receivedData.language, "→ Speech recognition language:", language);
+        console.log(
+          "🌐 Exam language detected:",
+          receivedData.language,
+          "→ Speech recognition language:",
+          language
+        );
       } else {
         // Don't enable speech recognition if language can't be determined
         setExamLanguage(null);
-        console.log("🌐 No language information provided - speech recognition disabled");
+        console.log(
+          "🌐 No language information provided - speech recognition disabled"
+        );
       }
 
       if (audioUrls && audioUrls.length > 0) {
@@ -1828,15 +1843,19 @@ export default function AudioRecorder() {
       // which should work with the permissions we've already granted
       try {
         startAudioRecording();
-        
+
         // Start speech recognition only if language is available from API
         if (examLanguage) {
-          console.log("🎤 Starting speech recognition with language:", examLanguage);
+          console.log(
+            "🎤 Starting speech recognition with language:",
+            examLanguage
+          );
           startSpeechRecognition();
         } else {
-          console.log("🎤 Speech recognition disabled - no language information available");
+          console.log(
+            "🎤 Speech recognition disabled - no language information available"
+          );
         }
-        
       } catch (recordingError) {
         console.error("❌ Failed to start audio recording:", recordingError);
         // If recording fails, try to refresh permissions and try again
@@ -2021,16 +2040,18 @@ export default function AudioRecorder() {
 
       if (!uploadUrlResponse.ok) {
         const errorData = await uploadUrlResponse.json();
-        
+
         // Check if recording already exists
         if (errorData.code === "RECORDING_EXISTS") {
-          setError("You have already completed this question. Please wait for the next question or for your teacher to restart the room.");
+          setError(
+            "You have already completed this question. Please wait for the next question or for your teacher to restart the room."
+          );
           setIsError(false); // This is not an error, just informational
           setFinishedRecording(true);
           setCurrentStage("finished");
           return;
         }
-        
+
         throw new Error("Failed to get upload URL");
       }
 
@@ -2065,16 +2086,17 @@ export default function AudioRecorder() {
       });
 
       // Notify server that upload is complete with speech recognition results
-      const uploadData = { 
+      const uploadData = {
         uploaded: true,
-        speechRecognitionText: finalRecognizedTextRef.current || recognizedText || null, // Use ref first, then state as fallback
-        recognitionLanguage: examLanguage
+        speechRecognitionText:
+          finalRecognizedTextRef.current || recognizedText || null, // Use ref first, then state as fallback
+        recognitionLanguage: examLanguage,
       };
-      
+
       console.log("📤 Sending to upload endpoint:", uploadData);
       console.log("📤 Speech text from ref:", finalRecognizedTextRef.current);
       console.log("📤 Speech text from state:", recognizedText);
-      
+
       const response = await fetch(
         `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
         {
@@ -2089,12 +2111,13 @@ export default function AudioRecorder() {
 
       if (!response.ok) {
         const retryInterval = setInterval(async () => {
-          const retryUploadData = { 
+          const retryUploadData = {
             uploaded: true,
-            speechRecognitionText: finalRecognizedTextRef.current || recognizedText || null,
-            recognitionLanguage: examLanguage
+            speechRecognitionText:
+              finalRecognizedTextRef.current || recognizedText || null,
+            recognitionLanguage: examLanguage,
           };
-          
+
           const retryResponse = await fetch(
             `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
             {
@@ -2110,17 +2133,25 @@ export default function AudioRecorder() {
             clearInterval(retryInterval);
             const data = await retryResponse.json();
             setDisplayTime("xx:xx");
-            
+
             // Console log both speech recognition and server transcription results
             console.log("🎤 Web Speech API Recognition Results (retry):", {
-              recognizedText: finalRecognizedTextRef.current || recognizedText || "(no text recognized)",
+              recognizedText:
+                finalRecognizedTextRef.current ||
+                recognizedText ||
+                "(no text recognized)",
               language: examLanguage,
-              textLength: (finalRecognizedTextRef.current || recognizedText || "").length
+              textLength: (
+                finalRecognizedTextRef.current ||
+                recognizedText ||
+                ""
+              ).length,
             });
-            
+
             console.log("🎵 Server Transcription Results (retry):", {
-              transcription: data.transcription || "(no transcription received)",
-              textLength: data.transcription ? data.transcription.length : 0
+              transcription:
+                data.transcription || "(no transcription received)",
+              textLength: data.transcription ? data.transcription.length : 0,
             });
 
             // Update uploading stage data with transcription
@@ -2141,17 +2172,21 @@ export default function AudioRecorder() {
       } else {
         setFinishedRecording(true);
         const data = await response.json();
-        
+
         // Console log both speech recognition and server transcription results
         console.log("🎤 Web Speech API Recognition Results:", {
-          recognizedText: finalRecognizedTextRef.current || recognizedText || "(no text recognized)",
+          recognizedText:
+            finalRecognizedTextRef.current ||
+            recognizedText ||
+            "(no text recognized)",
           language: examLanguage,
-          textLength: (finalRecognizedTextRef.current || recognizedText || "").length
+          textLength: (finalRecognizedTextRef.current || recognizedText || "")
+            .length,
         });
-        
+
         console.log("🎵 Server Transcription Results:", {
           transcription: data.transcription || "(no transcription received)",
-          textLength: data.transcription ? data.transcription.length : 0
+          textLength: data.transcription ? data.transcription.length : 0,
         });
 
         if (data.error) {
@@ -2198,17 +2233,25 @@ export default function AudioRecorder() {
             const data = await fallbackResponse.json();
             setFinishedRecording(true);
             setDisplayTime("xx:xx");
-            
+
             // Console log both speech recognition and server transcription results
             console.log("🎤 Web Speech API Recognition Results (fallback):", {
-              recognizedText: finalRecognizedTextRef.current || recognizedText || "(no text recognized)",
+              recognizedText:
+                finalRecognizedTextRef.current ||
+                recognizedText ||
+                "(no text recognized)",
               language: examLanguage,
-              textLength: (finalRecognizedTextRef.current || recognizedText || "").length
+              textLength: (
+                finalRecognizedTextRef.current ||
+                recognizedText ||
+                ""
+              ).length,
             });
-            
+
             console.log("🎵 Server Transcription Results (fallback):", {
-              transcription: data.transcription || "(no transcription received)",
-              textLength: data.transcription ? data.transcription.length : 0
+              transcription:
+                data.transcription || "(no transcription received)",
+              textLength: data.transcription ? data.transcription.length : 0,
             });
 
             // Update uploading stage data with transcription
@@ -2302,16 +2345,22 @@ export default function AudioRecorder() {
 
     // Stop speech recognition and log final text after a small delay
     console.log("🎤 Stopping speech recognition...");
-    
+
     // Capture current recognized text before stopping recognition
     const currentRecognizedText = recognizedText;
-    console.log("🎤 Current recognized text before stopping:", currentRecognizedText);
-    
+    console.log(
+      "🎤 Current recognized text before stopping:",
+      currentRecognizedText
+    );
+
     stopSpeechRecognition();
-    
+
     // Log final text with a small delay to ensure state updates are processed
     setTimeout(() => {
-      const finalText = finalRecognizedTextRef.current || recognizedText || currentRecognizedText;
+      const finalText =
+        finalRecognizedTextRef.current ||
+        recognizedText ||
+        currentRecognizedText;
       console.log("🎤 Final recognized speech text after stopping:", finalText);
       console.log("🎤 Text length:", finalText.length);
     }, 100);
@@ -2400,7 +2449,7 @@ export default function AudioRecorder() {
           }
         `}
       </style>
-      
+
       <div
         style={{
           display: "flex",
@@ -2427,8 +2476,6 @@ export default function AudioRecorder() {
         >
           {displayTime}
         </div>
-
-
 
         {/* Stage-based content */}
         <div
