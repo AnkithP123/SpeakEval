@@ -276,10 +276,6 @@ class WebSocketService {
 
   handleMessage(data) {
     const { type, payload, messageId } = data;
-    let session = tokenManager.getRoomSession();
-    if (session) {
-      this.roomCode = session.roomCode;
-    }
 
     console.log(`📨 Received WebSocket message: ${type}`, payload);
 
@@ -302,8 +298,8 @@ class WebSocketService {
         payload: {
           timestamp: payload.timestamp,
           clientTime: Date.now(),
-          roomCode: this.currentRoom,
-          participant: this.currentParticipant,
+          roomCode: tokenManager.getStudentInfo()?.roomCode,
+          participant: tokenManager.getStudentInfo()?.participant,
         },
       });
       return; // Don't trigger listeners for ping
@@ -366,8 +362,8 @@ class WebSocketService {
     this.send({
       type: "room_status_update",
       payload: {
-        roomCode: tokenManager.getStudentInfo().roomCode,
-        participant: tokenManager.getStudentInfo().participant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         status,
         timestamp: Date.now(),
       },
@@ -379,8 +375,8 @@ class WebSocketService {
     this.send({
       type: "question_started",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         questionIndex,
         timestamp: Date.now(),
       },
@@ -391,8 +387,8 @@ class WebSocketService {
     this.send({
       type: "question_completed",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         questionIndex,
         timestamp: Date.now(),
       },
@@ -404,8 +400,8 @@ class WebSocketService {
     this.send({
       type: "recording_started",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         timestamp: Date.now(),
       },
     });
@@ -415,8 +411,8 @@ class WebSocketService {
     this.send({
       type: "recording_stopped",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         timestamp: Date.now(),
       },
     });
@@ -427,8 +423,8 @@ class WebSocketService {
     this.send({
       type: "audio_playback_started",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         timestamp: Date.now(),
       },
     });
@@ -438,8 +434,8 @@ class WebSocketService {
     this.send({
       type: "audio_playback_completed",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         timestamp: Date.now(),
       },
     });
@@ -450,8 +446,8 @@ class WebSocketService {
     this.send({
       type: "upload_started",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         timestamp: Date.now(),
       },
     });
@@ -461,8 +457,8 @@ class WebSocketService {
     this.send({
       type: "upload_completed",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         timestamp: Date.now(),
       },
     });
@@ -473,8 +469,8 @@ class WebSocketService {
     this.send({
       type: "error_reported",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         error: error.message || error,
         timestamp: Date.now(),
       },
@@ -485,8 +481,8 @@ class WebSocketService {
     this.send({
       type: "cheating_detected",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         message,
         timestamp: Date.now(),
       },
@@ -498,8 +494,8 @@ class WebSocketService {
     this.send({
       type: "ping",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         timestamp: Date.now(),
       },
     });
@@ -573,8 +569,8 @@ class WebSocketService {
     this.send({
       type: "student_status_update",
       payload: {
-        roomCode: this.currentRoom,
-        participant: this.currentParticipant,
+        roomCode: tokenManager.getStudentInfo()?.roomCode,
+        participant: tokenManager.getStudentInfo()?.participant,
         status,
         timestamp: Date.now(),
       },
@@ -587,11 +583,11 @@ class WebSocketService {
   }
 
   getCurrentRoom() {
-    return this.currentRoom;
+    return tokenManager.getStudentInfo()?.roomCode;
   }
 
   getCurrentParticipant() {
-    return this.currentParticipant;
+    return tokenManager.getStudentInfo()?.participant;
   }
 
   // Enhanced reconnection method
