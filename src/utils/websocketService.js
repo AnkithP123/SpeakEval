@@ -1,4 +1,4 @@
-import tokenManager from './tokenManager';
+import tokenManager from "./tokenManager";
 
 class WebSocketService {
   constructor() {
@@ -8,7 +8,7 @@ class WebSocketService {
     this.reconnectDelay = 1000;
     this.listeners = new Map();
     this.isConnected = false;
-    this.serverUrl = 'wss://www.server.speakeval.org/ws';
+    this.serverUrl = "wss://www.server.speakeval.org/ws";
     this.currentRoom = null;
     this.currentParticipant = null;
     this.connectionPromise = null;
@@ -21,26 +21,26 @@ class WebSocketService {
   setupVisibilityDetection() {
     // Set up Page Visibility API detection
     this.visibilityChangeHandler = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('👁️ Tab became visible - requesting state sync');
+      if (document.visibilityState === "visible") {
+        console.log("👁️ Tab became visible - requesting state sync");
         this.requestStateSync();
         this.lastActivityTime = Date.now();
       } else {
-        console.log('👁️ Tab became hidden');
+        console.log("👁️ Tab became hidden");
       }
     };
 
-    document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+    document.addEventListener("visibilitychange", this.visibilityChangeHandler);
   }
 
   requestStateSync() {
     if (this.isConnected) {
-      console.log('🔄 Requesting state sync from server');
+      console.log("🔄 Requesting state sync from server");
       this.send({
-        type: 'request_state_sync',
+        type: "request_state_sync",
         payload: {
-          timestamp: Date.now()
-        }
+          timestamp: Date.now(),
+        },
       });
     }
   }
@@ -63,17 +63,20 @@ class WebSocketService {
           roomCode: roomCode,
           participantName: participantName,
           useGoogle: useGoogle.toString(),
-          ...(email && { email: email })
+          ...(email && { email: email }),
         });
-        
+
         const url = `${this.serverUrl}?${params.toString()}`;
-        console.log('🔗 Connecting for initial join:', { roomCode, participantName });
-        console.log('🔗 WebSocket URL:', url);
-        
+        console.log("🔗 Connecting for initial join:", {
+          roomCode,
+          participantName,
+        });
+        console.log("🔗 WebSocket URL:", url);
+
         this.ws = new WebSocket(url);
-        
+
         this.ws.onopen = () => {
-          console.log('✅ WebSocket connected for join');
+          console.log("✅ WebSocket connected for join");
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.connectionPromise = null;
@@ -89,25 +92,24 @@ class WebSocketService {
             this.handleMessage(data);
             this.lastActivityTime = Date.now();
           } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
+            console.error("Error parsing WebSocket message:", error);
           }
         };
 
         this.ws.onclose = (event) => {
-          console.log('❌ WebSocket disconnected:', event.code, event.reason);
+          console.log("❌ WebSocket disconnected:", event.code, event.reason);
           this.isConnected = false;
           this.connectionPromise = null;
           this.attemptReconnect();
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          console.error("WebSocket error:", error);
           this.connectionPromise = null;
           reject(error);
         };
-
       } catch (error) {
-        console.error('Error creating WebSocket:', error);
+        console.error("Error creating WebSocket:", error);
         this.connectionPromise = null;
         reject(error);
       }
@@ -131,13 +133,16 @@ class WebSocketService {
       try {
         // Build URL with token parameter
         const url = `${this.serverUrl}?token=${token}`;
-        console.log('🔗 Connecting for reconnection with token:', token.substring(0, 20) + '...');
-        console.log('🔗 WebSocket URL:', url);
-        
+        console.log(
+          "🔗 Connecting for reconnection with token:",
+          token.substring(0, 20) + "..."
+        );
+        console.log("🔗 WebSocket URL:", url);
+
         this.ws = new WebSocket(url);
-        
+
         this.ws.onopen = () => {
-          console.log('✅ WebSocket connected for reconnection');
+          console.log("✅ WebSocket connected for reconnection");
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.connectionPromise = null;
@@ -152,25 +157,24 @@ class WebSocketService {
             this.handleMessage(data);
             this.lastActivityTime = Date.now();
           } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
+            console.error("Error parsing WebSocket message:", error);
           }
         };
 
         this.ws.onclose = (event) => {
-          console.log('❌ WebSocket disconnected:', event.code, event.reason);
+          console.log("❌ WebSocket disconnected:", event.code, event.reason);
           this.isConnected = false;
           this.connectionPromise = null;
           this.attemptReconnect();
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          console.error("WebSocket error:", error);
           this.connectionPromise = null;
           reject(error);
         };
-
       } catch (error) {
-        console.error('Error creating WebSocket:', error);
+        console.error("Error creating WebSocket:", error);
         this.connectionPromise = null;
         reject(error);
       }
@@ -185,46 +189,51 @@ class WebSocketService {
       return this.connectForReconnect(token);
     } else if (roomCode) {
       // This should only be used for initial joins, but we need participant name
-      console.warn('Legacy connect called with roomCode but no participant name');
-      return Promise.reject(new Error('Use connectForJoin for initial connections'));
+      console.warn(
+        "Legacy connect called with roomCode but no participant name"
+      );
+      return Promise.reject(
+        new Error("Use connectForJoin for initial connections")
+      );
     } else {
-      return Promise.reject(new Error('No roomCode or token provided'));
+      return Promise.reject(new Error("No roomCode or token provided"));
     }
   }
 
   attemptReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-      
+      console.log(
+        `🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
+      );
+
       setTimeout(() => {
         // Always try to reconnect with stored token first
         const token = tokenManager.getStudentToken();
-        console.log('🔍 Token check for reconnection:', {
+        console.log("🔍 Token check for reconnection:", {
           hasToken: !!token,
-          tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
-          tokenLength: token ? token.length : 0
+          tokenPreview: token ? token.substring(0, 20) + "..." : "none",
+          tokenLength: token ? token.length : 0,
         });
-        
+
         if (token) {
-          console.log('🔄 Reconnecting with stored token...');
-          this.connectForReconnect(token)
-            .catch(error => {
-              console.error('Token reconnection failed:', error);
-              // If token reconnection fails, we can't reconnect with room code
-              // because we need participant name for initial join
-            });
+          console.log("🔄 Reconnecting with stored token...");
+          this.connectForReconnect(token).catch((error) => {
+            console.error("Token reconnection failed:", error);
+            // If token reconnection fails, we can't reconnect with room code
+            // because we need participant name for initial join
+          });
         } else {
-          console.error('❌ No token available for reconnection');
-          console.log('🔍 TokenManager state:', {
+          console.error("❌ No token available for reconnection");
+          console.log("🔍 TokenManager state:", {
             isAuthenticated: tokenManager.isAuthenticated(),
             studentInfo: tokenManager.getStudentInfo(),
-            roomSession: tokenManager.getRoomSession()
+            roomSession: tokenManager.getRoomSession(),
           });
         }
       }, this.reconnectDelay * this.reconnectAttempts);
     } else {
-      console.error('Max reconnection attempts reached');
+      console.error("Max reconnection attempts reached");
     }
   }
 
@@ -242,76 +251,83 @@ class WebSocketService {
   cleanup() {
     // Remove visibility change listener
     if (this.visibilityChangeHandler) {
-      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+      document.removeEventListener(
+        "visibilitychange",
+        this.visibilityChangeHandler
+      );
       this.visibilityChangeHandler = null;
     }
-    
+
     // Stop client ping
     this.stopClientPing();
-    
+
     // Disconnect WebSocket
     this.disconnect();
   }
 
   send(message) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log('📤 Sending WebSocket message:', message);
+      console.log("📤 Sending WebSocket message:", message);
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket not connected, message not sent:', message);
+      console.warn("WebSocket not connected, message not sent:", message);
     }
   }
 
   handleMessage(data) {
     const { type, payload, messageId } = data;
-    
+    let session = tokenManager.getRoomSession();
+    if (session) {
+      this.roomCode = session.roomCode;
+    }
+
     console.log(`📨 Received WebSocket message: ${type}`, payload);
-    
+
     // Handle message acknowledgments
     if (messageId) {
-      console.log('✅ Sending acknowledgment for message:', messageId);
+      console.log("✅ Sending acknowledgment for message:", messageId);
       this.send({
-        type: 'message_ack',
+        type: "message_ack",
         payload: {
-          messageId: messageId
-        }
+          messageId: messageId,
+        },
       });
     }
-    
+
     // Handle ping from server
-    if (type === 'ping') {
-      console.log('🏓 Received ping from server, sending pong response');
+    if (type === "ping") {
+      console.log("🏓 Received ping from server, sending pong response");
       this.send({
-        type: 'pong',
+        type: "pong",
         payload: {
           timestamp: payload.timestamp,
           clientTime: Date.now(),
           roomCode: this.currentRoom,
-          participant: this.currentParticipant
-        }
+          participant: this.currentParticipant,
+        },
       });
       return; // Don't trigger listeners for ping
     }
-    
+
     // Handle pong acknowledgment from server
-    if (type === 'pong_ack') {
-      console.log('🏓 Received pong acknowledgment from server:', {
+    if (type === "pong_ack") {
+      console.log("🏓 Received pong acknowledgment from server:", {
         latency: payload.latency,
         serverTime: payload.serverTime,
-        clientTime: payload.clientTime
+        clientTime: payload.clientTime,
       });
       return; // Don't trigger listeners for pong_ack
     }
-    
+
     // Handle kick message from server
-    if (type === 'kicked') {
-      console.log('🚫 Kicked by server:', payload.reason);
+    if (type === "kicked") {
+      console.log("🚫 Kicked by server:", payload.reason);
       this.handleKick(payload);
       return; // Don't trigger listeners for kicked
     }
-    
+
     if (this.listeners.has(type)) {
-      this.listeners.get(type).forEach(callback => {
+      this.listeners.get(type).forEach((callback) => {
         try {
           callback(payload);
         } catch (error) {
@@ -348,146 +364,144 @@ class WebSocketService {
   // 3. Room Status Updates
   updateRoomStatus(status) {
     this.send({
-      type: 'room_status_update',
-      payload: { 
+      type: "room_status_update",
+      payload: {
         roomCode: tokenManager.getStudentInfo().roomCode,
         participant: tokenManager.getStudentInfo().participant,
         status,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
   // 4. Question Flow
   questionStarted(questionIndex) {
     this.send({
-      type: 'question_started',
-      payload: { 
+      type: "question_started",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
         questionIndex,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
   questionCompleted(questionIndex) {
     this.send({
-      type: 'question_completed',
-      payload: { 
+      type: "question_completed",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
         questionIndex,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
   // 5. Recording Flow
   startRecording() {
     this.send({
-      type: 'recording_started',
-      payload: { 
+      type: "recording_started",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
   stopRecording() {
     this.send({
-      type: 'recording_stopped',
-      payload: { 
+      type: "recording_stopped",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
   // 6. Audio Playback
   audioPlaybackStarted() {
     this.send({
-      type: 'audio_playback_started',
-      payload: { 
+      type: "audio_playback_started",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
   audioPlaybackCompleted() {
     this.send({
-      type: 'audio_playback_completed',
-      payload: { 
+      type: "audio_playback_completed",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
   // 7. Upload Status
   uploadStarted() {
     this.send({
-      type: 'upload_started',
-      payload: { 
+      type: "upload_started",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
   uploadCompleted() {
     this.send({
-      type: 'upload_completed',
-      payload: { 
+      type: "upload_completed",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
-
-
 
   // 9. Error Reporting
   reportError(error) {
     this.send({
-      type: 'error_reported',
-      payload: { 
+      type: "error_reported",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
         error: error.message || error,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
   reportCheating(message) {
     this.send({
-      type: 'cheating_detected',
-      payload: { 
+      type: "cheating_detected",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
         message,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
   // 10. Ping (client-initiated)
   sendPing() {
     this.send({
-      type: 'ping',
-      payload: { 
+      type: "ping",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
@@ -496,14 +510,14 @@ class WebSocketService {
     if (this.clientPingInterval) {
       clearInterval(this.clientPingInterval);
     }
-    
+
     this.clientPingInterval = setInterval(() => {
       if (this.isConnected) {
-        console.log('🏓 Client sending ping to server');
+        console.log("🏓 Client sending ping to server");
         this.sendPing();
       }
     }, intervalMs);
-    
+
     console.log(`🏓 Client ping started with ${intervalMs}ms interval`);
   }
 
@@ -512,36 +526,38 @@ class WebSocketService {
     if (this.clientPingInterval) {
       clearInterval(this.clientPingInterval);
       this.clientPingInterval = null;
-      console.log('🏓 Client ping stopped');
+      console.log("🏓 Client ping stopped");
     }
   }
 
   // Handle kick from server
   handleKick(payload) {
-    console.log('🚫 Handling server kick:', payload);
-    
+    console.log("🚫 Handling server kick:", payload);
+
     // Disconnect from WebSocket
     this.disconnect();
-    
+
     // Clear any stored tokens/session data
-    if (typeof tokenManager !== 'undefined' && tokenManager.clearSession) {
+    if (typeof tokenManager !== "undefined" && tokenManager.clearSession) {
       tokenManager.clearSession();
     }
-    
+
     // Emit kick event for components to handle
-    if (this.listeners.has('kicked')) {
-      this.listeners.get('kicked').forEach(callback => {
+    if (this.listeners.has("kicked")) {
+      this.listeners.get("kicked").forEach((callback) => {
         try {
           callback(payload);
         } catch (error) {
-          console.error('Error in kicked listener:', error);
+          console.error("Error in kicked listener:", error);
         }
       });
     }
-    
+
     // Show user-friendly message
-    if (typeof window !== 'undefined' && window.alert) {
-      window.alert(`You have been disconnected from the room: ${payload.reason}`);
+    if (typeof window !== "undefined" && window.alert) {
+      window.alert(
+        `You have been disconnected from the room: ${payload.reason}`
+      );
     }
   }
 
@@ -555,13 +571,13 @@ class WebSocketService {
   // 11. Student Status
   updateStudentStatus(status) {
     this.send({
-      type: 'student_status_update',
-      payload: { 
+      type: "student_status_update",
+      payload: {
         roomCode: this.currentRoom,
         participant: this.currentParticipant,
         status,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
   }
 
@@ -581,27 +597,27 @@ class WebSocketService {
   // Enhanced reconnection method
   reconnect() {
     const token = tokenManager.getStudentToken();
-    console.log('🔍 Token check for manual reconnect:', {
+    console.log("🔍 Token check for manual reconnect:", {
       hasToken: !!token,
-      tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
-      tokenLength: token ? token.length : 0
+      tokenPreview: token ? token.substring(0, 20) + "..." : "none",
+      tokenLength: token ? token.length : 0,
     });
-    
+
     if (token) {
-      console.log('🔄 Reconnecting with stored token...');
+      console.log("🔄 Reconnecting with stored token...");
       return this.connectForReconnect(token);
     } else {
-      console.error('❌ No token available for manual reconnection');
-      console.log('🔍 TokenManager state:', {
+      console.error("❌ No token available for manual reconnection");
+      console.log("🔍 TokenManager state:", {
         isAuthenticated: tokenManager.isAuthenticated(),
         studentInfo: tokenManager.getStudentInfo(),
-        roomSession: tokenManager.getRoomSession()
+        roomSession: tokenManager.getRoomSession(),
       });
-      return Promise.reject(new Error('No token available for reconnection'));
+      return Promise.reject(new Error("No token available for reconnection"));
     }
   }
 }
 
 // Create singleton instance
 const websocketService = new WebSocketService();
-export default websocketService; 
+export default websocketService;
