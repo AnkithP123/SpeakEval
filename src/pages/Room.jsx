@@ -19,7 +19,6 @@ function Room() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [studentInfo, setStudentInfo] = useState(null);
-  const isNavigatingRef = useRef(false); // Add ref to track navigation state
 
   // Real-time communication
   const {
@@ -32,11 +31,6 @@ function Room() {
   } = useRealTimeCommunication();
 
   useEffect(() => {
-    // Reset navigation flag after mount (navigation completed)
-    setTimeout(() => {
-      isNavigatingRef.current = false;
-    }, 100);
-    
     // Check if student is authenticated and session is valid
     if (!tokenManager.isAuthenticated() || !tokenManager.getStudentInfo()) {
       toast.error("Please join the room first");
@@ -53,39 +47,21 @@ function Room() {
       console.log("Info Roomcode: ", info.roomCode);
       console.log("Current Roomcode: ", roomCode);
       
-      // Convert both to numbers for proper comparison
-      const infoRoomCode = parseInt(info.roomCode);
-      const currentRoomCode = parseInt(roomCode);
-      
-      // Check if we're already at the correct URL (avoid infinite loops)
-      if (infoRoomCode === currentRoomCode) {
-        console.log("Already at correct room URL, no navigation needed");
-        return;
-      }
-      
-      // Check if we're already navigating
-      if (isNavigatingRef.current) {
-        console.log("Navigation already in progress, skipping...");
-        return;
-      }
-      
       // If the room codes are similar (same base, different suffix), it might be a restart
-      const infoBase = Math.floor(infoRoomCode / 1000);
-      const currentBase = Math.floor(currentRoomCode / 1000);
+      const infoBase = Math.floor(info.roomCode / 1000);
+      const currentBase = Math.floor(roomCode / 1000);
       
       if (infoBase === currentBase) {
         // Same base room, just different iteration (room was restarted)
         console.log("Detected room restart - navigating to current room iteration");
         toast.info("Room has been updated - loading current room...");
-        // Set navigation flag and navigate
-        isNavigatingRef.current = true;
+        // Navigate to the correct room URL based on the token
         navigate(`/room/${info.roomCode}`, { replace: true });
         return;
       } else {
         // Completely different room - invalid session
         toast.error("Invalid session for this room");
         tokenManager.clearAll();
-        isNavigatingRef.current = true;
         return navigate("/join-room");
       }
     }
@@ -143,20 +119,12 @@ function Room() {
     // Set up WebSocket event listeners
     const handleExamStarted = (payload) => {
       console.log("🎯 Exam started:", payload);
-      
-      // Check if we're already navigating
-      if (isNavigatingRef.current) {
-        console.log("Navigation already in progress, ignoring exam started");
-        return;
-      }
-      
       toast.success("Exam has started");
 
       // Check if student has already recorded before navigating
       checkRecordingStatus().then((hasRecorded) => {
         if (!hasRecorded) {
           // Only navigate if they haven't recorded yet
-          isNavigatingRef.current = true;
           navigate("/record");
         }
       });
@@ -165,12 +133,6 @@ function Room() {
     const handleRoomRestart = (payload) => {
       console.log("🔄 Room restarted:", payload);
 
-      // Check if we're already navigating
-      if (isNavigatingRef.current) {
-        console.log("Navigation already in progress, ignoring room restart");
-        return;
-      }
-
       // Extract new token and room information
       const { newToken, newRoomCode, participant } = payload;
 
@@ -178,18 +140,11 @@ function Room() {
         // Get current room code from token
         const currentInfo = tokenManager.getStudentInfo();
         const currentRoomCode = currentInfo?.roomCode;
-        
-        // Parse room codes as integers for proper comparison
-        const currentRoomCodeInt = parseInt(currentRoomCode);
-        const newRoomCodeInt = parseInt(newRoomCode);
-        const urlRoomCodeInt = parseInt(roomCode); // from URL params
 
         console.log("🔄 Room restart comparison:", {
-          currentRoomCode: currentRoomCodeInt,
-          newRoomCode: newRoomCodeInt,
-          urlRoomCode: urlRoomCodeInt,
-          roomCodeChanged: currentRoomCodeInt !== newRoomCodeInt,
-          alreadyAtNewUrl: urlRoomCodeInt === newRoomCodeInt
+          currentRoomCode,
+          newRoomCode,
+          roomCodeChanged: currentRoomCode !== newRoomCode,
         });
 
         // Update token in localStorage
@@ -202,18 +157,11 @@ function Room() {
           timestamp: Date.now()
         });
 
-        // Check if we're already at the new URL
-        if (urlRoomCodeInt === newRoomCodeInt) {
-          console.log("Already at the new room URL, no navigation needed");
-          return;
-        }
-
-        // Only navigate if room code actually changed and we're not already there
-        if (currentRoomCodeInt !== newRoomCodeInt) {
+        // Only navigate if room code actually changed
+        if (currentRoomCode !== newRoomCode) {
           toast.success("Room restarted with new question - loading new room!");
           console.log("Room code changed, navigating to new room...");
-          // Set navigation flag and navigate
-          isNavigatingRef.current = true;
+          // Navigate to the new room URL instead of reloading
           navigate(`/room/${newRoomCode}`, { replace: true });
         } else {
           console.log("Room code unchanged, staying on current page");
@@ -221,8 +169,7 @@ function Room() {
       } else {
         console.error("Missing token data from server");
         toast.error("Failed to handle room restart");
-        // Set navigation flag and navigate to join room page
-        isNavigatingRef.current = true;
+        // Navigate to join room page if we can't handle the restart
         navigate("/join-room");
       }
     };
@@ -298,14 +245,8 @@ function Room() {
     const handleRoomStateSync = (payload) => {
       console.log("📊 Room state sync received:", payload);
 
-      // Check if we're already navigating
-      if (isNavigatingRef.current) {
-        console.log("Navigation already in progress, ignoring room state sync");
-        return;
-      }
-
       const {
-        roomCode: syncRoomCode,
+        roomCode,
         participant,
         roomStarted,
         examStarted,
@@ -325,18 +266,11 @@ function Room() {
         // Decode the new token to get the new room code
         const newTokenInfo = tokenManager.decodeStudentToken(latestToken);
         const newRoomCode = newTokenInfo?.roomCode;
-        
-        // Parse room codes as integers for proper comparison
-        const currentRoomCodeInt = parseInt(currentRoomCode);
-        const newRoomCodeInt = parseInt(newRoomCode);
-        const urlRoomCodeInt = parseInt(roomCode); // from URL params
 
         console.log("🔍 Room code comparison:", {
-          current: currentRoomCodeInt,
-          new: newRoomCodeInt,
-          urlRoomCode: urlRoomCodeInt,
-          changed: currentRoomCodeInt !== newRoomCodeInt,
-          alreadyAtNewUrl: urlRoomCodeInt === newRoomCodeInt
+          current: currentRoomCode,
+          new: newRoomCode,
+          changed: currentRoomCode !== newRoomCode,
         });
 
         // Update token in localStorage
@@ -351,18 +285,11 @@ function Room() {
           });
         }
 
-        // Check if we're already at the new URL
-        if (urlRoomCodeInt === newRoomCodeInt) {
-          console.log("Already at the new room URL, no navigation needed");
-          return;
-        }
-
-        // Only navigate if the room code actually changed and we're not already there
-        if (currentRoomCodeInt !== newRoomCodeInt) {
+        // Only navigate if the room code actually changed
+        if (currentRoomCode !== newRoomCode) {
           console.log("🔄 Room code changed, navigating to new room");
           toast.success("Room restarted with new question - loading new room!");
-          // Set navigation flag and navigate
-          isNavigatingRef.current = true;
+          // Navigate to the new room URL instead of reloading
           navigate(`/room/${newRoomCode}`, { replace: true });
           return;
         } else {
@@ -375,7 +302,6 @@ function Room() {
       if (examStarted && roomStarted) {
         console.log("🎯 Exam has started, navigating to record page");
         toast.success("Exam has started");
-        isNavigatingRef.current = true;
         navigate("/record");
         return;
       }
@@ -414,9 +340,6 @@ function Room() {
     });
 
     return () => {
-      // Reset navigation flag on unmount
-      isNavigatingRef.current = false;
-      
       // Cleanup event listeners
       offWebSocketEvent("exam_started", handleExamStarted);
       offWebSocketEvent("room_restart", handleRoomRestart);
