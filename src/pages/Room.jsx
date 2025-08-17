@@ -8,7 +8,7 @@ import { cuteAlert } from "cute-alert";
 import tokenManager from "../utils/tokenManager";
 import urlCache from "../utils/urlCache";
 import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
-import websocketService from '../utils/websocketService';
+import websocketService from "../utils/websocketService";
 
 function Room() {
   const { roomCode } = useParams();
@@ -19,15 +19,15 @@ function Room() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [studentInfo, setStudentInfo] = useState(null);
-  
+
   // Real-time communication
-  const { 
-    isConnected, 
-    on: onWebSocketEvent, 
+  const {
+    isConnected,
+    on: onWebSocketEvent,
     off: offWebSocketEvent,
     updateStudentStatus,
     connectForReconnect,
-    reconnect
+    reconnect,
   } = useRealTimeCommunication();
 
   useEffect(() => {
@@ -41,44 +41,52 @@ function Room() {
     const info = tokenManager.getStudentInfo();
     setStudentInfo(info);
     console.log("Info: ", info);
-    
+
     if (!info || info.roomCode != roomCode) {
+      console.log("Info Roomcode: ", info.roomCode);
+      console.log("Current Roomcode: ", roomCode);
       toast.error("Invalid session for this room");
       tokenManager.clearAll();
       return navigate("/join-room");
     }
 
-    console.log(`Token: ${token}, Participant: ${info.participant}, RoomCode: ${roomCode}`);
-    
+    console.log(
+      `Token: ${token}, Participant: ${info.participant}, RoomCode: ${roomCode}`
+    );
+
     // Try to connect with stored token if available
     const tokenForConnection = tokenManager.getStudentToken();
-    console.log('🔍 Room component token check:', {
+    console.log("🔍 Room component token check:", {
       hasToken: !!tokenForConnection,
-      tokenPreview: tokenForConnection ? tokenForConnection.substring(0, 20) + '...' : 'none',
+      tokenPreview: tokenForConnection
+        ? tokenForConnection.substring(0, 20) + "..."
+        : "none",
       tokenLength: tokenForConnection ? tokenForConnection.length : 0,
       isAuthenticated: tokenManager.isAuthenticated(),
-      studentInfo: tokenManager.getStudentInfo()
+      studentInfo: tokenManager.getStudentInfo(),
     });
-    
+
     if (tokenForConnection && !isConnected) {
-      console.log('🔄 Connecting with stored token...');
+      console.log("🔄 Connecting with stored token...");
       connectForReconnect(tokenForConnection);
     } else if (!tokenForConnection) {
-      console.error('❌ No token available for connection in Room component');
+      console.error("❌ No token available for connection in Room component");
     }
-    
+
     // Check if student has already recorded for this question
     const checkRecordingStatus = async () => {
       try {
         const response = await fetch(
           `https://www.server.speakeval.org/receiveaudio?token=${token}&number=1`
         );
-        
+
         if (!response.ok) {
           const data = await response.json();
           if (data.code === "RECORDING_EXISTS") {
             // Student has already recorded, show appropriate message
-            toast.info("You have already completed this question. Please wait for the next question or for your teacher to restart the room.");
+            toast.info(
+              "You have already completed this question. Please wait for the next question or for your teacher to restart the room."
+            );
             return true; // Recording exists
           }
         }
@@ -94,9 +102,9 @@ function Room() {
 
     // Set up WebSocket event listeners
     const handleExamStarted = (payload) => {
-      console.log('🎯 Exam started:', payload);
+      console.log("🎯 Exam started:", payload);
       toast.success("Exam has started");
-      
+
       // Check if student has already recorded before navigating
       checkRecordingStatus().then((hasRecorded) => {
         if (!hasRecorded) {
@@ -105,29 +113,29 @@ function Room() {
         }
       });
     };
-    
+
     const handleRoomRestart = (payload) => {
-      console.log('🔄 Room restarted:', payload);
-      
+      console.log("🔄 Room restarted:", payload);
+
       // Extract new token and room information
       const { newToken, newRoomCode, participant } = payload;
-      
+
       if (newToken && newRoomCode && participant) {
         // Get current room code from token
         const currentInfo = tokenManager.getStudentInfo();
         const currentRoomCode = currentInfo?.roomCode;
-        
-        console.log('🔄 Room restart comparison:', {
+
+        console.log("🔄 Room restart comparison:", {
           currentRoomCode,
           newRoomCode,
-          roomCodeChanged: currentRoomCode !== newRoomCode
+          roomCodeChanged: currentRoomCode !== newRoomCode,
         });
-        
+
         // Only reload if room code actually changed
         if (currentRoomCode !== newRoomCode) {
           // Update token in localStorage
           tokenManager.setStudentToken(newToken);
-          
+
           toast.success("Room restarted with new question - reloading page!");
           console.log("Room code changed, reloading page...");
           window.location.reload();
@@ -142,31 +150,36 @@ function Room() {
         window.location.reload();
       }
     };
-    
+
     const handleParticipantUpdate = (payload) => {
-      console.log('👥 Participant update:', payload);
+      console.log("👥 Participant update:", payload);
       // Handle participant status updates
     };
-    
+
     const handleReconnectNeeded = (payload) => {
-      console.log('🔄 Reconnection needed:', payload);
+      console.log("🔄 Reconnection needed:", payload);
       // Try to reconnect automatically
       reconnect();
     };
 
     const handleReconnectSuccess = (payload) => {
-      console.log('✅ Reconnect success:', payload);
+      console.log("✅ Reconnect success:", payload);
       // Silently handle reconnection success - no user notification needed
     };
 
     const handleReconnectError = (payload) => {
-      console.error('❌ Reconnect error:', payload);
+      console.error("❌ Reconnect error:", payload);
       const errorMessage = payload.message || "Failed to reconnect to the room";
       toast.error(errorMessage);
-      
+
       // If it's a critical error, redirect to join page
-      if (payload.code === "room_not_found" || payload.code === "invalid_token") {
-        toast.error("Room no longer exists or your session has expired. Please rejoin.");
+      if (
+        payload.code === "room_not_found" ||
+        payload.code === "invalid_token"
+      ) {
+        toast.error(
+          "Room no longer exists or your session has expired. Please rejoin."
+        );
         setTimeout(() => {
           navigate("/join");
         }, 3000);
@@ -174,15 +187,16 @@ function Room() {
     };
 
     const handleKicked = (payload) => {
-      console.log('🚫 Kicked from room:', payload);
-      const kickReason = payload.reason || "You have been removed from the room";
+      console.log("🚫 Kicked from room:", payload);
+      const kickReason =
+        payload.reason || "You have been removed from the room";
       toast.error(kickReason);
-      
+
       // Clear session data
-      if (typeof tokenManager !== 'undefined' && tokenManager.clearSession) {
+      if (typeof tokenManager !== "undefined" && tokenManager.clearSession) {
         tokenManager.clearSession();
       }
-      
+
       // Redirect to join page
       setTimeout(() => {
         navigate("/join");
@@ -190,97 +204,97 @@ function Room() {
     };
 
     const handleConnectionError = (payload) => {
-      console.error('❌ Connection error:', payload);
+      console.error("❌ Connection error:", payload);
       const errorMessage = payload.message || "Connection error occurred";
       toast.error(errorMessage);
     };
-    
+
     const handleRoomStatusUpdate = (payload) => {
-      console.log('📊 Room status update:', payload);
+      console.log("📊 Room status update:", payload);
       // Handle room status updates
     };
-    
+
     const handleStudentStatusUpdate = (payload) => {
-      console.log('👤 Student status update:', payload);
+      console.log("👤 Student status update:", payload);
       // Handle student status updates
     };
-    
+
     const handleRoomStateSync = (payload) => {
-      console.log('📊 Room state sync received:', payload);
-      
-      const { 
-        roomCode, 
-        participant, 
-        roomStarted, 
-        examStarted, 
+      console.log("📊 Room state sync received:", payload);
+
+      const {
+        roomCode,
+        participant,
+        roomStarted,
+        examStarted,
         currentQuestion,
         latestToken,
-        roomRestarted
+        roomRestarted,
       } = payload;
-      
+
       // Handle room restart with latest token - only reload if room code changed
       if (roomRestarted && latestToken) {
-        console.log('🔄 Room was restarted, checking if room code changed');
-        
+        console.log("🔄 Room was restarted, checking if room code changed");
+
         // Get current room info from token
         const currentTokenInfo = tokenManager.getStudentInfo();
         const currentRoomCode = currentTokenInfo?.roomCode;
-        
+
         // Decode the new token to get the new room code
         const newTokenInfo = tokenManager.decodeStudentToken(latestToken);
         const newRoomCode = newTokenInfo?.roomCode;
-        
-        console.log('🔍 Room code comparison:', {
+
+        console.log("🔍 Room code comparison:", {
           current: currentRoomCode,
           new: newRoomCode,
-          changed: currentRoomCode !== newRoomCode
+          changed: currentRoomCode !== newRoomCode,
         });
-        
+
         // Only reload if the room code actually changed
         if (currentRoomCode !== newRoomCode) {
-          console.log('🔄 Room code changed, updating token and reloading');
+          console.log("🔄 Room code changed, updating token and reloading");
           tokenManager.setStudentToken(latestToken);
-          
+
           toast.success("Room restarted with new question - reloading page!");
           window.location.reload();
           return;
         } else {
-          console.log('🔄 Room code unchanged, updating token without reload');
+          console.log("🔄 Room code unchanged, updating token without reload");
           tokenManager.setStudentToken(latestToken);
           return;
         }
       }
-      
+
       // Handle exam started state
       if (examStarted && roomStarted) {
-        console.log('🎯 Exam has started, navigating to record page');
+        console.log("🎯 Exam has started, navigating to record page");
         toast.success("Exam has started");
         navigate("/record");
         return;
       }
-      
+
       // Handle room started but not exam
       if (roomStarted && !examStarted) {
-        console.log('📊 Room has started but exam not yet begun');
+        console.log("📊 Room has started but exam not yet begun");
         // Stay on current page, wait for exam to start
       }
     };
-    
+
     // Add event listeners
-    onWebSocketEvent('exam_started', handleExamStarted);
-    onWebSocketEvent('room_restart', handleRoomRestart);
-    onWebSocketEvent('participant_update', handleParticipantUpdate);
-    onWebSocketEvent('reconnect_needed', handleReconnectNeeded);
-    onWebSocketEvent('reconnect_success', handleReconnectSuccess);
-    onWebSocketEvent('reconnect_error', handleReconnectError);
-    onWebSocketEvent('kicked', handleKicked);
-    onWebSocketEvent('connection_error', handleConnectionError);
-    onWebSocketEvent('room_status_update', handleRoomStatusUpdate);
-    onWebSocketEvent('student_status_update', handleStudentStatusUpdate);
-    onWebSocketEvent('room_state_sync', handleRoomStateSync);
-    
+    onWebSocketEvent("exam_started", handleExamStarted);
+    onWebSocketEvent("room_restart", handleRoomRestart);
+    onWebSocketEvent("participant_update", handleParticipantUpdate);
+    onWebSocketEvent("reconnect_needed", handleReconnectNeeded);
+    onWebSocketEvent("reconnect_success", handleReconnectSuccess);
+    onWebSocketEvent("reconnect_error", handleReconnectError);
+    onWebSocketEvent("kicked", handleKicked);
+    onWebSocketEvent("connection_error", handleConnectionError);
+    onWebSocketEvent("room_status_update", handleRoomStatusUpdate);
+    onWebSocketEvent("student_status_update", handleStudentStatusUpdate);
+    onWebSocketEvent("room_state_sync", handleRoomStateSync);
+
     // Update student status
-    updateStudentStatus('waiting_in_room');
+    updateStudentStatus("waiting_in_room");
 
     document.documentElement.style.setProperty("--cute-alert-max-width", "40%");
 
@@ -294,17 +308,17 @@ function Room() {
 
     return () => {
       // Cleanup event listeners
-      offWebSocketEvent('exam_started', handleExamStarted);
-      offWebSocketEvent('room_restart', handleRoomRestart);
-      offWebSocketEvent('participant_update', handleParticipantUpdate);
-      offWebSocketEvent('reconnect_needed', handleReconnectNeeded);
-      offWebSocketEvent('reconnect_success', handleReconnectSuccess);
-      offWebSocketEvent('reconnect_error', handleReconnectError);
-      offWebSocketEvent('kicked', handleKicked);
-      offWebSocketEvent('connection_error', handleConnectionError);
-      offWebSocketEvent('room_status_update', handleRoomStatusUpdate);
-      offWebSocketEvent('student_status_update', handleStudentStatusUpdate);
-      offWebSocketEvent('room_state_sync', handleRoomStateSync);
+      offWebSocketEvent("exam_started", handleExamStarted);
+      offWebSocketEvent("room_restart", handleRoomRestart);
+      offWebSocketEvent("participant_update", handleParticipantUpdate);
+      offWebSocketEvent("reconnect_needed", handleReconnectNeeded);
+      offWebSocketEvent("reconnect_success", handleReconnectSuccess);
+      offWebSocketEvent("reconnect_error", handleReconnectError);
+      offWebSocketEvent("kicked", handleKicked);
+      offWebSocketEvent("connection_error", handleConnectionError);
+      offWebSocketEvent("room_status_update", handleRoomStatusUpdate);
+      offWebSocketEvent("student_status_update", handleStudentStatusUpdate);
+      offWebSocketEvent("room_state_sync", handleRoomStateSync);
       // Clean up WebSocket service properly
       websocketService.cleanup();
     };
@@ -337,22 +351,24 @@ function Room() {
   const fetchTestAudio = async () => {
     try {
       const audioUrl = await urlCache.getUrl(
-        'test_audio',
-        'test',
+        "test_audio",
+        "test",
         null,
         async () => {
-    const res = await fetch("https://www.server.speakeval.org/get_test_audio");
-    const parsedData = await res.json();
-          
+          const res = await fetch(
+            "https://www.server.speakeval.org/get_test_audio"
+          );
+          const parsedData = await res.json();
+
           if (parsedData.error) {
             throw new Error(parsedData.error);
           }
-          
+
           return parsedData.audioUrl;
         }
       );
-      
-    setTestAudioURL(audioUrl);
+
+      setTestAudioURL(audioUrl);
     } catch (error) {
       console.error("Error fetching test audio:", error);
       toast.error("Failed to fetch test audio");
@@ -368,16 +384,14 @@ function Room() {
       <h1 className="text-4xl font-bold mb-4">
         Welcome to Room {roomCode.toString().slice(0, -3)}
       </h1>
-      
 
-      
       <p className="text-2xl mb-8">
-        Hello, {studentInfo ? studentInfo.participant : "Student"}! Please wait until your instructor starts this oral
-        examination. Watch this informational video while you wait. Please note
-        that the layout has been slightly changed from the time of recording,
-        and a countdown timer has been added at the top. Remember to use the
-        audio testing console at the bottom to make sure you can record and
-        fetch audio from the server.
+        Hello, {studentInfo ? studentInfo.participant : "Student"}! Please wait
+        until your instructor starts this oral examination. Watch this
+        informational video while you wait. Please note that the layout has been
+        slightly changed from the time of recording, and a countdown timer has
+        been added at the top. Remember to use the audio testing console at the
+        bottom to make sure you can record and fetch audio from the server.
       </p>
       <div className="w-full max-w-xl py-8">
         <div className="aspect-w-16 aspect-h-9">
@@ -479,4 +493,3 @@ function Room() {
 }
 
 export default Room;
-
