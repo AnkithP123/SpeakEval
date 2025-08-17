@@ -42,28 +42,12 @@ function Room() {
     setStudentInfo(info);
     console.log("Info: ", info);
 
-    // Check if the room code doesn't match - could be due to room restart
     if (!info || info.roomCode != roomCode) {
       console.log("Info Roomcode: ", info.roomCode);
       console.log("Current Roomcode: ", roomCode);
-      
-      // If the room codes are similar (same base, different suffix), it might be a restart
-      const infoBase = Math.floor(info.roomCode / 1000);
-      const currentBase = Math.floor(roomCode / 1000);
-      
-      if (infoBase === currentBase) {
-        // Same base room, just different iteration (room was restarted)
-        console.log("Detected room restart - navigating to current room iteration");
-        toast.info("Room has been updated - loading current room...");
-        // Navigate to the correct room URL based on the token
-        navigate(`/room/${info.roomCode}`, { replace: true });
-        return;
-      } else {
-        // Completely different room - invalid session
-        toast.error("Invalid session for this room");
-        tokenManager.clearAll();
-        return navigate("/join-room");
-      }
+      toast.error("Invalid session for this room");
+      tokenManager.clearAll();
+      return navigate("/join-room");
     }
 
     console.log(
@@ -147,30 +131,23 @@ function Room() {
           roomCodeChanged: currentRoomCode !== newRoomCode,
         });
 
-        // Update token in localStorage
-        tokenManager.setStudentToken(newToken);
-        
-        // Also update the room session with new room code
-        tokenManager.setRoomSession({
-          roomCode: newRoomCode,
-          participantName: participant,
-          timestamp: Date.now()
-        });
-
-        // Only navigate if room code actually changed
+        // Only reload if room code actually changed
         if (currentRoomCode !== newRoomCode) {
-          toast.success("Room restarted with new question - loading new room!");
-          console.log("Room code changed, navigating to new room...");
-          // Navigate to the new room URL instead of reloading
-          navigate(`/room/${newRoomCode}`, { replace: true });
+          // Update token in localStorage
+          tokenManager.setStudentToken(newToken);
+
+          toast.success("Room restarted with new question - reloading page!");
+          console.log("Room code changed, reloading page...");
+          window.location.reload();
         } else {
-          console.log("Room code unchanged, staying on current page");
+          console.log("Room code unchanged, skipping reload");
+          // Still update the token but don't reload
+          tokenManager.setStudentToken(newToken);
         }
       } else {
         console.error("Missing token data from server");
         toast.error("Failed to handle room restart");
-        // Navigate to join room page if we can't handle the restart
-        navigate("/join-room");
+        window.location.reload();
       }
     };
 
@@ -255,7 +232,7 @@ function Room() {
         roomRestarted,
       } = payload;
 
-      // Handle room restart with latest token - only navigate if room code changed
+      // Handle room restart with latest token - only reload if room code changed
       if (roomRestarted && latestToken) {
         console.log("🔄 Room was restarted, checking if room code changed");
 
@@ -273,27 +250,17 @@ function Room() {
           changed: currentRoomCode !== newRoomCode,
         });
 
-        // Update token in localStorage
-        tokenManager.setStudentToken(latestToken);
-        
-        // Also update the room session with new room code
-        if (newRoomCode && participant) {
-          tokenManager.setRoomSession({
-            roomCode: newRoomCode,
-            participantName: participant,
-            timestamp: Date.now()
-          });
-        }
-
-        // Only navigate if the room code actually changed
+        // Only reload if the room code actually changed
         if (currentRoomCode !== newRoomCode) {
-          console.log("🔄 Room code changed, navigating to new room");
-          toast.success("Room restarted with new question - loading new room!");
-          // Navigate to the new room URL instead of reloading
-          navigate(`/room/${newRoomCode}`, { replace: true });
+          console.log("🔄 Room code changed, updating token and reloading");
+          tokenManager.setStudentToken(latestToken);
+
+          toast.success("Room restarted with new question - reloading page!");
+          window.location.reload();
           return;
         } else {
-          console.log("🔄 Room code unchanged, staying on current page");
+          console.log("🔄 Room code unchanged, updating token without reload");
+          tokenManager.setStudentToken(latestToken);
           return;
         }
       }
