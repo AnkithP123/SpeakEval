@@ -22,11 +22,8 @@ class WebSocketService {
     // Set up Page Visibility API detection
     this.visibilityChangeHandler = () => {
       if (document.visibilityState === "visible") {
-        console.log("👁️ Tab became visible - requesting state sync");
         this.requestStateSync();
         this.lastActivityTime = Date.now();
-      } else {
-        console.log("👁️ Tab became hidden");
       }
     };
 
@@ -35,7 +32,6 @@ class WebSocketService {
 
   requestStateSync() {
     if (this.isConnected) {
-      console.log("🔄 Requesting state sync from server");
       this.send({
         type: "request_state_sync",
         payload: {
@@ -67,16 +63,10 @@ class WebSocketService {
         });
 
         const url = `${this.serverUrl}?${params.toString()}`;
-        console.log("🔗 Connecting for initial join:", {
-          roomCode,
-          participantName,
-        });
-        console.log("🔗 WebSocket URL:", url);
 
         this.ws = new WebSocket(url);
 
         this.ws.onopen = () => {
-          console.log("✅ WebSocket connected for join");
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.connectionPromise = null;
@@ -97,7 +87,6 @@ class WebSocketService {
         };
 
         this.ws.onclose = (event) => {
-          console.log("❌ WebSocket disconnected:", event.code, event.reason);
           this.isConnected = false;
           this.connectionPromise = null;
           this.attemptReconnect();
@@ -133,16 +122,10 @@ class WebSocketService {
       try {
         // Build URL with token parameter
         const url = `${this.serverUrl}?token=${token}`;
-        console.log(
-          "🔗 Connecting for reconnection with token:",
-          token.substring(0, 20) + "..."
-        );
-        console.log("🔗 WebSocket URL:", url);
 
         this.ws = new WebSocket(url);
 
         this.ws.onopen = () => {
-          console.log("✅ WebSocket connected for reconnection");
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.connectionPromise = null;
@@ -162,7 +145,6 @@ class WebSocketService {
         };
 
         this.ws.onclose = (event) => {
-          console.log("❌ WebSocket disconnected:", event.code, event.reason);
           this.isConnected = false;
           this.connectionPromise = null;
           this.attemptReconnect();
@@ -203,21 +185,12 @@ class WebSocketService {
   attemptReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(
-        `🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
-      );
 
       setTimeout(() => {
         // Always try to reconnect with stored token first
         const token = tokenManager.getStudentToken();
-        console.log("🔍 Token check for reconnection:", {
-          hasToken: !!token,
-          tokenPreview: token ? token.substring(0, 20) + "..." : "none",
-          tokenLength: token ? token.length : 0,
-        });
 
         if (token) {
-          console.log("🔄 Reconnecting with stored token...");
           this.connectForReconnect(token).catch((error) => {
             console.error("Token reconnection failed:", error);
             // If token reconnection fails, we can't reconnect with room code
@@ -225,11 +198,6 @@ class WebSocketService {
           });
         } else {
           console.error("❌ No token available for reconnection");
-          console.log("🔍 TokenManager state:", {
-            isAuthenticated: tokenManager.isAuthenticated(),
-            studentInfo: tokenManager.getStudentInfo(),
-            roomSession: tokenManager.getRoomSession(),
-          });
         }
       }, this.reconnectDelay * this.reconnectAttempts);
     } else {
@@ -267,7 +235,6 @@ class WebSocketService {
 
   send(message) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log("📤 Sending WebSocket message:", message);
       this.ws.send(JSON.stringify(message));
     } else {
       console.warn("WebSocket not connected, message not sent:", message);
@@ -277,11 +244,8 @@ class WebSocketService {
   handleMessage(data) {
     const { type, payload, messageId } = data;
 
-    console.log(`📨 Received WebSocket message: ${type}`, payload);
-
     // Handle message acknowledgments
     if (messageId) {
-      console.log("✅ Sending acknowledgment for message:", messageId);
       this.send({
         type: "message_ack",
         payload: {
@@ -292,7 +256,6 @@ class WebSocketService {
 
     // Handle ping from server
     if (type === "ping") {
-      console.log("🏓 Received ping from server, sending pong response");
       this.send({
         type: "pong",
         payload: {
@@ -307,17 +270,11 @@ class WebSocketService {
 
     // Handle pong acknowledgment from server
     if (type === "pong_ack") {
-      console.log("🏓 Received pong acknowledgment from server:", {
-        latency: payload.latency,
-        serverTime: payload.serverTime,
-        clientTime: payload.clientTime,
-      });
       return; // Don't trigger listeners for pong_ack
     }
 
     // Handle kick message from server
     if (type === "kicked") {
-      console.log("🚫 Kicked by server:", payload.reason);
       this.handleKick(payload);
       return; // Don't trigger listeners for kicked
     }
@@ -330,8 +287,6 @@ class WebSocketService {
           console.error(`Error in ${type} listener:`, error);
         }
       });
-    } else {
-      console.log(`⚠️ No listeners found for event type: ${type}`);
     }
   }
 
@@ -509,12 +464,9 @@ class WebSocketService {
 
     this.clientPingInterval = setInterval(() => {
       if (this.isConnected) {
-        console.log("🏓 Client sending ping to server");
         this.sendPing();
       }
     }, intervalMs);
-
-    console.log(`🏓 Client ping started with ${intervalMs}ms interval`);
   }
 
   // Stop client-side ping interval
@@ -522,14 +474,11 @@ class WebSocketService {
     if (this.clientPingInterval) {
       clearInterval(this.clientPingInterval);
       this.clientPingInterval = null;
-      console.log("🏓 Client ping stopped");
     }
   }
 
   // Handle kick from server
   handleKick(payload) {
-    console.log("🚫 Handling server kick:", payload);
-
     // Disconnect from WebSocket
     this.disconnect();
 
@@ -593,22 +542,11 @@ class WebSocketService {
   // Enhanced reconnection method
   reconnect() {
     const token = tokenManager.getStudentToken();
-    console.log("🔍 Token check for manual reconnect:", {
-      hasToken: !!token,
-      tokenPreview: token ? token.substring(0, 20) + "..." : "none",
-      tokenLength: token ? token.length : 0,
-    });
 
     if (token) {
-      console.log("🔄 Reconnecting with stored token...");
       return this.connectForReconnect(token);
     } else {
       console.error("❌ No token available for manual reconnection");
-      console.log("🔍 TokenManager state:", {
-        isAuthenticated: tokenManager.isAuthenticated(),
-        studentInfo: tokenManager.getStudentInfo(),
-        roomSession: tokenManager.getRoomSession(),
-      });
       return Promise.reject(new Error("No token available for reconnection"));
     }
   }

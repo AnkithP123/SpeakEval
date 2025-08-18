@@ -22,7 +22,6 @@ export default function QuestionCard({
     try {
       if (storedCategories) {
         setCategories(storedCategories);
-        console.log("Loaded categories from localStorage:", storedCategories);
       } else {
         // Default categories if none in localStorage
         setCategories([
@@ -87,10 +86,8 @@ export default function QuestionCard({
   };
 
   const handlePlayClick = async () => {
-    console.log("Play Clicked");
     for (let question of questions) {
       if (question.question === data.question) {
-        console.log("Playing audio...");
         const audioData = Uint8Array.from(atob(question.audioBlob), (c) =>
           c.charCodeAt(0)
         );

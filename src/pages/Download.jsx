@@ -26,14 +26,12 @@ function Download() {
           `https://www.server.speakeval.org/download_bulk?token=${token}`
         );
         const data = await response.json();
-        console.log("Data: " + JSON.stringify(data));
 
         if (data.error) {
           throw new Error(data.error);
         }
 
         //iterate throught data.participant
-        console.log("Participants: ", data.audioUrl);
         const participantPromises = data.participant.map(
           async (participant, index) => {
             // Create a new object to avoid mutating the original data
@@ -71,7 +69,6 @@ function Download() {
 
         // Now, set the state with the fully populated data
         setParticipants(updatedParticipants);
-        console.log("Updated Participants: ", updatedParticipants);
       } catch (err) {
         setError(err.message || "Failed to fetch participant data");
         toast.error(

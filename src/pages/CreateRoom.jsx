@@ -30,7 +30,6 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
 
   useEffect(() => {
     const fetchConfigs = async () => {
-      console.log("Fetching Configs");
       setIsLoadingConfigs(true);
       try {
         const res = await fetch(
@@ -38,7 +37,6 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
         );
         const parsedData = await res.json();
         setConfigs(parsedData);
-        console.log(parsedData);
       } catch (err) {
         console.error("Error Loading Configs", err);
         toast.error("Error Loading Configs");

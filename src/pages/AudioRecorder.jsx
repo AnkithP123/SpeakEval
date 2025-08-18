@@ -136,8 +136,6 @@ export default function AudioRecorder() {
 
   // Stage transition logic
   const advanceStage = (newStage) => {
-    console.log(`🔄 Advancing from stage '${currentStage}' to '${newStage}'`);
-    console.trace("Stage transition stack trace"); // Add stack trace to see what's calling this
     setCurrentStage(newStage);
 
     // Track stage start time for periodic checks
@@ -146,28 +144,17 @@ export default function AudioRecorder() {
 
   // Reset state for new question
   const resetForNewQuestion = () => {
-    console.log("🔄 Resetting state for new question...");
-
     // Stop speech recognition if active and capture any remaining text
     if (speechRecognition && isListening) {
       // Capture any remaining interim text before stopping
       if (speechRecognition.lastInterimText) {
         setRecognizedText((prev) => {
           const newText = prev + speechRecognition.lastInterimText;
-          console.log(
-            "🎤 Capturing final interim text for new question:",
-            speechRecognition.lastInterimText
-          );
-          console.log(
-            "🎤 Final total recognized text for new question:",
-            newText
-          );
           return newText;
         });
       }
 
       speechRecognition.stop();
-      console.log("🎤 Stopped speech recognition for new question");
     }
 
     // Reset speech recognition states
@@ -242,9 +229,6 @@ export default function AudioRecorder() {
     setIsFullscreen(false);
 
     // Go to initializing to download new audio, then proceed through normal flow
-    console.log(
-      "🔄 New question - going to initializing stage to download audio"
-    );
     advanceStage("initializing");
   };
 
@@ -256,7 +240,6 @@ export default function AudioRecorder() {
   };
 
   const updateSetup = (updates) => {
-    console.log("🔧 Updating setup data:", updates);
     setStageData((prev) => ({
       ...prev,
       setup: {
@@ -338,8 +321,6 @@ export default function AudioRecorder() {
 
   // Check current permissions for room restart optimization
   const checkCurrentPermissions = async () => {
-    console.log("🔍 Checking current permissions for room restart...");
-
     // Check microphone permission
     let microphonePermission = false;
     try {
@@ -349,17 +330,11 @@ export default function AudioRecorder() {
       microphonePermission = true;
       micStream.getTracks().forEach((track) => track.stop()); // Clean up
     } catch (error) {
-      console.log("❌ Microphone permission not available:", error.message);
+      // Microphone permission not available
     }
 
     // Check fullscreen status
     const fullscreenEnabled = !!document.fullscreenElement;
-
-    console.log("🔍 Current permissions:", {
-      microphonePermission,
-      fullscreenEnabled,
-      isRoomRestart: !!lastRoomRestart,
-    });
 
     return { microphonePermission, fullscreenEnabled };
   };
@@ -371,12 +346,6 @@ export default function AudioRecorder() {
     const permissions = await checkCurrentPermissions();
     const bothPermissionsAvailable =
       permissions.microphonePermission && permissions.fullscreenEnabled;
-
-    console.log("🔍 Can skip setup for restart:", {
-      isRoomRestart: !!lastRoomRestart,
-      bothPermissionsAvailable,
-      permissions,
-    });
 
     return bothPermissionsAvailable;
   };
@@ -436,7 +405,6 @@ export default function AudioRecorder() {
       // Try to reconnect with existing token
       const existingToken = tokenManager.getStudentToken();
       if (existingToken) {
-        console.log("🔄 Connecting with stored token...");
         connectForReconnect(existingToken);
       } else {
         console.error("❌ No token available for connection");
@@ -444,13 +412,11 @@ export default function AudioRecorder() {
 
       // Set up event listeners
       const handleRoomStarted = (payload) => {
-        console.log("🎯 Room started:", payload);
         updateStudentStatus("exam_started");
         // Handle room start - could trigger question audio playback
       };
 
       const handleQuestionChange = (payload) => {
-        console.log("🔄 Question changed:", payload);
         questionStarted(payload.questionIndex);
         // Handle question change - reset recording state
         setIsRecording(false);
@@ -464,8 +430,6 @@ export default function AudioRecorder() {
       };
 
       const handleRoomRestart = (payload) => {
-        console.log("🔄 Room restarted:", payload);
-
         // Extract new token and room information - handle multiple formats
         const { newToken, newRoomCode, participant, latestToken } = payload;
 
@@ -482,17 +446,8 @@ export default function AudioRecorder() {
           const tokenInfo = tokenManager.decodeStudentToken(tokenToUse);
           const actualNewRoomCode = roomCodeToUse || tokenInfo?.roomCode;
 
-          console.log("🔄 Room restart comparison:", {
-            currentRoomCode,
-            actualNewRoomCode,
-            roomCodeChanged: currentRoomCode !== actualNewRoomCode,
-            isNewer: isNewerRoomCode(actualNewRoomCode, currentRoomCode),
-          });
-
           // Only proceed if the new room code is actually newer
           if (isNewerRoomCode(actualNewRoomCode, currentRoomCode)) {
-            console.log("🔄 New room code is newer, proceeding with restart");
-
             // Track this room restart
             setLastRoomRestart({
               timestamp: Date.now(),
@@ -506,22 +461,7 @@ export default function AudioRecorder() {
 
             // New question - reset state and continue
             toast.success("New question received - preparing...");
-            console.log("Room code changed, resetting for new question...");
             resetForNewQuestion();
-          } else {
-            console.log(
-              "🔄 Room restart ignored - new room code is not newer than current"
-            );
-            console.log("🔍 Room code analysis:", {
-              current: currentRoomCode,
-              new: actualNewRoomCode,
-              currentSuffix: currentRoomCode
-                ? currentRoomCode.slice(8)
-                : "none",
-              newSuffix: actualNewRoomCode
-                ? actualNewRoomCode.slice(8)
-                : "none",
-            });
           }
         } else {
           console.error("Missing token data from server");
@@ -532,24 +472,19 @@ export default function AudioRecorder() {
       };
 
       const handleParticipantUpdate = (payload) => {
-        console.log("👥 Participant update:", payload);
         // Handle participant status updates
       };
 
       const handleExamStarted = (payload) => {
-        console.log("🎯 Exam started:", payload);
         updateStudentStatus("exam_started");
       };
 
       const handleReconnectNeeded = (payload) => {
-        console.log("🔄 Reconnection needed:", payload);
         // Try to reconnect automatically
         reconnect();
       };
 
       const handleRoomStateSync = (payload) => {
-        console.log("📊 Room state sync received:", payload);
-
         const {
           roomCode,
           participant,
@@ -592,13 +527,6 @@ export default function AudioRecorder() {
         const hasTokenInfo = latestToken || newToken;
 
         if (hasRoomRestartInfo && hasTokenInfo) {
-          console.log("🔄 Room restart detected in state sync:", {
-            roomRestarted,
-            newRoomCode,
-            hasNewToken: !!newToken,
-            hasLatestToken: !!latestToken,
-          });
-
           // Determine which token to use
           const tokenToUse = newToken || latestToken;
 
@@ -610,17 +538,8 @@ export default function AudioRecorder() {
           const newTokenInfo = tokenManager.decodeStudentToken(tokenToUse);
           const actualNewRoomCode = newRoomCode || newTokenInfo?.roomCode;
 
-          console.log("🔍 Room code comparison:", {
-            current: currentRoomCode,
-            new: actualNewRoomCode,
-            changed: currentRoomCode !== actualNewRoomCode,
-            isNewer: isNewerRoomCode(actualNewRoomCode, currentRoomCode),
-          });
-
           // Only proceed if the new room code is actually newer
           if (isNewerRoomCode(actualNewRoomCode, currentRoomCode)) {
-            console.log("🔄 New room code is newer, proceeding with restart");
-
             // Track this room restart
             setLastRoomRestart({
               timestamp: Date.now(),
@@ -630,35 +549,18 @@ export default function AudioRecorder() {
             });
 
             // Always update token and reset for new question
-            console.log(
-              "🔄 Room restart detected, updating token and resetting for new question"
-            );
             tokenManager.setStudentToken(tokenToUse);
 
             toast.success("New question received - preparing...");
             resetForNewQuestion();
             return;
           } else {
-            console.log(
-              "🔄 Room restart ignored - new room code is not newer than current"
-            );
-            console.log("🔍 Room code analysis:", {
-              current: currentRoomCode,
-              new: actualNewRoomCode,
-              currentSuffix: currentRoomCode
-                ? currentRoomCode.slice(8)
-                : "none",
-              newSuffix: actualNewRoomCode
-                ? actualNewRoomCode.slice(8)
-                : "none",
-            });
             return;
           }
         }
 
         // Handle exam started state
         if (examStarted && roomStarted) {
-          console.log("🎯 Exam has started, navigating to record page");
           toast.success("Exam has started");
           navigate("/record");
           return;
@@ -666,7 +568,6 @@ export default function AudioRecorder() {
 
         // Handle room started but not exam
         if (roomStarted && !examStarted) {
-          console.log("📊 Room has started but exam not yet begun");
           // Stay on current page, wait for exam to start
         }
 
@@ -677,15 +578,6 @@ export default function AudioRecorder() {
           const currentRoomCode = currentInfo?.roomCode;
 
           if (currentRoomCode && roomCode !== currentRoomCode) {
-            console.log(
-              "🔄 Room code mismatch detected in state sync - possible room restart"
-            );
-            console.log("🔍 Room code comparison:", {
-              current: currentRoomCode,
-              received: roomCode,
-              changed: true,
-            });
-
             // This might be a room restart - force a reset
             toast.success("New question received - preparing...");
             resetForNewQuestion();
@@ -705,8 +597,6 @@ export default function AudioRecorder() {
 
       // Handle reconnect success
       const handleReconnectSuccess = (payload) => {
-        console.log("🔄 Reconnect success:", payload);
-
         // Silently handle reconnection success - no user notification needed
 
         // Check if this reconnect contains room restart information
@@ -716,7 +606,6 @@ export default function AudioRecorder() {
           payload.newToken ||
           payload.newRoomCode
         ) {
-          console.log("🔄 Reconnect success contains room restart info");
           handleRoomRestart(payload);
         }
       };
@@ -746,8 +635,6 @@ export default function AudioRecorder() {
 
       // Handle being kicked from the room
       const handleKicked = (payload) => {
-        console.log("🚫 Kicked from room:", payload);
-
         // Show kick message to user
         const kickReason =
           payload.reason || "You have been removed from the room";
@@ -773,7 +660,6 @@ export default function AudioRecorder() {
       };
 
       const handleStateSync = (payload) => {
-        console.log("📊 State sync received:", payload);
         // Check if this state sync contains room restart information
         if (
           payload.roomRestarted ||
@@ -781,7 +667,6 @@ export default function AudioRecorder() {
           payload.newToken ||
           payload.newRoomCode
         ) {
-          console.log("🔄 State sync contains room restart info");
           handleRoomStateSync(payload);
         }
       };
@@ -853,9 +738,6 @@ export default function AudioRecorder() {
       ) {
         try {
           // Start recording BEFORE switching to recording stage for minimal delay
-          console.log(
-            "🎙️ Starting recording before stage switch (no thinking time)..."
-          );
           await startRecording();
           updateRecordingData({
             isRecording: true,
@@ -879,9 +761,6 @@ export default function AudioRecorder() {
       if (currentStage === "thinking" && canAdvanceToRecording()) {
         try {
           // Start recording BEFORE switching to recording stage for minimal delay
-          console.log(
-            "🎙️ Starting recording before stage switch (after thinking)..."
-          );
           await startRecording();
           updateRecordingData({
             isRecording: true,
@@ -917,7 +796,6 @@ export default function AudioRecorder() {
       !stageData.audioDownloaded &&
       !stageData.audioDownloadError
     ) {
-      console.log("🎵 Starting audio download...");
       makeResponse();
     }
   }, [currentStage, stageData.audioDownloaded, stageData.audioDownloadError]);
@@ -930,7 +808,6 @@ export default function AudioRecorder() {
       !stageData.audioDownloaded &&
       !stageData.audioDownloadError
     ) {
-      console.log("🎵 Fallback: Starting audio download...");
       makeResponse();
     }
   }, [
@@ -949,9 +826,6 @@ export default function AudioRecorder() {
         !fetching &&
         !stageData.audioDownloaded
       ) {
-        console.log(
-          "🔄 Periodic check: Stuck in initializing, forcing audio download..."
-        );
         makeResponse();
       }
 
@@ -960,9 +834,6 @@ export default function AudioRecorder() {
         Date.now() - (window.stageStartTime || Date.now());
       if (timeInCurrentStage > 30000) {
         // 30 seconds
-        console.log(
-          "🔄 Periodic check: Been in current stage too long, requesting state sync..."
-        );
         // Request state sync from server
         if (window.websocketService) {
           window.websocketService.requestStateSync();
@@ -979,8 +850,6 @@ export default function AudioRecorder() {
   // Start thinking timer when thinking stage begins
   useEffect(() => {
     if (currentStage === "thinking" && thinkingTime > 0) {
-      console.log("🤔 Starting thinking timer...");
-
       const startTime = Date.now();
       const totalDuration = thinkingTime * 1000; // Convert to milliseconds
 
@@ -1038,8 +907,6 @@ export default function AudioRecorder() {
         !stageData.recording.hasRecorded
       ) {
         try {
-          console.log("🎙️ Fallback: Starting recording in recording stage...");
-
           // Start recording as fallback
           await startRecording();
           updateRecordingData({
@@ -1099,8 +966,6 @@ export default function AudioRecorder() {
       if (finalTranscript) {
         setRecognizedText((prev) => {
           const newText = prev + finalTranscript;
-          console.log("🎤 Speech recognized (final):", finalTranscript);
-          console.log("🎤 Total recognized text so far:", newText);
 
           // Update the ref immediately for synchronous access
           finalRecognizedTextRef.current = newText;
@@ -1120,13 +985,11 @@ export default function AudioRecorder() {
 
     // Handle end of recognition
     recognition.onend = () => {
-      console.log("🎤 Speech recognition ended");
       setIsListening(false);
     };
 
     // Handle start of recognition
     recognition.onstart = () => {
-      console.log("🎤 Speech recognition started");
       setIsListening(true);
     };
 
@@ -1154,8 +1017,6 @@ export default function AudioRecorder() {
   const stopSpeechRecognition = () => {
     if (speechRecognition && isListening) {
       speechRecognition.stop();
-      console.log("🎤 Speech recognition stopped manually");
-      console.log("🎤 Final recognized text:", finalRecognizedTextRef.current);
     }
   };
 
@@ -1248,14 +1109,12 @@ export default function AudioRecorder() {
     try {
       // Check if we already have a valid microphone stream
       if (microphoneStream && isStreamValid(microphoneStream)) {
-        console.log("🎤 Using existing microphone stream");
         setHasPermissions(true);
         setError(null);
         setIsError(false);
         return { permissionGranted: true, stream: microphoneStream };
       }
 
-      console.log("🎤 Requesting new microphone stream");
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: false,
@@ -1286,7 +1145,6 @@ export default function AudioRecorder() {
   };
 
   const handleAudioStop = async (blobUrl, blob) => {
-    console.log("Audio recording stopped:", blobUrl);
     const formData = new FormData();
     formData.append("audio", blob, "audio.wav");
 
@@ -1327,7 +1185,6 @@ export default function AudioRecorder() {
       if (tracks.length > 0) {
         const settings = tracks[0].getSettings();
         // displaySurface will be "monitor" if the entire screen was selected
-        console.log("Display surface: ", settings.displaySurface);
         if (
           settings.displaySurface != "window" &&
           settings.displaySurface != "application" &&
@@ -1373,7 +1230,6 @@ export default function AudioRecorder() {
       // Clean up speech recognition
       if (speechRecognition && isListening) {
         speechRecognition.stop();
-        console.log("🎤 Stopped speech recognition on component unmount");
       }
     };
   }, [microphoneStream, screenStream, speechRecognition, isListening]);
@@ -1399,7 +1255,6 @@ export default function AudioRecorder() {
   useEffect(() => {
     if (audioStatus === "granted") {
       // Microphone and camera permissions have been granted
-      console.log("Microphone and camera permissions granted");
     }
   }, [audioStatus]);
 
@@ -1407,7 +1262,6 @@ export default function AudioRecorder() {
   useEffect(() => {
     const reportCheatingViaWebSocket = (messageText) => {
       if (websocketService && websocketService.isConnected) {
-        console.log("🚨 Reporting cheating via WebSocket:", messageText);
         websocketService.reportCheating(messageText);
 
         // Set flags to prevent multiple reports
@@ -1422,26 +1276,12 @@ export default function AudioRecorder() {
     };
 
     const onFullscreenChange = () => {
-      console.log("🖥️ Fullscreen change detected:", {
-        fullscreenElement: !!document.fullscreenElement,
-        isRecording,
-        isFullscreen,
-        finishedRecording,
-        fullscreenViolationReported,
-        currentStage,
-        examStarted,
-        lastRoomRestart: !!lastRoomRestart,
-      });
-
       // If they exit fullscreen during setup, uncheck the fullscreen setup
       if (
         !document.fullscreenElement &&
         currentStage === "setup" &&
         stageData.setup.fullscreenEnabled
       ) {
-        console.log(
-          "🔄 Fullscreen exited during setup - unchecking fullscreen"
-        );
         updateSetup({ fullscreenEnabled: false });
         return;
       }
@@ -1455,7 +1295,6 @@ export default function AudioRecorder() {
         !fullscreenViolationReported &&
         !(lastRoomRestart && currentStage === "initializing") // Don't flag during room restart before continue
       ) {
-        console.log("🚨 Fullscreen exit detected during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
         reportCheatingViaWebSocket("Fullscreen exit detected");
         cuteToast({
@@ -1468,16 +1307,6 @@ export default function AudioRecorder() {
     };
 
     const onVisibilityChange = () => {
-      console.log("👁️ Visibility change detected:", {
-        hidden: document.hidden,
-        isRecording,
-        finishedRecording,
-        tabSwitchReported,
-        currentStage,
-        examStarted,
-        lastRoomRestart: !!lastRoomRestart,
-      });
-
       if (
         document.hidden &&
         examStarted &&
@@ -1485,7 +1314,6 @@ export default function AudioRecorder() {
         !tabSwitchReported &&
         !(lastRoomRestart && currentStage === "initializing") // Don't flag during room restart before continue
       ) {
-        console.log("🚨 Tab switch detected during exam!");
         setTabSwitchReported(true); // Set flag to prevent multiple alerts
         reportCheatingViaWebSocket("Tab switch detected");
         cuteToast({
@@ -1510,7 +1338,6 @@ export default function AudioRecorder() {
         e.key === "Escape" || // Prevent Escape
         e.code === "Escape" // Also check the key code
       ) {
-        console.log("🚫 Blocked key:", e.key);
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
@@ -1532,7 +1359,6 @@ export default function AudioRecorder() {
           document.hasFocus() === false) &&
         !(lastRoomRestart && currentStage === "initializing") // Don't flag during room restart before continue
       ) {
-        console.log("🚨 Focus or fullscreen lost during exam!");
         setFullscreenViolationReported(true); // Set flag to prevent multiple alerts
         reportCheatingViaWebSocket("Focus or fullscreen lost");
         cuteToast({
@@ -1546,14 +1372,12 @@ export default function AudioRecorder() {
 
     const focusCheckInterval = setInterval(checkFocusAndFullscreen, 1000);
 
-    console.log("🔒 Setting up anti-cheat event listeners");
     document.addEventListener("fullscreenchange", onFullscreenChange, true);
     document.addEventListener("visibilitychange", onVisibilityChange, true);
     document.addEventListener("keydown", preventKeyShortcuts, true);
     document.addEventListener("contextmenu", preventContextMenu, true);
 
     return () => {
-      console.log("🔒 Cleaning up anti-cheat event listeners");
       clearInterval(focusCheckInterval);
       document.removeEventListener(
         "fullscreenchange",
@@ -1575,27 +1399,6 @@ export default function AudioRecorder() {
     isFullscreen,
     currentStage, // Monitor during exam stages
     lastRoomRestart, // Monitor room restart state
-  ]);
-
-  // Debug useEffect to monitor anti-cheat state
-  useEffect(() => {
-    console.log("🔒 Anti-cheat state changed:", {
-      currentStage,
-      isRecording,
-      isFullscreen,
-      examStarted,
-      finishedRecording,
-      fullscreenViolationReported,
-      tabSwitchReported,
-    });
-  }, [
-    currentStage,
-    isRecording,
-    isFullscreen,
-    examStarted,
-    finishedRecording,
-    fullscreenViolationReported,
-    tabSwitchReported,
   ]);
 
   const pulse = keyframes`
@@ -1718,18 +1521,9 @@ export default function AudioRecorder() {
       if (receivedData.language) {
         const language = mapLanguageToSpeechRecognition(receivedData.language);
         setExamLanguage(language);
-        console.log(
-          "🌐 Exam language detected:",
-          receivedData.language,
-          "→ Speech recognition language:",
-          language
-        );
       } else {
         // Don't enable speech recognition if language can't be determined
         setExamLanguage(null);
-        console.log(
-          "🌐 No language information provided - speech recognition disabled"
-        );
       }
 
       if (audioUrls && audioUrls.length > 0) {
@@ -1784,18 +1578,15 @@ export default function AudioRecorder() {
 
   const startRecording = async () => {
     const currentTime = Date.now();
-    console.log("🎬 Starting recording - enabling anti-cheat system");
     setIsRecording(true);
     setAudioURL(null);
 
     // Reset recognized text for new recording
     setRecognizedText("");
     finalRecognizedTextRef.current = ""; // Reset ref as well
-    console.log("🎤 Reset recognized text for new recording");
 
     // Ensure fullscreen is active for recording
     if (!document.fullscreenElement) {
-      console.log("🖥️ Entering fullscreen for recording");
       const el = document.documentElement;
       if (el.requestFullscreen) {
         await el.requestFullscreen();
@@ -1804,11 +1595,9 @@ export default function AudioRecorder() {
 
     // Enable fullscreen monitoring
     setIsFullscreen(true);
-    console.log("🔒 Anti-cheat system enabled for recording");
 
     try {
       // Ensure permissions are granted before starting recording
-      console.log("🎤 Checking microphone permissions before recording...");
       const permissionResult = await requestPermissions();
       if (!permissionResult.permissionGranted) {
         console.error("❌ Microphone permission not granted");
@@ -1828,15 +1617,12 @@ export default function AudioRecorder() {
           secondaryButtonText: "Cancel",
         }).then((event) => {
           if (event === "primaryButtonClicked") {
-            console.log("🔄 Reloading page...");
             window.location.reload();
           }
         });
 
         return;
       }
-
-      console.log("✅ Microphone permissions confirmed, starting recording...");
 
       // Start recording - this will use the browser's MediaRecorder API
       // which should work with the permissions we've already granted
@@ -1845,20 +1631,11 @@ export default function AudioRecorder() {
 
         // Start speech recognition only if language is available from API
         if (examLanguage) {
-          console.log(
-            "🎤 Starting speech recognition with language:",
-            examLanguage
-          );
           startSpeechRecognition();
-        } else {
-          console.log(
-            "🎤 Speech recognition disabled - no language information available"
-          );
         }
       } catch (recordingError) {
         console.error("❌ Failed to start audio recording:", recordingError);
         // If recording fails, try to refresh permissions and try again
-        console.log("🔄 Attempting to refresh microphone permissions...");
         setMicrophoneStream(null); // Clear the cached stream
         const refreshResult = await requestPermissions();
         if (refreshResult.permissionGranted) {
@@ -1992,8 +1769,6 @@ export default function AudioRecorder() {
   };
 
   const upload = async (formData) => {
-    console.log("Uploading audio...");
-
     // Update uploading stage data
     updateUploadingData({
       isUploading: true,
@@ -2003,7 +1778,6 @@ export default function AudioRecorder() {
     });
 
     // Disable anti-cheat system after upload starts (exam is complete)
-    console.log("✅ Exam complete - disabling anti-cheat system");
     setIsFullscreen(false);
 
     setError(
@@ -2027,8 +1801,6 @@ export default function AudioRecorder() {
     const info = tokenManager.getStudentInfo();
 
     try {
-      console.log("Uploading to server...");
-
       // First, get a presigned URL for upload
       const uploadUrlResponse = await fetch(
         `https://www.server.speakeval.org/get-recording-upload-url?token=${token}`,
@@ -2074,8 +1846,6 @@ export default function AudioRecorder() {
         throw new Error("Failed to upload to S3");
       }
 
-      console.log("Direct S3 upload successful");
-
       // Update to show upload complete, waiting for transcription
       updateUploadingData({
         isUploading: false,
@@ -2092,10 +1862,6 @@ export default function AudioRecorder() {
         recognitionLanguage: examLanguage,
       };
 
-      console.log("📤 Sending to upload endpoint:", uploadData);
-      console.log("📤 Speech text from ref:", finalRecognizedTextRef.current);
-      console.log("📤 Speech text from state:", recognizedText);
-
       const response = await fetch(
         `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
         {
@@ -2106,7 +1872,6 @@ export default function AudioRecorder() {
           body: JSON.stringify(uploadData),
         }
       );
-      console.log("Response status:", response.status);
 
       if (!response.ok) {
         const retryInterval = setInterval(async () => {
@@ -2133,26 +1898,6 @@ export default function AudioRecorder() {
             const data = await retryResponse.json();
             setDisplayTime("xx:xx");
 
-            // Console log both speech recognition and server transcription results
-            console.log("🎤 Web Speech API Recognition Results (retry):", {
-              recognizedText:
-                finalRecognizedTextRef.current ||
-                recognizedText ||
-                "(no text recognized)",
-              language: examLanguage,
-              textLength: (
-                finalRecognizedTextRef.current ||
-                recognizedText ||
-                ""
-              ).length,
-            });
-
-            console.log("🎵 Server Transcription Results (retry):", {
-              transcription:
-                data.transcription || "(no transcription received)",
-              textLength: data.transcription ? data.transcription.length : 0,
-            });
-
             // Update uploading stage data with transcription
             updateUploadingData({
               isUploading: false,
@@ -2171,22 +1916,6 @@ export default function AudioRecorder() {
       } else {
         setFinishedRecording(true);
         const data = await response.json();
-
-        // Console log both speech recognition and server transcription results
-        console.log("🎤 Web Speech API Recognition Results:", {
-          recognizedText:
-            finalRecognizedTextRef.current ||
-            recognizedText ||
-            "(no text recognized)",
-          language: examLanguage,
-          textLength: (finalRecognizedTextRef.current || recognizedText || "")
-            .length,
-        });
-
-        console.log("🎵 Server Transcription Results:", {
-          transcription: data.transcription || "(no transcription received)",
-          textLength: data.transcription ? data.transcription.length : 0,
-        });
 
         if (data.error) {
           setError(data.error);
@@ -2218,7 +1947,6 @@ export default function AudioRecorder() {
 
       // Handle CORS error with fallback
       if (error.message === "CORS_ERROR") {
-        console.log("Attempting server-side upload fallback...");
         try {
           const fallbackResponse = await fetch(
             `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
@@ -2232,26 +1960,6 @@ export default function AudioRecorder() {
             const data = await fallbackResponse.json();
             setFinishedRecording(true);
             setDisplayTime("xx:xx");
-
-            // Console log both speech recognition and server transcription results
-            console.log("🎤 Web Speech API Recognition Results (fallback):", {
-              recognizedText:
-                finalRecognizedTextRef.current ||
-                recognizedText ||
-                "(no text recognized)",
-              language: examLanguage,
-              textLength: (
-                finalRecognizedTextRef.current ||
-                recognizedText ||
-                ""
-              ).length,
-            });
-
-            console.log("🎵 Server Transcription Results (fallback):", {
-              transcription:
-                data.transcription || "(no transcription received)",
-              textLength: data.transcription ? data.transcription.length : 0,
-            });
 
             // Update uploading stage data with transcription
             updateUploadingData({
@@ -2338,31 +2046,15 @@ export default function AudioRecorder() {
   };
 
   const stopRecording = () => {
-    console.log("⏹️ Stopping recording - triggering upload");
     setStopped(true);
     setIsRecording(false);
 
     // Stop speech recognition and log final text after a small delay
-    console.log("🎤 Stopping speech recognition...");
 
     // Capture current recognized text before stopping recognition
     const currentRecognizedText = recognizedText;
-    console.log(
-      "🎤 Current recognized text before stopping:",
-      currentRecognizedText
-    );
 
     stopSpeechRecognition();
-
-    // Log final text with a small delay to ensure state updates are processed
-    setTimeout(() => {
-      const finalText =
-        finalRecognizedTextRef.current ||
-        recognizedText ||
-        currentRecognizedText;
-      console.log("🎤 Final recognized speech text after stopping:", finalText);
-      console.log("🎤 Text length:", finalText.length);
-    }, 100);
 
     // Stop the media recorders - this will trigger handleAudioStop
     stopAudioRecording();
@@ -2380,7 +2072,6 @@ export default function AudioRecorder() {
 
     // Disable fullscreen monitoring when recording stops
     setIsFullscreen(false);
-    console.log("🔒 Anti-cheat system disabled");
 
     // Notify server via WebSocket
     wsStopRecording();
@@ -2597,9 +2288,6 @@ export default function AudioRecorder() {
                             const canSkipSetup = await canSkipSetupForRestart();
 
                             if (canSkipSetup) {
-                              console.log(
-                                "🚀 Room restart detected with permissions available - skipping setup"
-                              );
                               // Update setup data with current permissions
                               const permissions =
                                 await checkCurrentPermissions();
@@ -2615,7 +2303,6 @@ export default function AudioRecorder() {
                               setExamStarted(true);
                               advanceStage("audio_play");
                             } else {
-                              console.log("🔄 Proceeding to setup stage");
                               advanceStage("setup");
                             }
                           }}
@@ -2773,16 +2460,12 @@ export default function AudioRecorder() {
                     {!stageData.setup.microphonePermission && (
                       <button
                         onClick={async () => {
-                          console.log("🎤 Granting microphone permission...");
                           setSetupLoading((prev) => ({
                             ...prev,
                             microphone: true,
                           }));
                           const perms = await requestPermissions();
                           if (perms.permissionGranted) {
-                            console.log(
-                              "✅ Microphone permission granted, updating setup"
-                            );
                             updateSetup({ microphonePermission: true });
                           }
                           setSetupLoading((prev) => ({
@@ -2896,17 +2579,12 @@ export default function AudioRecorder() {
                     {!stageData.setup.fullscreenEnabled && (
                       <button
                         onClick={async () => {
-                          console.log("🖥️ Entering fullscreen...");
                           setSetupLoading((prev) => ({
                             ...prev,
                             fullscreen: true,
                           }));
-                          console.log(
-                            "🖥️ Entering fullscreen - starting monitoring"
-                          );
                           setIsFullscreen(true); // Enable fullscreen monitoring
                           enterFullscreen();
-                          console.log("✅ Fullscreen enabled, updating setup");
                           updateSetup({ fullscreenEnabled: true });
                           setSetupLoading((prev) => ({
                             ...prev,
@@ -2951,9 +2629,6 @@ export default function AudioRecorder() {
                   {canAdvanceToAudioPlay() && (
                     <button
                       onClick={() => {
-                        console.log(
-                          "🎬 Starting anti-cheat system for question"
-                        );
                         setIsFullscreen(true); // Enable fullscreen monitoring
                         setExamStarted(true); // Mark exam as started
                         advanceStage("audio_play");

@@ -109,8 +109,6 @@ function RoomPanel({ roomCode, userId, config, setRoomCodes }) {
           return;
         }
         setParticipants(data.members);
-        console.log("Data: ", data.cheaters ? data.cheaters.length : "None");
-        console.log("Cheaters: ", cheaters ? cheaters.length : "None");
         const newCheaters = data.cheaters
           ? data.cheaters.filter((cheater) => !cheaters.includes(cheater))
           : [];
@@ -359,7 +357,6 @@ function RoomPanel({ roomCode, userId, config, setRoomCodes }) {
         setQuestionsGiven((prev) => prev + 1);
         setRoomCodes(data.newRoomCode);
         roomCode = data.newRoomCode;
-        console.log("New: " + roomCode);
         setRoomStarted(true);
       }
     });
@@ -383,7 +380,6 @@ function RoomPanel({ roomCode, userId, config, setRoomCodes }) {
       // Use the complete new room code from the response
       if (data.newRoomCode) {
         setRecordingRoomCode(data.newRoomCode);
-        console.log("New recording room code:", data.newRoomCode);
       }
 
       // Increment the question number
@@ -872,7 +868,9 @@ function RoomPanel({ roomCode, userId, config, setRoomCodes }) {
           </span>
         </div>
 
-        <div className={`min-h-60 ${roomStarted ? "-translate-y-[110px]" : ""}`}>
+        <div
+          className={`min-h-60 ${roomStarted ? "-translate-y-[110px]" : ""}`}
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {cheaters.map((cheater, index) => (
               <ProfileCard

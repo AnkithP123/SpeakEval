@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // For navigation
-import { FaTimes } from 'react-icons/fa'; // Close icon
-import UpgradePanel from '../components/UpgradePanel';
-import TeacherPin from './TeacherPin'; // Page for teacher pin entry
-import { cuteAlert } from 'cute-alert';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // For navigation
+import { FaTimes } from "react-icons/fa"; // Close icon
+import UpgradePanel from "../components/UpgradePanel";
+import TeacherPin from "./TeacherPin"; // Page for teacher pin entry
+import { cuteAlert } from "cute-alert";
+import { toast } from "react-toastify";
 
 function Upgrade({ onClose, doc }) {
   const [showPinPage, setShowPinPage] = useState(false);
@@ -18,19 +18,17 @@ function Upgrade({ onClose, doc }) {
     setTimeout(() => setInitialRender(false), 100); // Start the animation after the component mounts
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         handleClose();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    if (doc)
-      doc.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    if (doc) doc.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      if (doc)
-        doc.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      if (doc) doc.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 
@@ -42,69 +40,68 @@ function Upgrade({ onClose, doc }) {
   const proceedToCardPage = (teacherPin) => {
     setShowPinPage(false); // Hide the pin entry page
     // Redirect to card payment page, passing both the subscription data and teacher pin
-    navigate('/card-payment', { state: { subscriptionData, teacherPin } });
+    navigate("/card-payment", { state: { subscriptionData, teacherPin } });
   };
 
   const sendRequest = async (username) => {
     setShowPinPage(false); // Show the pin entry page if subscribing
-    document.documentElement.style.setProperty('cute-alert-z-index', 10000);
-    document.documentElement.style.setProperty('-cute-alert-z-index', 10000);
-    document.documentElement.style.setProperty('--cute-alert-z-index', 10000);
+    document.documentElement.style.setProperty("cute-alert-z-index", 10000);
+    document.documentElement.style.setProperty("-cute-alert-z-index", 10000);
+    document.documentElement.style.setProperty("--cute-alert-z-index", 10000);
     cuteAlert({
-        type: 'success',
-        title: 'Login Successful',
-        description: 'On the payment page, you will need to enter the email address associated with your account, or you will not receive the subscription. Subscriptions may take up to an hour to activate.',
-        primaryButtonText: 'OK',
-        secondaryButtonText: 'Cancel',
+      type: "success",
+      title: "Login Successful",
+      description:
+        "On the payment page, you will need to enter the email address associated with your account, or you will not receive the subscription. Subscriptions may take up to an hour to activate.",
+      primaryButtonText: "OK",
+      secondaryButtonText: "Cancel",
     }).then(async (event) => {
-        if (event == 'primaryButtonClicked') {
-          try {
-            const response = await fetch('https://www.server.speakeval.org/create-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    subscriptionData,
-                    username,
-                }),
-                
+      if (event == "primaryButtonClicked") {
+        try {
+          const response = await fetch(
+            "https://www.server.speakeval.org/create-session",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                subscriptionData,
+                username,
+              }),
+            }
+          );
+
+          const result = await response.json();
+
+          // Redirect to success page if payment is successful
+          if (result.error) {
+            console.error(result.error);
+            toast.error("Error processing payment: " + result.error);
+            cuteAlert({
+              type: "error",
+              title: "An error occurred",
+              description: result.error,
+              primaryButtonText: "OK",
             });
-      
-            const result = await response.json();
-            
-            console.log(result);
-      
-            // Redirect to success page if payment is successful
-            if (result.error) {
-                console.error(result.error);
-                toast.error('Error processing payment: ' + result.error);
-                cuteAlert({
-                    type: 'error',
-                    title: 'An error occurred',
-                    description: result.error,
-                    primaryButtonText: 'OK',
-                });
-                return;
-            }
-      
-            if (result.paymentLinkUrl) {
-              window
-                .open(result.paymentLinkUrl, '_blank', 'noopener,noreferrer');
-            }
-      
-          } catch (err) {
-              console.error('Error processing payment:', err);
-              cuteAlert({
-                  type: 'error',
-                  title: 'An error occurred',
-                  description: 'Error processing request',
-                  primaryButtonText: 'OK'
-              })
-          }      
+            return;
+          }
+
+          if (result.paymentLinkUrl) {
+            window.open(result.paymentLinkUrl, "_blank", "noopener,noreferrer");
+          }
+        } catch (err) {
+          console.error("Error processing payment:", err);
+          cuteAlert({
+            type: "error",
+            title: "An error occurred",
+            description: "Error processing request",
+            primaryButtonText: "OK",
+          });
         }
+      }
     });
-  }
+  };
 
   const handleClose = () => {
     setClosing(true); // Trigger closing animation
@@ -118,7 +115,9 @@ function Upgrade({ onClose, doc }) {
     <>
       {show ? (
         <div
-          className={`fixed inset-0 flex justify-center items-center overflow-auto ${closing ? '' : "bg-black bg-opacity-70 z-50"}`}
+          className={`fixed inset-0 flex justify-center items-center overflow-auto ${
+            closing ? "" : "bg-black bg-opacity-70 z-50"
+          }`}
           onClick={handleClose}
           style={{ zIndex: 10000 }} // Increase z-index
         >
@@ -133,15 +132,29 @@ function Upgrade({ onClose, doc }) {
               />
             ) : (
               <div className="relative">
-                <div className={`relative bg-blue-200 bg-opacity-90 p-12 rounded-2xl shadow-2xl flex space-x-8 transition-transform duration-300 ${closing ? 'transform translate-y-full' : initialRender ? 'transform translate-y-full' : 'transform translate-y-0'}`} style={{ marginTop: '200px' }}>
-                  {closing ? null : <button
-                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-                    onClick={handleClose}
-                  >
-                    <FaTimes size={24} />
-                  </button>}
+                <div
+                  className={`relative bg-blue-200 bg-opacity-90 p-12 rounded-2xl shadow-2xl flex space-x-8 transition-transform duration-300 ${
+                    closing
+                      ? "transform translate-y-full"
+                      : initialRender
+                      ? "transform translate-y-full"
+                      : "transform translate-y-0"
+                  }`}
+                  style={{ marginTop: "200px" }}
+                >
+                  {closing ? null : (
+                    <button
+                      className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                      onClick={handleClose}
+                    >
+                      <FaTimes size={24} />
+                    </button>
+                  )}
                   <UpgradePanel onSubscribe={handleSubscribe} />
-                  <UpgradePanel basicCard={false} onSubscribe={handleSubscribe} />
+                  <UpgradePanel
+                    basicCard={false}
+                    onSubscribe={handleSubscribe}
+                  />
                 </div>
               </div>
             )}

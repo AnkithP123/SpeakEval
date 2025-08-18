@@ -228,7 +228,6 @@ const Config = ({
       if (!isUpdate) return;
 
       try {
-        console.log("Fetching Configs");
         setIsLoadingConfigs(true);
         const res = await fetch(
           `https://www.server.speakeval.org/getconfigs?pin=${userId}`
@@ -720,7 +719,6 @@ const Config = ({
 
   const handleConfigClick = (config, autoFillSelected = true) => {
     let rubric2 = config.rubric;
-    console.log("Config clicked:", config);
 
     if (autofillOptions.rubric) {
       if (config.rubric && config.rubric.includes("|^^^|")) {

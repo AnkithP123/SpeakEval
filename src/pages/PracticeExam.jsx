@@ -23,8 +23,6 @@ export default function PracticeExam() {
     const token = tokenManager.getStudentToken()
     const info = tokenManager.getStudentInfo()
 
-    console.log("info", info)
-
     if (!info || info.type !== "practice_participant") {
       setError("Invalid session for practice exam")
       setIsLoading(false)
@@ -56,7 +54,6 @@ export default function PracticeExam() {
   }
 
   const handleComplete = (recordings) => {
-    console.log("Practice exam completed", recordings)
     setExamCompleted(true)
     party.confetti(document.body, {
       count: party.variation.range(100, 200),

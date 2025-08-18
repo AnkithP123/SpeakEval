@@ -13,7 +13,6 @@ function JoinRoom({ rooms, pin }) {
 
   const handleGrade = async () => {
     if (roomCode) {
-      console.log("Grading room with code:", roomCode)
       setGrading(true)
     } else {
       toast.error("Please fill out the room code field.")
@@ -29,7 +28,6 @@ function JoinRoom({ rooms, pin }) {
   const goToRoom = (code) => {
     code *= 1000
     code += 1
-    console.log("Going to room with code:", code)
     setRoomCode(code)
     setGrading(true)
   }

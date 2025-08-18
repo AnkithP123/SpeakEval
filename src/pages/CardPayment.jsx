@@ -19,7 +19,7 @@ const CardPaymentPanel = () => {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
 
-    console.log(subscriptionData, teacherPin);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -45,7 +45,6 @@ const CardPaymentPanel = () => {
             console.error('[Error]', error);
             setLoading(false); // Stop loading if there is an error
         } else {
-            console.log('[PaymentMethod]', paymentMethod);
 
             if (subscriptionData.planType === 'subscribe') {
             // Send the payment method, subscription data, teacherPin, and email to your backend
@@ -64,8 +63,6 @@ const CardPaymentPanel = () => {
                     });
 
                     const result = await response.json();
-                    
-                    console.log(result);
 
                     // Redirect to success page if payment is successful
                     if (result.error) {
@@ -110,8 +107,6 @@ const CardPaymentPanel = () => {
                     });
 
                     const result = await response.json();
-                    
-                    console.log(result);
 
                     // Redirect to success page if payment is successful
                     if (result.error) {
@@ -132,7 +127,7 @@ const CardPaymentPanel = () => {
                         title: 'Payment Successful',
                         description: 'You have successfully purchased ' + subscriptionData.tier + '. ' + result.message,
                         primaryButtonText: 'OK'
-                    });
+                        });
                 } catch (err) {
                     console.error('Error processing payment:', err);
                 } finally {

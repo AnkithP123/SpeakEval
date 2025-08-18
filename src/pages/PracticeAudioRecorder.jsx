@@ -198,8 +198,6 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     }
 
     try {
-      console.log("🚀 Starting batch upload of", recordings.length, "recordings...");
-      
       // Step 1: Get presigned URLs for all recordings
       const uploadPromises = recordings.map(async (recording, index) => {
         try {
@@ -232,7 +230,6 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
             throw new Error(`Failed to upload question ${recording.questionIndex}`);
           }
           
-          console.log(`✅ Uploaded question ${recording.questionIndex}`);
           return { success: true, questionIndex: recording.questionIndex };
         } catch (error) {
           console.error(`❌ Failed to upload question ${recording.questionIndex}:`, error);
@@ -269,7 +266,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
         );
         
         if (notifyResponse.ok) {
-          console.log("✅ All uploads completed and server notified");
+          // All uploads completed and server notified
         } else {
           console.error("Failed to notify server of upload completion");
         }

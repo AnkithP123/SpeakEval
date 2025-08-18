@@ -115,11 +115,9 @@ export const useRealTimeCommunication = () => {
 
   // Enhanced reconnection
   const reconnect = useCallback(async () => {
-    console.log('🔄 Attempting to reconnect...');
     const token = tokenManager.getStudentToken();
     
     if (token) {
-      console.log('🔄 Reconnecting with token...');
       await connectForReconnect(token);
     } else {
       console.error('❌ No token available for reconnection');

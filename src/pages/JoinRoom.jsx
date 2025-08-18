@@ -52,17 +52,13 @@ function JoinRoomContent() {
           return;
         }
 
-        console.log('🔍 Checking for existing token for rejoin...');
-        
         // Validate the token with the server
         const response = await fetch(`https://www.server.speakeval.org/validate_token?token=${existingToken}`);
         const data = await response.json();
         
         if (data.valid) {
-          console.log('✅ Valid token found for rejoin:', data);
           setRejoinData(data);
         } else {
-          console.log('❌ Token validation failed:', data.error);
           // Clear invalid token
           tokenManager.clearStudentToken();
         }
@@ -93,8 +89,6 @@ function JoinRoomContent() {
     setLoading(true);
     
     try {
-      console.log('🔄 Attempting to rejoin room:', rejoinData.roomCode);
-      
       // Connect using the existing token
       await connectForJoin(rejoinData.roomCode, rejoinData.participant);
       
@@ -129,31 +123,16 @@ function JoinRoomContent() {
 
   // WebSocket event handlers - defined outside to be accessible in cleanup
   const handleJoinSuccess = async (payload) => {
-    console.log('✅ Join room successful:', payload);
-    
     // Store the JWT token and session info
     const token = payload.token;
     const roomCode = Number.parseInt(code.toString() + "001");
     const participantName = useGoogle ? googleName : name;
-    
-    console.log('🔍 Storing token:', {
-      hasToken: !!token,
-      tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
-      tokenLength: token ? token.length : 0
-    });
     
     tokenManager.setStudentToken(token);
     tokenManager.setRoomSession({
       roomCode: roomCode,
       participantName: participantName,
       timestamp: Date.now()
-    });
-    
-    console.log("Stored token and session info");
-    console.log('🔍 TokenManager state after storage:', {
-      isAuthenticated: tokenManager.isAuthenticated(),
-      studentInfo: tokenManager.getStudentInfo(),
-      roomSession: tokenManager.getRoomSession()
     });
     
     // Check if student has already recorded for this question
@@ -179,19 +158,16 @@ function JoinRoomContent() {
   };
   
   const handleJoinError = (payload) => {
-    console.log('❌ Join room failed:', payload);
     toast.error(payload.message || "Failed to join room");
     setLoading(false);
   };
   
   const handleConnectionError = (payload) => {
-    console.log('❌ Connection error:', payload);
     toast.error(payload.message || "Connection failed");
     setLoading(false);
   };
 
   const handleReconnectSuccess = (payload) => {
-    console.log('✅ Reconnect success:', payload);
     // Silently handle reconnection success - no user notification needed
   };
 
@@ -203,7 +179,6 @@ function JoinRoomContent() {
   };
 
   const handleKicked = (payload) => {
-    console.log('🚫 Kicked from room:', payload);
     const kickReason = payload.reason || "You have been removed from the room";
     toast.error(kickReason);
     
@@ -224,26 +199,16 @@ function JoinRoomContent() {
     const participantName = useGoogle ? googleName : name;
 
     if (participantName && roomCode) {
-      console.log(
-        "Joining room with name:",
-        participantName,
-        "and room code:",
-        roomCode
-      );
-
       try {
         // Check if we have a stored token for reconnection
         const existingToken = tokenManager.getStudentToken();
         
         if (existingToken) {
-          console.log('🔄 Reconnecting with existing token...');
           // For reconnection, we'll use the token-based connection
           // But since this is the join page, we should do a fresh join
-          console.log('🔄 Fresh join requested on join page');
         }
         
         // Add event listeners
-        console.log('🎧 Adding event listeners...');
         onWebSocketEvent('join_room_success', handleJoinSuccess);
         onWebSocketEvent('join_room_error', handleJoinError);
         onWebSocketEvent('connection_error', handleConnectionError);
@@ -252,10 +217,7 @@ function JoinRoomContent() {
         onWebSocketEvent('kicked', handleKicked);
         
         // Connect and join room in one step
-        console.log('📤 Connecting and joining room...');
         await connectForJoin(roomCode, participantName, useGoogle, email);
-        
-        console.log('📤 Join request sent');
         
       } catch (error) {
         console.error('❌ Failed to connect and join:', error);
@@ -264,7 +226,6 @@ function JoinRoomContent() {
       }
     } else {
       setLoading(false);
-      console.log("Please fill out both fields.");
       toast.error("Please fill out all required fields.");
     }
   };
@@ -282,10 +243,8 @@ function JoinRoomContent() {
   };
 
   const handleGoogleSuccess = (response) => {
-    console.log("Google sign-in successful:", response);
     try {
       const decoded = jwtDecode.jwtDecode(response.credential);
-      console.log("Google sign-in successful:", decoded);
       if (decoded.email.endsWith(ending)) {
         setGoogleName(decoded.name);
         setEmail(decoded.email);
@@ -300,7 +259,6 @@ function JoinRoomContent() {
   };
 
   const handleGoogleFailure = (response) => {
-    console.log("Google sign-in failed:", response);
     toast.error("Google sign-in failed. Please try again.");
   };
 

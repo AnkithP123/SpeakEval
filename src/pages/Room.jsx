@@ -40,34 +40,17 @@ function Room() {
     const token = tokenManager.getStudentToken();
     const info = tokenManager.getStudentInfo();
     setStudentInfo(info);
-    console.log("Info: ", info);
 
     if (!info || info.roomCode != roomCode) {
-      console.log("Info Roomcode: ", info.roomCode);
-      console.log("Current Roomcode: ", roomCode);
       toast.error("Invalid session for this room");
       tokenManager.clearAll();
       return navigate("/join-room");
     }
 
-    console.log(
-      `Token: ${token}, Participant: ${info.participant}, RoomCode: ${roomCode}`
-    );
-
     // Try to connect with stored token if available
     const tokenForConnection = tokenManager.getStudentToken();
-    console.log("🔍 Room component token check:", {
-      hasToken: !!tokenForConnection,
-      tokenPreview: tokenForConnection
-        ? tokenForConnection.substring(0, 20) + "..."
-        : "none",
-      tokenLength: tokenForConnection ? tokenForConnection.length : 0,
-      isAuthenticated: tokenManager.isAuthenticated(),
-      studentInfo: tokenManager.getStudentInfo(),
-    });
 
     if (tokenForConnection && !isConnected) {
-      console.log("🔄 Connecting with stored token...");
       connectForReconnect(tokenForConnection);
     } else if (!tokenForConnection) {
       console.error("❌ No token available for connection in Room component");
@@ -102,7 +85,6 @@ function Room() {
 
     // Set up WebSocket event listeners
     const handleExamStarted = (payload) => {
-      console.log("🎯 Exam started:", payload);
       toast.success("Exam has started");
 
       // Check if student has already recorded before navigating
@@ -115,8 +97,6 @@ function Room() {
     };
 
     const handleRoomRestart = (payload) => {
-      console.log("🔄 Room restarted:", payload);
-
       // Extract new token and room information
       const { newToken, newRoomCode, participant } = payload;
 
@@ -125,22 +105,14 @@ function Room() {
         const currentInfo = tokenManager.getStudentInfo();
         const currentRoomCode = currentInfo?.roomCode;
 
-        console.log("🔄 Room restart comparison:", {
-          currentRoomCode,
-          newRoomCode,
-          roomCodeChanged: currentRoomCode !== newRoomCode,
-        });
-
         // Only reload if room code actually changed
         if (currentRoomCode !== newRoomCode) {
           // Update token in localStorage
           tokenManager.setStudentToken(newToken);
 
           toast.success("Room restarted with new question - reloading page!");
-          console.log("Room code changed, reloading page...");
           window.location.reload();
         } else {
-          console.log("Room code unchanged, skipping reload");
           // Still update the token but don't reload
           tokenManager.setStudentToken(newToken);
         }
@@ -152,18 +124,15 @@ function Room() {
     };
 
     const handleParticipantUpdate = (payload) => {
-      console.log("👥 Participant update:", payload);
       // Handle participant status updates
     };
 
     const handleReconnectNeeded = (payload) => {
-      console.log("🔄 Reconnection needed:", payload);
       // Try to reconnect automatically
       reconnect();
     };
 
     const handleReconnectSuccess = (payload) => {
-      console.log("✅ Reconnect success:", payload);
       // Silently handle reconnection success - no user notification needed
     };
 
@@ -187,7 +156,6 @@ function Room() {
     };
 
     const handleKicked = (payload) => {
-      console.log("🚫 Kicked from room:", payload);
       const kickReason =
         payload.reason || "You have been removed from the room";
       toast.error(kickReason);
@@ -210,18 +178,14 @@ function Room() {
     };
 
     const handleRoomStatusUpdate = (payload) => {
-      console.log("📊 Room status update:", payload);
       // Handle room status updates
     };
 
     const handleStudentStatusUpdate = (payload) => {
-      console.log("👤 Student status update:", payload);
       // Handle student status updates
     };
 
     const handleRoomStateSync = (payload) => {
-      console.log("📊 Room state sync received:", payload);
-
       const {
         roomCode,
         participant,
@@ -234,8 +198,6 @@ function Room() {
 
       // Handle room restart with latest token - only reload if room code changed
       if (roomRestarted && latestToken) {
-        console.log("🔄 Room was restarted, checking if room code changed");
-
         // Get current room info from token
         const currentTokenInfo = tokenManager.getStudentInfo();
         const currentRoomCode = currentTokenInfo?.roomCode;
@@ -244,22 +206,14 @@ function Room() {
         const newTokenInfo = tokenManager.decodeStudentToken(latestToken);
         const newRoomCode = newTokenInfo?.roomCode;
 
-        console.log("🔍 Room code comparison:", {
-          current: currentRoomCode,
-          new: newRoomCode,
-          changed: currentRoomCode !== newRoomCode,
-        });
-
         // Only reload if the room code actually changed
         if (currentRoomCode !== newRoomCode) {
-          console.log("🔄 Room code changed, updating token and reloading");
           tokenManager.setStudentToken(latestToken);
 
           toast.success("Room restarted with new question - reloading page!");
           window.location.reload();
           return;
         } else {
-          console.log("🔄 Room code unchanged, updating token without reload");
           tokenManager.setStudentToken(latestToken);
           return;
         }
@@ -267,7 +221,6 @@ function Room() {
 
       // Handle exam started state
       if (examStarted && roomStarted) {
-        console.log("🎯 Exam has started, navigating to record page");
         toast.success("Exam has started");
         navigate("/record");
         return;
@@ -275,7 +228,6 @@ function Room() {
 
       // Handle room started but not exam
       if (roomStarted && !examStarted) {
-        console.log("📊 Room has started but exam not yet begun");
         // Stay on current page, wait for exam to start
       }
     };

@@ -140,7 +140,6 @@ function ProfileCard({
   }, [effectiveName]);
 
   const fetchAudio = useCallback(async () => {
-    console.log("fetching audio");
     let audioUrl;
 
     try {
@@ -155,12 +154,10 @@ function ProfileCard({
           null,
           async () => {
             try {
-              console.log("Audio not fetched, fetching now..." + audio);
               const audios = await fetch(
                 `https://www.server.speakeval.org/fetch_audio?token=${audio}`
               );
               const audiosJson = await audios.json();
-              console.log("Audio fetched:", audiosJson);
               if (!audios.ok) {
                 throw new Error("Failed to fetch audio: " + audiosJson.error);
               }
@@ -209,8 +206,7 @@ function ProfileCard({
         answerAudioPlayer.src = audioUrl;
       }
     } catch (error) {
-      console.log("Error loading audio:", error);
-      console.log(effectiveName);
+      // Error loading audio
     }
   }, [effectiveCode, effectiveName, effectiveAudio, audio]);
 
@@ -291,7 +287,6 @@ function ProfileCard({
   }
 
   const handlePlay = async () => {
-    console.log("Fetch Audio: ", fetchAudio);
     if (!effectiveName)
       return toast.error("Participant has not completed the task");
     if (effectiveText === "" && !downloadMode) {
@@ -333,15 +328,11 @@ function ProfileCard({
       return toast.error("Participant has not completed the task");
     try {
       const decoded = atob(effectiveAudio);
-      console.log("Decoded:", decoded);
     } catch (e) {
-      console.log("Not base64:", e.message);
-      console.log("Audio not fetched, fetching now..." + audio);
       const audios = await fetch(
         `https://www.server.speakeval.org/fetch_audio?token=${audio}`
       );
       const audiosJson = await audios.json();
-      console.log("Audio fetched:", audiosJson);
       if (!audios.ok) {
         return toast.error("Failed to fetch audio: " + audiosJson.error);
       }
@@ -594,7 +585,6 @@ Total Score: ${totalScore}${
 Teacher's Comment: ${comment}`
         : ""
     }`;
-    console.log("Bobs" + localVoiceComment);
     onShowEmailModal({
       studentName: effectiveName,
       emailBody: autoEmail,

@@ -45,7 +45,6 @@ const FeedbackPage = () => {
           }),
         }
       );
-      console.log("Response:", response);
       if (response.message) {
         toast.success("Feedback submitted successfully");
         setSubmitted(true);

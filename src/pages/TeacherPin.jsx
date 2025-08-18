@@ -26,7 +26,6 @@ function TeacherLogin({ subscriptionData, onPinEntered }) {
                 return;
             }
             else {
-                console.log(parsedData);
                 onPinEntered(username)
             }
         } catch (err) {

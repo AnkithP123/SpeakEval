@@ -22,12 +22,10 @@ export default function Home({ getPin }) {
 
   const handleImportQuestions = async () => {
     try {
-      console.log("Fetching autofill data...");
       setPopupVisible(true);
       const configs = await fetch(
         `https://www.server.speakeval.org/getconfigs?pin=${getPin()}`
       );
-      console.log("Fetched autofill data:", configs);
       const configsList = await configs.json();
       setSelectedConfig(configsList);
     } catch (error) {
@@ -42,7 +40,6 @@ export default function Home({ getPin }) {
   };
 
   const handleConfigClick = (config) => {
-    console.log("Selected config:", config);
     let samplearr = [];
     for (let question of config.questions) {
       samplearr.push({
@@ -56,7 +53,6 @@ export default function Home({ getPin }) {
     let rubric2 = config.rubric;
     const categories = rubric2.split("|;;|").map((category) => {
       const [name, descriptionsString] = category.split("|:::|");
-      console.log(descriptionsString);
       const descriptions = descriptionsString
         ? descriptionsString.split("|,,|")
         : Array(5).fill("");

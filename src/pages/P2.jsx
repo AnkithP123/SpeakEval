@@ -90,7 +90,6 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
             if (mediaRecorder.current && mediaRecorder.current.state === "recording") {
                 mediaRecorder.current.stop()
             }
-            console.log("Cleanup")
             if (questionAudioRef.current)
                 questionAudioRef.current.pause()
         }
@@ -177,11 +176,9 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
             const audioBlob = new Blob([audioData], { type: "audio/webm" })
             const audioUrl = URL.createObjectURL(audioBlob)
             setQuestionAudioBlobURL(audioUrl)
-            console.log("questionAudioBlobURL", audioUrl)
         }
 
         const playAudio = () => {
-            console.log("playAudio")
             if (questionAudioRef.current) {
                 questionAudioRef.current.currentTime = 0
                 questionAudioRef.current.play()
@@ -189,7 +186,6 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                 setIsPlaying(true)   
                 if (questionAudioRef.current) {
                     questionAudioRef.current.onloadedmetadata = () => {
-                        console.log('Hi')
                         questionAudioRef.current.play()
                         setWaiting(false)
                         setIsPlaying(true)

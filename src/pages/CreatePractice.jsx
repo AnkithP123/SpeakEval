@@ -29,7 +29,6 @@ function CreatePractice({ getPin }) {
   }, [loggedIn, navigate]);
 
   const fetchConfigs = async () => {
-    console.log("Fetching Configs");
     setIsLoadingConfigs(true);
     try {
       const res = await fetch(

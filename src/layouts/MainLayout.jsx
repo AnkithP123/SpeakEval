@@ -11,10 +11,6 @@ function isMobileDevice() {
 
   const mobileRegex =
     /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
-  console.log(
-    "Mobile device check:",
-    mobileRegex.test(userAgent.toLowerCase())
-  );
   return mobileRegex.test(userAgent.toLowerCase());
 }
 

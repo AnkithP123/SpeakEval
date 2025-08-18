@@ -10,14 +10,14 @@ class UrlCache {
 
   // Generate a cache key
   getCacheKey(type, id, index = null) {
-    return `${type}:${id}${index !== null ? `:${index}` : ''}`;
+    return `${type}:${id}${index !== null ? `:${index}` : ""}`;
   }
 
   // Check if cached URL is still valid
   isCacheValid(key) {
     const cached = this.cache.get(key);
     if (!cached) return false;
-    
+
     const now = Date.now();
     return now - cached.timestamp < this.cacheExpiry;
   }
@@ -35,14 +35,14 @@ class UrlCache {
   setCachedUrl(key, url) {
     this.cache.set(key, {
       url,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
   // Get URL with caching
   async getUrl(type, id, index = null, fetchFunction) {
     const key = this.getCacheKey(type, id, index);
-    
+
     // Check cache first
     const cachedUrl = this.getCachedUrl(key);
     if (cachedUrl) {
@@ -62,15 +62,14 @@ class UrlCache {
 
   // Preload multiple URLs
   async preloadUrls(items, fetchFunction) {
-    const promises = items.map(item => 
+    const promises = items.map((item) =>
       this.getUrl(item.type, item.id, item.index, () => fetchFunction(item))
     );
-    
+
     try {
       await Promise.all(promises);
-      console.log(`Preloaded ${items.length} URLs`);
     } catch (error) {
-      console.error('Error preloading URLs:', error);
+      console.error("Error preloading URLs:", error);
     }
   }
 
@@ -87,14 +86,14 @@ class UrlCache {
       for (const [key, cached] of this.cache.entries()) {
         if (now - cached.timestamp > this.refreshThreshold) {
           // Parse key to get type, id, index
-          const parts = key.split(':');
+          const parts = key.split(":");
           const type = parts[0];
           const id = parts[1];
           const index = parts[2] || null;
 
           // Queue refresh (don't await to avoid blocking)
           refreshPromises.push(
-            this.refreshUrl(type, id, index).catch(err => 
+            this.refreshUrl(type, id, index).catch((err) =>
               console.error(`Background refresh failed for ${key}:`, err)
             )
           );
@@ -102,9 +101,7 @@ class UrlCache {
       }
 
       if (refreshPromises.length > 0) {
-        Promise.all(refreshPromises).then(() => {
-          console.log(`Refreshed ${refreshPromises.length} URLs in background`);
-        });
+        Promise.all(refreshPromises);
       }
     }, 5 * 60 * 1000); // Check every 5 minutes
   }
@@ -113,7 +110,7 @@ class UrlCache {
   async refreshUrl(type, id, index = null) {
     const key = this.getCacheKey(type, id, index);
     const cached = this.cache.get(key);
-    
+
     if (!cached) return;
 
     try {
@@ -147,7 +144,7 @@ class UrlCache {
     return {
       total: this.cache.size,
       valid,
-      expired
+      expired,
     };
   }
 
@@ -163,4 +160,4 @@ class UrlCache {
 // Create singleton instance
 const urlCache = new UrlCache();
 
-export default urlCache; 
+export default urlCache;

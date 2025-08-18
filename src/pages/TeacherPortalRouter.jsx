@@ -15,7 +15,6 @@ function TeacherPortalRouter({ initialUserId = "", set, setUltimate, getPin }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("userId", userId);
     if (!loggedIn) {
       navigate("/login?redirect=/teacher-portal");
     } else {

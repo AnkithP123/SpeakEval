@@ -126,8 +126,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   // FETCH ALL DATA AND POPULATE COMPLETE STORE
   const fetchCompleteExamData = async () => {
     try {
-      console.log("🚀 Starting complete data fetch");
-
       // Step 1: Get total questions
       const originalRoomCode = initialRoomCode || paramRoomCode;
       const questionsResponse = await fetch(
@@ -148,9 +146,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         (_, i) =>
           Number.parseInt(baseCode + (i + 1).toString().padStart(3, "0"))
       );
-
-      console.log("📋 Found", questionCodes.length, "questions");
-      console.log("🔍 Question codes:", questionCodes);
 
       // Step 2: Fetch ALL question data in parallel
       let completedRequests = 0;
@@ -179,7 +174,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           }
           if (("" + questionCode).slice(-3) === "001") {
             setInfo(dataResponseJson.info || {});
-            console.log("Info: ", dataResponseJson.info);
           }
           // if (!config.name) {
           //   console.log("Fetching config for question:", dataResponseJson);
@@ -212,9 +206,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           ]);
 
           completedRequests += 2;
-          console.log(
-            `📦 Progress: ${completedRequests}/${totalRequests} requests completed`
-          );
 
           allResults.push({
             questionCode,
@@ -234,8 +225,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           });
         }
       }
-      console.log("✅ All data fetched, building store...");
-      console.log("📊 Total requests completed:", allResults);
 
       // Step 3: Build the complete data store
       const completeStore = {
@@ -330,14 +319,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
       setCOMPLETE_DATA_STORE(completeStore);
 
-      console.log(
-        "✅ Complete data store ready with",
-        Object.keys(completeStore.students).length,
-        "students"
-      );
-
       // Preload all audio URLs for better performance
-      console.log("🚀 Preloading audio URLs for all students...");
       const preloadItems = [];
 
       Object.values(completeStore.students).forEach((student) => {
@@ -376,7 +358,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             throw new Error("No audio data received");
           })
           .then(() => {
-            console.log(`✅ Preloaded ${preloadItems.length} audio URLs`);
+            // Preloaded audio URLs
           })
           .catch((error) => {
             console.warn("⚠️ Some URLs failed to preload:", error);
@@ -395,16 +377,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   // Organize participants from the complete data store
   const organizeParticipantsFromCompleteStore = () => {
     if (!COMPLETE_DATA_STORE.isFullyLoaded) {
-      console.log("⏳ Data not fully loaded yet, skipping organization");
       return;
     }
-
-    console.log(
-      "🔄 Organizing participants, showByPerson:",
-      showByPerson,
-      "roomCode:",
-      roomCode
-    );
 
     if (showByPerson) {
       const organizedParticipants = Object.values(COMPLETE_DATA_STORE.students)
@@ -421,11 +395,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           ),
         }));
 
-      console.log(
-        "👥 Organized for Show by Person:",
-        organizedParticipants.length,
-        "students"
-      );
       setParticipants(organizedParticipants);
     } else {
       // For non-showByPerson, organize per question
@@ -442,11 +411,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         })
       );
 
-      console.log(
-        "📝 Organized for Show by Question:",
-        allQuestionParticipants.length,
-        "questions"
-      );
       setParticipants(allQuestionParticipants);
     }
   };
@@ -1032,7 +996,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   };
 
   const handleShowInfractionsModal = (data) => {
-    console.log("🚨 Showing infractions modal for data:", data);
     setCheatingData(data);
     setShowInfractionsModal(true);
   };
@@ -1051,7 +1014,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         singleEmailData.includeVoiceNote = false;
       }
       queryParams.append("voice", singleEmailData.includeVoiceNote);
-      console.log("IncludeVoice is: ", singleEmailData.includeVoiceNote);
       const response = await fetch(
         `https://www.server.speakeval.org/send_email?${queryParams.toString()}`
       );
@@ -1373,7 +1335,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       initialTotalScore={
                                         responseData.totalScore
                                       }
-
                                       className=""
                                     />
                                   ) : (
@@ -1431,7 +1392,6 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             initialGrades={participant.grades}
                             initialComment={participant.teacherComment}
                             initialTotalScore={participant.totalScore}
-
                             className=""
                           />
                         );

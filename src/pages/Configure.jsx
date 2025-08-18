@@ -310,7 +310,6 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
   const handleRubricAutofillClick = async () => {
     if (!subscribed) {
       try {
-        console.log("Fetching autofill data...");
         setPopupVisible(true); // Show popup
         const configs = await fetch(
           `https://www.server.speakeval.org/getconfigs?pin=${userId}`
@@ -384,7 +383,6 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
           }
 
           const result = await response.json();
-          console.log(result);
 
           if (Array.isArray(result)) {
             setProcessedStrings(result);
@@ -478,7 +476,6 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
       }
 
       const result = await response.json();
-      console.log("TTS Result:", result);
 
       // Check if the response has the expected format
       if (result.audio && Array.isArray(result.audio) && result.complete) {
@@ -541,8 +538,6 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
             }
           })
           .filter((url) => url !== null);
-
-        console.log("Generated audio URLs:", audioUrls);
 
         if (audioUrls.length > 0) {
           setQuestions((prevQuestions) => [...prevQuestions, ...audioUrls]);
@@ -619,7 +614,6 @@ const Configure = ({ set, setUltimate, getPin, subscribed, setSubscribed }) => {
 
     const categories = rubric2.split("|;;|").map((category) => {
       const [name, descriptionsString] = category.split("|:::|");
-      console.log(descriptionsString);
       const descriptions = descriptionsString
         ? descriptionsString.split("|,,|")
         : Array(5).fill("");

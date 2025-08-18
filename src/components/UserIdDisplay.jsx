@@ -29,7 +29,6 @@ function UserIdDisplay({ initialUserId = '' }) {
             toast.error("Error Loading Data");
             return setUserId('');
         }
-        console.log(parsedData);
     }
 
     const handleGoClick = () => {
