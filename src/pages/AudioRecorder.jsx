@@ -36,10 +36,10 @@ export default function AudioRecorder() {
   const [allowRepeat, setAllowRepeat] = useState(true);
   const [timeLimit, setTimeLimit] = useState(-1); // Time limit in seconds (-1 means no limit)
   const [remainingTime, setRemainingTime] = useState(-1); // Current remaining time in seconds
-  const [isFullscreen, setIsFullscreen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [examStarted, setExamStarted] = useState(false); // Track when exam has actually started
   const [finishedRecording, setFinishedRecording] = useState(false);
-  const [hasScreenPermission, setHasScreenPermission] = useState(true); // temporarily set to true
+  const [hasScreenPermission, setHasScreenPermission] = useState(false);
   const [hasPermissions, setHasPermissions] = useState(false);
   const [isWholeScreen, setIsWholeScreen] = useState(false);
   const [fullscreenViolationReported, setFullscreenViolationReported] =
@@ -97,7 +97,7 @@ export default function AudioRecorder() {
     // Stage: 'setup'
     setup: {
       microphonePermission: false,
-      fullscreenEnabled: true,
+      fullscreenEnabled: false,
     },
 
     // Stage: 'audio_play'
@@ -199,7 +199,7 @@ export default function AudioRecorder() {
       audioDownloadError: null,
       setup: {
         microphonePermission: false, // Will be checked after audio download
-        fullscreenEnabled: true, // Will be checked after audio download
+        fullscreenEnabled: false, // Will be checked after audio download
       },
       audioPlay: {
         hasPlayed: false,
@@ -432,7 +432,6 @@ export default function AudioRecorder() {
 
   // WebSocket connection and event listeners
   useEffect(() => {
-    document.fullscreenElement = "bob";
     if (tokenManager.isAuthenticated()) {
       // Try to reconnect with existing token
       const existingToken = tokenManager.getStudentToken();
@@ -1795,13 +1794,13 @@ export default function AudioRecorder() {
     console.log("🎤 Reset recognized text for new recording");
 
     // Ensure fullscreen is active for recording
-    // if (!document.fullscreenElement) {
-    //   console.log("🖥️ Entering fullscreen for recording");
-    //   const el = document.documentElement;
-    //   if (el.requestFullscreen) {
-    //     await el.requestFullscreen();
-    //   }
-    // }
+    if (!document.fullscreenElement) {
+      console.log("🖥️ Entering fullscreen for recording");
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+      }
+    }
 
     // Enable fullscreen monitoring
     setIsFullscreen(true);
