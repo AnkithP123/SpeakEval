@@ -43,6 +43,11 @@ function Card({
       border: "teal-500",
       gradient: "from-teal-500/20 to-teal-700/20",
     },
+    rose: {
+      glow: "rose-300",
+      border: "rose-400",
+      gradient: "from-rose-400/20 to-rose-600/20",
+    },
   };
 
   const colorStyle = colorMap[color] || colorMap.cyan;

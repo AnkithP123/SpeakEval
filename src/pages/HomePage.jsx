@@ -1,15 +1,20 @@
-import React, { useEffect } from 'react'
-import Hero from '../components/Hero'
-import HomeCards from '../components/HomeCards'
-import { cuteAlert } from 'cute-alert'
+import React, { useEffect } from "react";
+import Hero from "../components/Hero";
+import HomeCards from "../components/HomeCards";
+import { cuteAlert } from "cute-alert";
 
 function HomePage({ maintenance }) {
   return (
-    <div style={{fontFamily: "Montserrat"}}>
-
+    <div style={{ fontFamily: "Montserrat" }}>
       {/* <!-- Hero --> */}
       {maintenance ? (
-        <Hero title={"SpeakEval is undergoing maintenance."} subtitle={"Some features may not work as expected. Please check back later"} static={true}/>
+        <Hero
+          title={"SpeakEval is undergoing maintenance."}
+          subtitle={
+            "Some features may not work as expected. Please check back later"
+          }
+          static={true}
+        />
       ) : (
         <Hero
           title={[
@@ -17,15 +22,15 @@ function HomePage({ maintenance }) {
             "Bienvenidos a SpeakEval",
             "Bienvenue sur SpeakEval",
             "歡迎來到 SpeakEval",
-            "SpeakEval へようこそ"
+            "SpeakEval へようこそ",
           ]}
           subtitle="Committed to making oral exams hands-free, quick, and easy!"
         />
       )}
 
-      <HomeCards/>
+      <HomeCards />
     </div>
-  )
+  );
 }
 
-export default HomePage
+export default HomePage;
