@@ -109,7 +109,8 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
     localStorage.removeItem("pin");
     setPin(null);
     localStorage.removeItem("token");
-    navigate("/");
+    //reload
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -239,13 +240,15 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
                           Logout
                         </button>
                         <button
-                          onClick={() => window.location.href = "/update"}
+                          onClick={() => (window.location.href = "/update")}
                           className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
                         >
                           Manage Sets
                         </button>
                         <button
-                          onClick={() => window.location.href = "/practice-exams"}
+                          onClick={() =>
+                            (window.location.href = "/practice-exams")
+                          }
                           className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
                         >
                           Practice Exams

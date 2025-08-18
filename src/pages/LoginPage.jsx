@@ -30,6 +30,8 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
           if (tokenExpiredJson.expired) {
             localStorage.removeItem("token");
             localStorage.removeItem("username");
+            toast.error("Your session has expired. Please log in again.");
+            navigate("/login");
           } else {
             setUsername(tokenExpiredJson.decoded.username);
             navigate(redirect || "/");
@@ -74,7 +76,7 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
       if (res.status !== 200) {
         throw new Error(data.error || "Login failed");
       }
-
+      console.log("Login successful:", data);
       if (data.token) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("username", data.username);
