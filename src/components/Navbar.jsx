@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cuteAlert } from "cute-alert";
+import { toast } from "react-toastify";
 
 let username;
 
@@ -23,6 +24,9 @@ const checkTokenExpiry = async () => {
       localStorage.removeItem("username");
       localStorage.removeItem("token");
       setUserName(null);
+      setPin(null);
+      toast.error("Session expired. Please log in again.");
+      navigate("/login");
     } else {
       setUserName(tokenExpiredJson.decoded.username);
       localStorage.setItem("username", tokenExpiredJson.decoded.username);
