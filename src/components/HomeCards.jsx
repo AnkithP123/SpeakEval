@@ -1,11 +1,12 @@
-import Card from "./Card2"
-import { Link } from "react-router-dom"
+import Card from "./Card2";
+import { Link } from "react-router-dom";
 
 function HomeCards() {
   const teacherCards = [
     {
       title: "Question Sets",
-      description: "For teacher use. Create a new set: configure rubric, settings, and question bank.",
+      description:
+        "For teacher use. Create a new set: configure rubric, settings, and question bank.",
       link: "/configure",
       buttonText: "Configure",
       color: "blue",
@@ -26,12 +27,21 @@ function HomeCards() {
     },
     {
       title: "Create Practice",
-      description: "For Teacher Use. Create an asynchronous ungraded practice session for your students.",
+      description:
+        "For Teacher Use. Create an asynchronous ungraded practice session for your students.",
       link: "/create-practice",
       buttonText: "Create",
       color: "pink",
     },
-  ]
+    {
+      title: "Grade Practice Sets",
+      description:
+        "For Teacher Use. Check the completions and grade the practice sets you assigned to your students",
+      link: "/practice-exams",
+      buttonText: "Grade",
+      color: "teal",
+    },
+  ];
 
   const studentCards = [
     {
@@ -48,7 +58,7 @@ function HomeCards() {
       buttonText: "Join",
       color: "pink",
     },
-  ]
+  ];
 
   return (
     <section className="py-0 px-4 relative overflow-hidden">
@@ -80,8 +90,12 @@ function HomeCards() {
                   }}
                 >
                   <Card color={card.color} className="h-full flex flex-col">
-                    <h2 className="text-2xl font-bold text-white mb-2">{card.title}</h2>
-                    <p className="mt-2 mb-6 text-gray-300 flex-grow">{card.description}</p>
+                    <h2 className="text-2xl font-bold text-white mb-2">
+                      {card.title}
+                    </h2>
+                    <p className="mt-2 mb-6 text-gray-300 flex-grow">
+                      {card.description}
+                    </p>
                     <Link
                       to={card.link}
                       className="inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium text-white bg-black/50 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-600 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/30 group"
@@ -127,8 +141,12 @@ function HomeCards() {
                   }}
                 >
                   <Card color={card.color} className="h-full flex flex-col">
-                    <h2 className="text-2xl font-bold text-white mb-2">{card.title}</h2>
-                    <p className="mt-2 mb-6 text-gray-300 flex-grow">{card.description}</p>
+                    <h2 className="text-2xl font-bold text-white mb-2">
+                      {card.title}
+                    </h2>
+                    <p className="mt-2 mb-6 text-gray-300 flex-grow">
+                      {card.description}
+                    </p>
                     <Link
                       to={card.link}
                       className="inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium text-white bg-black/50 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30 group"
@@ -156,8 +174,7 @@ function HomeCards() {
         </div>
       </div>
     </section>
-  )
+  );
 }
 
-export default HomeCards
-
+export default HomeCards;

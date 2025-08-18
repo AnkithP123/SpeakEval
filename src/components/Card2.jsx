@@ -1,11 +1,16 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
+import { useState, useRef } from "react";
 
-function Card({ children, bg = "bg-gray-100", className = "", color = "cyan" }) {
-  const [isHovered, setIsHovered] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const cardRef = useRef(null)
+function Card({
+  children,
+  bg = "bg-gray-100",
+  className = "",
+  color = "cyan",
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const cardRef = useRef(null);
 
   const colorMap = {
     cyan: {
@@ -18,6 +23,11 @@ function Card({ children, bg = "bg-gray-100", className = "", color = "cyan" }) 
       border: "purple-500",
       gradient: "from-purple-500/20 to-purple-700/20",
     },
+    emerald: {
+      glow: "emerald-400",
+      border: "emerald-500",
+      gradient: "from-emerald-500/20 to-emerald-700/20",
+    },
     blue: {
       glow: "blue-400",
       border: "blue-500",
@@ -28,19 +38,24 @@ function Card({ children, bg = "bg-gray-100", className = "", color = "cyan" }) 
       border: "pink-500",
       gradient: "from-pink-500/20 to-pink-700/20",
     },
-  }
+    teal: {
+      glow: "teal-400",
+      border: "teal-500",
+      gradient: "from-teal-500/20 to-teal-700/20",
+    },
+  };
 
-  const colorStyle = colorMap[color] || colorMap.cyan
+  const colorStyle = colorMap[color] || colorMap.cyan;
 
   const handleMouseMove = (e) => {
-    if (!cardRef.current) return
+    if (!cardRef.current) return;
 
-    const rect = cardRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-    setMousePosition({ x, y })
-  }
+    setMousePosition({ x, y });
+  };
 
   return (
     <div
@@ -59,7 +74,9 @@ function Card({ children, bg = "bg-gray-100", className = "", color = "cyan" }) 
     >
       {/* Animated border */}
       <div
-        className={`absolute inset-0 rounded-2xl border border-${colorStyle.border}/40 transition-opacity duration-300 ${
+        className={`absolute inset-0 rounded-2xl border border-${
+          colorStyle.border
+        }/40 transition-opacity duration-300 ${
           isHovered ? "opacity-100" : "opacity-0"
         }`}
       ></div>
@@ -78,7 +95,9 @@ function Card({ children, bg = "bg-gray-100", className = "", color = "cyan" }) 
 
       {/* Background gradient */}
       <div
-        className={`absolute inset-0 bg-gradient-to-br ${colorStyle.gradient} transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-gradient-to-br ${
+          colorStyle.gradient
+        } transition-opacity duration-300 ${
           isHovered ? "opacity-100" : "opacity-50"
         }`}
       ></div>
@@ -86,8 +105,7 @@ function Card({ children, bg = "bg-gray-100", className = "", color = "cyan" }) 
       {/* Content */}
       <div className="relative z-10 p-6">{children}</div>
     </div>
-  )
+  );
 }
 
-export default Card
-
+export default Card;
