@@ -1,19 +1,19 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { 
-  FaCog, 
-  FaPlay, 
-  FaGraduationCap, 
+import React from "react";
+import { Link } from "react-router-dom";
+import {
+  FaCog,
+  FaPlay,
+  FaGraduationCap,
   FaPlus,
   FaList,
   FaCheckCircle,
-  FaArrowRight
-} from 'react-icons/fa'
+  FaArrowRight,
+} from "react-icons/fa";
 
 const TeacherView = () => {
   const sections = [
     {
-      title: "Setup & Configuration",
+      title: "Content & Materials",
       description: "Create and manage your exam configurations",
       color: "from-cyan-500 to-blue-600",
       glowColor: "cyan",
@@ -21,22 +21,24 @@ const TeacherView = () => {
       cards: [
         {
           title: "Create Question Set",
-          description: "Configure rubric, settings, and question bank",
+          description:
+            "Create a new set: configure rubric, settings, and question bank.",
           link: "/configure",
           icon: FaPlus,
-          buttonText: "Configure"
+          buttonText: "Configure",
         },
         {
-          title: "Manage Question Sets",
-          description: "View, edit, and organize your existing configurations",
-          link: "/profile", // This will be updated when we implement the management view
+          title: "Update Question Sets",
+          description:
+            "Update an existing set: modify rubric, settings, and question bank.",
+          link: "/update", // This will be updated when we implement the management view
           icon: FaList,
-          buttonText: "Manage"
-        }
-      ]
+          buttonText: "Update",
+        },
+      ],
     },
     {
-      title: "Active Sessions",
+      title: "Assessments",
       description: "Manage live and ongoing exam sessions",
       color: "from-blue-500 to-indigo-600",
       glowColor: "blue",
@@ -47,19 +49,20 @@ const TeacherView = () => {
           description: "Start a new live exam session for your students",
           link: "/create-room",
           icon: FaPlay,
-          buttonText: "Create"
+          buttonText: "Create",
         },
         {
           title: "Create Practice",
-          description: "Set up a practice session for students to complete independently",
+          description:
+            "Set up a practice session for students to complete independently",
           link: "/create-practice",
           icon: FaGraduationCap,
-          buttonText: "Create"
-        }
-      ]
+          buttonText: "Create",
+        },
+      ],
     },
     {
-      title: "Grading & Assessment",
+      title: "Grading",
       description: "Review and grade student submissions",
       color: "from-indigo-500 to-purple-600",
       glowColor: "indigo",
@@ -67,22 +70,23 @@ const TeacherView = () => {
       cards: [
         {
           title: "Grade Live Room",
-          description: "Review and grade completed student responses from live sessions",
+          description:
+            "Review and grade completed student responses from live sessions",
           link: "/teacher-portal",
           icon: FaCheckCircle,
-          buttonText: "Grade Room"
+          buttonText: "Grade Room",
         },
         {
           title: "View Practice Responses",
-          description: "Review and grade practice exam submissions from students",
+          description:
+            "Review and grade practice exam submissions from students",
           link: "/practice-exams",
           icon: FaGraduationCap,
-          buttonText: "View Practice"
-        }
-      ]
+          buttonText: "View Practice",
+        },
+      ],
     },
-
-  ]
+  ];
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -92,7 +96,7 @@ const TeacherView = () => {
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-cyan-500/20 to-blue-600/20 rounded-full filter blur-3xl animate-pulse-slow"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-blue-500/20 to-indigo-600/20 rounded-full filter blur-3xl animate-pulse-slow animation-delay-2000"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-500/15 to-indigo-600/15 rounded-full filter blur-3xl animate-pulse-slow animation-delay-1000"></div>
-        
+
         {/* Floating particles */}
         {[...Array(15)].map((_, i) => (
           <div
@@ -102,11 +106,11 @@ const TeacherView = () => {
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${3 + Math.random() * 2}s`
+              animationDuration: `${3 + Math.random() * 2}s`,
             }}
           />
         ))}
-        
+
         {/* Random light flashes */}
         <div className="absolute top-1/3 left-1/3 w-1 h-1 bg-cyan-300 rounded-full opacity-0 animate-ping animation-delay-500"></div>
         <div className="absolute bottom-1/3 right-1/3 w-1.5 h-1.5 bg-blue-300 rounded-full opacity-0 animate-ping animation-delay-1000"></div>
@@ -124,7 +128,8 @@ const TeacherView = () => {
               </span>
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Everything you need to create, manage, and assess oral language examinations
+              Everything you need to create, manage, and assess oral language
+              examinations
             </p>
           </div>
 
@@ -133,7 +138,10 @@ const TeacherView = () => {
             {sections.map((section, sectionIndex) => (
               <div key={sectionIndex} className="relative">
                 {/* Section Header */}
-                <div className="text-center mb-12 animate-fade-in-up" style={{ animationDelay: `${sectionIndex * 100}ms` }}>
+                <div
+                  className="text-center mb-12 animate-fade-in-up"
+                  style={{ animationDelay: `${sectionIndex * 100}ms` }}
+                >
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl mb-6 shadow-lg shadow-cyan-500/30">
                     <section.icon className="text-2xl text-white" />
                   </div>
@@ -143,33 +151,41 @@ const TeacherView = () => {
                 </div>
 
                 {/* Section Cards */}
-                <div className={`grid gap-8 ${section.cards.length === 1 ? 'grid-cols-1 max-w-2xl mx-auto' : 'grid-cols-1 md:grid-cols-2 max-w-5xl mx-auto'}`}>
+                <div
+                  className={`grid gap-8 ${
+                    section.cards.length === 1
+                      ? "grid-cols-1 max-w-2xl mx-auto"
+                      : "grid-cols-1 md:grid-cols-2 max-w-5xl mx-auto"
+                  }`}
+                >
                   {section.cards.map((card, cardIndex) => (
                     <div
                       key={cardIndex}
                       className="group relative animate-fade-in-up"
                       style={{
-                        animationDelay: `${(sectionIndex * 200) + (cardIndex * 100)}ms`
+                        animationDelay: `${
+                          sectionIndex * 200 + cardIndex * 100
+                        }ms`,
                       }}
                     >
                       <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
                         {/* Card Background */}
-                        <div 
+                        <div
                           className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl"
                           style={{
                             boxShadow: `0 0 30px rgba(6, 182, 212, 0.1)`,
                           }}
                         />
-                        
+
                         {/* Animated Border */}
                         <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        
+
                         {/* Glow Effect */}
                         <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/5 to-blue-600/5 group-hover:from-cyan-500/10 group-hover:to-blue-600/10 transition-all duration-500" />
-                        
+
                         {/* Shimmer Effect */}
                         <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-                        
+
                         {/* Random Light Flashes */}
                         <div className="absolute top-3 right-3 w-1.5 h-1.5 bg-cyan-400 rounded-full opacity-0 group-hover:opacity-100 animate-ping animation-delay-300"></div>
                         <div className="absolute bottom-4 left-4 w-1 h-1 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 animate-ping animation-delay-600"></div>
@@ -208,19 +224,8 @@ const TeacherView = () => {
           </div>
         </div>
       </div>
-
-
     </div>
-  )
-}
+  );
+};
 
-export default TeacherView
-
-
-
-
-
-
-
-
-
+export default TeacherView;
