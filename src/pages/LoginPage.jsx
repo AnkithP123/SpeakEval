@@ -82,6 +82,9 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
       const data = await res.json();
 
       if (res.status !== 200) {
+        if (data?.redirect) {
+          navigate("/" + data.redirect);
+        }
         throw new Error(data.error || "Google login failed");
       }
 
