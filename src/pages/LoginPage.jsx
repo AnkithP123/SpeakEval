@@ -306,7 +306,7 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
 
 function LoginPage({ set, setUltimate, setUsername, setPin }) {
   return (
-    <GoogleOAuthProvider clientId="208007004238-f51ulher853hill1r9dit2qs5hufk6oe.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId="932508417487-hnjgjd5qsh5ashbhuem1hegtfghnn2i4.apps.googleusercontent.com">
       <LoginPageContent
         set={set}
         setUltimate={setUltimate}
