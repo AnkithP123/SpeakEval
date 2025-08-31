@@ -3,15 +3,24 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { toast } from "react-toastify";
+import * as jwtDecode from "jwt-decode";
+import {
+  googleLogout,
+  GoogleLogin,
+  GoogleOAuthProvider,
+} from "@react-oauth/google";
 import "./auth.css";
 
-function LoginPage({ set, setUltimate, setUsername, setPin }) {
+function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
   const [usernameInput, setUsernameInput] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [email, setEmail] = useState("");
+  const [useGoogle, setUseGoogle] = useState(false);
+  const [googleName, setGoogleName] = useState("");
+  const [googleEmail, setGoogleEmail] = useState("");
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -48,6 +57,65 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
 
     checkToken();
   }, [navigate, redirect, setUsername]);
+
+  const handleGoogleFailure = (response) => {
+    toast.error("Google sign-in failed. Please try again.");
+  };
+
+  const handleGoogleLogout = () => {
+    setGoogleName("");
+    setGoogleEmail("");
+    setUseGoogle(false);
+    googleLogout();
+  };
+
+  const handleGoogleLogin = async (googleUser) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("https://www.server.speakeval.org/login-google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          googleId: googleUser,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.status !== 200) {
+        throw new Error(data.error || "Google login failed");
+      }
+
+      console.log("Google login successful:", data);
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("username", data.username);
+        setUsername(data.username);
+        setPin(data.token);
+        if (data.subscription) {
+          set(data.subscription !== "free");
+          setUltimate(data.subscription === "Ultimate");
+        } else {
+          set(false);
+          setUltimate(false);
+        }
+        navigate(redirect || "/");
+        toast.success("Successfully signed in with Google!");
+      } else {
+        toast.error("Failed to login with Google. Please try again.");
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+      }
+    } catch (err) {
+      console.error("Google Login Error:", err);
+      toast.error(
+        err.message || "Failed to login with Google. Please try again."
+      );
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -158,6 +226,34 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
           </form>
         ) : (
           <>
+            {/* Google Sign-in Section */}
+            {useGoogle ? (
+              <div className="google-user-info">
+                <p className="google-user-name">Signed in as {googleName}</p>
+                {!isLoading && (
+                  <button
+                    onClick={handleGoogleLogout}
+                    className="google-signout-button"
+                  >
+                    Sign out
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="google-signin-container">
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={handleGoogleLogin}
+                    onError={handleGoogleFailure}
+                    className="google-signin-button"
+                  />
+                </div>
+                <div className="auth-divider">
+                  <span className="auth-divider-text">or</span>
+                </div>
+              </div>
+            )}
+
             <form className="auth-form" onSubmit={handleLogin}>
               <input
                 type="text"
@@ -205,6 +301,19 @@ function LoginPage({ set, setUltimate, setUsername, setPin }) {
         )}
       </div>
     </div>
+  );
+}
+
+function LoginPage({ set, setUltimate, setUsername, setPin }) {
+  return (
+    <GoogleOAuthProvider clientId="932508417487-hnjgjd5qsh5ashbhuem1hegtfghnn2i4.apps.googleusercontent.com">
+      <LoginPageContent
+        set={set}
+        setUltimate={setUltimate}
+        setUsername={setUsername}
+        setPin={setPin}
+      />
+    </GoogleOAuthProvider>
   );
 }
 

@@ -253,4 +253,114 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .auth-title {
+    font-size: 1.25rem;
+  }
+  
+  .google-signin-button,
+  .auth-button {
+    padding: 0.875rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Google Sign-in Styles */
+.google-signin-container {
+  margin-bottom: 1.5rem;
+}
+
+.google-signin-button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.google-signin-button:hover {
+  background: #3367d6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(66, 133, 244, 0.3);
+}
+
+.google-signin-button:active {
+  transform: translateY(0);
+}
+
+.google-user-info {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 0.5rem;
+}
+
+.google-user-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #10b981;
+  margin-bottom: 0.5rem;
+}
+
+.google-signout-button {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(239, 68, 68, 0.7);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.google-signout-button:hover {
+  background: rgba(239, 68, 68, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Divider Styles */
+.auth-divider {
+  position: relative;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.auth-divider-text {
+  background: var(--card-background);
+  padding: 0 1rem;
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 
