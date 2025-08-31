@@ -101,6 +101,9 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
         navigate(redirect || "/");
         toast.success("Successfully signed in with Google!");
       } else {
+        if (data.redirect) {
+          navigate("/" + data.redirect);
+        }
         toast.error("Failed to login with Google. Please try again.");
         setShake(true);
         setTimeout(() => setShake(false), 500);
