@@ -105,11 +105,13 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
   }
 
   const startTimer = () => {
-    timer.current = 0
+    const timeLimit = getExamData().timeLimit
+    timer.current = timeLimit
+    setDisplayTime(formatTime(timeLimit * 1000)) // Set initial display time
     timerInterval.current = setInterval(() => {
-      timer.current += 1
-      setDisplayTime(formatTime(timer.current))
-      if (timer.current >= getExamData().timeLimit) {
+      timer.current -= 1
+      setDisplayTime(formatTime(timer.current * 1000))
+      if (timer.current <= 0) {
         stopRecording()
       }
     }, 1000)

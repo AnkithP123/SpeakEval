@@ -16,6 +16,7 @@ function CreatePractice({ getPin }) {
   const [thinkingTime, setThinkingTime] = useState(5);
   const [canRelisten, setCanRelisten] = useState(true);
   const [responseTime, setResponseTime] = useState(0);
+  const [timeLimit, setTimeLimit] = useState(0);
   const [hoveredInfo, setHoveredInfo] = useState(null);
   const [isLoadingConfigs, setIsLoadingConfigs] = useState(false);
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ function CreatePractice({ getPin }) {
 
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/create_practice?pin=${userId}&config=${selectedConfig}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}`
+        `https://www.server.speakeval.org/create_practice?pin=${userId}&config=${selectedConfig}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&timeLimit=${timeLimit}`
       );
       const data = await res.json();
 
@@ -75,6 +76,7 @@ function CreatePractice({ getPin }) {
     const config = configs.find((config) => config.name === selectedConfigName);
     if (config) {
       setResponseTime(config.timeLimit);
+      setTimeLimit(config.timeLimit); // Set default time limit from config
     }
   };
 
@@ -115,19 +117,20 @@ function CreatePractice({ getPin }) {
                     Response Time Limit (seconds)
                     <FaInfoCircle
                       className="ml-2 text-blue-500 cursor-help"
-                      onMouseEnter={() => setHoveredInfo("responseTime")}
+                      onMouseEnter={() => setHoveredInfo("timeLimit")}
                       onMouseLeave={() => setHoveredInfo(null)}
                     />
                   </label>
                   <input
                     type="number"
-                    value={responseTime}
-                    readOnly
-                    className="input bg-gray-700"
+                    value={timeLimit}
+                    onChange={(e) => setTimeLimit(Number(e.target.value))}
+                    className="input"
+                    min="1"
                   />
-                  {hoveredInfo === "responseTime" && (
+                  {hoveredInfo === "timeLimit" && (
                     <div className="mt-2 p-2 bg-gray-800 rounded-lg text-sm">
-                      Time allowed for response after thinking time
+                      Time allowed for response after thinking time (default from config: {responseTime}s)
                     </div>
                   )}
                 </div>
