@@ -61,31 +61,39 @@ const TeacherView = () => {
         },
       ],
     },
-    {
-      title: "Grading",
-      description: "Review and grade student submissions",
-      color: "from-indigo-500 to-purple-600",
-      glowColor: "indigo",
-      icon: FaGraduationCap,
-      cards: [
         {
-          title: "Grade Live Room",
-          description:
-            "Review and grade completed student responses from live sessions",
-          link: "/teacher-portal",
-          icon: FaCheckCircle,
-          buttonText: "Grade Room",
-        },
-        {
-          title: "View Practice Responses",
-          description:
-            "Review and grade practice exam submissions from students",
-          link: "/practice-exams",
+          title: "Classroom Management",
+          description: "Manage classes, assignments, and student progress",
+          color: "from-indigo-500 to-purple-600",
+          glowColor: "indigo",
           icon: FaGraduationCap,
-          buttonText: "View Practice",
+          cards: [
+            {
+              title: "Classroom Dashboard",
+              description:
+                "Create classes, manage assignments, and track student progress",
+              link: "/classroom",
+              icon: FaGraduationCap,
+              buttonText: "Manage Classes",
+            },
+            {
+              title: "Grade Live Room",
+              description:
+                "Review and grade completed student responses from live sessions",
+              link: "/teacher-portal",
+              icon: FaCheckCircle,
+              buttonText: "Grade Room",
+            },
+            {
+              title: "View Practice Responses",
+              description:
+                "Review and grade practice exam submissions from students",
+              link: "/practice-exams",
+              icon: FaGraduationCap,
+              buttonText: "View Practice",
+            },
+          ],
         },
-      ],
-    },
   ];
 
   return (

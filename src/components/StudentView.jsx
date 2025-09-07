@@ -10,13 +10,22 @@ import {
 const StudentView = ({ onSwitchToTeacher }) => {
   const studentFeatures = [
     {
+      title: "Classroom Portal",
+      description: "Access your classes, assignments, and track your progress",
+      icon: FaGraduationCap,
+      link: "/classroom",
+      buttonText: "Enter Classroom",
+      color: "from-pink-500 to-purple-600",
+      glowColor: "pink"
+    },
+    {
       title: "Join Live Exam",
       description: "Participate in your scheduled oral examination with your teacher",
       icon: FaUsers,
       link: "/join-room",
       buttonText: "Join Room",
-      color: "from-pink-500 to-purple-600",
-      glowColor: "pink"
+      color: "from-purple-500 to-purple-600",
+      glowColor: "purple"
     },
     {
       title: "Practice Assignment",
@@ -24,8 +33,8 @@ const StudentView = ({ onSwitchToTeacher }) => {
       icon: FaGraduationCap,
       link: "/practice",
       buttonText: "Start Practice",
-      color: "from-purple-500 to-purple-600",
-      glowColor: "purple"
+      color: "from-indigo-500 to-purple-600",
+      glowColor: "indigo"
     }
   ]
 
@@ -95,7 +104,7 @@ const StudentView = ({ onSwitchToTeacher }) => {
           </div>
 
           {/* Main Features Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {studentFeatures.map((feature, index) => (
               <div
                 key={index}

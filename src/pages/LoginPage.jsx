@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -21,6 +22,7 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
   const [useGoogle, setUseGoogle] = useState(false);
   const [googleName, setGoogleName] = useState("");
   const [googleEmail, setGoogleEmail] = useState("");
+  // userRole removed - login is now unified for both teachers and students
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -72,14 +74,18 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
   const handleGoogleLogin = async (googleUser) => {
     setIsLoading(true);
     try {
-      const res = await fetch("https://www.server.speakeval.org/login-google", {
+      let res;
+      let data;
+
+      // Unified Google login for both teachers and students
+      res = await fetch("https://www.server.speakeval.org/login-google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           googleId: googleUser,
         }),
       });
-      const data = await res.json();
+      data = await res.json();
 
       if (res.status !== 200) {
         if (data?.redirect) {
@@ -90,10 +96,13 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
 
       console.log("Google login successful:", data);
       if (data.token) {
+        // Store authentication data
         localStorage.setItem("token", data.token);
         localStorage.setItem("username", data.username);
         setUsername(data.username);
         setPin(data.token);
+        
+        // Handle subscription for teachers
         if (data.subscription) {
           set(data.subscription !== "free");
           setUltimate(data.subscription === "Ultimate");
@@ -101,7 +110,23 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
           set(false);
           setUltimate(false);
         }
-        navigate(redirect || "/");
+        
+        // Route based on user type
+        if (data.userType === 'student') {
+          // Store student data for classroom system
+          localStorage.setItem("classroom_user", JSON.stringify({
+            username: data.username,
+            userType: 'student',
+            isAuthenticated: true,
+            googleAuth: true
+          }));
+          localStorage.setItem("classroom_token", data.token);
+          navigate("/classroom");
+        } else {
+          // Teacher - go to main site
+          navigate(redirect || "/");
+        }
+        
         toast.success("Successfully signed in with Google!");
       } else {
         if (data.redirect) {
@@ -134,13 +159,16 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
 
     setIsLoading(true);
     try {
-      const res = await fetch("https://www.server.speakeval.org/login", {
+      let res;
+      let data;
+
+      // Unified login for both teachers and students
+      res = await fetch("https://www.server.speakeval.org/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: usernameInput, password }),
       });
-
-      const data = await res.json();
+      data = await res.json();
 
       if (data.redirect) {
         navigate("/" + data.redirect);
@@ -150,12 +178,16 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
       if (res.status !== 200) {
         throw new Error(data.error || "Login failed");
       }
+      
       console.log("Login successful:", data);
       if (data.token) {
+        // Store authentication data
         localStorage.setItem("token", data.token);
         localStorage.setItem("username", data.username);
         setUsername(data.username);
         setPin(data.token);
+        
+        // Handle subscription for teachers
         if (data.subscription) {
           set(data.subscription !== "free");
           setUltimate(data.subscription === "Ultimate");
@@ -163,7 +195,23 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
           set(false);
           setUltimate(false);
         }
-        navigate(redirect || "/");
+        
+        // Route based on user type
+        if (data.userType === 'student') {
+          // Store student data for classroom system
+          localStorage.setItem("classroom_user", JSON.stringify({
+            username: data.username,
+            userType: 'student',
+            isAuthenticated: true
+          }));
+          localStorage.setItem("classroom_token", data.token);
+          navigate("/classroom");
+        } else {
+          // Teacher - go to main site
+          navigate(redirect || "/");
+        }
+        
+        toast.success(`Welcome back, ${data.username}!`);
       }
     } catch (err) {
       console.error("Login Error:", err);
@@ -260,6 +308,8 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
               </div>
             )}
 
+            {/* Role selection removed - login is now unified */}
+
             <form className="auth-form" onSubmit={handleLogin}>
               <input
                 type="text"
@@ -299,8 +349,18 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
             </div>
             <p className="mt-4 text-center">
               Don't have an account?{" "}
-              <Link to="/register" className="auth-link">
-                Sign Up
+              <Link 
+                to={"/register"} 
+                className="auth-link"
+              >
+                Teacher Sign Up
+              </Link>
+              {" "}or{" "}
+              <Link 
+                to={"/classroom/signup"} 
+                className="auth-link"
+              >
+                Student Sign Up
               </Link>
             </p>
           </>

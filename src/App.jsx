@@ -39,6 +39,7 @@ import Test from "./pages/practiceExams-GradingPage.jsx";
 import PracticeExams from "./pages/PracticeExams";
 import PracticeExamSubmissions from "./pages/PracticeExamSubmissions";
 import PracticeExamResponses from "./pages/PracticeExamResponses";
+import ClassroomApp from "./classroom/ClassroomApp";
 
 function AudioRecorderRouteWrapper() {
   // AudioRecorder now uses token system from localStorage
@@ -184,6 +185,7 @@ function App() {
             path="/grade-bot"
             element={<GradeBotCreator getPin={getPin} />}
           />
+          <Route path="/classroom/*" element={<ClassroomApp />} />
           <Route path="*" element={<Maintainence />} />
         </Route>
         <Route

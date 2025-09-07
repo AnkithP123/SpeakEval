@@ -113,6 +113,14 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
     localStorage.removeItem("pin");
     setPin(null);
     localStorage.removeItem("token");
+    
+    // Also clear classroom authentication data
+    localStorage.removeItem("classroom_user");
+    localStorage.removeItem("classroom_token");
+    
+    // Dispatch custom event to update classroom navbar
+    window.dispatchEvent(new CustomEvent('userUpdated'));
+    
     //reload
     window.location.reload();
   };
@@ -272,7 +280,7 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
                       : "bg-gradient-to-r from-cyan-600/50 to-purple-700/50"
                   }`}
                 >
-                  <span className="relative z-10">Teacher Login</span>
+                  <span className="relative z-10">Login</span>
                 </button>
               )}
             </div>

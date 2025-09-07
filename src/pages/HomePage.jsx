@@ -7,14 +7,19 @@ import { cuteAlert } from "cute-alert";
 function HomePage({ maintenance }) {
   const [currentView, setCurrentView] = useState("teacher"); // 'teacher' or 'student'
 
-  // Check if user is authenticated as a teacher
+  // Check if user is authenticated and determine their role
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      // If token exists, show teacher view by default
+    const teacherToken = localStorage.getItem("token");
+    const classroomUser = JSON.parse(localStorage.getItem("classroom_user") || '{}');
+    
+    if (teacherToken) {
+      // If teacher token exists, show teacher view
       setCurrentView("teacher");
+    } else if (classroomUser.isAuthenticated && classroomUser.userType === 'student') {
+      // If student is authenticated, show student view
+      setCurrentView("student");
     } else {
-      // If no token, show student view
+      // If no authentication, show student view by default
       setCurrentView("student");
     }
   }, []);
