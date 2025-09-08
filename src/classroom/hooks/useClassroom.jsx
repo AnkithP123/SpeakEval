@@ -36,27 +36,44 @@ export const ClassroomProvider = ({ children }) => {
     setError(null);
     
     try {
-      const teacherToken = localStorage.getItem('token');
-      const teacherUsername = localStorage.getItem('username');
+      const decodeJwt = (jwt) => {
+        try {
+          const payload = jwt.split('.') [1];
+          const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+          try {
+            return JSON.parse(decodeURIComponent(escape(json)));
+          } catch {
+            return JSON.parse(json);
+          }
+        } catch {
+          return null;
+        }
+      };
+
+      const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
+      const decoded = token ? decodeJwt(token) : null;
       const classroomUser = JSON.parse(localStorage.getItem('classroom_user') || '{}');
-      
-      if (teacherToken && teacherUsername) {
-        // Teacher authentication - fetch teacher's classes
-        const response = await axios.get(`https://www.server.speakeval.org/classroom/teacher/${teacherUsername}/classes`, {
-          headers: { Authorization: `Bearer ${teacherToken}` }
+
+      const userType = decoded?.userType || decoded?.role || classroomUser?.userType;
+      const username = decoded?.username || localStorage.getItem('username') || classroomUser?.username;
+
+      if (!token || !userType || !username) {
+        setClasses([]);
+        return [];
+      }
+
+      if (userType === 'teacher') {
+        const response = await axios.get(`https://www.server.speakeval.org/classroom/teacher/${username}/classes`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
         setClasses(response.data || []);
         return response.data || [];
-      } else if (classroomUser.userType === 'student') {
-        const response = await axios.get(`https://www.server.speakeval.org/classroom/student/${classroomUser.username}/classes`, {
-          headers: getAuthHeaders()
+      } else {
+        const response = await axios.get(`https://www.server.speakeval.org/classroom/student/${username}/classes`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
         setClasses(response.data || []);
-        return response.data;
-      } else {
-        // No authentication
-        setClasses([]);
-        return [];
+        return response.data || [];
       }
     } catch (error) {
       handleApiError(error);
