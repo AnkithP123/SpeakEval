@@ -25,7 +25,8 @@ const ClassroomApp = () => {
           <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
             <Routes>
               {/* Public routes - no navbar */}
-              <Route path="/login" element={<ClassroomLogin />} />
+              <Route path="/login" element={<ClassroomLogin initialTab="login" />} />
+              <Route path="/signup" element={<ClassroomLogin initialTab="signup" />} />
               
               {/* All other routes - with navbar */}
               <Route path="/*" element={

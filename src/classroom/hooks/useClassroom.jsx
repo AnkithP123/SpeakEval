@@ -41,10 +41,12 @@ export const ClassroomProvider = ({ children }) => {
       const classroomUser = JSON.parse(localStorage.getItem('classroom_user') || '{}');
       
       if (teacherToken && teacherUsername) {
-        // Teacher authentication - for now return empty array
-        // TODO: Implement teacher classes endpoint
-        setClasses([]);
-        return [];
+        // Teacher authentication - fetch teacher's classes
+        const response = await axios.get(`https://www.server.speakeval.org/classroom/teacher/${teacherUsername}/classes`, {
+          headers: { Authorization: `Bearer ${teacherToken}` }
+        });
+        setClasses(response.data || []);
+        return response.data || [];
       } else if (classroomUser.userType === 'student') {
         const response = await axios.get(`https://www.server.speakeval.org/classroom/student/${classroomUser.username}/classes`, {
           headers: getAuthHeaders()
@@ -333,7 +335,14 @@ export const ClassroomProvider = ({ children }) => {
   // Get available question sets (configs)
   const fetchConfigs = async () => {
     try {
-      const response = await axios.get('https://www.server.speakeval.org/getconfigs');
+      const teacherToken = localStorage.getItem('token');
+      if (!teacherToken) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await axios.get('https://www.server.speakeval.org/getconfigs', {
+        headers: { Authorization: `Bearer ${teacherToken}` }
+      });
       return response.data || [];
     } catch (error) {
       console.error('Failed to fetch configs:', error);

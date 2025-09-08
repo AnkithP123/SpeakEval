@@ -5,7 +5,7 @@ import { FaArrowLeft, FaGraduationCap, FaSignInAlt, FaUserPlus } from 'react-ico
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import '../styles/ClassroomLogin.css';
 
-const ClassroomLogin = () => {
+const ClassroomLogin = ({ initialTab = 'login' }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -13,7 +13,7 @@ const ClassroomLogin = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [shake, setShake] = useState(false);
-  const [activeTab, setActiveTab] = useState('login'); // 'login' or 'signup'
+  const [activeTab, setActiveTab] = useState(initialTab); // 'login' or 'signup'
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
 

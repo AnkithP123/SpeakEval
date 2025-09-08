@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useClassroom } from '../hooks/useClassroom.jsx';
 import { useToast } from '../hooks/useToast.jsx';
 import LoadingSpinner from './LoadingSpinner';
@@ -8,6 +8,7 @@ import { FaPlus, FaUsers, FaGraduationCap, FaChalkboardTeacher, FaUserGraduate, 
 const Dashboard = () => {
   const { classes, loading, error, fetchClasses } = useClassroom();
   const { showError } = useToast();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState({ isTeacher: false, isStudent: false });
 
@@ -57,7 +58,7 @@ const Dashboard = () => {
     };
     
     loadData();
-  }, []);
+  }, [location.pathname]); // Refresh when location changes
 
   if (loading) {
     return (
@@ -131,9 +132,9 @@ const Dashboard = () => {
     return activity.sort((a, b) => b.timestamp - a.timestamp).slice(0, 8);
   };
 
-  const teachingClasses = classes.filter(c => c.teacher === user?.email);
+  const teachingClasses = classes.filter(c => c.teacher === user?.username);
   const enrolledClasses = classes.filter(c => 
-    c.students?.some(student => student.email === user?.email)
+    c.students?.some(student => student.id === user?.username)
   );
 
   const upcomingAssignments = getUpcomingAssignments();

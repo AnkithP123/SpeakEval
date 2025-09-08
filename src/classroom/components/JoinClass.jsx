@@ -102,54 +102,54 @@ const JoinClass = () => {
                       <div>
                         <label className="block text-white font-semibold mb-3 flex items-center">
                           <FaCode className="mr-2 text-purple-400" />
-                          Class Join Code
-                        </label>
+                      Class Join Code
+                    </label>
                         <div className="relative">
-                          <input
-                            type="text"
-                            value={joinCode}
+                      <input
+                        type="text"
+                        value={joinCode}
                             onChange={handleJoinCodeChange}
                             required
                             maxLength={6}
                             className="w-full px-4 py-4 bg-slate-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-mono text-center text-2xl tracking-widest"
-                            placeholder="ABC123"
+                        placeholder="ABC123"
                           />
                           {searching && (
                             <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400"></div>
-                            </div>
+                      </div>
                           )}
-                        </div>
+                    </div>
                         <p className="text-gray-400 text-sm mt-2 text-center">
                           Enter the 6-character code your teacher provided
                         </p>
-                      </div>
+                  </div>
 
                       {/* Submit Button */}
                       <div className="pt-6">
-                        <button
-                          type="submit"
+                    <button
+                      type="submit"
                           disabled={loading || !joinCode.trim()}
                           className="w-full px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold text-lg rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/30 disabled:transform-none disabled:shadow-none flex items-center justify-center"
-                        >
-                          {loading ? (
+                    >
+                      {loading ? (
                             <>
                               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                               {searching ? 'Searching...' : 'Joining Class...'}
                             </>
-                          ) : (
-                            <>
+                      ) : (
+                        <>
                               <FaUsers className="mr-3" />
-                              Join Class
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </form>
+                          Join Class
+                        </>
+                      )}
+                    </button>
+                </div>
+              </form>
+            </div>
                   </div>
                 </div>
-              </div>
-
+                
               {/* Examples */}
               <div className="mt-8 group relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                 <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500">
@@ -170,15 +170,15 @@ const JoinClass = () => {
                           </div>
                           <div className="text-gray-400 text-sm">
                             Example {index + 1}
-                          </div>
-                        </div>
+                  </div>
+                </div>
                       ))}
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
+                  </div>
+                </div>
+                
             {/* Sidebar */}
             <div className="space-y-6">
               {/* How to Join Card */}
@@ -216,11 +216,11 @@ const JoinClass = () => {
                         <div>
                           <h4 className="text-white font-semibold">Access Class</h4>
                           <p className="text-gray-300 text-sm">Start viewing assignments and announcements</p>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
               </div>
 
               {/* Tips Card */}
@@ -249,9 +249,9 @@ const JoinClass = () => {
                         <span className="text-green-400 mr-2">•</span>
                         <span>You can join multiple classes</span>
                       </li>
-                    </ul>
-                  </div>
-                </div>
+                </ul>
+              </div>
+            </div>
               </div>
 
               {/* Troubleshooting Card */}
@@ -276,9 +276,9 @@ const JoinClass = () => {
                         <h4 className="text-white font-semibold text-sm mb-1">Still having issues?</h4>
                         <p className="text-sm">Contact your teacher for assistance</p>
                       </div>
-                    </div>
-                  </div>
-                </div>
+              </div>
+            </div>
+              </div>
               </div>
             </div>
           </div>

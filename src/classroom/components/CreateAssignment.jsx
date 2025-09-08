@@ -7,7 +7,7 @@ import { FaPlus, FaArrowLeft, FaBook, FaCalendar, FaClock, FaUsers, FaInfoCircle
 const CreateAssignment = () => {
   const { classId } = useParams();
   const navigate = useNavigate();
-  const { createAssignment, getClass } = useClassroom();
+  const { createAssignment, getClass, fetchConfigs } = useClassroom();
   const { showSuccess, showError } = useToast();
   
   const [loading, setLoading] = useState(false);
@@ -29,8 +29,16 @@ const CreateAssignment = () => {
         const classInfo = await getClass(classId);
         setClassData(classInfo);
         
-        // Load question sets from localStorage or API
-        const sets = JSON.parse(localStorage.getItem('questionSets') || '[]');
+        // Load question sets from API
+        const configs = await fetchConfigs();
+        // Map configs to question sets format
+        const sets = configs.map(config => ({
+          id: config.name,
+          name: config.name,
+          description: config.description || `Question set: ${config.name}`,
+          language: config.language || 'English',
+          questions: config.questions || []
+        }));
         setQuestionSets(sets);
       } catch (error) {
         showError('Failed to load class data');
@@ -51,9 +59,14 @@ const CreateAssignment = () => {
 
   const handleSetSelect = (set) => {
     setSelectedSet(set);
+    // Map questions to include selected property
+    const questionsWithSelection = (set.questions || []).map(question => ({
+      ...question,
+      selected: true // Default to selected
+    }));
     setFormData(prev => ({
       ...prev,
-      selectedQuestions: set.questions || []
+      selectedQuestions: questionsWithSelection
     }));
   };
 
@@ -82,7 +95,7 @@ const CreateAssignment = () => {
     }
 
     setLoading(true);
-
+    
     try {
       const assignmentData = {
         ...formData,
@@ -134,8 +147,8 @@ const CreateAssignment = () => {
             }}
           />
         ))}
-      </div>
-
+            </div>
+            
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -159,7 +172,7 @@ const CreateAssignment = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Form */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-3 space-y-8">
               {/* Assignment Details */}
               <div className="group relative animate-fade-in-up">
                 <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500">
@@ -176,29 +189,29 @@ const CreateAssignment = () => {
                       {/* Title */}
                       <div>
                         <label className="block text-white font-semibold mb-3">Assignment Title</label>
-                        <input
-                          type="text"
-                          name="title"
-                          value={formData.title}
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
                           onChange={handleInputChange}
-                          required
+                    required
                           className="w-full px-4 py-3 bg-slate-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-300"
                           placeholder="e.g., Spanish Oral Exam - Unit 3"
-                        />
-                      </div>
+                  />
+                </div>
 
                       {/* Description */}
                       <div>
                         <label className="block text-white font-semibold mb-3">Description</label>
-                        <textarea
-                          name="description"
-                          value={formData.description}
+                <textarea
+                  name="description"
+                  value={formData.description}
                           onChange={handleInputChange}
                           rows={3}
                           className="w-full px-4 py-3 bg-slate-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-300 resize-none"
                           placeholder="Describe what students will be tested on..."
-                        />
-                      </div>
+                />
+              </div>
 
                       {/* Due Date and Settings */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -206,11 +219,11 @@ const CreateAssignment = () => {
                           <label className="block text-white font-semibold mb-3 flex items-center">
                             <FaCalendar className="mr-2 text-cyan-400" />
                             Due Date
-                          </label>
-                          <input
-                            type="datetime-local"
-                            name="dueDate"
-                            value={formData.dueDate}
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="dueDate"
+                    value={formData.dueDate}
                             onChange={handleInputChange}
                             className="w-full px-4 py-3 bg-slate-800/50 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-300"
                           />
@@ -229,14 +242,14 @@ const CreateAssignment = () => {
                             min="10"
                             max="300"
                             className="w-full px-4 py-3 bg-slate-800/50 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-300"
-                          />
-                        </div>
+                  />
+                </div>
 
                         <div>
                           <label className="block text-white font-semibold mb-3 flex items-center">
                             <FaCog className="mr-2 text-cyan-400" />
                             Thinking Time (seconds)
-                          </label>
+                  </label>
                           <input
                             type="number"
                             name="thinkingTime"
@@ -249,9 +262,9 @@ const CreateAssignment = () => {
                         </div>
                       </div>
                     </form>
-                  </div>
                 </div>
               </div>
+            </div>
 
               {/* Question Set Selection */}
               <div className="group relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
@@ -290,12 +303,12 @@ const CreateAssignment = () => {
                             <div className="flex justify-between items-center text-sm text-gray-400">
                               <span>{set.questions?.length || 0} questions</span>
                               <span>{set.language || 'English'}</span>
-                            </div>
+                        </div>
                           </div>
                         ))}
-                      </div>
-                    )}
-                  </div>
+                            </div>
+                          )}
+                        </div>
                 </div>
               </div>
 
@@ -342,8 +355,8 @@ const CreateAssignment = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                  </div>
+                )}
 
               {/* Submit Button */}
               <div className="text-center">
@@ -367,67 +380,7 @@ const CreateAssignment = () => {
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Tips Card */}
-              <div className="group relative animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-                <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                  <div className="relative z-10 p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                      <FaInfoCircle className="mr-3 text-cyan-400" />
-                      Tips
-                    </h3>
-                    <ul className="space-y-3 text-gray-300">
-                      <li className="flex items-start">
-                        <span className="text-cyan-400 mr-2">•</span>
-                        <span>Choose questions that match your lesson objectives</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-cyan-400 mr-2">•</span>
-                        <span>Set appropriate time limits for each question</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-cyan-400 mr-2">•</span>
-                        <span>Include thinking time for complex questions</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-cyan-400 mr-2">•</span>
-                        <span>Test the assignment before assigning it</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Class Info Card */}
-              <div className="group relative animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-                <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                  <div className="relative z-10 p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                      <FaUsers className="mr-3 text-purple-400" />
-                      Class Info
-                    </h3>
-                    <div className="space-y-3 text-gray-300">
-                      <div>
-                        <h4 className="text-white font-semibold">{classData.name}</h4>
-                        <p className="text-sm">{classData.description}</p>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Students:</span>
-                        <span className="text-cyan-400">{classData.students?.length || 0}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Subject:</span>
-                        <span className="text-cyan-400">{classData.subject || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
         </div>
       </div>
     </div>

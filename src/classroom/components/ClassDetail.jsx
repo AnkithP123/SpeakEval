@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useClassroom } from '../hooks/useClassroom.jsx';
 import { useToast } from '../hooks/useToast.jsx';
-import { FaArrowLeft, FaPlus, FaUsers, FaClipboardList, FaCalendar, FaCode, FaGraduationCap, FaPlay, FaEye, FaEdit } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaUsers, FaClipboardList, FaCalendar, FaCode, FaGraduationCap, FaPlay, FaEye, FaEdit, FaClock } from 'react-icons/fa';
 
 const ClassDetail = () => {
   const { classId } = useParams();
@@ -23,11 +23,11 @@ const ClassDetail = () => {
         // Check if current user is the teacher
         const currentUser = localStorage.getItem('username');
         setIsTeacher(data.teacher === currentUser);
-      } catch (error) {
+    } catch (error) {
         showError('Failed to load class');
         navigate('/classroom');
-      } finally {
-        setLoading(false);
+    } finally {
+      setLoading(false);
       }
     };
 
@@ -101,8 +101,8 @@ const ClassDetail = () => {
             }}
           />
         ))}
-      </div>
-
+              </div>
+              
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -137,7 +137,7 @@ const ClassDetail = () => {
                 </div>
               </div>
             </div>
-
+            
             <div className="group relative animate-fade-in-up" style={{ animationDelay: '100ms' }}>
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
@@ -158,8 +158,8 @@ const ClassDetail = () => {
                   <FaCalendar className="text-3xl text-green-400 mx-auto mb-4" />
                   <div className="text-3xl font-bold text-white mb-2">{formatDate(classData.created)}</div>
                   <div className="text-gray-300">Created</div>
-                </div>
-              </div>
+            </div>
+          </div>
             </div>
 
             <div className="group relative animate-fade-in-up" style={{ animationDelay: '300ms' }}>
@@ -170,14 +170,14 @@ const ClassDetail = () => {
                   <FaCode className="text-3xl text-orange-400 mx-auto mb-4" />
                   <div className="text-lg font-bold text-white mb-2 font-mono">{classData.joinCode}</div>
                   <div className="text-gray-300">Join Code</div>
-                </div>
-              </div>
+            </div>
             </div>
           </div>
+        </div>
 
           {/* Action Buttons */}
           <div className="flex justify-center gap-4 mb-12">
-            {isTeacher && (
+          {isTeacher && (
               <Link
                 to={`/classroom/${classId}/assignments/create`}
                 className="group relative animate-fade-in-up"
@@ -225,15 +225,15 @@ const ClassDetail = () => {
                     <FaClipboardList className="text-6xl text-gray-600 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-white mb-2">No Assignments Yet</h3>
                     <p className="text-gray-300 mb-6">Create your first assignment to get started</p>
-                    {isTeacher && (
+                  {isTeacher && (
                       <Link
                         to={`/classroom/${classId}/assignments/create`}
                         className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all duration-300"
                       >
                         Create Assignment
-                      </Link>
-                    )}
-                  </div>
+                    </Link>
+                  )}
+                </div>
                 ) : (
                   <div className="space-y-4">
                     {classData.assignments.map((assignment, index) => (
@@ -255,8 +255,8 @@ const ClassDetail = () => {
                                 <FaGraduationCap className="mr-1" />
                                 {assignment.questions?.length || 0} questions
                               </span>
-                            </div>
-                          </div>
+            </div>
+                </div>
                           <div className="flex space-x-2">
                             <Link
                               to={`/classroom/${classId}/assignments/${assignment.id}`}
@@ -264,17 +264,17 @@ const ClassDetail = () => {
                             >
                               <FaEye className="w-4 h-4" />
                             </Link>
-                            {isTeacher && (
+                  {isTeacher && (
                               <Link
                                 to={`/classroom/${classId}/assignments/${assignment.id}/grade`}
                                 className="p-2 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-all duration-300"
                               >
                                 <FaEdit className="w-4 h-4" />
                               </Link>
-                            )}
-                          </div>
-                        </div>
-                        
+          )}
+        </div>
+      </div>
+
                         <div className="flex justify-between items-center">
                           <div className="flex space-x-4">
                             <span className="text-sm text-gray-400">
@@ -295,21 +295,21 @@ const ClassDetail = () => {
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
+      )}
+    </div>
+        </div>
           </div>
 
           {/* Teacher Actions */}
           {isTeacher && (
             <div className="mt-8 text-center">
-              <button
+            <button
                 onClick={handleDeleteClass}
                 className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300"
               >
                 Delete Class
-              </button>
-            </div>
+            </button>
+          </div>
           )}
         </div>
       </div>

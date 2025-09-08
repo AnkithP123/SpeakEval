@@ -112,7 +112,7 @@ const CreateClass = () => {
                         </div>
                         <h2 className="text-2xl font-bold text-white mb-2">{createdClass.name}</h2>
                         <p className="text-gray-300">{createdClass.description}</p>
-                      </div>
+        </div>
 
                       {/* Join Code Display */}
                       <div className="bg-slate-800/50 rounded-xl p-6 mb-6">
@@ -126,8 +126,8 @@ const CreateClass = () => {
                           <p className="text-gray-400 text-sm mt-3">
                             Share this code with your students so they can join your class
                           </p>
-                        </div>
-                      </div>
+                  </div>
+                </div>
 
                       {/* Action Buttons */}
                       <div className="flex gap-4">
@@ -146,8 +146,8 @@ const CreateClass = () => {
                         >
                           Copy Code
                         </button>
-                      </div>
-                    </div>
+                  </div>
+                </div>
                   </div>
                 </div>
               </div>
@@ -178,8 +178,8 @@ const CreateClass = () => {
                         <div>
                           <h4 className="text-white font-semibold">Create Assignments</h4>
                           <p className="text-gray-400 text-sm">Add assignments and questions for your students</p>
-                        </div>
-                      </div>
+                    </div>
+                  </div>
                       <div className="flex items-start">
                         <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3 flex-shrink-0">
                           3
@@ -187,8 +187,8 @@ const CreateClass = () => {
                         <div>
                           <h4 className="text-white font-semibold">Monitor Progress</h4>
                           <p className="text-gray-400 text-sm">Track student submissions and grades</p>
-                        </div>
-                      </div>
+                    </div>
+                  </div>
                     </div>
                   </div>
                 </div>
@@ -257,64 +257,30 @@ const CreateClass = () => {
 
                         {/* Submit Button */}
                         <div className="pt-6">
-                          <button
-                            type="submit"
-                            disabled={loading}
+                <button
+                  type="submit"
+                  disabled={loading}
                             className="w-full px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold text-lg rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/30 disabled:transform-none disabled:shadow-none flex items-center justify-center"
-                          >
-                            {loading ? (
+                >
+                  {loading ? (
                               <>
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                                Creating Class...
+                      Creating Class...
                               </>
-                            ) : (
-                              <>
+                  ) : (
+                    <>
                                 <FaPlus className="mr-3" />
-                                Create Class
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
+                      Create Class
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
                   </div>
                 </div>
               </div>
 
-              {/* Info Card */}
-              <div className="group relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-                <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                  <div className="relative z-10 p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                      <FaUsers className="mr-3 text-purple-400" />
-                      Class Setup Tips
-                    </h3>
-                    <ul className="space-y-3 text-gray-300">
-                      <li className="flex items-start">
-                        <span className="text-cyan-400 mr-2">•</span>
-                        <span>Choose a clear, descriptive name for your class</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-cyan-400 mr-2">•</span>
-                        <span>Add a detailed description to help students understand the class</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-cyan-400 mr-2">•</span>
-                        <span>A join code will be automatically generated</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-cyan-400 mr-2">•</span>
-                        <span>Share the join code with your students</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-cyan-400 mr-2">•</span>
-                        <span>You can always edit these details later</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
 
               {/* Next Steps Card */}
               <div className="group relative animate-fade-in-up" style={{ animationDelay: '400ms' }}>
@@ -353,9 +319,9 @@ const CreateClass = () => {
                           <p className="text-gray-400 text-sm">Track student submissions and grades</p>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
+              </div>
+            </div>
+              </div>
               </div>
             </div>
           )}
