@@ -4,7 +4,7 @@ import axios from 'axios';
 const AuthContext = createContext();
 
 // Configure axios defaults
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'https://server.speakeval.org';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'https://www.server.speakeval.org';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
