@@ -148,15 +148,17 @@ export const ClassroomProvider = ({ children }) => {
     }
   };
 
-  // Create an assignment
+  // Create an assignment (store only configName; server resolves questions later)
   const createAssignment = async (classId, assignmentData) => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await axios.post(`https://www.server.speakeval.org/classroom/${classId}/assignments`, assignmentData, {
-        headers: getAuthHeaders()
-      });
+      const response = await axios.post(
+        `https://www.server.speakeval.org/api/classes/${classId}/assignments`,
+        assignmentData,
+        { headers: getAuthHeaders() }
+      );
       const newAssignment = response.data.assignment;
       
       // Update current class with new assignment
