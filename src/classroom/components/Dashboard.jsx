@@ -12,16 +12,32 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState({ isTeacher: false, isStudent: false });
 
+  const decodeUserFromToken = () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
+    if (!token) return null;
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      const payload = JSON.parse(jsonPayload);
+      return { username: payload.username, fullName: payload.fullName, userType: payload.userType, isAuthenticated: true };
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Check for teacher authentication first
-        const teacherToken = localStorage.getItem('token');
-        const teacherUsername = localStorage.getItem('username');
-        
-        // Check for classroom authentication first (handles both teachers and students)
-        const classroomUserStr = localStorage.getItem('classroom_user');
-        if (classroomUserStr) {
+        // Prefer JWT with userType
+        const tokenUser = decodeUserFromToken();
+        if (tokenUser && (tokenUser.userType === 'teacher' || tokenUser.userType === 'student')) {
+          setUser(tokenUser);
+          setUserRole({ isTeacher: tokenUser.userType === 'teacher', isStudent: tokenUser.userType === 'student' });
+        } else if (localStorage.getItem('classroom_user')) {
+          const classroomUserStr = localStorage.getItem('classroom_user');
           const userData = JSON.parse(classroomUserStr);
           
           // Validate authentication
@@ -37,14 +53,6 @@ const Dashboard = () => {
           const isTeacher = userData.userType === 'teacher';
           
           setUserRole({ isTeacher, isStudent });
-        } else if (teacherToken && teacherUsername) {
-          // Fallback: User is authenticated as teacher through main site
-          setUser({
-            username: teacherUsername,
-            userType: 'teacher',
-            isAuthenticated: true
-          });
-          setUserRole({ isTeacher: true, isStudent: false });
         } else {
           // No authentication at all - this should not happen due to AuthRequired
           console.error('No authentication found in Dashboard');

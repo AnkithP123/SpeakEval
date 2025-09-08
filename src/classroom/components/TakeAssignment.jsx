@@ -8,7 +8,7 @@ import PracticeAudioRecorder from '../../pages/PracticeAudioRecorder.jsx';
 const TakeAssignment = () => {
   const { classId, assignmentId } = useParams();
   const navigate = useNavigate();
-  const { getAssignment, submitAssignment } = useClassroom();
+  const { getAssignment, submitAssignment, getAssignmentUploadUrls } = useClassroom();
   const { showSuccess, showError } = useToast();
   
   const [assignment, setAssignment] = useState(null);
@@ -20,13 +20,13 @@ const TakeAssignment = () => {
       try {
         const assignmentData = await getAssignment(classId, assignmentId);
         setAssignment(assignmentData);
-      } catch (error) {
-        showError('Failed to load assignment');
+    } catch (error) {
+      showError('Failed to load assignment');
         navigate('/classroom');
-      } finally {
-        setLoading(false);
-      }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
     loadAssignment();
   }, [classId, assignmentId]);
@@ -34,40 +34,35 @@ const TakeAssignment = () => {
   const handleComplete = async (recordings) => {
     setSubmitting(true);
     try {
-      // Convert blob data to base64 for submission
-      const recordingsWithBase64 = await Promise.all(
-        recordings.map(async (recording) => {
-          if (recording.audioBlob) {
-            // Convert blob to base64
-            const base64 = await new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.readAsDataURL(recording.audioBlob);
-            });
-            
-            return {
-              questionIndex: recording.questionIndex,
-              audioBase64: base64,
-              mimeType: recording.audioBlob.type,
-              timestamp: recording.timestamp
-            };
-          } else {
-            // Fallback to URL if no blob
-            return {
-              questionIndex: recording.questionIndex,
-              audioUrl: recording.audioUrl,
-              timestamp: recording.timestamp
-            };
-          }
-        })
-      );
+      // 1) Request presigned upload URLs for each recording
+      const items = recordings.map(r => ({ questionIndex: r.questionIndex, contentType: r.audioBlob?.type || 'audio/wav' }));
+      const uploadUrls = await getAssignmentUploadUrls(classId, assignmentId, items);
 
-      const submissionData = {
-        assignmentId,
-        classId,
-        recordings: recordingsWithBase64,
-        submittedAt: Date.now()
-      };
+      // Map by questionIndex for quick lookup
+      const urlByIndex = new Map(uploadUrls.map(u => [Number(u.questionIndex), u]));
+
+      // 2) Upload each blob via PUT to S3
+      for (const rec of recordings) {
+        const info = urlByIndex.get(Number(rec.questionIndex));
+        if (!info || !rec.audioBlob) continue;
+        await fetch(info.url, {
+          method: 'PUT',
+          headers: { 'Content-Type': info.contentType || 'audio/wav' },
+          body: rec.audioBlob,
+        });
+      }
+
+      // 3) Submit manifest referencing S3 keys
+      const manifest = recordings.map(rec => {
+        const info = urlByIndex.get(Number(rec.questionIndex));
+        return {
+          questionIndex: rec.questionIndex,
+          s3Key: info ? info.key : undefined,
+          timestamp: rec.timestamp
+        };
+      });
+
+      const submissionData = { assignmentId, classId, recordings: manifest, submittedAt: Date.now() };
 
       await submitAssignment(classId, assignmentId, submissionData);
       showSuccess('Assignment submitted successfully!');
@@ -95,12 +90,12 @@ const TakeAssignment = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Assignment not found</h1>
-          <button 
+              <button 
             onClick={() => navigate('/classroom')}
             className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all duration-300"
-          >
+              >
             Back to Dashboard
-          </button>
+              </button>
         </div>
       </div>
     );
@@ -135,13 +130,13 @@ const TakeAssignment = () => {
             }}
           />
         ))}
-      </div>
-      
+        </div>
+
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <button
+            <button 
               onClick={() => navigate(`/classroom/${classId}`)}
               className="inline-flex items-center text-cyan-400 hover:text-white mb-6 transition-colors duration-300"
             >
@@ -165,7 +160,7 @@ const TakeAssignment = () => {
               onComplete={handleComplete}
               isAssignment={true}
             />
-          </div>
+        </div>
 
           {/* Loading overlay for submission */}
           {submitting && (

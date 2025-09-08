@@ -220,6 +220,21 @@ export const ClassroomProvider = ({ children }) => {
     }
   };
 
+  // Get presigned upload URLs for assignment recordings
+  const getAssignmentUploadUrls = async (classId, assignmentId, items) => {
+    try {
+      const response = await axios.post(
+        `https://www.server.speakeval.org/api/classes/${classId}/assignments/${assignmentId}/upload-urls`,
+        { items },
+        { headers: getAuthHeaders() }
+      );
+      return response.data.uploadUrls;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  };
+
   // Get submissions for an assignment
   const getSubmissions = async (classId, assignmentId) => {
     setLoading(true);
@@ -364,6 +379,7 @@ export const ClassroomProvider = ({ children }) => {
     createAssignment,
     getAssignment,
     submitAssignment,
+    getAssignmentUploadUrls,
     getSubmissions,
     gradeSubmission,
     removeStudent,
