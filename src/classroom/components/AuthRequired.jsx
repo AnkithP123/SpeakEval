@@ -4,32 +4,19 @@ import { useNavigate } from 'react-router-dom';
 const AuthRequired = ({ children }) => {
   const navigate = useNavigate();
 
-  const decodeUserTypeFromToken = (jwt) => {
-    try {
-      const base64Url = jwt.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      const payload = JSON.parse(jsonPayload);
-      return payload.userType;
-    } catch {
-      return undefined;
-    }
-  };
-
   useEffect(() => {
     // Check if user is authenticated (either as student or teacher)
-    const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
-    const userType = token ? decodeUserTypeFromToken(token) : undefined;
+    const teacherToken = localStorage.getItem('token');
+    const teacherUsername = localStorage.getItem('username');
     const classroomUser = localStorage.getItem('classroom_user');
     
-    // If token has a valid userType, allow
-    if (userType === 'teacher' || userType === 'student') {
+    // Check teacher authentication
+    if (teacherToken && teacherUsername) {
+      // Teacher is authenticated - allow access
       return;
     }
-
-    // Else check legacy classroom_user blob
+    
+    // Check classroom authentication (both teachers and students)
     if (classroomUser) {
       try {
         const user = JSON.parse(classroomUser);
@@ -49,21 +36,12 @@ const AuthRequired = ({ children }) => {
   }, [navigate]);
 
   // Check authentication on render
-  const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
-  const userType = token ? (function() {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      return JSON.parse(jsonPayload).userType;
-    } catch { return undefined; }
-  })() : undefined;
+  const teacherToken = localStorage.getItem('token');
+  const teacherUsername = localStorage.getItem('username');
   const classroomUser = localStorage.getItem('classroom_user');
   
-  // Prefer token with userType
-  if (userType === 'teacher' || userType === 'student') {
+  // Check teacher authentication
+  if (teacherToken && teacherUsername) {
     return children;
   }
   

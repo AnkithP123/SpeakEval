@@ -8,6 +8,26 @@ import {
 } from 'react-icons/fa'
 
 const StudentView = ({ onSwitchToTeacher }) => {
+  const decodeJwt = (jwt) => {
+    try {
+      const payload = jwt.split(".")[1];
+      const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+      return JSON.parse(decodeURIComponent(escape(json)));
+    } catch {
+      try {
+        const payload = jwt.split(".")[1];
+        return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+      } catch {
+        return null;
+      }
+    }
+  };
+
+  const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('classroom_token')) : null;
+  const classroomUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('classroom_user') || '{}') : {};
+  const decoded = token ? decodeJwt(token) : null;
+  const userType = decoded?.userType || decoded?.role || classroomUser?.userType;
+  const isTeacher = userType === 'teacher';
   const studentFeatures = [
     {
       title: "Classroom Portal",
@@ -79,7 +99,7 @@ const StudentView = ({ onSwitchToTeacher }) => {
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Navigation Button for Teachers */}
-          {onSwitchToTeacher && localStorage.getItem('token') && (
+          {onSwitchToTeacher && isTeacher && (
             <div className="text-center mb-8">
               <button
                 onClick={onSwitchToTeacher}

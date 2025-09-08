@@ -12,52 +12,46 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState({ isTeacher: false, isStudent: false });
 
-  const decodeUserFromToken = () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
-    if (!token) return null;
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      const payload = JSON.parse(jsonPayload);
-      return { username: payload.username, fullName: payload.fullName, userType: payload.userType, isAuthenticated: true };
-    } catch {
-      return null;
-    }
-  };
-
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Prefer JWT with userType
-        const tokenUser = decodeUserFromToken();
-        if (tokenUser && (tokenUser.userType === 'teacher' || tokenUser.userType === 'student')) {
-          setUser(tokenUser);
-          setUserRole({ isTeacher: tokenUser.userType === 'teacher', isStudent: tokenUser.userType === 'student' });
-        } else if (localStorage.getItem('classroom_user')) {
-          const classroomUserStr = localStorage.getItem('classroom_user');
-          const userData = JSON.parse(classroomUserStr);
-          
-          // Validate authentication
-          if (!userData.isAuthenticated) {
-            console.error('Invalid classroom authentication in Dashboard');
-            return;
+        const decodeJwt = (jwt) => {
+          try {
+            const payload = jwt.split('.') [1];
+            const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+            try {
+              return JSON.parse(decodeURIComponent(escape(json)));
+            } catch {
+              return JSON.parse(json);
+            }
+          } catch {
+            return null;
           }
-          
-          setUser(userData);
-          
-          // Determine user role
-          const isStudent = userData.userType === 'student';
-          const isTeacher = userData.userType === 'teacher';
-          
-          setUserRole({ isTeacher, isStudent });
-        } else {
-          // No authentication at all - this should not happen due to AuthRequired
+        };
+
+        const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
+        const decoded = token ? decodeJwt(token) : null;
+        const classroomUserStr = localStorage.getItem('classroom_user');
+        const classroomUser = classroomUserStr ? JSON.parse(classroomUserStr) : null;
+
+        const userType = decoded?.userType || decoded?.role || classroomUser?.userType;
+        const username = decoded?.username || localStorage.getItem('username') || classroomUser?.username;
+        const fullName = classroomUser?.fullName || decoded?.fullName;
+        const email = decoded?.email || classroomUser?.email;
+
+        if (!userType || (!token && !(classroomUser?.isAuthenticated))) {
           console.error('No authentication found in Dashboard');
           return;
         }
+
+        setUser({
+          username,
+          fullName,
+          email,
+          userType,
+          isAuthenticated: true,
+        });
+        setUserRole({ isTeacher: userType === 'teacher', isStudent: userType === 'student' });
         
         await fetchClasses();
       } catch (error) {
@@ -194,6 +188,7 @@ const Dashboard = () => {
           
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {userRole.isTeacher && (
             <div className="group relative animate-fade-in-up">
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
@@ -205,8 +200,9 @@ const Dashboard = () => {
                   <div className="text-3xl font-bold text-white mb-2">{teachingClasses.length}</div>
                   <div className="text-gray-300">Teaching</div>
                 </div>
-          </div>
-        </div>
+              </div>
+            </div>
+            )}
 
             <div className="group relative animate-fade-in-up" style={{ animationDelay: '100ms' }}>
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">

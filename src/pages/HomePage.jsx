@@ -9,18 +9,41 @@ function HomePage({ maintenance }) {
 
   // Check if user is authenticated and determine their role
   useEffect(() => {
-    const teacherToken = localStorage.getItem("token");
+    const token = localStorage.getItem("token") || localStorage.getItem("classroom_token");
     const classroomUser = JSON.parse(localStorage.getItem("classroom_user") || '{}');
-    
-    if (teacherToken) {
-      // If teacher token exists, show teacher view
-      setCurrentView("teacher");
-    } else if (classroomUser.isAuthenticated && classroomUser.userType === 'student') {
-      // If student is authenticated, show student view
-      setCurrentView("student");
+
+    const decodeJwt = (jwt) => {
+      try {
+        const payload = jwt.split(".")[1];
+        const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+        return JSON.parse(decodeURIComponent(escape(json)));
+      } catch {
+        try {
+          // Fallback without escape/decodeURIComponent for already UTF-8 safe
+          const payload = jwt.split(".")[1];
+          return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+        } catch {
+          return null;
+        }
+      }
+    };
+
+    let userType = null;
+    if (token) {
+      const decoded = decodeJwt(token);
+      userType = decoded?.userType || decoded?.role || null;
+    }
+    if (!userType && classroomUser && classroomUser.userType) {
+      userType = classroomUser.userType;
+    }
+
+    if (userType === 'teacher') {
+      setCurrentView('teacher');
+    } else if (userType === 'student') {
+      setCurrentView('student');
     } else {
-      // If no authentication, show student view by default
-      setCurrentView("student");
+      // Default to student view when unknown
+      setCurrentView('student');
     }
   }, []);
 
