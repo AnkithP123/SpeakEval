@@ -309,8 +309,8 @@ const CreateAssignment = () => {
                             </div>
                           )}
                         </div>
-                </div>
               </div>
+            </div>
 
               {/* Question Selection */}
               {selectedSet && (
@@ -335,8 +335,8 @@ const CreateAssignment = () => {
                             onClick={() => handleQuestionToggle(index)}
                           >
                             <div className="flex items-start space-x-3">
-                              <input
-                                type="checkbox"
+                  <input
+                    type="checkbox"
                                 checked={question.selected}
                                 onChange={() => handleQuestionToggle(index)}
                                 className="mt-1 w-4 h-4 text-green-500 bg-slate-800 border-gray-600 rounded focus:ring-green-500"
@@ -349,35 +349,35 @@ const CreateAssignment = () => {
                                   {question.transcription}
                                 </p>
                               </div>
-                            </div>
-                          </div>
+                    </div>
+                  </div>
                         ))}
                       </div>
                     </div>
-                  </div>
+                    </div>
                   </div>
                 )}
 
               {/* Submit Button */}
               <div className="text-center">
-                <button
+              <button
                   onClick={handleSubmit}
                   disabled={loading || !selectedSet}
                   className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold text-lg rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/30 disabled:transform-none disabled:shadow-none flex items-center mx-auto"
-                >
-                  {loading ? (
+              >
+                {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                       Creating Assignment...
                     </>
-                  ) : (
-                    <>
+                ) : (
+                  <>
                       <FaPlus className="mr-3" />
-                      Create Assignment
-                    </>
-                  )}
-                </button>
-              </div>
+                    Create Assignment
+                  </>
+                )}
+              </button>
+            </div>
             </div>
 
             </div>

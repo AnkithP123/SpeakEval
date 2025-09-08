@@ -26,7 +26,7 @@ export const ClassroomProvider = ({ children }) => {
 
   // Helper function to get auth headers
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('classroom_token');
+    const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
@@ -115,15 +115,12 @@ export const ClassroomProvider = ({ children }) => {
       // First, we need to find the class by join code
       // This would require a new endpoint to search by join code
       // For now, we'll simulate this
-      const user = JSON.parse(localStorage.getItem('classroom_user') || '{}');
-      const response = await axios.post(`https://www.server.speakeval.org/classroom/${joinCode}/join`, {
-        studentId: user.username,
-        studentName: user.username
-      }, {
+      await axios.post(`https://www.server.speakeval.org/classroom/${joinCode}/join`, {}, {
         headers: getAuthHeaders()
       });
-      const joinedClass = response.data.class;
-      setClasses(prev => [joinedClass, ...prev]);
+      // Refresh classes after joining
+      const updated = await fetchClasses();
+      const joinedClass = (updated || []).find(c => (c.joinCode || '').toUpperCase() === (joinCode || '').toUpperCase());
       return joinedClass;
     } catch (error) {
       handleApiError(error);

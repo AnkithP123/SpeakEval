@@ -120,7 +120,7 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
             isAuthenticated: true,
             googleAuth: true
           }));
-          localStorage.setItem("classroom_token", data.token);
+          localStorage.setItem("token", data.token);
           navigate("/classroom");
         } else {
           // Teacher - go to main site
@@ -204,7 +204,7 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
             userType: 'student',
             isAuthenticated: true
           }));
-          localStorage.setItem("classroom_token", data.token);
+          localStorage.setItem("token", data.token);
           navigate("/classroom");
         } else {
           // Teacher - go to main site

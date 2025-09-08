@@ -16,13 +16,13 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('classroom_token'));
+  const [token, setToken] = useState(localStorage.getItem('token') || localStorage.getItem('classroom_token'));
   const [loading, setLoading] = useState(true);
 
   // Set axios authorization header
   useEffect(() => {
     if (token) {
-      axios.defaults.headers.common['Authorization'] = token;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
       delete axios.defaults.headers.common['Authorization'];
     }
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
       const { token: newToken, username: userUsername, subscription } = response.data;
       
       setToken(newToken);
-      localStorage.setItem('classroom_token', newToken);
+      localStorage.setItem('token', newToken);
       
       setUser({
         username: userUsername,
@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }) => {
       const { token: newToken, username, subscription } = response.data;
       
       setToken(newToken);
-      localStorage.setItem('classroom_token', newToken);
+      localStorage.setItem('token', newToken);
       
       setUser({
         username: username,
@@ -121,10 +121,10 @@ export const AuthProvider = ({ children }) => {
     // Clear classroom authentication
     localStorage.removeItem('classroom_token');
     localStorage.removeItem('classroom_user');
+    localStorage.removeItem('token');
     
     // Also clear main site authentication
     localStorage.removeItem('username');
-    localStorage.removeItem('token');
     localStorage.removeItem('pin');
     localStorage.removeItem('gold');
     localStorage.removeItem('ultimate');

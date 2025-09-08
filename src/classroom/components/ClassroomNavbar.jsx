@@ -110,6 +110,7 @@ const ClassroomNavbar = () => {
     // Clear classroom authentication
     localStorage.removeItem('classroom_user');
     localStorage.removeItem('classroom_token');
+    localStorage.removeItem('token');
     
     // Dispatch custom event to update navbar
     window.dispatchEvent(new CustomEvent('userUpdated'));

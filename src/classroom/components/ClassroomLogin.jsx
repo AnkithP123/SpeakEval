@@ -81,7 +81,7 @@ const ClassroomLogin = ({ initialTab = 'login' }) => {
           userType: data.userType,
           isAuthenticated: true
         }));
-        localStorage.setItem('classroom_token', data.token);
+        localStorage.setItem('token', data.token);
         
         // Also store main site authentication for teachers
         if (data.userType === 'teacher') {
@@ -121,7 +121,7 @@ const ClassroomLogin = ({ initialTab = 'login' }) => {
           userType: 'student',
           isAuthenticated: true
         }));
-        localStorage.setItem('classroom_token', data.token);
+        localStorage.setItem('token', data.token);
         
         showSuccess(`Welcome ${data.fullName}! Account created successfully.`);
         
@@ -173,7 +173,7 @@ const ClassroomLogin = ({ initialTab = 'login' }) => {
         isAuthenticated: true,
         googleAuth: true
       }));
-      localStorage.setItem('classroom_token', data.token);
+      localStorage.setItem('token', data.token);
       
       // Also store main site authentication for teachers
       if (data.userType === 'teacher') {
