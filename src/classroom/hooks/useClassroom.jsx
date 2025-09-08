@@ -175,14 +175,17 @@ export const ClassroomProvider = ({ children }) => {
     }
   };
 
-  // Get assignment details
+  // Get assignment details (server expands questions with presigned URLs)
   const getAssignment = async (classId, assignmentId) => {
     setLoading(true);
     setError(null);
     
     try {
-      const classData = await getClass(classId);
-      const assignment = classData.assignments?.find(a => a.id === assignmentId);
+      const response = await axios.get(`https://www.server.speakeval.org/api/classes/${classId}/assignments/${assignmentId}` , {
+        headers: getAuthHeaders()
+      });
+      // response shape: { success, assignment, isTeacher, isStudent }
+      const assignment = response.data?.assignment || response.data;
       if (!assignment) {
         throw new Error('Assignment not found');
       }

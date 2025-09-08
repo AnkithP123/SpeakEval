@@ -19,8 +19,7 @@ const CreateAssignment = () => {
     description: '',
     dueDate: '',
     timeLimit: 60,
-    thinkingTime: 10,
-    selectedQuestions: []
+    thinkingTime: 10
   });
 
   useEffect(() => {
@@ -59,15 +58,6 @@ const CreateAssignment = () => {
 
   const handleSetSelect = (set) => {
     setSelectedSet(set);
-    // Map questions to include selected property
-    const questionsWithSelection = (set.questions || []).map(question => ({
-      ...question,
-      selected: true // Default to selected
-    }));
-    setFormData(prev => ({
-      ...prev,
-      selectedQuestions: questionsWithSelection
-    }));
   };
 
   const handleQuestionToggle = (questionIndex) => {
@@ -89,21 +79,16 @@ const CreateAssignment = () => {
       return;
     }
 
-    if (formData.selectedQuestions.filter(q => q.selected).length === 0) {
-      showError('Please select at least one question');
-      return;
-    }
-
     setLoading(true);
     
     try {
       const assignmentData = {
-        ...formData,
-        classId,
-        questionSet: selectedSet,
-        questions: formData.selectedQuestions.filter(q => q.selected),
-        created: Date.now(),
-        submissions: []
+        title: formData.title,
+        description: formData.description,
+        dueDate: formData.dueDate,
+        // store only configName; all questions will be used
+        configName: selectedSet.name,
+        created: Date.now()
       };
 
       await createAssignment(classId, assignmentData);
