@@ -150,35 +150,6 @@ const JoinClass = () => {
                   </div>
                 </div>
                 
-              {/* Examples */}
-              <div className="mt-8 group relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-                <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                  <div className="relative z-10 p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                      <FaSearch className="mr-3 text-purple-400" />
-                      Example Join Codes
-                    </h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      {exampleCodes.map((code, index) => (
-                        <div
-                          key={index}
-                          className="text-center p-4 bg-slate-800/50 rounded-xl border border-gray-600"
-                        >
-                          <div className="font-mono text-2xl font-bold text-purple-400 mb-2">
-                            {code}
-                          </div>
-                          <div className="text-gray-400 text-sm">
-                            Example {index + 1}
-                  </div>
-                </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                  </div>
-                </div>
-                
             {/* Sidebar */}
             <div className="space-y-6">
               {/* How to Join Card */}
@@ -223,37 +194,7 @@ const JoinClass = () => {
           </div>
               </div>
 
-              {/* Tips Card */}
-              <div className="group relative animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-                <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                  <div className="relative z-10 p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                      <FaCheckCircle className="mr-3 text-green-400" />
-                      Tips
-                    </h3>
-                    <ul className="space-y-3 text-gray-300">
-                      <li className="flex items-start">
-                        <span className="text-green-400 mr-2">•</span>
-                        <span>Join codes are case-insensitive</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-green-400 mr-2">•</span>
-                        <span>Make sure you have the correct code</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-green-400 mr-2">•</span>
-                        <span>Contact your teacher if you have issues</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-green-400 mr-2">•</span>
-                        <span>You can join multiple classes</span>
-                      </li>
-                </ul>
-              </div>
-            </div>
-              </div>
-
+</div>
               {/* Troubleshooting Card */}
               <div className="group relative animate-fade-in-up" style={{ animationDelay: '500ms' }}>
                 <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500">
