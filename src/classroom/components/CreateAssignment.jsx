@@ -297,51 +297,7 @@ const CreateAssignment = () => {
               </div>
             </div>
 
-              {/* Question Selection */}
-              {selectedSet && (
-                <div className="group relative animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-                  <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                    <div className="relative z-10 p-8">
-                      <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-                        <FaUsers className="mr-3 text-green-400" />
-                        Select Questions
-                      </h2>
-                      
-                      <div className="space-y-4">
-                        {formData.selectedQuestions.map((question, index) => (
-                          <div
-                            key={index}
-                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                              question.selected
-                                ? 'border-green-500 bg-green-500/10'
-                                : 'border-gray-600 bg-slate-800/50 hover:border-green-400'
-                            }`}
-                            onClick={() => handleQuestionToggle(index)}
-                          >
-                            <div className="flex items-start space-x-3">
-                  <input
-                    type="checkbox"
-                                checked={question.selected}
-                                onChange={() => handleQuestionToggle(index)}
-                                className="mt-1 w-4 h-4 text-green-500 bg-slate-800 border-gray-600 rounded focus:ring-green-500"
-                              />
-                              <div className="flex-1">
-                                <h4 className="text-white font-semibold mb-2">
-                                  Question {index + 1}
-                                </h4>
-                                <p className="text-gray-300 text-sm">
-                                  {question.transcription}
-                                </p>
-                              </div>
-                    </div>
-                  </div>
-                        ))}
-                      </div>
-                    </div>
-                    </div>
-                  </div>
-                )}
+              {/* Question Selection disabled - all questions in set will be used */}
 
               {/* Submit Button */}
               <div className="text-center">
