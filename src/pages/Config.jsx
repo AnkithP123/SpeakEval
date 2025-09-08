@@ -954,7 +954,7 @@ const Config = ({
           setUploadProgress(Math.round(((i + 1) / questions.length) * 100));
         }
 
-        toast.success("Configuration updated successfully");
+        toast.success("Question Set updated successfully");
         setIsConfigRegistered(true);
       } else {
         // Create new config
@@ -1148,7 +1148,7 @@ const Config = ({
                   <p className="text-sm font-medium">
                     <strong>Warning:</strong> Your{" "}
                     {isUpdate
-                      ? "configuration has not been updated"
+                      ? "question set has not been updated"
                       : "question set has not been saved"}{" "}
                     yet. Click "{isUpdate ? "Update" : "Register Question Set"}"
                     at the bottom of the page to save your work.

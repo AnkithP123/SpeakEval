@@ -7,7 +7,7 @@ import { FaArrowLeft, FaPlay, FaEdit, FaUsers, FaClock, FaCalendar, FaGraduation
 const AssignmentDetail = () => {
   const { classId, assignmentId } = useParams();
   const navigate = useNavigate();
-  const { getAssignment, deleteAssignment } = useClassroom();
+  const { getAssignment, deleteAssignment, getClass } = useClassroom();
   const { showSuccess, showError } = useToast();
   
   const [assignment, setAssignment] = useState(null);
@@ -30,6 +30,7 @@ const AssignmentDetail = () => {
         setIsTeacher(classInfo.teacher === currentUser);
       } catch (error) {
         showError('Failed to load assignment');
+        console.error(error);
         navigate(`/classroom/${classId}`);
       } finally {
         setLoading(false);
@@ -40,14 +41,12 @@ const AssignmentDetail = () => {
   }, [classId, assignmentId]);
 
   const handleDeleteAssignment = async () => {
-    if (window.confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
-      try {
-        await deleteAssignment(classId, assignmentId);
-        showSuccess('Assignment deleted successfully');
-        navigate(`/classroom/${classId}`);
-      } catch (error) {
-        showError('Failed to delete assignment');
-      }
+    try {
+      await deleteAssignment(classId, assignmentId);
+      showSuccess('Assignment deleted successfully');
+      navigate(`/classroom/${classId}`);
+    } catch (error) {
+      showError('Failed to delete assignment');
     }
   };
 
