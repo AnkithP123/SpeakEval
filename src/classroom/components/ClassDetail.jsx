@@ -20,14 +20,27 @@ const ClassDetail = () => {
         const data = await getClass(classId);
         setClassData(data);
         
-        // Check if current user is the teacher
-        const currentUser = localStorage.getItem('username');
-        setIsTeacher(data.teacher === currentUser);
-    } catch (error) {
+        // Determine role from JWT/classroom_user
+        const decodeJwt = (jwt) => {
+          try {
+            const payload = jwt.split('.') [1];
+            const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+            try { return JSON.parse(decodeURIComponent(escape(json))); } catch { return JSON.parse(json); }
+          } catch { return null; }
+        };
+
+        const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
+        const decoded = token ? decodeJwt(token) : null;
+        const classroomUser = JSON.parse(localStorage.getItem('classroom_user') || '{}');
+        const userType = decoded?.userType || decoded?.role || classroomUser?.userType;
+        const username = decoded?.username || localStorage.getItem('username') || classroomUser?.username;
+
+        setIsTeacher(userType === 'teacher' && username && data.teacher === username);
+      } catch (error) {
         showError('Failed to load class');
         navigate('/classroom');
-    } finally {
-      setLoading(false);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -194,20 +207,22 @@ const ClassDetail = () => {
               </Link>
             )}
 
-            <Link
-              to={`/classroom/${classId}/students`}
-              className="group relative animate-fade-in-up"
-              style={{ animationDelay: '500ms' }}
-            >
-              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 px-8 py-4 flex items-center space-x-3">
-                  <FaUsers className="text-xl text-purple-400" />
-                  <span className="text-white font-semibold text-lg">View Students</span>
+            {isTeacher && (
+              <Link
+                to={`/classroom/${classId}/students`}
+                className="group relative animate-fade-in-up"
+                style={{ animationDelay: '500ms' }}
+              >
+                <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative z-10 px-8 py-4 flex items-center space-x-3">
+                    <FaUsers className="text-xl text-purple-400" />
+                    <span className="text-white font-semibold text-lg">View Students</span>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            )}
           </div>
 
           {/* Assignments List */}
@@ -280,12 +295,14 @@ const ClassDetail = () => {
                             <span className="text-sm text-gray-400">
                               Created: {formatDate(assignment.created)}
                             </span>
-                            <span className="text-sm text-gray-400">
-                              Submissions: {assignment.submissions?.length || 0}
-                            </span>
+                            {isTeacher && (
+                              <span className="text-sm text-gray-400">
+                                Submissions: {assignment.submissions?.length || 0}
+                              </span>
+                            )}
                           </div>
                           <Link
-                            to={`/classroom/${classId}/assignments/${assignment.id}/take`}
+                            to={`/classroom/${classId}/assignments/${assignment.id}/${isTeacher ? 'preview' : 'take'}`}
                             className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 flex items-center"
                           >
                             <FaPlay className="mr-2" />
