@@ -14,7 +14,7 @@ const PulseButton = styled.button`
   }
 `
 
-export default function PracticeAudioRecorder({ examData, onComplete }) {
+export default function PracticeAudioRecorder({ examData, onComplete, isAssignment = false }) {
   const [isRecording, setIsRecording] = useState(false)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [recordings, setRecordings] = useState([])
@@ -185,6 +185,11 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
 `
 
   const uploadAllRecordings = async () => {
+    // For assignment mode, skip practice exam authentication
+    if (isAssignment) {
+      return true; // Return success to proceed with onComplete
+    }
+
     // Check if student is authenticated
     if (!tokenManager.isAuthenticated()) {
       console.error("Not authenticated for practice exam");
@@ -403,7 +408,27 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
               // Upload all recordings before completing
               const uploadSuccess = await uploadAllRecordings();
               if (uploadSuccess) {
-                onComplete(recordings);
+                if (isAssignment) {
+                  // For assignment mode, convert recordings to include blob data
+                  const recordingsWithBlobs = await Promise.all(
+                    recordings.map(async (recording) => {
+                      try {
+                        const response = await fetch(recording.audioUrl);
+                        const audioBlob = await response.blob();
+                        return {
+                          ...recording,
+                          audioBlob: audioBlob
+                        };
+                      } catch (error) {
+                        console.error("Error converting recording to blob:", error);
+                        return recording;
+                      }
+                    })
+                  );
+                  onComplete(recordingsWithBlobs);
+                } else {
+                  onComplete(recordings);
+                }
               } else {
                 // Could show error message to user
                 console.error("Some uploads failed");
@@ -411,7 +436,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
             }}
             className="mt-8 w-full futuristic-button bg-green-500 hover:bg-green-600"
           >
-            Finish Practice Exam
+            {isAssignment ? "Submit Assignment" : "Finish Practice Exam"}
           </button>
         )}
 

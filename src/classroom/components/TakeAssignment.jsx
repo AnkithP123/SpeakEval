@@ -34,14 +34,38 @@ const TakeAssignment = () => {
   const handleComplete = async (recordings) => {
     setSubmitting(true);
     try {
+      // Convert blob data to base64 for submission
+      const recordingsWithBase64 = await Promise.all(
+        recordings.map(async (recording) => {
+          if (recording.audioBlob) {
+            // Convert blob to base64
+            const base64 = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.readAsDataURL(recording.audioBlob);
+            });
+            
+            return {
+              questionIndex: recording.questionIndex,
+              audioBase64: base64,
+              mimeType: recording.audioBlob.type,
+              timestamp: recording.timestamp
+            };
+          } else {
+            // Fallback to URL if no blob
+            return {
+              questionIndex: recording.questionIndex,
+              audioUrl: recording.audioUrl,
+              timestamp: recording.timestamp
+            };
+          }
+        })
+      );
+
       const submissionData = {
         assignmentId,
         classId,
-        recordings: recordings.map(recording => ({
-          questionIndex: recording.questionIndex,
-          audioUrl: recording.audioUrl,
-          timestamp: recording.timestamp
-        })),
+        recordings: recordingsWithBase64,
         submittedAt: Date.now()
       };
 
@@ -139,6 +163,7 @@ const TakeAssignment = () => {
             <PracticeAudioRecorder 
               examData={examData} 
               onComplete={handleComplete}
+              isAssignment={true}
             />
           </div>
 

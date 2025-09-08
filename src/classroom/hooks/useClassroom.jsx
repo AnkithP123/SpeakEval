@@ -205,14 +205,9 @@ export const ClassroomProvider = ({ children }) => {
     setError(null);
     
     try {
-      const user = JSON.parse(localStorage.getItem('classroom_user') || '{}');
       const response = await axios.post(
-        `https://www.server.speakeval.org/classroom/${classId}/assignments/${assignmentId}/submit`,
-        {
-          ...submissionData,
-          studentId: user.username,
-          studentName: user.username
-        },
+        `https://www.server.speakeval.org/api/classes/${classId}/assignments/${assignmentId}/submit`,
+        submissionData,
         {
           headers: getAuthHeaders()
         }
