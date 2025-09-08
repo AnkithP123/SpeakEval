@@ -134,7 +134,7 @@ const Dashboard = () => {
 
   const teachingClasses = classes.filter(c => c.teacher === user?.username);
   const enrolledClasses = classes.filter(c => 
-    c.students?.some(student => student.id === user?.username)
+    c.students?.some(student => student.username === user?.username)
   );
 
   const upcomingAssignments = getUpcomingAssignments();
