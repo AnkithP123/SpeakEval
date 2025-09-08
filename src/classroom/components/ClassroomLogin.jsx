@@ -143,7 +143,12 @@ const ClassroomLogin = ({ initialTab = 'login' }) => {
   const handleGoogleSuccess = async (credentialResponse) => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://www.server.speakeval.org/login-google', {
+      // Choose endpoint based on active tab
+      const endpoint = activeTab === 'login' 
+        ? 'https://www.server.speakeval.org/login-google'
+        : 'https://www.server.speakeval.org/signup-google';
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,16 +157,18 @@ const ClassroomLogin = ({ initialTab = 'login' }) => {
       });
 
       const data = await response.json();
-      console.log('Google login response:', data); // Debug log
+      console.log(`Google ${activeTab} response:`, data); // Debug log
 
       if (!response.ok) {
-        console.error('Google login failed with status:', response.status, 'Error:', data);
-        throw new Error(data.error || 'Google sign-in failed');
+        console.error(`Google ${activeTab} failed with status:`, response.status, 'Error:', data);
+        throw new Error(data.error || `Google ${activeTab} failed`);
       }
       
       // Store user info and token for both teachers and students
       localStorage.setItem('classroom_user', JSON.stringify({
         username: data.username,
+        fullName: data.fullName || data.username,
+        email: data.email,
         userType: data.userType,
         isAuthenticated: true,
         googleAuth: true
@@ -174,15 +181,16 @@ const ClassroomLogin = ({ initialTab = 'login' }) => {
         localStorage.setItem('username', data.username);
       }
       
-      showSuccess(`Welcome ${data.userType === 'student' ? 'Student' : 'Teacher'}! Signed in with Google`);
+      const action = activeTab === 'login' ? 'Signed in' : 'Account created and signed in';
+      showSuccess(`Welcome ${data.userType === 'student' ? 'Student' : 'Teacher'}! ${action} with Google`);
       
       // Dispatch custom event to update navbar
       window.dispatchEvent(new CustomEvent('userUpdated'));
       
       navigate('/classroom');
     } catch (error) {
-      console.error('Google login error:', error); // Debug log
-      showError(error.message || 'Google sign-in failed. Please try again.');
+      console.error(`Google ${activeTab} error:`, error); // Debug log
+      showError(error.message || `Google ${activeTab} failed. Please try again.`);
       setShake(true);
       setTimeout(() => setShake(false), 500);
     } finally {
