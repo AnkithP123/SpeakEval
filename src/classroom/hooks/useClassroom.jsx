@@ -252,16 +252,18 @@ export const ClassroomProvider = ({ children }) => {
     }
   };
 
-  // Get submissions for an assignment
+  // Get submissions for an assignment (teachers receive presigned audio URLs)
   const getSubmissions = async (classId, assignmentId) => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await axios.get(`https://www.server.speakeval.org/classroom/${classId}/assignments/${assignmentId}/submissions`, {
+      // Use API route that enriches teacher responses with presigned URLs
+      const response = await axios.get(`https://www.server.speakeval.org/api/classes/${classId}/assignments/${assignmentId}/submissions`, {
         headers: getAuthHeaders()
       });
-      return response.data;
+      // Response shape: { success, submissions }
+      return response.data?.submissions || [];
     } catch (error) {
       handleApiError(error);
     } finally {

@@ -48,14 +48,21 @@ const ClassDetail = () => {
   }, [classId]);
 
   const handleDeleteClass = async () => {
-    if (window.confirm('Are you sure you want to delete this class? This action cannot be undone.')) {
-      try {
-        await deleteClass(classId);
-        showSuccess('Class deleted successfully');
-        navigate('/classroom');
-      } catch (error) {
-        showError('Failed to delete class');
+    try {
+      // Call backend delete endpoint
+      const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
+      const res = await fetch(`https://www.server.speakeval.org/classroom/${classId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to delete class');
       }
+      showSuccess('Class deleted successfully');
+      navigate('/classroom');
+    } catch (error) {
+      showError('Failed to delete class');
     }
   };
 
@@ -139,17 +146,19 @@ const ClassDetail = () => {
 
           {/* Class Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-            <div className="group relative animate-fade-in-up">
-              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 p-6 text-center">
-                  <FaUsers className="text-3xl text-cyan-400 mx-auto mb-4" />
-                  <div className="text-3xl font-bold text-white mb-2">{classData.students?.length || 0}</div>
-                  <div className="text-gray-300">Students</div>
+            {isTeacher && (
+              <div className="group relative animate-fade-in-up">
+                <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative z-10 p-6 text-center">
+                    <FaUsers className="text-3xl text-cyan-400 mx-auto mb-4" />
+                    <div className="text-3xl font-bold text-white mb-2">{classData.students?.length || 0}</div>
+                    <div className="text-gray-300">Students</div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             
             <div className="group relative animate-fade-in-up" style={{ animationDelay: '100ms' }}>
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
@@ -162,7 +171,7 @@ const ClassDetail = () => {
                 </div>
               </div>
             </div>
-
+            
             <div className="group relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
@@ -268,17 +277,19 @@ const ClassDetail = () => {
                               </span>
                               <span className="flex items-center">
                                 <FaGraduationCap className="mr-1" />
-                                {assignment.questions?.length || 0} questions
+                                {assignment.numQuestions ?? (assignment.questions?.length || 0)} questions
                               </span>
             </div>
                 </div>
                           <div className="flex space-x-2">
-                            <Link
-                              to={`/classroom/${classId}/assignments/${assignment.id}`}
-                              className="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all duration-300"
-                            >
-                              <FaEye className="w-4 h-4" />
-                            </Link>
+                            {isTeacher && (
+                              <Link
+                                to={`/classroom/${classId}/assignments/${assignment.id}`}
+                                className="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all duration-300"
+                              >
+                                <FaEye className="w-4 h-4" />
+                              </Link>
+                            )}
                   {isTeacher && (
                               <Link
                                 to={`/classroom/${classId}/assignments/${assignment.id}/grade`}
@@ -297,7 +308,7 @@ const ClassDetail = () => {
                             </span>
                             {isTeacher && (
                               <span className="text-sm text-gray-400">
-                                Submissions: {assignment.submissions?.length || 0}
+                                Submissions: {assignment.submissionsCount ?? (assignment.submissions?.length || 0)}
                               </span>
                             )}
                           </div>

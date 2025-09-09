@@ -215,8 +215,8 @@ const Dashboard = () => {
                   <div className="text-3xl font-bold text-white mb-2">{enrolledClasses.length}</div>
                   <div className="text-gray-300">Enrolled</div>
                 </div>
-              </div>
-            </div>
+          </div>
+        </div>
 
             <div className="group relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">

@@ -35,16 +35,14 @@ const StudentList = () => {
   }, [classId]);
 
   const handleRemoveStudent = async (studentId) => {
-    if (window.confirm('Are you sure you want to remove this student from the class?')) {
-      try {
-        await removeStudent(classId, studentId);
-        showSuccess('Student removed successfully');
-        // Reload class data
-        const data = await getClass(classId);
-        setClassData(data);
-      } catch (error) {
-        showError('Failed to remove student');
-      }
+    try {
+      await removeStudent(classId, studentId);
+      showSuccess('Student removed successfully');
+      // Reload class data
+      const data = await getClass(classId);
+      setClassData(data);
+    } catch (error) {
+      showError('Failed to remove student');
     }
   };
 

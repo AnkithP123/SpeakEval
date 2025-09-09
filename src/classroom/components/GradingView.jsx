@@ -178,11 +178,11 @@ const GradingView = () => {
                 ) : (
                   <div className="space-y-6">
                     {submissions.map((submission, index) => (
-                      <div key={submission.id} className="bg-slate-800/50 rounded-xl p-6 border border-gray-600 hover:border-cyan-400 transition-all duration-300">
+                      <div key={`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`} className="bg-slate-800/50 rounded-xl p-6 border border-gray-600 hover:border-cyan-400 transition-all duration-300">
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex-1">
                             <h3 className="text-xl font-bold text-white mb-2">
-                              {submission.studentName || `Student ${index + 1}`}
+                              {submission.studentName || submission.fullName || submission.studentEmail || `Student ${index + 1}`}
                             </h3>
                             <div className="flex items-center space-x-6 text-sm text-gray-400 mb-4">
                               <span className="flex items-center">
@@ -191,7 +191,7 @@ const GradingView = () => {
                               </span>
                               <span className="flex items-center">
                                 <FaClock className="mr-1" />
-                                Duration: {formatDuration(submission.duration || 0)}
+                                Duration: {formatDuration(submission.timeSpent || 0)}
                               </span>
                               <span className="flex items-center">
                                 <FaStar className="mr-1" />
@@ -208,22 +208,33 @@ const GradingView = () => {
                                 <div className="text-sm text-gray-400">Grade</div>
                 </div>
                             )}
-                            <Link
-                              to={`/classroom/${classId}/assignments/${assignmentId}/submissions/${submission.id}`}
-                              className="p-3 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all duration-300"
-                            >
-                              <FaPlay className="w-4 h-4" />
-                            </Link>
+                            {/* Per-question playback is shown below */}
                       </div>
                         </div>
                         
+                        {/* Audio responses */}
+                        {Array.isArray(submission.audioFiles) && submission.audioFiles.length > 0 && (
+                          <div className="mt-4 space-y-3">
+                            {submission.audioFiles.map((file, qIdx) => (
+                              <div key={`${file.s3Key || qIdx}`} className="flex items-center justify-between bg-slate-900/50 rounded-lg p-3 border border-slate-700">
+                                <div className="text-sm text-gray-300">Question {file.questionIndex != null ? file.questionIndex + 1 : qIdx + 1}</div>
+                                {file.audioUrl ? (
+                                  <audio controls src={file.audioUrl} className="w-64" />
+                                ) : (
+                                  <span className="text-xs text-gray-400">No audio URL</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                         {/* Quick Grade Actions */}
                         <div className="flex items-center space-x-4">
                           <span className="text-sm text-gray-400">Quick Grade:</span>
                           {[100, 90, 80, 70, 60, 50].map(grade => (
                             <button
                               key={grade}
-                              onClick={() => handleGradeSubmission(submission.id, grade)}
+                              onClick={() => handleGradeSubmission(`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`, grade)}
                               className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-300 ${
                                 grading[submission.id] === grade || submission.grade === grade
                                   ? 'bg-cyan-500 text-white'

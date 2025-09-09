@@ -23,8 +23,8 @@ const CreateAssignment = () => {
   });
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
+  const loadData = async () => {
+    try {
         const classInfo = await getClass(classId);
         setClassData(classInfo);
         
@@ -39,8 +39,8 @@ const CreateAssignment = () => {
           questions: config.questions || []
         }));
         setQuestionSets(sets);
-      } catch (error) {
-        showError('Failed to load class data');
+    } catch (error) {
+      showError('Failed to load class data');
         navigate('/classroom');
       }
     };
@@ -88,6 +88,8 @@ const CreateAssignment = () => {
         dueDate: formData.dueDate,
         // store only configName; all questions will be used
         configName: selectedSet.name,
+        timeLimit: Number(formData.timeLimit) || 60,
+        thinkingTime: Number(formData.thinkingTime) || 10,
         created: Date.now()
       };
 
