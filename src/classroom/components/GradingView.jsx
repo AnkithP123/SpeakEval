@@ -12,9 +12,11 @@ const GradingView = () => {
   
   const [assignment, setAssignment] = useState(null);
   const [submissions, setSubmissions] = useState([]);
+  const [combinedSubmissions, setCombinedSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState({});
   const [shortCounts, setShortCounts] = useState({});
+  const [showIndividual, setShowIndividual] = useState(false);
 
   useEffect(() => {
   const loadData = async () => {
