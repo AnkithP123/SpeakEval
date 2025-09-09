@@ -804,8 +804,6 @@ const Config = ({
     } else {
       // Reset instructions if the loaded config doesn't have any
       setInstructionsEnabled(false);
-      setInstructions([""]);
-      setAlwaysShowInstruction(false);
     }
 
     // Set config type based on whether instructions are present and enabled
@@ -931,9 +929,9 @@ const Config = ({
         })
         .join("|;;|")}`;
 
-      const instructionsString = `${instructionsEnabled}|i_i|${instructions.join(
-        "|i_i|"
-      )}`;
+      const instructionsString = `${instructionsEnabled}|i_i|${instructions
+        .map((instruction) => JSON.stringify(instruction))
+        .join("|i_i|")}`;
 
       const language =
         selectedLanguage === "Other" ? otherLanguage : selectedLanguage;
@@ -1752,7 +1750,370 @@ const Config = ({
               </>
             )}
 
-            {/* All modals remain the same */}
+            {/* Selective Autofill Modal */}
+            {showSelectiveAutofillModal && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+                <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 p-8 rounded-2xl border border-yellow-500/30 backdrop-blur-md shadow-2xl w-full max-w-2xl mx-auto">
+                  {/* Animated background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 pointer-events-none" />
+
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">
+                        Autofill Configuration
+                      </h2>
+                      <button
+                        onClick={() => setShowSelectiveAutofillModal(false)}
+                        className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-lg"
+                      >
+                        <FaTimes size={20} />
+                      </button>
+                    </div>
+
+                    {/* Autofill Options */}
+                    <div className="mb-8">
+                      <h3 className="text-xl font-semibold text-white mb-4">
+                        Select what to autofill:
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        {Object.entries(autofillOptions).map(([key, value]) => (
+                          <label
+                            key={key}
+                            className="flex items-center space-x-3 p-4 bg-gray-800/50 rounded-lg border border-gray-600 hover:border-yellow-500/50 transition-colors cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={value}
+                              onChange={(e) =>
+                                setAutofillOptions((prev) => ({
+                                  ...prev,
+                                  [key]: e.target.checked,
+                                }))
+                              }
+                              className="w-5 h-5 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500 focus:ring-2"
+                            />
+                            <span className="text-white font-medium capitalize">
+                              {key === "timeLimit" ? "Time Limit" : key}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Configuration List */}
+                    <div className="mb-6">
+                      <h3 className="text-xl font-semibold text-white mb-4">
+                        Choose a configuration:
+                      </h3>
+                      <div className="max-h-64 overflow-y-auto space-y-3">
+                        {selectedConfig && selectedConfig.length > 0 ? (
+                          selectedConfig.map((config, index) => (
+                            <div
+                              key={index}
+                              onClick={() => handleConfigClick(config)}
+                              className="group p-4 rounded-lg cursor-pointer transition-all duration-300 bg-gradient-to-r from-gray-800 to-gray-700 border border-gray-600 hover:border-yellow-500/50 hover:shadow-lg hover:shadow-yellow-500/20 hover:-translate-y-1"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="text-white font-semibold group-hover:text-yellow-400 transition-colors">
+                                    {config.name}
+                                  </h4>
+                                  <p className="text-gray-400 text-sm mt-1">
+                                    {config.questions?.length || 0} questions •{" "}
+                                    {config.language || "No language set"}
+                                  </p>
+                                </div>
+                                <div className="text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 5l7 7-7 7"
+                                    />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : isLoadingConfigs ? (
+                          <div className="flex justify-center items-center py-4">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <div className="text-gray-400 text-lg">
+                              No configurations found
+                            </div>
+                            <p className="text-gray-500 text-sm mt-2">
+                              Create a configuration first to use autofill
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setShowSelectiveAutofillModal(false)}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-300 font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Preset Rubrics Modal */}
+            {showPresetRubricsModal && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+                <div className="relative overflow-hidden bg-gradient-to-br from-purple-900 to-indigo-900 p-8 rounded-2xl border border-purple-500/30 backdrop-blur-md shadow-2xl w-full max-w-2xl mx-auto">
+                  {/* Animated background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 pointer-events-none" />
+
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
+                        Preset Rubrics
+                      </h2>
+                      <button
+                        onClick={() => setShowPresetRubricsModal(false)}
+                        className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-lg"
+                      >
+                        <FaTimes size={20} />
+                      </button>
+                    </div>
+
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {Object.entries(presetRubrics).map(([name, rubric]) => (
+                        <div
+                          key={name}
+                          onClick={() => handlePresetRubricClick(name)}
+                          className="group p-6 rounded-lg cursor-pointer transition-all duration-300 bg-gradient-to-r from-gray-800 to-gray-700 border border-gray-600 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20 hover:-translate-y-1"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h3 className="text-xl font-semibold text-white group-hover:text-purple-400 transition-colors mb-2">
+                                {name}
+                              </h3>
+                              <div className="text-gray-400 text-sm mb-3">
+                                {rubric.pointValues.length} point scale •{" "}
+                                {rubric.categories.length} categories
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {rubric.categories.map((category, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-xs font-medium"
+                                  >
+                                    {category.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="text-purple-500 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+                              <svg
+                                className="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => setShowPresetRubricsModal(false)}
+                      className="mt-6 w-full px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-300 font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Import File Modal */}
+            {showImportModal && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+                <div className="relative overflow-hidden bg-black/60 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-md shadow-xl w-full max-w-lg mx-auto">
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none" />
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+                        Import File
+                      </h2>
+                      <button
+                        onClick={closeImportModal}
+                        className="text-gray-400 hover:text-white transition-colors"
+                      >
+                        <FaTimes size={20} />
+                      </button>
+                    </div>
+
+                    {!uploadedFile && !isUploading && !processedStrings && (
+                      <div
+                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
+                          dragActive
+                            ? "border-cyan-400 bg-cyan-500/10"
+                            : "border-gray-500 hover:border-cyan-500"
+                        }`}
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDragOver={handleDrag}
+                        onDrop={handleDrop}
+                      >
+                        <div className="space-y-4">
+                          <div className="text-4xl text-gray-400">📁</div>
+                          <div>
+                            <p className="text-white text-lg font-medium">
+                              Drag and drop your file here
+                            </p>
+                            <p className="text-gray-400 text-sm mt-2">
+                              Supported formats: PDF, DOCX, TXT (Max 10MB)
+                            </p>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="file"
+                              accept=".pdf,.docx,.doc,.txt"
+                              onChange={handleFileInputChange}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 font-medium">
+                              Choose File
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {isUploading && (
+                      <div className="text-center py-8">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mb-4"></div>
+                        <p className="text-white text-lg font-medium">
+                          Processing your file...
+                        </p>
+                        <p className="text-gray-400 text-sm mt-2">
+                          Please wait while we extract the content
+                        </p>
+                      </div>
+                    )}
+
+                    {isConfirming && (
+                      <div className="text-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-purple-400 mb-6"></div>
+                        <p className="text-white text-xl font-medium mb-2">
+                          Converting text to speech...
+                        </p>
+                        <p className="text-gray-400 text-lg mb-4">
+                          Generating audio for {processedStrings.length}{" "}
+                          questions
+                        </p>
+                        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600">
+                          <p className="text-cyan-400 text-lg font-semibold">
+                            Estimated time:{" "}
+                            {Math.ceil(processedStrings.length / 30)} minutes
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {processedStrings && !isConfirming && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <p className="text-white text-lg font-medium">
+                            Edit the extracted content:
+                          </p>
+                          <button
+                            onClick={() =>
+                              setProcessedStrings([...processedStrings, ""])
+                            }
+                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-2"
+                          >
+                            <FaPlus size={14} />
+                            <span>Add Question</span>
+                          </button>
+                        </div>
+                        <div className="max-h-96 overflow-y-auto space-y-3">
+                          {processedStrings.map((str, index) => (
+                            <div key={index} className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <label className="text-gray-300 text-sm">
+                                  Question {index + 1}:
+                                </label>
+                                <button
+                                  onClick={() => {
+                                    if (processedStrings.length > 1) {
+                                      setProcessedStrings(
+                                        processedStrings.filter(
+                                          (_, i) => i !== index
+                                        )
+                                      );
+                                    } else {
+                                      toast.error(
+                                        "You must have at least one question"
+                                      );
+                                    }
+                                  }}
+                                  className="text-red-400 hover:text-red-300 transition-colors p-1"
+                                  title="Remove this question"
+                                >
+                                  <FaTimes size={14} />
+                                </button>
+                              </div>
+                              <textarea
+                                value={str}
+                                onChange={(e) =>
+                                  handleStringEdit(index, e.target.value)
+                                }
+                                className="w-full h-[50px] bg-black/30 border border-cyan-500/30 rounded p-3 text-white resize-none"
+                                rows={3}
+                                placeholder={`Content ${index + 1}`}
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex space-x-4 mt-6">
+                          <button
+                            onClick={closeImportModal}
+                            className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleConfirmStrings}
+                            disabled={isConfirming}
+                            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                              isConfirming
+                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                : "bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
+                            }`}
+                          >
+                            Confirm Changes
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
