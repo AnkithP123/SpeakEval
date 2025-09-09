@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useClassroom } from '../hooks/useClassroom.jsx';
 import { useToast } from '../hooks/useToast.jsx';
-import { FaArrowLeft, FaPlay, FaCheck, FaTimes, FaStar, FaClock, FaUser } from 'react-icons/fa';
+import { FaArrowLeft, FaChevronDown, FaChevronRight, FaCheckCircle, FaExclamationTriangle, FaStar, FaClock, FaUser, FaCheck } from 'react-icons/fa';
 
 const GradingView = () => {
   const { classId, assignmentId } = useParams();
   const navigate = useNavigate();
-  const { getAssignment, getSubmissions, gradeSubmission } = useClassroom();
+  const { getAssignment, getSubmissions } = useClassroom();
   const { showSuccess, showError } = useToast();
   
   const [assignment, setAssignment] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [grading, setGrading] = useState({});
+  const [expanded, setExpanded] = useState({});
+  const [shortCounts, setShortCounts] = useState({});
 
   useEffect(() => {
   const loadData = async () => {
@@ -36,14 +37,20 @@ const GradingView = () => {
     loadData();
   }, [classId, assignmentId]);
 
-  const handleGradeSubmission = async (submissionId, grade) => {
-    try {
-      await gradeSubmission(classId, assignmentId, submissionId, grade);
-      setGrading(prev => ({ ...prev, [submissionId]: grade }));
-      showSuccess('Grade saved successfully');
-    } catch (error) {
-      showError('Failed to save grade');
-    }
+  const toggleExpand = (key) => {
+    setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleLoadedMetadata = (submissionKey, qIdx, duration) => {
+    setShortCounts(prev => {
+      const current = prev[submissionKey] || { short: 0, total: 0 };
+      const isShort = duration > 0 && duration < 2;
+      const updated = {
+        short: current.short + (isShort ? 1 : 0),
+        total: Math.max(current.total, qIdx + 1)
+      };
+      return { ...prev, [submissionKey]: updated };
+    });
   };
 
   const formatDate = (timestamp) => {
@@ -108,16 +115,16 @@ const GradingView = () => {
             </button>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600">
-                Grade Submissions
+                View Submissions
               </span>
             </h1>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
-              Review and grade student submissions for "{assignment?.title}"
+              Review student submissions for "{assignment?.title}"
             </p>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
             <div className="group relative animate-fade-in-up">
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
@@ -130,33 +137,7 @@ const GradingView = () => {
           </div>
         </div>
 
-            <div className="group relative animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 p-6 text-center">
-                  <FaCheck className="text-3xl text-green-400 mx-auto mb-4" />
-                  <div className="text-3xl font-bold text-white mb-2">
-                    {submissions.filter(s => s.grade !== undefined).length}
-                      </div>
-                  <div className="text-gray-300">Graded</div>
-                    </div>
-              </div>
-            </div>
-
-            <div className="group relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-500/20 to-red-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 p-6 text-center">
-                  <FaTimes className="text-3xl text-orange-400 mx-auto mb-4" />
-                  <div className="text-3xl font-bold text-white mb-2">
-                    {submissions.filter(s => s.grade === undefined).length}
-                        </div>
-                  <div className="text-gray-300">Pending</div>
-                </div>
-              </div>
-            </div>
+            {/* Removed grading stats */}
           </div>
 
           {/* Submissions List */}
@@ -174,93 +155,82 @@ const GradingView = () => {
                     <FaUser className="text-6xl text-gray-600 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-white mb-2">No Submissions Yet</h3>
                     <p className="text-gray-300">Students haven't submitted their assignments yet</p>
-                  </div>
+                      </div>
                 ) : (
                   <div className="space-y-6">
                     {submissions.map((submission, index) => (
                       <div key={`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`} className="bg-slate-800/50 rounded-xl p-6 border border-gray-600 hover:border-cyan-400 transition-all duration-300">
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex-1">
-                            <h3 className="text-xl font-bold text-white mb-2">
-                              {submission.studentName || submission.fullName || submission.studentEmail || `Student ${index + 1}`}
-                            </h3>
-                            <div className="flex items-center space-x-6 text-sm text-gray-400 mb-4">
-                              <span className="flex items-center">
-                                <FaClock className="mr-1" />
-                                Submitted: {formatDate(submission.submittedAt)}
-                              </span>
-                              <span className="flex items-center">
-                                <FaClock className="mr-1" />
-                                Duration: {formatDuration(submission.timeSpent || 0)}
-                              </span>
-                              <span className="flex items-center">
-                                <FaStar className="mr-1" />
-                                Status: {submission.grade !== undefined ? 'Graded' : 'Pending'}
-                              </span>
-                            </div>
+                            <div className="flex items-center space-x-4 mb-1">
+                              {(() => {
+                                const total = assignment?.numQuestions || 0;
+                                const count = submission.audioFiles?.length || 0;
+                                const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                                return (
+                                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${pct >= 100 ? 'bg-slate-800 border-2 border-green-500' : 'bg-slate-800 border-2 border-cyan-500'}`}>
+                                    <span className={`font-bold text-lg ${pct >= 100 ? 'text-green-400' : 'text-cyan-400'}`}>{pct}%</span>
+                        </div>
+                                );
+                              })()}
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-4 mb-1">
+                                  <h3 className="text-xl font-bold text-white">
+                                    {submission.studentName || `Student ${index + 1}`}
+                                  </h3>
+                                  {(() => {
+                                    const key = `${submission.studentEmail || 'student'}-${submission.submittedAt || index}`;
+                                    const stats = shortCounts[key];
+                                    const pctShort = stats && stats.total > 0 ? (stats.short / stats.total) * 100 : 0;
+                                    if (pctShort > 20) {
+                                      return (
+                                        <div className="relative group">
+                                          <FaExclamationTriangle className="text-orange-400 cursor-help" />
+                                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                                            Potential issue: {Math.round(pctShort)}% of responses are under 2s
+                        </div>
+                      </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
+                    </div>
+                                <div className="flex items-center text-sm text-gray-400">
+                                  <span className="flex items-center">
+                                    <FaClock className="mr-1" />
+                                    Submitted: {formatDate(submission.submittedAt)}
+                                  </span>
+                    </div>
+              </div>
+            </div>
+
                           </div>
                           <div className="flex items-center space-x-3">
-                            {submission.grade !== undefined && (
-                              <div className="text-right">
-                                <div className="text-2xl font-bold text-cyan-400">
-                                  {submission.grade}%
-                                </div>
-                                <div className="text-sm text-gray-400">Grade</div>
-                </div>
-                            )}
-                            {/* Per-question playback is shown below */}
-                      </div>
-                        </div>
-                        
+                            <button
+                              onClick={() => toggleExpand(`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`)}
+                              className="p-3 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all duration-300 inline-flex items-center"
+                            >
+                              {expanded[`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`] ? <FaChevronDown className="w-4 h-4" /> : <FaChevronRight className="w-4 h-4" />}
+                              <span className="ml-2">View Responses</span>
+                            </button>
+                          </div>
+          </div>
+
                         {/* Audio responses */}
-                        {Array.isArray(submission.audioFiles) && submission.audioFiles.length > 0 && (
+                        {expanded[`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`] && Array.isArray(submission.audioFiles) && submission.audioFiles.length > 0 && (
                           <div className="mt-4 space-y-3">
                             {submission.audioFiles.map((file, qIdx) => (
                               <div key={`${file.s3Key || qIdx}`} className="flex items-center justify-between bg-slate-900/50 rounded-lg p-3 border border-slate-700">
                                 <div className="text-sm text-gray-300">Question {file.questionIndex != null ? file.questionIndex + 1 : qIdx + 1}</div>
                                 {file.audioUrl ? (
-                                  <audio controls src={file.audioUrl} className="w-64" />
+                                  <audio controls src={file.audioUrl} className="w-64" onLoadedMetadata={(e) => handleLoadedMetadata(`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`, qIdx, e.currentTarget.duration)} />
                                 ) : (
                                   <span className="text-xs text-gray-400">No audio URL</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Quick Grade Actions */}
-                        <div className="flex items-center space-x-4">
-                          <span className="text-sm text-gray-400">Quick Grade:</span>
-                          {[100, 90, 80, 70, 60, 50].map(grade => (
-                            <button
-                              key={grade}
-                              onClick={() => handleGradeSubmission(`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`, grade)}
-                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-300 ${
-                                grading[submission.id] === grade || submission.grade === grade
-                                  ? 'bg-cyan-500 text-white'
-                                  : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
-                              }`}
-                            >
-                              {grade}%
-                            </button>
-                          ))}
-                    <input
-                      type="number"
-                      min="0"
-                            max="100"
-                            placeholder="Custom grade"
-                            className="px-3 py-1 bg-slate-700 text-white rounded-lg text-sm w-24"
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                const grade = parseInt(e.target.value);
-                                if (grade >= 0 && grade <= 100) {
-                                  handleGradeSubmission(submission.id, grade);
-                                  e.target.value = '';
-                                }
-                              }
-                            }}
-                          />
+                      )}
                     </div>
+                  ))}
+                </div>
+                        )}
                   </div>
                     ))}
                   </div>
