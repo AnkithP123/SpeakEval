@@ -79,7 +79,23 @@ const Dashboard = () => {
   }
 
   const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
+    // Handle both epoch timestamps and ISO strings
+    let date;
+    if (typeof timestamp === 'number') {
+      date = new Date(timestamp);
+    } else if (typeof timestamp === 'string') {
+      // Handle ISO strings like "2025-09-08T18:19:01.386Z"
+      date = new Date(timestamp);
+    } else {
+      date = new Date(timestamp);
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
+    
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -204,6 +220,7 @@ const Dashboard = () => {
             </div>
             )}
 
+            {userRole.isStudent && (
             <div className="group relative animate-fade-in-up" style={{ animationDelay: '100ms' }}>
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
@@ -215,8 +232,9 @@ const Dashboard = () => {
                   <div className="text-3xl font-bold text-white mb-2">{enrolledClasses.length}</div>
                   <div className="text-gray-300">Enrolled</div>
                 </div>
-          </div>
-        </div>
+              </div>
+            </div>
+            )}
 
             <div className="group relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
@@ -419,7 +437,23 @@ const Dashboard = () => {
 
 const ClassCard = ({ classData, role }) => {
   const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
+    // Handle both epoch timestamps and ISO strings
+    let date;
+    if (typeof timestamp === 'number') {
+      date = new Date(timestamp);
+    } else if (typeof timestamp === 'string') {
+      // Handle ISO strings like "2025-09-08T18:19:01.386Z"
+      date = new Date(timestamp);
+    } else {
+      date = new Date(timestamp);
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
+    
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'
     });
@@ -470,15 +504,6 @@ const ClassCard = ({ classData, role }) => {
                 </span>
           )}
         </div>
-            <div className="ml-4">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                role === 'teacher' 
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white' 
-                  : 'bg-gradient-to-r from-purple-500 to-pink-600 text-white'
-              }`}>
-            {role === 'teacher' ? '👨‍🏫' : '👨‍🎓'} {role}
-          </span>
-        </div>
       </div>
 
           {/* Stats */}
@@ -502,7 +527,7 @@ const ClassCard = ({ classData, role }) => {
             <span className="font-mono bg-gray-800/50 px-2 py-1 rounded">
               {classData.joinCode}
             </span>
-            <span>Created {formatDate(classData.created)}</span>
+            <span>Created {formatDate(classData.createdAt)}</span>
           </div>
         </div>
       </div>

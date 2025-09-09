@@ -67,7 +67,9 @@ const ClassDetail = () => {
   };
 
   const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
+    // Handle both epoch timestamps and ISO strings
+    const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -178,7 +180,7 @@ const ClassDetail = () => {
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative z-10 p-6 text-center">
                   <FaCalendar className="text-3xl text-green-400 mx-auto mb-4" />
-                  <div className="text-3xl font-bold text-white mb-2">{formatDate(classData.created)}</div>
+                  <div className="text-3xl font-bold text-white mb-2">{formatDate(classData.createdAt)}</div>
                   <div className="text-gray-300">Created</div>
             </div>
           </div>
@@ -313,7 +315,7 @@ const ClassDetail = () => {
                             )}
                           </div>
                           <Link
-                            to={`/classroom/${classId}/assignments/${assignment.id}/${isTeacher ? 'preview' : 'take'}`}
+                            to={`/classroom/${classId}/assignments/${assignment.id}/take`}
                             className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 flex items-center"
                           >
                             <FaPlay className="mr-2" />

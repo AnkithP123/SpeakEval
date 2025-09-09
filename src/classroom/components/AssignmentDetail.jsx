@@ -213,7 +213,7 @@ const AssignmentDetail = () => {
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="relative z-10 px-8 py-4 flex items-center space-x-3">
                     <FaEdit className="text-xl text-purple-400" />
-                    <span className="text-white font-semibold text-lg">Grade Submissions</span>
+                    <span className="text-white font-semibold text-lg">View Submissions</span>
                   </div>
                 </div>
                 </Link>

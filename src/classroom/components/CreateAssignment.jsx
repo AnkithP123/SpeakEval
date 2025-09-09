@@ -85,7 +85,7 @@ const CreateAssignment = () => {
       const assignmentData = {
         title: formData.title,
         description: formData.description,
-        dueDate: formData.dueDate,
+        dueDate: formData.dueDate ? new Date(formData.dueDate).getTime() : null,
         // store only configName; all questions will be used
         configName: selectedSet.name,
         timeLimit: Number(formData.timeLimit) || 60,

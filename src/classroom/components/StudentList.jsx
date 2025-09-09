@@ -47,7 +47,9 @@ const StudentList = () => {
   };
 
   const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
+    // Handle both epoch timestamps and ISO strings
+    const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -125,7 +127,7 @@ const StudentList = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <div className="group relative animate-fade-in-up">
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
@@ -150,27 +152,14 @@ const StudentList = () => {
               </div>
             </div>
 
-            <div className="group relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 p-6 text-center">
-                  <FaTrophy className="text-3xl text-purple-400 mx-auto mb-4" />
-                  <div className="text-3xl font-bold text-white mb-2">
-                    {classData.students?.filter(s => s.averageGrade > 80).length || 0}
-                  </div>
-                  <div className="text-gray-300">High Performers</div>
-                </div>
-            </div>
-            </div>
 
-            <div className="group relative animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+            <div className="group relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-500/20 to-red-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative z-10 p-6 text-center">
                   <FaCalendar className="text-3xl text-orange-400 mx-auto mb-4" />
-                  <div className="text-lg font-bold text-white mb-2">{formatDate(classData.created)}</div>
+                  <div className="text-lg font-bold text-white mb-2">{formatDate(classData.createdAt)}</div>
                   <div className="text-gray-300">Class Created</div>
                         </div>
                       </div>
@@ -206,11 +195,11 @@ const StudentList = () => {
                         <div className="flex justify-between items-start">
                           <div className="flex items-start space-x-4">
                             <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                              {student.name?.charAt(0) || 'S'}
+                              {(student.fullName || student.name)?.charAt(0) || 'S'}
                       </div>
                             <div className="flex-1">
                               <h3 className="text-xl font-bold text-white mb-2">
-                                {student.name || `Student ${index + 1}`}
+                                {student.fullName || student.name || `Student ${index + 1}`}
                               </h3>
                               <div className="flex items-center space-x-6 text-sm text-gray-400 mb-3">
                                 <span className="flex items-center">
@@ -219,7 +208,7 @@ const StudentList = () => {
                                 </span>
                                 <span className="flex items-center">
                                   <FaCalendar className="mr-1" />
-                                  Joined: {formatDate(student.joinedAt || classData.created)}
+                                  Joined: {formatDate(student.joinedAt || classData.createdAt)}
                                 </span>
                                 <span className="flex items-center">
                                   <FaGraduationCap className="mr-1" />

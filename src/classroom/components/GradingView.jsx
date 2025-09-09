@@ -134,7 +134,23 @@ const GradingView = () => {
   };
 
   const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
+    // Handle both epoch timestamps and ISO strings
+    let date;
+    if (typeof timestamp === 'number') {
+      date = new Date(timestamp);
+    } else if (typeof timestamp === 'string') {
+      // Handle ISO strings like "2025-09-08T18:19:01.386Z"
+      date = new Date(timestamp);
+    } else {
+      date = new Date(timestamp);
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
+    
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -204,16 +220,27 @@ const GradingView = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            <div className="group relative animate-fade-in-up">
-              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="group relative animate-fade-in-up h-full">
+              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2 h-full flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 p-6">
+                <div className="relative z-10 p-6 text-center flex flex-col justify-center h-full">
                   <FaUser className="text-3xl text-cyan-400 mx-auto mb-4" />
+                  <div className="text-3xl font-bold text-white mb-2">{allStudents.length}</div>
+                  <div className="text-gray-300">Total Students</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="group relative animate-fade-in-up h-full">
+              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2 h-full flex flex-col">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 p-6 flex flex-col justify-between h-full">
                   <div className="text-center mb-4">
-                    <div className="text-3xl font-bold text-white mb-2">{allStudents.length}</div>
-                    <div className="text-gray-300">Total Students</div>
+                    <FaCheckCircle className="text-3xl text-blue-400 mx-auto mb-2" />
+                    <div className="text-lg font-bold text-white">Submission Status</div>
                   </div>
                   
                   {(() => {
@@ -253,11 +280,11 @@ const GradingView = () => {
                           <span className="text-gray-300 font-semibold">{notSubmitted}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-cyan-400">Partially Submitted:</span>
+                          <span className="text-cyan-400">Partial:</span>
                           <span className="text-cyan-300 font-semibold">{partiallySubmitted}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-green-400">Completed:</span>
+                          <span className="text-green-400">Complete:</span>
                           <span className="text-green-300 font-semibold">{completed}</span>
                         </div>
                       </div>
@@ -267,20 +294,26 @@ const GradingView = () => {
               </div>
             </div>
             
-            <div className="group relative animate-fade-in-up">
-              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
+            <div className="group relative animate-fade-in-up h-full">
+              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2 h-full flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 p-6 text-center">
-                  <button
-                    onClick={() => setShowAllStudents(!showAllStudents)}
-                    className="w-full p-3 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all duration-300 inline-flex items-center justify-center"
-                  >
-                    <FaCheck className="mr-2" />
-                    {showAllStudents ? 'Hide Non-Submitters' : 'Show All Students'}
-                  </button>
-                  <div className="text-sm text-gray-400 mt-2">
-                    {showAllStudents ? 'Showing students who haven\'t submitted' : 'Showing students with submissions'}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 p-6 text-center flex flex-col justify-between h-full">
+                  <div className="mb-4">
+                    <FaCheck className="text-3xl text-green-400 mx-auto mb-2" />
+                    <div className="text-lg font-bold text-white">View Options</div>
+                  </div>
+                  <div className="flex flex-col justify-center">
+                    <button
+                      onClick={() => setShowAllStudents(!showAllStudents)}
+                      className="w-full p-3 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-all duration-300 inline-flex items-center justify-center text-sm"
+                    >
+                      <FaCheck className="mr-2" />
+                      {showAllStudents ? 'Hide Non-Submitters' : 'Show All Students'}
+                    </button>
+                    <div className="text-xs text-gray-400 mt-2">
+                      {showAllStudents ? 'Including students who haven\'t submitted' : 'Only students with submissions'}
+                    </div>
                   </div>
                 </div>
               </div>
