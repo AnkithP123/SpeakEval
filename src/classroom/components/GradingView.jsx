@@ -28,6 +28,10 @@ const GradingView = () => {
         
         setAssignment(assignmentData);
         setSubmissions(submissionsData);
+        
+        // Combine submissions from the same student
+        const combined = combineSubmissions(submissionsData);
+        setCombinedSubmissions(combined);
     } catch (error) {
         showError('Failed to load grading data');
         navigate(`/classroom/${classId}/assignments/${assignmentId}`);
@@ -38,6 +42,64 @@ const GradingView = () => {
 
     loadData();
   }, [classId, assignmentId]);
+
+  const combineSubmissions = (submissions) => {
+    const studentMap = new Map();
+    
+    // Group submissions by student email
+    submissions.forEach(submission => {
+      const email = submission.studentEmail;
+      if (!studentMap.has(email)) {
+        studentMap.set(email, []);
+      }
+      studentMap.get(email).push(submission);
+    });
+    
+    // Combine submissions for each student
+    const combined = [];
+    studentMap.forEach((studentSubmissions, email) => {
+      // Sort by submission date (latest first)
+      studentSubmissions.sort((a, b) => b.submittedAt - a.submittedAt);
+      
+      const latestSubmission = studentSubmissions[0];
+      const allAudioFiles = [];
+      
+      // Collect all audio files from all submissions
+      studentSubmissions.forEach(sub => {
+        if (sub.audioFiles && Array.isArray(sub.audioFiles)) {
+          sub.audioFiles.forEach(file => {
+            allAudioFiles.push({
+              ...file,
+              submissionDate: sub.submittedAt,
+              originalSubmission: sub
+            });
+          });
+        }
+      });
+      
+      // Group audio files by question index and take the latest for each
+      const questionMap = new Map();
+      allAudioFiles.forEach(file => {
+        const qIndex = file.questionIndex;
+        if (!questionMap.has(qIndex) || file.submissionDate > questionMap.get(qIndex).submissionDate) {
+          questionMap.set(qIndex, file);
+        }
+      });
+      
+      // Create combined submission
+      const combinedSubmission = {
+        ...latestSubmission,
+        audioFiles: Array.from(questionMap.values()).sort((a, b) => a.questionIndex - b.questionIndex),
+        allSubmissions: studentSubmissions,
+        submissionCount: studentSubmissions.length
+      };
+      
+      combined.push(combinedSubmission);
+    });
+    
+    // Sort combined submissions by latest submission date
+    return combined.sort((a, b) => b.submittedAt - a.submittedAt);
+  };
 
   const toggleExpand = (key) => {
     setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
@@ -125,7 +187,7 @@ const GradingView = () => {
             </p>
           </div>
 
-          {/* Stats */}
+          {/* Stats and Controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
             <div className="group relative animate-fade-in-up">
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
@@ -133,13 +195,34 @@ const GradingView = () => {
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative z-10 p-6 text-center">
                   <FaUser className="text-3xl text-cyan-400 mx-auto mb-4" />
-                  <div className="text-3xl font-bold text-white mb-2">{submissions.length}</div>
-                  <div className="text-gray-300">Total Submissions</div>
+                  <div className="text-3xl font-bold text-white mb-2">
+                    {showIndividual ? submissions.length : combinedSubmissions.length}
+                  </div>
+                  <div className="text-gray-300">
+                    {showIndividual ? 'Total Submissions' : 'Unique Students'}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-
-            {/* Removed grading stats */}
+            
+            <div className="group relative animate-fade-in-up">
+              <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 p-6 text-center">
+                  <button
+                    onClick={() => setShowIndividual(!showIndividual)}
+                    className="w-full p-3 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all duration-300 inline-flex items-center justify-center"
+                  >
+                    <FaCheck className="mr-2" />
+                    {showIndividual ? 'Show Combined View' : 'Show Individual Submissions'}
+                  </button>
+                  <div className="text-sm text-gray-400 mt-2">
+                    {showIndividual ? 'View all submission attempts' : 'View latest responses per student'}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Submissions List */}
@@ -152,7 +235,7 @@ const GradingView = () => {
                   Student Submissions
                 </h2>
                 
-                {submissions.length === 0 ? (
+                {(showIndividual ? submissions : combinedSubmissions).length === 0 ? (
                   <div className="text-center py-12">
                     <FaUser className="text-6xl text-gray-600 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-white mb-2">No Submissions Yet</h3>
@@ -160,8 +243,12 @@ const GradingView = () => {
                       </div>
                 ) : (
                   <div className="space-y-6">
-                    {submissions.map((submission, index) => (
-                      <div key={`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`} className="bg-slate-800/50 rounded-xl p-6 border border-gray-600 hover:border-cyan-400 transition-all duration-300">
+                    {(showIndividual ? submissions : combinedSubmissions).map((submission, index) => (
+                      <div 
+                        key={`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`} 
+                        data-student={submission.studentEmail}
+                        className="bg-slate-800/50 rounded-xl p-6 border border-gray-600 hover:border-cyan-400 transition-all duration-300"
+                      >
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex-1">
                             <div className="flex items-center space-x-4 mb-1">
@@ -200,8 +287,14 @@ const GradingView = () => {
                                 <div className="flex items-center text-sm text-gray-400">
                                   <span className="flex items-center">
                                     <FaClock className="mr-1" />
-                                    Submitted: {formatDate(submission.submittedAt)}
+                                    {showIndividual ? 'Submitted' : 'Latest submission'}: {formatDate(submission.submittedAt)}
                                   </span>
+                                  {!showIndividual && submission.submissionCount > 1 && (
+                                    <span className="ml-4 flex items-center text-cyan-400">
+                                      <FaCheckCircle className="mr-1" />
+                                      {submission.submissionCount} attempts
+                                    </span>
+                                  )}
                     </div>
               </div>
             </div>
@@ -213,17 +306,50 @@ const GradingView = () => {
                               className="p-3 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all duration-300 inline-flex items-center"
                             >
                               {expanded[`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`] ? <FaChevronDown className="w-4 h-4" /> : <FaChevronRight className="w-4 h-4" />}
-                              <span className="ml-2">View Responses</span>
+                              <span className="ml-2">
+                                {showIndividual ? 'View Responses' : 'View Latest Responses'}
+                              </span>
                             </button>
+                            {!showIndividual && submission.submissionCount > 1 && (
+                              <button
+                                onClick={() => {
+                                  setShowIndividual(true);
+                                  // Scroll to this student's submissions
+                                  setTimeout(() => {
+                                    const element = document.querySelector(`[data-student="${submission.studentEmail}"]`);
+                                    if (element) element.scrollIntoView({ behavior: 'smooth' });
+                                  }, 100);
+                                }}
+                                className="p-3 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all duration-300 inline-flex items-center"
+                              >
+                                <FaUser className="w-4 h-4 mr-2" />
+                                View All Attempts
+                              </button>
+                            )}
                           </div>
           </div>
 
                         {/* Audio responses */}
                         {expanded[`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`] && Array.isArray(submission.audioFiles) && submission.audioFiles.length > 0 && (
                           <div className="mt-4 space-y-3">
+                            {!showIndividual && submission.submissionCount > 1 && (
+                              <div className="mb-4 p-3 bg-blue-900/30 rounded-lg border border-blue-500/30">
+                                <div className="text-sm text-blue-300">
+                                  <FaCheckCircle className="inline mr-2" />
+                                  Showing latest response for each question from {submission.submissionCount} submission attempts
+                                </div>
+                              </div>
+                            )}
                             {submission.audioFiles.map((file, qIdx) => (
                               <div key={`${file.s3Key || qIdx}`} className="flex items-center justify-between bg-slate-900/50 rounded-lg p-3 border border-slate-700">
-                                <div className="text-sm text-gray-300">Question {file.questionIndex != null ? file.questionIndex + 1 : qIdx + 1}</div>
+                                <div className="flex items-center space-x-3">
+                                  <div className="text-sm text-gray-300">Question {file.questionIndex != null ? file.questionIndex + 1 : qIdx + 1}</div>
+                                  {!showIndividual && file.originalSubmission && file.originalSubmission.submittedAt !== submission.submittedAt && (
+                                    <span className="text-xs text-blue-400 bg-blue-900/30 px-2 py-1 rounded">
+                                      From earlier attempt
+                                    </span>
+                                  )}
+                                </div>
                                 {file.audioUrl ? (
                                   <audio controls src={file.audioUrl} className="w-64" onLoadedMetadata={(e) => handleLoadedMetadata(`${submission.studentEmail || 'student'}-${submission.submittedAt || index}`, qIdx, e.currentTarget.duration)} />
                                 ) : (
