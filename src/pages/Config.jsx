@@ -804,8 +804,6 @@ const Config = ({
     } else {
       // Reset instructions if the loaded config doesn't have any
       setInstructionsEnabled(false);
-      setInstructions([""]);
-      setAlwaysShowInstruction(false);
     }
 
     // Set config type based on whether instructions are present and enabled
@@ -931,9 +929,9 @@ const Config = ({
         })
         .join("|;;|")}`;
 
-      const instructionsString = `${instructionsEnabled}|i_i|${instructions.join(
-        "|i_i|"
-      )}`;
+      const instructionsString = `${instructionsEnabled}|i_i|${instructions
+        .map((instruction) => JSON.stringify(instruction))
+        .join("|i_i|")}`;
 
       const language =
         selectedLanguage === "Other" ? otherLanguage : selectedLanguage;
