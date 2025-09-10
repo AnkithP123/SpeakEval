@@ -3264,7 +3264,7 @@ export default function AudioRecorder() {
 
             <div className="p-6">
               <p className="text-gray-700 text-lg leading-relaxed mb-6">
-                {instructions[currentInstructionIndex]}
+                {instructions[currentInstructionIndex].text}
               </p>
 
               <div className="flex justify-between items-center">
