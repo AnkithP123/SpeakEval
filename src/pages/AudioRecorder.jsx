@@ -56,6 +56,10 @@ export default function AudioRecorder() {
   const [examLanguage, setExamLanguage] = useState(null); // Will be set from API response
   const finalRecognizedTextRef = useRef(""); // Ref to store final recognized text for immediate access
 
+  const [instructions, setInstructions] = useState([]);
+  const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
+  const [showingInstructions, setShowingInstructions] = useState(false);
+
   let questionIndex;
   let played = false;
 
@@ -84,8 +88,8 @@ export default function AudioRecorder() {
     }
 
     // Compare suffixes numerically
-    const newSuffixNum = parseInt(newSuffix || "0", 10);
-    const currentSuffixNum = parseInt(currentSuffix || "0", 10);
+    const newSuffixNum = Number.parseInt(newSuffix || "0", 10);
+    const currentSuffixNum = Number.parseInt(currentSuffix || "0", 10);
 
     return newSuffixNum > currentSuffixNum;
   };
@@ -1516,6 +1520,16 @@ export default function AudioRecorder() {
         }
         // If recording has finished, keep timer at "xx:xx"
       }
+      console.log("Received data:", receivedData);
+      if (
+        receivedData.instructions &&
+        Array.isArray(receivedData.instructions) &&
+        receivedData.instructions.length > 0
+      ) {
+        setInstructions(receivedData.instructions);
+        setCurrentInstructionIndex(0);
+        setShowingInstructions(true);
+      }
 
       // Extract language information if available
       if (receivedData.language) {
@@ -1559,6 +1573,16 @@ export default function AudioRecorder() {
     }
   };
 
+  const handleInstructionAcknowledge = () => {
+    if (currentInstructionIndex < instructions.length - 1) {
+      setCurrentInstructionIndex(currentInstructionIndex + 1);
+    } else {
+      setShowingInstructions(false);
+      setInstructions([]);
+      setCurrentInstructionIndex(0);
+    }
+  };
+
   const getAudio = async () => {
     if (!audioBlobURL) {
       try {
@@ -1574,7 +1598,7 @@ export default function AudioRecorder() {
     }
   };
 
-  let interval = null;
+  const interval = null;
 
   const startRecording = async () => {
     const currentTime = Date.now();
@@ -2228,106 +2252,85 @@ export default function AudioRecorder() {
                       justifyContent: "center",
                     }}
                   >
-                    {!stageData.audioDownloaded ? (
-                      <img
-                        src="/download-load.gif"
-                        alt="Downloading exam"
+                    {/* Error Message */}
+                    {stageData.audioDownloadError && (
+                      <p
                         style={{
-                          width: "120px",
-                          height: "120px",
-                          objectFit: "contain",
+                          fontSize: "14px",
+                          color: "#EF4444",
+                          margin: "8px 0 0 0",
+                          textAlign: "center",
                         }}
-                      />
-                    ) : (
-                      <img
-                        src="/download-done.png"
-                        alt="Download complete"
-                        style={{
-                          width: "120px",
-                          height: "120px",
-                          objectFit: "contain",
-                        }}
-                      />
+                      >
+                        {stageData.audioDownloadError}
+                      </p>
                     )}
-                  </div>
 
-                  {/* Error Message */}
-                  {stageData.audioDownloadError && (
-                    <p
+                    {/* Continue Button - always takes up space, just invisible when not needed */}
+                    <div
                       style={{
-                        fontSize: "14px",
-                        color: "#EF4444",
-                        margin: "8px 0 0 0",
-                        textAlign: "center",
+                        height: "44px", // Fixed height for button + margin
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        opacity:
+                          stageData.audioDownloaded &&
+                          !stageData.audioDownloadError
+                            ? 1
+                            : 0,
+                        transition: "opacity 0.3s ease",
                       }}
                     >
-                      {stageData.audioDownloadError}
-                    </p>
-                  )}
+                      {stageData.audioDownloaded &&
+                        !stageData.audioDownloadError && (
+                          <button
+                            onClick={async () => {
+                              // Check if we can skip setup for room restart
+                              const canSkipSetup =
+                                await canSkipSetupForRestart();
 
-                  {/* Continue Button - always takes up space, just invisible when not needed */}
-                  <div
-                    style={{
-                      height: "44px", // Fixed height for button + margin
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity:
-                        stageData.audioDownloaded &&
-                        !stageData.audioDownloadError
-                          ? 1
-                          : 0,
-                      transition: "opacity 0.3s ease",
-                    }}
-                  >
-                    {stageData.audioDownloaded &&
-                      !stageData.audioDownloadError && (
-                        <button
-                          onClick={async () => {
-                            // Check if we can skip setup for room restart
-                            const canSkipSetup = await canSkipSetupForRestart();
+                              if (canSkipSetup) {
+                                // Update setup data with current permissions
+                                const permissions =
+                                  await checkCurrentPermissions();
+                                updateSetup({
+                                  microphonePermission:
+                                    permissions.microphonePermission,
+                                  fullscreenEnabled:
+                                    permissions.fullscreenEnabled,
+                                });
 
-                            if (canSkipSetup) {
-                              // Update setup data with current permissions
-                              const permissions =
-                                await checkCurrentPermissions();
-                              updateSetup({
-                                microphonePermission:
-                                  permissions.microphonePermission,
-                                fullscreenEnabled:
-                                  permissions.fullscreenEnabled,
-                              });
-
-                              // Enable anticheat and go directly to audio play
-                              setIsFullscreen(true);
-                              setExamStarted(true);
-                              advanceStage("audio_play");
-                            } else {
-                              advanceStage("setup");
+                                // Enable anticheat and go directly to audio play
+                                setIsFullscreen(true);
+                                setExamStarted(true);
+                                advanceStage("audio_play");
+                              } else {
+                                advanceStage("setup");
+                              }
+                            }}
+                            style={{
+                              padding: "10px 24px",
+                              fontSize: "15px",
+                              fontWeight: "600",
+                              color: "white",
+                              backgroundColor: "#10B981",
+                              border: "none",
+                              borderRadius: "6px",
+                              cursor: "pointer",
+                              transition: "background-color 0.3s ease",
+                              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                            }}
+                            onMouseOver={(e) =>
+                              (e.target.style.backgroundColor = "#059669")
                             }
-                          }}
-                          style={{
-                            padding: "10px 24px",
-                            fontSize: "15px",
-                            fontWeight: "600",
-                            color: "white",
-                            backgroundColor: "#10B981",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            transition: "background-color 0.3s ease",
-                            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-                          }}
-                          onMouseOver={(e) =>
-                            (e.target.style.backgroundColor = "#059669")
-                          }
-                          onMouseOut={(e) =>
-                            (e.target.style.backgroundColor = "#10B981")
-                          }
-                        >
-                          Continue
-                        </button>
-                      )}
+                            onMouseOut={(e) =>
+                              (e.target.style.backgroundColor = "#10B981")
+                            }
+                          >
+                            Continue
+                          </button>
+                        )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3247,6 +3250,54 @@ export default function AudioRecorder() {
           )}
         </div>
       </div>
+      {showingInstructions && instructions.length > 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+              <h3 className="text-xl font-semibold mb-2">Instructions</h3>
+              {instructions.length > 1 && (
+                <div className="text-blue-100 text-sm">
+                  Step {currentInstructionIndex + 1} of {instructions.length}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-700 text-lg leading-relaxed mb-6">
+                {instructions[currentInstructionIndex]}
+              </p>
+
+              <div className="flex justify-between items-center">
+                {instructions.length > 1 && (
+                  <div className="flex space-x-1">
+                    {instructions.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-2 h-2 rounded-full transition-colors ${
+                          index === currentInstructionIndex
+                            ? "bg-blue-500"
+                            : index < currentInstructionIndex
+                            ? "bg-green-400"
+                            : "bg-gray-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleInstructionAcknowledge}
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  {currentInstructionIndex < instructions.length - 1
+                    ? "Next"
+                    : "Got it"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
