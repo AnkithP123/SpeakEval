@@ -56,11 +56,6 @@ export default function AudioRecorder() {
   const [examLanguage, setExamLanguage] = useState(null); // Will be set from API response
   const finalRecognizedTextRef = useRef(""); // Ref to store final recognized text for immediate access
 
-  const [instructions, setInstructions] = useState([]);
-  const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
-  const [showingInstructions, setShowingInstructions] = useState(false);
-  const [alwaysInstructions, setAlwaysInstructions] = useState([]);
-
   let questionIndex;
   let played = false;
 
@@ -89,8 +84,8 @@ export default function AudioRecorder() {
     }
 
     // Compare suffixes numerically
-    const newSuffixNum = Number.parseInt(newSuffix || "0", 10);
-    const currentSuffixNum = Number.parseInt(currentSuffix || "0", 10);
+    const newSuffixNum = parseInt(newSuffix || "0", 10);
+    const currentSuffixNum = parseInt(currentSuffix || "0", 10);
 
     return newSuffixNum > currentSuffixNum;
   };
@@ -1522,31 +1517,6 @@ export default function AudioRecorder() {
         // If recording has finished, keep timer at "xx:xx"
       }
 
-      if (
-        receivedData.instructions &&
-        Array.isArray(receivedData.instructions) &&
-        receivedData.instructions.length > 0
-      ) {
-        const instructionObjects = receivedData.instructions;
-
-        // Filter "Always" instructions for persistent display
-        const alwaysInsts = instructionObjects.filter(
-          (inst) => inst.show === "Always"
-        );
-        setAlwaysInstructions(alwaysInsts);
-
-        // Filter non-"Always" instructions for modal display
-        const modalInstructions = instructionObjects.filter(
-          (inst) => inst.show !== "Always"
-        );
-
-        if (modalInstructions.length > 0) {
-          setInstructions(modalInstructions);
-          setCurrentInstructionIndex(0);
-          setShowingInstructions(true);
-        }
-      }
-
       // Extract language information if available
       if (receivedData.language) {
         const language = mapLanguageToSpeechRecognition(receivedData.language);
@@ -1589,16 +1559,6 @@ export default function AudioRecorder() {
     }
   };
 
-  const handleInstructionAcknowledge = () => {
-    if (currentInstructionIndex < instructions.length - 1) {
-      setCurrentInstructionIndex(currentInstructionIndex + 1);
-    } else {
-      setShowingInstructions(false);
-      setInstructions([]);
-      setCurrentInstructionIndex(0);
-    }
-  };
-
   const getAudio = async () => {
     if (!audioBlobURL) {
       try {
@@ -1614,7 +1574,7 @@ export default function AudioRecorder() {
     }
   };
 
-  const interval = null;
+  let interval = null;
 
   const startRecording = async () => {
     const currentTime = Date.now();
@@ -2180,992 +2140,278 @@ export default function AudioRecorder() {
         `}
       </style>
 
-      <div className="flex min-h-screen bg-gray-50">
-        {alwaysInstructions.length > 0 && (
-          <div className="w-80 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
-            <div className="sticky top-0 h-screen overflow-y-auto">
-              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50">
-                <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                  Instructions
-                </h3>
-                <p className="text-sm text-gray-500">Reference guide</p>
-              </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          backgroundColor: "#bfdbfe",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px",
+          minHeight: "100vh",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "80px",
+            fontSize: "48px",
+            fontWeight: "bold",
+            color:
+              displayTime !== "xx:xx" && remainingTime > 0 && remainingTime <= 5
+                ? "red"
+                : "#374151",
+          }}
+        >
+          {displayTime}
+        </div>
 
-              <div className="p-4 space-y-4">
-                {alwaysInstructions.map((instruction, index) => (
-                  <div
-                    key={index}
-                    className="bg-blue-50 border border-blue-100 rounded-lg p-4 hover:bg-blue-100 transition-colors duration-200"
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium mt-0.5">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                          {instruction.text}
-                        </p>
-                        <span className="inline-block mt-2 px-2 py-1 bg-blue-200 text-blue-800 text-xs rounded-full font-medium">
-                          {instruction.show}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
+        {/* Stage-based content */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            height: "100%",
-            backgroundColor: "#bfdbfe",
             alignItems: "center",
             justifyContent: "center",
-            padding: "20px",
-            minHeight: "100vh",
-            flex: "1",
+            backgroundColor: "white",
+            padding: "40px",
+            borderRadius: "24px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+            width: "90%",
+            maxWidth: "700px",
+            textAlign: "center",
+            transform: "translateY(10%)",
+            minHeight: "400px", // Make it taller to support all stages
           }}
         >
-          <div
-            style={{
-              position: "absolute",
-              top: "80px",
-              fontSize: "48px",
-              fontWeight: "bold",
-              color:
-                displayTime !== "xx:xx" &&
-                remainingTime > 0 &&
-                remainingTime <= 5
-                  ? "red"
-                  : "#374151",
-            }}
-          >
-            {displayTime}
-          </div>
+          {/* Stage content */}
+          {currentStage === "initializing" && (
+            <div style={{ marginTop: "16px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "16px",
+                }}
+              >
+                {stageData.audioDownloaded
+                  ? "Downloaded Exam"
+                  : "Downloading Exam..."}
+              </h1>
 
-          {/* Stage-based content */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "white",
-              padding: "40px",
-              borderRadius: "24px",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-              width: "90%",
-              maxWidth: "700px",
-              textAlign: "center",
-              transform: "translateY(10%)",
-              minHeight: "400px", // Make it taller to support all stages
-            }}
-          >
-            {/* Stage content */}
-            {currentStage === "initializing" && (
-              <div style={{ marginTop: "16px" }}>
-                <h1
-                  style={{
-                    fontSize: "32px",
-                    fontWeight: "700",
-                    color: "#374151",
-                    marginBottom: "16px",
-                  }}
-                >
-                  {stageData.audioDownloaded
-                    ? "Downloaded Exam"
-                    : "Downloading Exam..."}
-                </h1>
-
-                {/* Download Animation with Custom Images */}
+              {/* Download Animation with Custom Images */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                {/* Fixed Content Container - This won't move */}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    marginBottom: "16px",
+                    minHeight: "160px", // Reserve space for content + button
                   }}
                 >
-                  {/* Fixed Content Container - This won't move */}
+                  {/* Image Container */}
                   <div
                     style={{
+                      marginBottom: "16px",
                       display: "flex",
-                      flexDirection: "column",
                       alignItems: "center",
-                      minHeight: "160px", // Reserve space for content + button
+                      justifyContent: "center",
                     }}
                   >
-                    {/* Image Container */}
-                    <div
-                      style={{
-                        marginBottom: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {/* Error Message */}
-                      {stageData.audioDownloadError && (
-                        <p
-                          style={{
-                            fontSize: "14px",
-                            color: "#EF4444",
-                            margin: "8px 0 0 0",
-                            textAlign: "center",
-                          }}
-                        >
-                          {stageData.audioDownloadError}
-                        </p>
-                      )}
-
-                      {/* Continue Button - always takes up space, just invisible when not needed */}
-                      <div
+                    {!stageData.audioDownloaded ? (
+                      <img
+                        src="/download-load.gif"
+                        alt="Downloading exam"
                         style={{
-                          height: "44px", // Fixed height for button + margin
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          opacity:
-                            stageData.audioDownloaded &&
-                            !stageData.audioDownloadError
-                              ? 1
-                              : 0,
-                          transition: "opacity 0.3s ease",
+                          width: "120px",
+                          height: "120px",
+                          objectFit: "contain",
                         }}
-                      >
-                        {stageData.audioDownloaded &&
-                          !stageData.audioDownloadError && (
-                            <button
-                              onClick={async () => {
-                                // Check if we can skip setup for room restart
-                                const canSkipSetup =
-                                  await canSkipSetupForRestart();
-
-                                if (canSkipSetup) {
-                                  // Update setup data with current permissions
-                                  const permissions =
-                                    await checkCurrentPermissions();
-                                  updateSetup({
-                                    microphonePermission:
-                                      permissions.microphonePermission,
-                                    fullscreenEnabled:
-                                      permissions.fullscreenEnabled,
-                                  });
-
-                                  // Enable anticheat and go directly to audio play
-                                  setIsFullscreen(true);
-                                  setExamStarted(true);
-                                  advanceStage("audio_play");
-                                } else {
-                                  advanceStage("setup");
-                                }
-                              }}
-                              style={{
-                                padding: "10px 24px",
-                                fontSize: "15px",
-                                fontWeight: "600",
-                                color: "white",
-                                backgroundColor: "#10B981",
-                                border: "none",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                transition: "background-color 0.3s ease",
-                                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-                              }}
-                              onMouseOver={(e) =>
-                                (e.target.style.backgroundColor = "#059669")
-                              }
-                              onMouseOut={(e) =>
-                                (e.target.style.backgroundColor = "#10B981")
-                              }
-                            >
-                              Continue
-                            </button>
-                          )}
-                      </div>
-                    </div>
+                      />
+                    ) : (
+                      <img
+                        src="/download-done.png"
+                        alt="Download complete"
+                        style={{
+                          width: "120px",
+                          height: "120px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    )}
                   </div>
-                </div>
-              </div>
-            )}
 
-            {/* Setup Stage */}
-            {currentStage === "setup" && (
-              <div style={{ marginTop: "20px" }}>
-                <h1
-                  style={{
-                    fontSize: "32px",
-                    fontWeight: "700",
-                    color: "#374151",
-                    marginBottom: "20px",
-                  }}
-                >
-                  Exam Setup
-                </h1>
-                <p
-                  style={{
-                    fontSize: "16px",
-                    color: "#6B7280",
-                    marginBottom: "24px",
-                  }}
-                >
-                  Please complete the following setup steps before starting your
-                  exam:
-                </p>
-
-                {/* Setup Checklist with Reserved Button Space */}
-                <div
-                  style={{
-                    maxWidth: "500px",
-                    margin: "0 auto",
-                    display: "flex",
-                    flexDirection: "column",
-                    minHeight: "200px", // Reserve space for checklist + button
-                  }}
-                >
-                  {/* Checklist Items */}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                      flex: 1,
-                    }}
-                  >
-                    {/* Microphone Permission */}
-                    <div
+                  {/* Error Message */}
+                  {stageData.audioDownloadError && (
+                    <p
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "16px",
-                        backgroundColor: "#F9FAFB",
-                        borderRadius: "8px",
-                        border: "1px solid #E5E7EB",
+                        fontSize: "14px",
+                        color: "#EF4444",
+                        margin: "8px 0 0 0",
+                        textAlign: "center",
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "20px",
-                            height: "20px",
-                            borderRadius: "50%",
-                            backgroundColor: stageData.setup
-                              .microphonePermission
-                              ? "#10B981"
-                              : setupLoading.microphone
-                              ? "#3B82F6"
-                              : "#D1D5DB",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {stageData.setup.microphonePermission && (
-                            <span
-                              style={{
-                                color: "white",
-                                fontSize: "12px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              ✓
-                            </span>
-                          )}
-                          {setupLoading.microphone && (
-                            <div
-                              style={{
-                                width: "12px",
-                                height: "12px",
-                                border: "2px solid transparent",
-                                borderTop: "2px solid white",
-                                borderRadius: "50%",
-                                animation: "spin 1s linear infinite",
-                              }}
-                            />
-                          )}
-                        </div>
-                        <div>
-                          <p
-                            style={{
-                              fontSize: "16px",
-                              fontWeight: "500",
-                              color: "#374151",
-                              margin: "0 0 2px 0",
-                            }}
-                          >
-                            Microphone Permission
-                          </p>
-                          <p
-                            style={{
-                              fontSize: "14px",
-                              color: "#6B7280",
-                              margin: "0",
-                            }}
-                          >
-                            Allow microphone access for recording
-                          </p>
-                        </div>
-                      </div>
-                      {!stageData.setup.microphonePermission && (
-                        <button
-                          onClick={async () => {
-                            setSetupLoading((prev) => ({
-                              ...prev,
-                              microphone: true,
-                            }));
-                            const perms = await requestPermissions();
-                            if (perms.permissionGranted) {
-                              updateSetup({ microphonePermission: true });
-                            }
-                            setSetupLoading((prev) => ({
-                              ...prev,
-                              microphone: false,
-                            }));
-                          }}
-                          style={{
-                            padding: "8px 16px",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            color: "white",
-                            backgroundColor: "#3B82F6",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            transition: "background-color 0.2s ease",
-                          }}
-                          onMouseOver={(e) =>
-                            (e.target.style.backgroundColor = "#2563EB")
-                          }
-                          onMouseOut={(e) =>
-                            (e.target.style.backgroundColor = "#3B82F6")
-                          }
-                        >
-                          Grant Access
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Fullscreen Mode */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "16px",
-                        backgroundColor: "#F9FAFB",
-                        borderRadius: "8px",
-                        border: "1px solid #E5E7EB",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "20px",
-                            height: "20px",
-                            borderRadius: "50%",
-                            backgroundColor: stageData.setup.fullscreenEnabled
-                              ? "#10B981"
-                              : setupLoading.fullscreen
-                              ? "#3B82F6"
-                              : "#D1D5DB",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {stageData.setup.fullscreenEnabled && (
-                            <span
-                              style={{
-                                color: "white",
-                                fontSize: "12px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              ✓
-                            </span>
-                          )}
-                          {setupLoading.fullscreen && (
-                            <div
-                              style={{
-                                width: "12px",
-                                height: "12px",
-                                border: "2px solid transparent",
-                                borderTop: "2px solid white",
-                                borderRadius: "50%",
-                                animation: "spin 1s linear infinite",
-                              }}
-                            />
-                          )}
-                        </div>
-                        <div>
-                          <p
-                            style={{
-                              fontSize: "16px",
-                              fontWeight: "500",
-                              color: "#374151",
-                              margin: "0 0 2px 0",
-                            }}
-                          >
-                            Fullscreen Mode
-                          </p>
-                          <p
-                            style={{
-                              fontSize: "14px",
-                              color: "#6B7280",
-                              margin: "0",
-                            }}
-                          >
-                            Enter fullscreen for exam security
-                          </p>
-                        </div>
-                      </div>
-                      {!stageData.setup.fullscreenEnabled && (
-                        <button
-                          onClick={async () => {
-                            setSetupLoading((prev) => ({
-                              ...prev,
-                              fullscreen: true,
-                            }));
-                            setIsFullscreen(true); // Enable fullscreen monitoring
-                            enterFullscreen();
-                            updateSetup({ fullscreenEnabled: true });
-                            setSetupLoading((prev) => ({
-                              ...prev,
-                              fullscreen: false,
-                            }));
-                          }}
-                          style={{
-                            padding: "8px 16px",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            color: "white",
-                            backgroundColor: "#3B82F6",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            transition: "background-color 0.2s ease",
-                          }}
-                          onMouseOver={(e) =>
-                            (e.target.style.backgroundColor = "#2563EB")
-                          }
-                          onMouseOut={(e) =>
-                            (e.target.style.backgroundColor = "#3B82F6")
-                          }
-                        >
-                          Enter Fullscreen
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                      {stageData.audioDownloadError}
+                    </p>
+                  )}
 
                   {/* Continue Button - always takes up space, just invisible when not needed */}
                   <div
                     style={{
-                      height: "80px", // Increased height for button + margin
+                      height: "44px", // Fixed height for button + margin
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      opacity: canAdvanceToAudioPlay() ? 1 : 0,
+                      opacity:
+                        stageData.audioDownloaded &&
+                        !stageData.audioDownloadError
+                          ? 1
+                          : 0,
                       transition: "opacity 0.3s ease",
                     }}
                   >
-                    {canAdvanceToAudioPlay() && (
-                      <button
-                        onClick={() => {
-                          setIsFullscreen(true); // Enable fullscreen monitoring
-                          setExamStarted(true); // Mark exam as started
-                          advanceStage("audio_play");
-                        }}
-                        style={{
-                          padding: "12px 32px",
-                          fontSize: "16px",
-                          fontWeight: "600",
-                          color: "white",
-                          backgroundColor: "#10B981",
-                          border: "none",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          transition: "background-color 0.3s ease",
-                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                        }}
-                        onMouseOver={(e) =>
-                          (e.target.style.backgroundColor = "#059669")
-                        }
-                        onMouseOut={(e) =>
-                          (e.target.style.backgroundColor = "#10B981")
-                        }
-                      >
-                        Continue to Question
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+                    {stageData.audioDownloaded &&
+                      !stageData.audioDownloadError && (
+                        <button
+                          onClick={async () => {
+                            // Check if we can skip setup for room restart
+                            const canSkipSetup = await canSkipSetupForRestart();
 
-            {/* Audio Play Stage */}
-            {currentStage === "audio_play" && (
-              <div style={{ marginTop: "20px" }}>
-                <h1
-                  style={{
-                    fontSize: "32px",
-                    fontWeight: "700",
-                    color: "#374151",
-                    marginBottom: "20px",
-                  }}
-                >
-                  Listen to Question
-                </h1>
-                <p
-                  style={{
-                    fontSize: "16px",
-                    color: "#6B7280",
-                    marginBottom: "24px",
-                  }}
-                >
-                  Please listen to the question carefully before recording your
-                  response.
-                </p>
+                            if (canSkipSetup) {
+                              // Update setup data with current permissions
+                              const permissions =
+                                await checkCurrentPermissions();
+                              updateSetup({
+                                microphonePermission:
+                                  permissions.microphonePermission,
+                                fullscreenEnabled:
+                                  permissions.fullscreenEnabled,
+                              });
 
-                {/* Audio Player */}
-                <div
-                  style={{
-                    maxWidth: "500px",
-                    margin: "0 auto",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "20px",
-                  }}
-                >
-                  {/* Audio Controls */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "16px",
-                      marginBottom: "20px",
-                    }}
-                  >
-                    <PulseButton
-                      onClick={() => {
-                        if (audioRef.current && audioRef.current.paused) {
-                          audioRef.current.play();
-                          updateAudioPlayData({ isPlaying: true });
-                        }
-                      }}
-                      style={{
-                        width: "80px",
-                        height: "80px",
-                        borderRadius: "50%",
-                        backgroundColor: "#28a745",
-                        border: "none",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "background-color 0.3s",
-                        animation: "none",
-                      }}
-                    >
-                      <Play size={24} color="white" fill="white" />
-                    </PulseButton>
-
-                    {stageData.audioPlay.hasPlayed && (
-                      <button
-                        onClick={() => {
-                          if (audioRef.current) {
-                            audioRef.current.currentTime = 0;
-                            audioRef.current.play();
-                            updateAudioPlayData({ isPlaying: true });
-                          }
-                        }}
-                        style={{
-                          padding: "8px 16px",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          color: "#3B82F6",
-                          backgroundColor: "transparent",
-                          border: "2px solid #3B82F6",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                        }}
-                        onMouseOver={(e) => {
-                          e.target.style.backgroundColor = "#3B82F6";
-                          e.target.style.color = "white";
-                        }}
-                        onMouseOut={(e) => {
-                          e.target.style.backgroundColor = "transparent";
-                          e.target.style.color = "#3B82F6";
-                        }}
-                      >
-                        Replay
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Hidden Audio Element */}
-                  <audio
-                    ref={audioRef}
-                    style={{ display: "none" }}
-                    onPlay={() => {
-                      updateAudioPlayData({ isPlaying: true });
-                    }}
-                    onPause={() => {
-                      updateAudioPlayData({ isPlaying: false });
-                    }}
-                    onEnded={() => {
-                      updateAudioPlayData({
-                        isPlaying: false,
-                        hasPlayed: true,
-                      });
-                    }}
-                    onError={() => {
-                      updateAudioPlayData({
-                        isPlaying: false,
-                        playError: "Failed to load audio",
-                      });
-                    }}
-                    src={audioBlobURL}
-                  >
-                    Your browser does not support the audio element.
-                  </audio>
-
-                  {/* Status Message */}
-                  <div style={{ textAlign: "center" }}>
-                    {stageData.audioPlay.playError && (
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          color: "#EF4444",
-                          margin: "8px 0",
-                        }}
-                      >
-                        {stageData.audioPlay.playError}
-                      </p>
-                    )}
-
-                    {stageData.audioPlay.hasPlayed &&
-                      !stageData.audioPlay.playError && (
-                        <p
-                          style={{
-                            fontSize: "16px",
-                            color: "#10B981",
-                            fontWeight: "500",
-                            margin: "8px 0",
+                              // Enable anticheat and go directly to audio play
+                              setIsFullscreen(true);
+                              setExamStarted(true);
+                              advanceStage("audio_play");
+                            } else {
+                              advanceStage("setup");
+                            }
                           }}
+                          style={{
+                            padding: "10px 24px",
+                            fontSize: "15px",
+                            fontWeight: "600",
+                            color: "white",
+                            backgroundColor: "#10B981",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            transition: "background-color 0.3s ease",
+                            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                          }}
+                          onMouseOver={(e) =>
+                            (e.target.style.backgroundColor = "#059669")
+                          }
+                          onMouseOut={(e) =>
+                            (e.target.style.backgroundColor = "#10B981")
+                          }
                         >
-                          ✓ Question played successfully
-                        </p>
+                          Continue
+                        </button>
                       )}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Thinking Stage */}
-            {currentStage === "thinking" && (
-              <div style={{ marginTop: "20px" }}>
-                <h1
-                  style={{
-                    fontSize: "32px",
-                    fontWeight: "700",
-                    color: "#374151",
-                    marginBottom: "20px",
-                  }}
-                >
-                  Thinking Time
-                </h1>
-                <p
-                  style={{
-                    fontSize: "16px",
-                    color: "#6B7280",
-                    marginBottom: "32px",
-                  }}
-                >
-                  Take a moment to think about your response before recording
-                  begins.
-                </p>
+          {/* Setup Stage */}
+          {currentStage === "setup" && (
+            <div style={{ marginTop: "20px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                Exam Setup
+              </h1>
+              <p
+                style={{
+                  fontSize: "16px",
+                  color: "#6B7280",
+                  marginBottom: "24px",
+                }}
+              >
+                Please complete the following setup steps before starting your
+                exam:
+              </p>
 
-                {/* Countdown Display */}
-                <div
-                  style={{
-                    textAlign: "center",
-                    marginBottom: "32px",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "48px",
-                      fontWeight: "bold",
-                      color: "#EF4444",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    {stageData.thinking.thinkingTimeRemaining}
-                  </div>
-                  <p
-                    style={{
-                      fontSize: "16px",
-                      color: "#6B7280",
-                      margin: "0",
-                    }}
-                  >
-                    seconds remaining
-                  </p>
-                </div>
-
-                {/* Progress Bar */}
-                <div
-                  style={{
-                    width: "100%",
-                    maxWidth: "400px",
-                    margin: "0 auto",
-                    position: "relative",
-                  }}
-                >
-                  {/* Background Bar */}
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "8px",
-                      backgroundColor: "#FEE2E2",
-                      borderRadius: "4px",
-                      position: "relative",
-                    }}
-                  >
-                    {/* Progress Bar - shrinks from both sides */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: `${(1 - thinkingProgress) * 50}%`,
-                        right: `${(1 - thinkingProgress) * 50}%`,
-                        height: "100%",
-                        backgroundColor: "#EF4444",
-                        borderRadius: "4px",
-                        transition: "none", // Remove transition for smooth animation
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Instructions */}
-                <div
-                  style={{
-                    marginTop: "24px",
-                    textAlign: "center",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: "#6B7280",
-                      margin: "0",
-                    }}
-                  >
-                    Recording will start automatically when the timer reaches
-                    zero
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Recording Stage */}
-            {currentStage === "recording" && (
-              <div style={{ marginTop: "20px" }}>
-                <h1
-                  style={{
-                    fontSize: "32px",
-                    fontWeight: "700",
-                    color: "#374151",
-                    marginBottom: "20px",
-                  }}
-                >
-                  Recording Your Response
-                </h1>
-
-                {/* Recording Button */}
+              {/* Setup Checklist with Reserved Button Space */}
+              <div
+                style={{
+                  maxWidth: "500px",
+                  margin: "0 auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: "200px", // Reserve space for checklist + button
+                }}
+              >
+                {/* Checklist Items */}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    alignItems: "center",
-                    gap: "20px",
+                    gap: "12px",
+                    flex: 1,
                   }}
                 >
-                  {!stageData.recording.isRecording &&
-                    !stageData.recording.hasRecorded && (
-                      <div style={{ textAlign: "center" }}>
-                        <p
-                          style={{
-                            fontSize: "16px",
-                            color: "#6B7280",
-                            margin: "8px 0",
-                          }}
-                        >
-                          Preparing to record...
-                        </p>
-                      </div>
-                    )}
-
-                  {stageData.recording.isRecording && (
-                    <PulseButton
-                      onClick={() => {
-                        stopRecording();
-                        updateRecordingData({
-                          isRecording: false,
-                          hasRecorded: true,
-                        });
-                      }}
-                      style={recordStyle}
-                    />
-                  )}
-
-                  {stageData.recording.hasRecorded &&
-                    !stageData.recording.isRecording && (
-                      <div style={{ textAlign: "center" }}>
-                        <p
-                          style={{
-                            fontSize: "16px",
-                            color: "#10B981",
-                            fontWeight: "500",
-                            margin: "8px 0",
-                          }}
-                        >
-                          ✓ Recording completed successfully
-                        </p>
-                        {recognizedText && examLanguage && (
-                          <div
-                            style={{
-                              backgroundColor: "#F0F9FF",
-                              border: "1px solid #0EA5E9",
-                              borderRadius: "12px",
-                              padding: "16px",
-                              marginTop: "16px",
-                              maxWidth: "500px",
-                              margin: "16px auto 0 auto",
-                            }}
-                          >
-                            <h4
-                              style={{
-                                fontSize: "16px",
-                                fontWeight: "600",
-                                color: "#0F172A",
-                                margin: "0 0 8px 0",
-                              }}
-                            >
-                              Speech Recognition Results
-                            </h4>
-                            <p
-                              style={{
-                                fontSize: "14px",
-                                color: "#374151",
-                                lineHeight: "1.5",
-                                margin: "0",
-                                fontStyle: "italic",
-                              }}
-                            >
-                              "{recognizedText}"
-                            </p>
-                            <p
-                              style={{
-                                fontSize: "12px",
-                                color: "#6B7280",
-                                margin: "8px 0 0 0",
-                              }}
-                            >
-                              Detected in: {examLanguage}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                </div>
-              </div>
-            )}
-
-            {/* Uploading Stage */}
-            {currentStage === "uploading" && (
-              <div style={{ marginTop: "20px" }}>
-                <h1
-                  style={{
-                    fontSize: "32px",
-                    fontWeight: "700",
-                    color: "#374151",
-                    marginBottom: "20px",
-                  }}
-                >
-                  {stageData.uploading.waitingForTranscription
-                    ? "Waiting for Transcription"
-                    : stageData.uploading.uploadComplete
-                    ? "Upload Complete"
-                    : "Uploading Response"}
-                </h1>
-                <p
-                  style={{
-                    fontSize: "16px",
-                    color: "#6B7280",
-                    marginBottom: "24px",
-                  }}
-                >
-                  {stageData.uploading.waitingForTranscription
-                    ? "Your response has been uploaded successfully. We're now waiting for the transcription to be processed..."
-                    : stageData.uploading.uploadComplete
-                    ? "Your response has been uploaded and transcribed successfully."
-                    : "Please wait while we upload your recording..."}
-                </p>
-
-                {/* Transcription Results */}
-                {stageData.uploading.uploadComplete &&
-                  stageData.uploading.transcriptionText && (
+                  {/* Microphone Permission */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "16px",
+                      backgroundColor: "#F9FAFB",
+                      borderRadius: "8px",
+                      border: "1px solid #E5E7EB",
+                    }}
+                  >
                     <div
                       style={{
-                        backgroundColor: "#F0F9FF",
-                        border: "1px solid #0EA5E9",
-                        borderRadius: "12px",
-                        padding: "20px",
-                        marginBottom: "24px",
-                        maxWidth: "500px",
-                        margin: "0 auto 24px auto",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
                       }}
                     >
                       <div
                         style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "50%",
+                          backgroundColor: stageData.setup.microphonePermission
+                            ? "#10B981"
+                            : setupLoading.microphone
+                            ? "#3B82F6"
+                            : "#D1D5DB",
                           display: "flex",
                           alignItems: "center",
-                          gap: "8px",
-                          marginBottom: "12px",
+                          justifyContent: "center",
                         }}
                       >
-                        <div
-                          style={{
-                            width: "20px",
-                            height: "20px",
-                            borderRadius: "50%",
-                            backgroundColor: "#10B981",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
+                        {stageData.setup.microphonePermission && (
                           <span
                             style={{
                               color: "white",
@@ -3175,192 +2421,831 @@ export default function AudioRecorder() {
                           >
                             ✓
                           </span>
-                        </div>
-                        <h3
+                        )}
+                        {setupLoading.microphone && (
+                          <div
+                            style={{
+                              width: "12px",
+                              height: "12px",
+                              border: "2px solid transparent",
+                              borderTop: "2px solid white",
+                              borderRadius: "50%",
+                              animation: "spin 1s linear infinite",
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <p
                           style={{
-                            fontSize: "18px",
-                            fontWeight: "600",
-                            color: "#0F172A",
+                            fontSize: "16px",
+                            fontWeight: "500",
+                            color: "#374151",
+                            margin: "0 0 2px 0",
+                          }}
+                        >
+                          Microphone Permission
+                        </p>
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            color: "#6B7280",
                             margin: "0",
                           }}
                         >
-                          Tentative Transcription
-                        </h3>
+                          Allow microphone access for recording
+                        </p>
                       </div>
+                    </div>
+                    {!stageData.setup.microphonePermission && (
+                      <button
+                        onClick={async () => {
+                          setSetupLoading((prev) => ({
+                            ...prev,
+                            microphone: true,
+                          }));
+                          const perms = await requestPermissions();
+                          if (perms.permissionGranted) {
+                            updateSetup({ microphonePermission: true });
+                          }
+                          setSetupLoading((prev) => ({
+                            ...prev,
+                            microphone: false,
+                          }));
+                        }}
+                        style={{
+                          padding: "8px 16px",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "white",
+                          backgroundColor: "#3B82F6",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          transition: "background-color 0.2s ease",
+                        }}
+                        onMouseOver={(e) =>
+                          (e.target.style.backgroundColor = "#2563EB")
+                        }
+                        onMouseOut={(e) =>
+                          (e.target.style.backgroundColor = "#3B82F6")
+                        }
+                      >
+                        Grant Access
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Fullscreen Mode */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "16px",
+                      backgroundColor: "#F9FAFB",
+                      borderRadius: "8px",
+                      border: "1px solid #E5E7EB",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "50%",
+                          backgroundColor: stageData.setup.fullscreenEnabled
+                            ? "#10B981"
+                            : setupLoading.fullscreen
+                            ? "#3B82F6"
+                            : "#D1D5DB",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {stageData.setup.fullscreenEnabled && (
+                          <span
+                            style={{
+                              color: "white",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                        {setupLoading.fullscreen && (
+                          <div
+                            style={{
+                              width: "12px",
+                              height: "12px",
+                              border: "2px solid transparent",
+                              borderTop: "2px solid white",
+                              borderRadius: "50%",
+                              animation: "spin 1s linear infinite",
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <p
+                          style={{
+                            fontSize: "16px",
+                            fontWeight: "500",
+                            color: "#374151",
+                            margin: "0 0 2px 0",
+                          }}
+                        >
+                          Fullscreen Mode
+                        </p>
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            color: "#6B7280",
+                            margin: "0",
+                          }}
+                        >
+                          Enter fullscreen for exam security
+                        </p>
+                      </div>
+                    </div>
+                    {!stageData.setup.fullscreenEnabled && (
+                      <button
+                        onClick={async () => {
+                          setSetupLoading((prev) => ({
+                            ...prev,
+                            fullscreen: true,
+                          }));
+                          setIsFullscreen(true); // Enable fullscreen monitoring
+                          enterFullscreen();
+                          updateSetup({ fullscreenEnabled: true });
+                          setSetupLoading((prev) => ({
+                            ...prev,
+                            fullscreen: false,
+                          }));
+                        }}
+                        style={{
+                          padding: "8px 16px",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "white",
+                          backgroundColor: "#3B82F6",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          transition: "background-color 0.2s ease",
+                        }}
+                        onMouseOver={(e) =>
+                          (e.target.style.backgroundColor = "#2563EB")
+                        }
+                        onMouseOut={(e) =>
+                          (e.target.style.backgroundColor = "#3B82F6")
+                        }
+                      >
+                        Enter Fullscreen
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Continue Button - always takes up space, just invisible when not needed */}
+                <div
+                  style={{
+                    height: "80px", // Increased height for button + margin
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: canAdvanceToAudioPlay() ? 1 : 0,
+                    transition: "opacity 0.3s ease",
+                  }}
+                >
+                  {canAdvanceToAudioPlay() && (
+                    <button
+                      onClick={() => {
+                        setIsFullscreen(true); // Enable fullscreen monitoring
+                        setExamStarted(true); // Mark exam as started
+                        advanceStage("audio_play");
+                      }}
+                      style={{
+                        padding: "12px 32px",
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: "white",
+                        backgroundColor: "#10B981",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        transition: "background-color 0.3s ease",
+                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                      }}
+                      onMouseOver={(e) =>
+                        (e.target.style.backgroundColor = "#059669")
+                      }
+                      onMouseOut={(e) =>
+                        (e.target.style.backgroundColor = "#10B981")
+                      }
+                    >
+                      Continue to Question
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Audio Play Stage */}
+          {currentStage === "audio_play" && (
+            <div style={{ marginTop: "20px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                Listen to Question
+              </h1>
+              <p
+                style={{
+                  fontSize: "16px",
+                  color: "#6B7280",
+                  marginBottom: "24px",
+                }}
+              >
+                Please listen to the question carefully before recording your
+                response.
+              </p>
+
+              {/* Audio Player */}
+              <div
+                style={{
+                  maxWidth: "500px",
+                  margin: "0 auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "20px",
+                }}
+              >
+                {/* Audio Controls */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <PulseButton
+                    onClick={() => {
+                      if (audioRef.current && audioRef.current.paused) {
+                        audioRef.current.play();
+                        updateAudioPlayData({ isPlaying: true });
+                      }
+                    }}
+                    style={{
+                      width: "80px",
+                      height: "80px",
+                      borderRadius: "50%",
+                      backgroundColor: "#28a745",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "background-color 0.3s",
+                      animation: "none",
+                    }}
+                  >
+                    <Play size={24} color="white" fill="white" />
+                  </PulseButton>
+
+                  {stageData.audioPlay.hasPlayed && (
+                    <button
+                      onClick={() => {
+                        if (audioRef.current) {
+                          audioRef.current.currentTime = 0;
+                          audioRef.current.play();
+                          updateAudioPlayData({ isPlaying: true });
+                        }
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "#3B82F6",
+                        backgroundColor: "transparent",
+                        border: "2px solid #3B82F6",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseOver={(e) => {
+                        e.target.style.backgroundColor = "#3B82F6";
+                        e.target.style.color = "white";
+                      }}
+                      onMouseOut={(e) => {
+                        e.target.style.backgroundColor = "transparent";
+                        e.target.style.color = "#3B82F6";
+                      }}
+                    >
+                      Replay
+                    </button>
+                  )}
+                </div>
+
+                {/* Hidden Audio Element */}
+                <audio
+                  ref={audioRef}
+                  style={{ display: "none" }}
+                  onPlay={() => {
+                    updateAudioPlayData({ isPlaying: true });
+                  }}
+                  onPause={() => {
+                    updateAudioPlayData({ isPlaying: false });
+                  }}
+                  onEnded={() => {
+                    updateAudioPlayData({
+                      isPlaying: false,
+                      hasPlayed: true,
+                    });
+                  }}
+                  onError={() => {
+                    updateAudioPlayData({
+                      isPlaying: false,
+                      playError: "Failed to load audio",
+                    });
+                  }}
+                  src={audioBlobURL}
+                >
+                  Your browser does not support the audio element.
+                </audio>
+
+                {/* Status Message */}
+                <div style={{ textAlign: "center" }}>
+                  {stageData.audioPlay.playError && (
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#EF4444",
+                        margin: "8px 0",
+                      }}
+                    >
+                      {stageData.audioPlay.playError}
+                    </p>
+                  )}
+
+                  {stageData.audioPlay.hasPlayed &&
+                    !stageData.audioPlay.playError && (
                       <p
                         style={{
                           fontSize: "16px",
-                          color: "#374151",
-                          lineHeight: "1.5",
-                          margin: "0 0 16px 0",
-                          fontStyle: "italic",
+                          color: "#10B981",
+                          fontWeight: "500",
+                          margin: "8px 0",
                         }}
                       >
-                        "{stageData.uploading.transcriptionText}"
+                        ✓ Question played successfully
                       </p>
+                    )}
+                </div>
+              </div>
+            </div>
+          )}
 
-                      {/* Relisten Button and Disclaimer */}
+          {/* Thinking Stage */}
+          {currentStage === "thinking" && (
+            <div style={{ marginTop: "20px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                Thinking Time
+              </h1>
+              <p
+                style={{
+                  fontSize: "16px",
+                  color: "#6B7280",
+                  marginBottom: "32px",
+                }}
+              >
+                Take a moment to think about your response before recording
+                begins.
+              </p>
+
+              {/* Countdown Display */}
+              <div
+                style={{
+                  textAlign: "center",
+                  marginBottom: "32px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "48px",
+                    fontWeight: "bold",
+                    color: "#EF4444",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {stageData.thinking.thinkingTimeRemaining}
+                </div>
+                <p
+                  style={{
+                    fontSize: "16px",
+                    color: "#6B7280",
+                    margin: "0",
+                  }}
+                >
+                  seconds remaining
+                </p>
+              </div>
+
+              {/* Progress Bar */}
+              <div
+                style={{
+                  width: "100%",
+                  maxWidth: "400px",
+                  margin: "0 auto",
+                  position: "relative",
+                }}
+              >
+                {/* Background Bar */}
+                <div
+                  style={{
+                    width: "100%",
+                    height: "8px",
+                    backgroundColor: "#FEE2E2",
+                    borderRadius: "4px",
+                    position: "relative",
+                  }}
+                >
+                  {/* Progress Bar - shrinks from both sides */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: `${(1 - thinkingProgress) * 50}%`,
+                      right: `${(1 - thinkingProgress) * 50}%`,
+                      height: "100%",
+                      backgroundColor: "#EF4444",
+                      borderRadius: "4px",
+                      transition: "none", // Remove transition for smooth animation
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div
+                style={{
+                  marginTop: "24px",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#6B7280",
+                    margin: "0",
+                  }}
+                >
+                  Recording will start automatically when the timer reaches zero
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Recording Stage */}
+          {currentStage === "recording" && (
+            <div style={{ marginTop: "20px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                Recording Your Response
+              </h1>
+
+              {/* Recording Button */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "20px",
+                }}
+              >
+                {!stageData.recording.isRecording &&
+                  !stageData.recording.hasRecorded && (
+                    <div style={{ textAlign: "center" }}>
+                      <p
+                        style={{
+                          fontSize: "16px",
+                          color: "#6B7280",
+                          margin: "8px 0",
+                        }}
+                      >
+                        Preparing to record...
+                      </p>
+                    </div>
+                  )}
+
+                {stageData.recording.isRecording && (
+                  <PulseButton
+                    onClick={() => {
+                      stopRecording();
+                      updateRecordingData({
+                        isRecording: false,
+                        hasRecorded: true,
+                      });
+                    }}
+                    style={recordStyle}
+                  />
+                )}
+
+                {stageData.recording.hasRecorded &&
+                  !stageData.recording.isRecording && (
+                    <div style={{ textAlign: "center" }}>
+                      <p
+                        style={{
+                          fontSize: "16px",
+                          color: "#10B981",
+                          fontWeight: "500",
+                          margin: "8px 0",
+                        }}
+                      >
+                        ✓ Recording completed successfully
+                      </p>
+                      {recognizedText && examLanguage && (
+                        <div
+                          style={{
+                            backgroundColor: "#F0F9FF",
+                            border: "1px solid #0EA5E9",
+                            borderRadius: "12px",
+                            padding: "16px",
+                            marginTop: "16px",
+                            maxWidth: "500px",
+                            margin: "16px auto 0 auto",
+                          }}
+                        >
+                          <h4
+                            style={{
+                              fontSize: "16px",
+                              fontWeight: "600",
+                              color: "#0F172A",
+                              margin: "0 0 8px 0",
+                            }}
+                          >
+                            Speech Recognition Results
+                          </h4>
+                          <p
+                            style={{
+                              fontSize: "14px",
+                              color: "#374151",
+                              lineHeight: "1.5",
+                              margin: "0",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            "{recognizedText}"
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              color: "#6B7280",
+                              margin: "8px 0 0 0",
+                            }}
+                          >
+                            Detected in: {examLanguage}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+              </div>
+            </div>
+          )}
+
+          {/* Uploading Stage */}
+          {currentStage === "uploading" && (
+            <div style={{ marginTop: "20px" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                {stageData.uploading.waitingForTranscription
+                  ? "Waiting for Transcription"
+                  : stageData.uploading.uploadComplete
+                  ? "Upload Complete"
+                  : "Uploading Response"}
+              </h1>
+              <p
+                style={{
+                  fontSize: "16px",
+                  color: "#6B7280",
+                  marginBottom: "24px",
+                }}
+              >
+                {stageData.uploading.waitingForTranscription
+                  ? "Your response has been uploaded successfully. We're now waiting for the transcription to be processed..."
+                  : stageData.uploading.uploadComplete
+                  ? "Your response has been uploaded and transcribed successfully."
+                  : "Please wait while we upload your recording..."}
+              </p>
+
+              {/* Transcription Results */}
+              {stageData.uploading.uploadComplete &&
+                stageData.uploading.transcriptionText && (
+                  <div
+                    style={{
+                      backgroundColor: "#F0F9FF",
+                      border: "1px solid #0EA5E9",
+                      borderRadius: "12px",
+                      padding: "20px",
+                      marginBottom: "24px",
+                      maxWidth: "500px",
+                      margin: "0 auto 24px auto",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginBottom: "12px",
+                      }}
+                    >
                       <div
                         style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "50%",
+                          backgroundColor: "#10B981",
                           display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                          marginTop: "12px",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
                         <span
                           style={{
+                            color: "white",
                             fontSize: "12px",
-                            color: "#6B7280",
-                            fontStyle: "italic",
+                            fontWeight: "bold",
                           }}
                         >
-                          This is an AI-generated transcription and may not be
-                          100% accurate
+                          ✓
                         </span>
                       </div>
+                      <h3
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: "600",
+                          color: "#0F172A",
+                          margin: "0",
+                        }}
+                      >
+                        Tentative Transcription
+                      </h3>
                     </div>
-                  )}
+                    <p
+                      style={{
+                        fontSize: "16px",
+                        color: "#374151",
+                        lineHeight: "1.5",
+                        margin: "0 0 16px 0",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      "{stageData.uploading.transcriptionText}"
+                    </p>
 
-                {/* Upload Animation with Custom Images */}
+                    {/* Relisten Button and Disclaimer */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                        marginTop: "12px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: "#6B7280",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        This is an AI-generated transcription and may not be
+                        100% accurate
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+              {/* Upload Animation with Custom Images */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                {/* Fixed Content Container - This won't move */}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    marginBottom: "16px",
+                    minHeight: "160px", // Reserve space for content + button
                   }}
                 >
-                  {/* Fixed Content Container - This won't move */}
+                  {/* Image Container */}
                   <div
                     style={{
+                      marginBottom: "16px",
                       display: "flex",
-                      flexDirection: "column",
                       alignItems: "center",
-                      minHeight: "160px", // Reserve space for content + button
+                      justifyContent: "center",
                     }}
                   >
-                    {/* Image Container */}
-                    <div
+                    {stageData.uploading.uploadComplete ||
+                    stageData.uploading.waitingForTranscription ? (
+                      <img
+                        src="/upload-done.png"
+                        alt="Upload complete"
+                        style={{
+                          width: "120px",
+                          height: "120px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src="/upload-load.gif"
+                        alt="Uploading response"
+                        style={{
+                          width: "120px",
+                          height: "120px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Error Message */}
+                  {stageData.uploading.uploadError && (
+                    <p
                       style={{
-                        marginBottom: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        fontSize: "14px",
+                        color: "#EF4444",
+                        margin: "8px 0 0 0",
+                        textAlign: "center",
                       }}
                     >
-                      {stageData.uploading.uploadComplete ||
-                      stageData.uploading.waitingForTranscription ? (
-                        <img
-                          src="/upload-done.png"
-                          alt="Upload complete"
-                          style={{
-                            width: "120px",
-                            height: "120px",
-                            objectFit: "contain",
-                          }}
-                        />
-                      ) : (
-                        <img
-                          src="/upload-load.gif"
-                          alt="Uploading response"
-                          style={{
-                            width: "120px",
-                            height: "120px",
-                            objectFit: "contain",
-                          }}
-                        />
-                      )}
-                    </div>
+                      {stageData.uploading.uploadError}
+                    </p>
+                  )}
 
-                    {/* Error Message */}
-                    {stageData.uploading.uploadError && (
+                  {/* Success Message */}
+                  {stageData.uploading.uploadComplete &&
+                    !stageData.uploading.uploadError && (
                       <p
                         style={{
-                          fontSize: "14px",
-                          color: "#EF4444",
+                          fontSize: "16px",
+                          color: "#10B981",
+                          fontWeight: "500",
                           margin: "8px 0 0 0",
                           textAlign: "center",
                         }}
                       >
-                        {stageData.uploading.uploadError}
+                        ✓ Upload and transcription completed
                       </p>
                     )}
-
-                    {/* Success Message */}
-                    {stageData.uploading.uploadComplete &&
-                      !stageData.uploading.uploadError && (
-                        <p
-                          style={{
-                            fontSize: "16px",
-                            color: "#10B981",
-                            fontWeight: "500",
-                            margin: "8px 0 0 0",
-                            textAlign: "center",
-                          }}
-                        >
-                          ✓ Upload and transcription completed
-                        </p>
-                      )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        {showingInstructions && instructions.length > 0 && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
-                <h3 className="text-xl font-semibold mb-2">Instructions</h3>
-                {instructions.length > 1 && (
-                  <div className="text-blue-100 text-sm">
-                    Step {currentInstructionIndex + 1} of {instructions.length}
-                  </div>
-                )}
-              </div>
-
-              <div className="p-6">
-                <p className="text-gray-700 text-lg leading-relaxed mb-6">
-                  {instructions[currentInstructionIndex].text}
-                </p>
-                <div className="mb-4">
-                  <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full font-medium">
-                    {instructions[currentInstructionIndex].show}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  {instructions.length > 1 && (
-                    <div className="flex space-x-1">
-                      {instructions.map((_, index) => (
-                        <div
-                          key={index}
-                          className={`w-2 h-2 rounded-full transition-colors ${
-                            index === currentInstructionIndex
-                              ? "bg-blue-500"
-                              : index < currentInstructionIndex
-                              ? "bg-green-400"
-                              : "bg-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handleInstructionAcknowledge}
-                    className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    {currentInstructionIndex < instructions.length - 1
-                      ? "Next"
-                      : "Got it"}
-                  </button>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   );
