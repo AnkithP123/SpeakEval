@@ -115,7 +115,7 @@ const GradingView = () => {
 
   const toggleAllAttempts = (studentEmail) => {
     setShowAllAttempts(prev => ({ 
-      ...prev, 
+        ...prev,
       [studentEmail]: !prev[studentEmail] 
     }));
   };
@@ -229,10 +229,10 @@ const GradingView = () => {
                   <FaUser className="text-3xl text-cyan-400 mx-auto mb-4" />
                   <div className="text-3xl font-bold text-white mb-2">{allStudents.length}</div>
                   <div className="text-gray-300">Total Students</div>
-                </div>
-              </div>
             </div>
-            
+          </div>
+        </div>
+
             <div className="group relative animate-fade-in-up h-full">
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2 h-full flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
@@ -278,7 +278,7 @@ const GradingView = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-gray-400">Not Submitted:</span>
                           <span className="text-gray-300 font-semibold">{notSubmitted}</span>
-                        </div>
+                      </div>
                         <div className="flex justify-between items-center">
                           <span className="text-cyan-400">Partial:</span>
                           <span className="text-cyan-300 font-semibold">{partiallySubmitted}</span>
@@ -290,10 +290,10 @@ const GradingView = () => {
                       </div>
                     );
                   })()}
-                </div>
+                    </div>
               </div>
             </div>
-            
+
             <div className="group relative animate-fade-in-up h-full">
               <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl transition-all duration-500 transform group-hover:scale-105 group-hover:-translate-y-2 h-full flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-2xl" />
@@ -434,20 +434,20 @@ const GradingView = () => {
                                     </span>
                                   )}
                                 </div>
-              </div>
-            </div>
+                  </div>
+                </div>
 
                           </div>
                           {hasSubmitted && (
                             <div className="flex items-center space-x-3">
-                              <button
+                        <button
                                 onClick={() => toggleExpand(`${studentEmail || 'student'}-${index}`)}
                                 className="p-3 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all duration-300 inline-flex items-center"
-                              >
+                        >
                                 {expanded[`${studentEmail || 'student'}-${index}`] ? <FaChevronDown className="w-4 h-4" /> : <FaChevronRight className="w-4 h-4" />}
                                 <span className="ml-2">View Responses</span>
-                              </button>
-                            </div>
+                        </button>
+                      </div>
                           )}
                         </div>
 
@@ -496,12 +496,12 @@ const GradingView = () => {
                                           <audio controls src={file.audioUrl} className="w-64" onLoadedMetadata={(e) => handleLoadedMetadata(`${studentEmail || 'student'}-${index}`, qIdx, e.currentTarget.duration)} />
                                         ) : (
                                           <span className="text-xs text-gray-400">No audio URL</span>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
                                 )}
-                              </div>
+                    </div>
                             ) : (
                               /* All submission attempts */
                               <div className="space-y-4">
@@ -514,12 +514,12 @@ const GradingView = () => {
                                         <span className="text-xs text-gray-400">
                                           {formatDate(individualSubmission.submittedAt)}
                                         </span>
-                                      </div>
+                  </div>
                                       <div className="text-xs text-gray-400">
                                         {individualSubmission.audioFiles?.length || 0} responses
-                                      </div>
-                                    </div>
-                                    
+                    </div>
+                  </div>
+
                                     {Array.isArray(individualSubmission.audioFiles) && individualSubmission.audioFiles.length > 0 && (
                                       <div className="space-y-2">
                                         {individualSubmission.audioFiles.map((file, qIdx) => (
@@ -532,14 +532,14 @@ const GradingView = () => {
                                             )}
                                           </div>
                                         ))}
-                                      </div>
+                  </div>
                                     )}
-                                  </div>
+                </div>
                                 ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
+              </div>
+                )}
+              </div>
+            )}
                           </div>
                         );
                       })}

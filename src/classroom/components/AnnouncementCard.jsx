@@ -4,7 +4,7 @@ const AnnouncementCard = ({ announcement, isTeacher }) => {
   const formatDate = (timestamp) => {
     // Handle both epoch timestamps and ISO strings
     const now = new Date();
-    const announcementDate = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
+    const announcementDate = new Date(timestamp);
     const diffInDays = Math.floor((now - announcementDate) / (1000 * 60 * 60 * 24));
     
     if (diffInDays === 0) {

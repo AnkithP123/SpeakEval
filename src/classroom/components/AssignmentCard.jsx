@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const AssignmentCard = ({ assignment, classId, isTeacher, isStudent }) => {
   const formatDate = (timestamp) => {
     // Handle both epoch timestamps and ISO strings
-    const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
+    const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',

@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
+import { ToastContainer as ReactToastContainer, toast, Slide } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ToastContext = createContext();
 
@@ -11,91 +13,33 @@ export const useToast = () => {
 };
 
 export const ToastProvider = ({ children }) => {
-  const [toasts, setToasts] = useState([]);
-
-  const addToast = useCallback((message, type = 'info', duration = 5000) => {
-    const id = Date.now() + Math.random();
-    const toast = { id, message, type, duration };
-    
-    setToasts(prev => [...prev, toast]);
-    
-    // Auto-remove toast after duration
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, duration);
-    
-    return id;
-  }, []);
-
-  const removeToast = useCallback((id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  }, []);
-
-  const showSuccess = useCallback((message, duration) => {
-    return addToast(message, 'success', duration);
-  }, [addToast]);
-
-  const showError = useCallback((message, duration) => {
-    return addToast(message, 'error', duration);
-  }, [addToast]);
-
-  const showInfo = useCallback((message, duration) => {
-    return addToast(message, 'info', duration);
-  }, [addToast]);
-
-  const showWarning = useCallback((message, duration) => {
-    return addToast(message, 'warning', duration);
-  }, [addToast]);
-
-  const value = {
-    toasts,
-    addToast,
-    removeToast,
-    showSuccess,
-    showError,
-    showInfo,
-    showWarning
-  };
+  const api = useMemo(() => ({
+    showSuccess: (message, duration = 5000, options = {}) =>
+      toast.success(message, { autoClose: duration, ...options }),
+    showError: (message, duration = 5000, options = {}) =>
+      toast.error(message, { autoClose: duration, ...options }),
+    showInfo: (message, duration = 5000, options = {}) =>
+      toast.info(message, { autoClose: duration, ...options }),
+    showWarning: (message, duration = 5000, options = {}) =>
+      toast.warn(message, { autoClose: duration, ...options }),
+  }), []);
 
   return (
-    <ToastContext.Provider value={value}>
+    <ToastContext.Provider value={api}>
       {children}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ReactToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        transition={Slide}
+        theme="dark"
+      />
     </ToastContext.Provider>
-  );
-};
-
-const ToastContainer = ({ toasts, removeToast }) => {
-  if (toasts.length === 0) return null;
-
-  return (
-    <div className="toast-container">
-      {toasts.map(toast => (
-        <Toast key={toast.id} toast={toast} onRemove={() => removeToast(toast.id)} />
-      ))}
-    </div>
-  );
-};
-
-const Toast = ({ toast, onRemove }) => {
-  const getIcon = () => {
-    switch (toast.type) {
-      case 'success':
-        return '✓';
-      case 'error':
-        return '✗';
-      case 'warning':
-        return '⚠';
-      default:
-        return 'ℹ';
-    }
-  };
-
-  return (
-    <div className={`toast toast-${toast.type}`} onClick={onRemove}>
-      <div className="toast-icon">{getIcon()}</div>
-      <div className="toast-message">{toast.message}</div>
-      <button className="toast-close" onClick={onRemove}>×</button>
-    </div>
   );
 };
