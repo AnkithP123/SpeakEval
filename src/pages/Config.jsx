@@ -1322,7 +1322,7 @@ const Config = ({
                 </Card>
 
                 {/* Instructions Card (Conditional) */}
-                {
+                {/* {
                   <Card
                     color="green"
                     className={
@@ -1448,7 +1448,7 @@ const Config = ({
                       </div>
                     )}
                   </Card>
-                }
+                } */}
 
                 {/* Record Questions Card (Conditional) */}
                 {
