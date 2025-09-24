@@ -381,7 +381,7 @@ export default function AudioRecorder() {
     clearBlobUrl: clearAudioBlobUrl,
   } = useReactMediaRecorder({
     audio: true,
-    video: false,
+    video: true,
     askPermissionOnMount: false, // We'll handle permissions manually
     onStop: (blobUrl, blob) => handleAudioStop(blobUrl, blob),
   });
@@ -1117,7 +1117,7 @@ export default function AudioRecorder() {
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: false,
+        video: true,
       });
       const audioTracks = stream.getAudioTracks();
       const videoTracks = stream.getVideoTracks();
@@ -1539,7 +1539,7 @@ export default function AudioRecorder() {
       } else {
         updateStageData({
           audioDownloaded: false,
-          audioDownloadError: "No questions received",
+          audioDownloadError: "No questions received" + receivedData.error ? ": " + receivedData.error : "",
         });
       }
 
@@ -2921,7 +2921,7 @@ export default function AudioRecorder() {
                     margin: "0",
                   }}
                 >
-                  Recording will start automatically when the timer reaches zero
+                  Recording will start automatically when the timer reaches zero. Begin speaking when you see a red dot.
                 </p>
               </div>
             </div>
