@@ -2444,7 +2444,7 @@ export default function AudioRecorder() {
                             margin: "0 0 2px 0",
                           }}
                         >
-                          Microphone Permission
+                          Microphone/Camera Permission
                         </p>
                         <p
                           style={{
@@ -2791,6 +2791,19 @@ export default function AudioRecorder() {
 
                 {/* Status Message */}
                 <div style={{ textAlign: "center" }}>
+                  {stageData.audioPlay.isPlaying && (
+                    <p
+                      style={{
+                        fontSize: "24px",
+                        color: "#10B981",
+                        fontWeight: "700",
+                        margin: "4px 0",
+                      }}
+                    >
+                      Playing...
+                    </p>
+                  )}
+
                   {stageData.audioPlay.playError && (
                     <p
                       style={{
@@ -2804,7 +2817,8 @@ export default function AudioRecorder() {
                   )}
 
                   {stageData.audioPlay.hasPlayed &&
-                    !stageData.audioPlay.playError && (
+                    !stageData.audioPlay.playError &&
+                    !stageData.audioPlay.isPlaying && (
                       <p
                         style={{
                           fontSize: "16px",
