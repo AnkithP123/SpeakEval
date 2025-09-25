@@ -134,9 +134,7 @@ const Config = ({
   const [isInfoTooltipVisible, setIsInfoTooltipVisible] = useState(false);
 
   // State for instructions
-  const [instructions, setInstructions] = useState([
-    { text: "", show: "Once at the Start of Room" },
-  ]);
+  const [instructions, setInstructions] = useState([]);
   const [instructionsEnabled, setInstructionsEnabled] = useState(false);
 
   const presetRubrics = {
@@ -1028,6 +1026,7 @@ const Config = ({
         toast.success("Question Set updated successfully");
         setIsConfigRegistered(true);
       } else {
+        console.log("Registering new configuration...");
         const configResponse = await fetch(
           `https://www.server.speakeval.org/createconfig?pin=${userId}&id=${id}&rubric=${encodeURIComponent(
             rubricString
