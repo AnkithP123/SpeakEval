@@ -1045,7 +1045,7 @@ const Config = ({
           throw new Error(configResult.error || "Failed to create config");
         }
 
-        toast.success("Config created successfully, uploading questions...");
+        toast.success("Question set registered. Uploading questions...");
 
         for (let i = 0; i < questions.length; i++) {
           const res = await fetch(questions[i]);
