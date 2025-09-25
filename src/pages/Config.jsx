@@ -134,9 +134,7 @@ const Config = ({
   const [isInfoTooltipVisible, setIsInfoTooltipVisible] = useState(false);
 
   // State for instructions
-  const [instructions, setInstructions] = useState([
-    { text: "", show: "Once at the Start of Room" },
-  ]);
+  const [instructions, setInstructions] = useState([]);
   const [instructionsEnabled, setInstructionsEnabled] = useState(false);
 
   const presetRubrics = {
