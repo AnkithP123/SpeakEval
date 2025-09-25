@@ -5,10 +5,11 @@ import { FaFrownOpen, FaFrown, FaMeh, FaSmile, FaGrin } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Card from "../components/Card";
 
-const FeedbackPage = () => {
+export const FeedbackForm = ({ compact = false, onSubmitted }) => {
   const [selectedFace, setSelectedFace] = useState(null);
   const [feedback, setFeedback] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const faces = [
     { id: 1, icon: <FaFrownOpen />, color: "#c80707" },
@@ -33,6 +34,7 @@ const FeedbackPage = () => {
     }
 
     try {
+      setSubmitting(true);
       const response = await fetch(
         `https://www.server.speakeval.org/submit_feedback?name=${name}&code=${code}`,
         {
@@ -45,22 +47,26 @@ const FeedbackPage = () => {
           }),
         }
       );
-      if (response.message) {
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && (data.message || data.success)) {
         toast.success("Feedback submitted successfully");
         setSubmitted(true);
+        if (onSubmitted) onSubmitted();
       } else {
         throw new Error("Failed to submit feedback");
       }
     } catch (error) {
       console.error("Error submitting feedback:", error);
       toast.error("Error submitting feedback");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   if (submitted) {
     return (
-      <div className="container flex justify-center items-center h-screen">
-        <Card className="text-center">
+      <div className={`${compact ? "" : "container h-screen"} flex justify-center items-center`}>
+        <Card className={`text-center ${compact ? "w-full max-w-md" : ""}`}>
           <h1 className="text-3xl font-bold mb-4">Thank You!</h1>
           <p className="text-xl">
             Your feedback has been submitted successfully.
@@ -71,8 +77,8 @@ const FeedbackPage = () => {
   }
 
   return (
-    <div className="container flex justify-center items-center h-screen">
-      <Card className="w-full max-w-lg">
+    <div className={`${compact ? "" : "container h-screen"} flex justify-center items-center`}>
+      <Card className={`w-full ${compact ? "max-w-md" : "max-w-lg"}`}>
         <h1 className="text-3xl font-bold mb-8 text-center">Feedback</h1>
         <div className="space-y-6">
           <h2 className="text-2xl font-semibold text-center">
@@ -103,13 +109,21 @@ const FeedbackPage = () => {
           <div className="text-right text-sm text-gray-400">
             {feedback.length}/500
           </div>
-          <button onClick={handleSubmit} className="btn btn-primary w-full">
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || !selectedFace}
+            className={`btn btn-primary w-full ${submitting || !selectedFace ? "opacity-60 cursor-not-allowed" : ""}`}
+          >
             Submit
           </button>
         </div>
       </Card>
     </div>
   );
+};
+
+const FeedbackPage = () => {
+  return <FeedbackForm compact={false} />;
 };
 
 export default FeedbackPage;

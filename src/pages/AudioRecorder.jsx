@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import tokenManager from "../utils/tokenManager";
 import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
 import websocketService from "../utils/websocketService";
+import { FeedbackForm } from "./FeedbackPage";
 
 export default function AudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -48,6 +49,7 @@ export default function AudioRecorder() {
   const [screenStream, setScreenStream] = useState(null);
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // Web Speech API states
   const [speechRecognition, setSpeechRecognition] = useState(null);
@@ -3301,6 +3303,77 @@ export default function AudioRecorder() {
           )}
         </div>
       </div>
+
+      {/* Floating Feedback Button - shows after upload completion */}
+      {currentStage === "uploading" && stageData.uploading.uploadComplete && (
+        <button
+          onClick={() => setShowFeedbackModal(true)}
+          style={{
+            position: "fixed",
+            right: "24px",
+            bottom: "24px",
+            backgroundColor: "#8B5CF6",
+            color: "white",
+            border: "none",
+            borderRadius: "9999px",
+            padding: "12px 20px",
+            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
+            cursor: "pointer",
+            fontWeight: 700,
+          }}
+        >
+          Give Feedback
+        </button>
+      )}
+
+      {/* Feedback Modal */}
+      {showFeedbackModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowFeedbackModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#111827",
+              borderRadius: "16px",
+              width: "95%",
+              maxWidth: "520px",
+              padding: "16px",
+              boxShadow:
+                "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <h3 style={{ color: "white", fontWeight: 700, fontSize: "18px" }}>Share Your Feedback</h3>
+              <button
+                onClick={() => setShowFeedbackModal(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#9CA3AF",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                }}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div>
+              <FeedbackForm compact={true} onSubmitted={() => setShowFeedbackModal(false)} />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
