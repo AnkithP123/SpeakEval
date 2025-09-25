@@ -1828,22 +1828,62 @@ export default function AudioRecorder() {
 
       const { uploadUrl } = await uploadUrlResponse.json();
 
-      // Upload directly to S3 using presigned URL
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        body: formData.get("audio"),
-        headers: {
-          "Content-Type": "audio/wav",
-        },
-      });
+      // Upload directly to S3 using presigned URL with exponential backoff retries
+      let uploadResponse;
+      const maxAttempts = 5; // realistic max attempts
+      const baseDelayMs = 1000; // 1s base
+      const maxDelayMs = 8000; // cap at 8s
 
-      if (!uploadResponse.ok) {
-        // Check if it's a CORS error
-        if (uploadResponse.status === 0 || uploadResponse.type === "opaque") {
-          console.warn("CORS error detected, falling back to server upload");
-          throw new Error("CORS_ERROR");
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          uploadResponse = await fetch(uploadUrl, {
+            method: "PUT",
+            body: formData.get("audio"),
+            headers: {
+              "Content-Type": "audio/wav",
+            },
+          });
+
+          if (!uploadResponse.ok) {
+            // Check if it's a CORS error - don't retry S3 for this, fall back immediately
+            if (
+              uploadResponse.status === 0 ||
+              uploadResponse.type === "opaque"
+            ) {
+              console.warn(
+                "CORS error detected, falling back to server upload"
+              );
+              throw new Error("CORS_ERROR");
+            }
+            throw new Error("S3_UPLOAD_FAILED");
+          }
+
+          // Success - exit retry loop
+          break;
+        } catch (e) {
+          // If CORS, bubble up to outer catch for server upload fallback
+          if (e && e.message === "CORS_ERROR") {
+            throw e;
+          }
+
+          // If this was the last attempt, rethrow
+          if (attempt === maxAttempts) {
+            throw e;
+          }
+
+          // Inform user and wait with capped exponential backoff
+          const delay = Math.min(
+            baseDelayMs * Math.pow(2, attempt - 1),
+            maxDelayMs
+          );
+          setError(
+            `Upload failed, retrying in ${Math.round(
+              delay / 1000
+            )} seconds (attempt ${attempt}/${maxAttempts})...`
+          );
+          setIsError(false);
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
-        throw new Error("Failed to upload to S3");
       }
 
       // Update to show upload complete, waiting for transcription

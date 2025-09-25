@@ -16,6 +16,10 @@ function Room() {
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState("");
   const [testAudioURL, setTestAudioURL] = useState("");
+  const testAudioRef = useRef(null);
+  const [testIsPlaying, setTestIsPlaying] = useState(false);
+  const [testHasPlayed, setTestHasPlayed] = useState(false);
+  const [testPlayError, setTestPlayError] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [studentInfo, setStudentInfo] = useState(null);
@@ -420,10 +424,59 @@ function Room() {
                   If you are unable to play or hear it, ask for help, and you
                   may need to change some settings or switch devices.
                 </p>
-                <div className="flex justify-center">
-                  <audio className="w-full" controls src={testAudioURL}>
+                <div className="flex flex-col items-center gap-3">
+                  {/* Hidden audio element to mirror AudioRecorder behavior */}
+                  <audio
+                    ref={testAudioRef}
+                    className="hidden"
+                    src={testAudioURL}
+                    onPlay={() => {
+                      setTestPlayError(null);
+                      setTestIsPlaying(true);
+                    }}
+                    onPause={() => setTestIsPlaying(false)}
+                    onEnded={() => {
+                      setTestIsPlaying(false);
+                      setTestHasPlayed(true);
+                    }}
+                    onError={() => {
+                      setTestIsPlaying(false);
+                      setTestPlayError("Failed to load or play the test audio");
+                      toast.error("Failed to play test audio");
+                    }}
+                  >
                     Your browser does not support the audio element.
                   </audio>
+
+                  {/* Play button */}
+                  <button
+                    onClick={async () => {
+                      if (!testAudioRef.current) return;
+                      try {
+                        testAudioRef.current.currentTime = 0;
+                        await testAudioRef.current.play();
+                      } catch (err) {
+                        setTestPlayError("Failed to play the test audio");
+                        setTestIsPlaying(false);
+                        toast.error("Failed to play test audio");
+                      }
+                    }}
+                    className="w-20 h-20 rounded-full bg-green-600 hover:bg-green-700 text-white font-bold flex items-center justify-center shadow-md transition-colors"
+                    aria-label="Play test audio"
+                  >
+                    ▶
+                  </button>
+
+                  {/* Status messages */}
+                  {testIsPlaying && (
+                    <p className="text-green-400 text-xl font-bold">Playing...</p>
+                  )}
+                  {testPlayError && (
+                    <p className="text-red-400 text-base font-semibold">{testPlayError}</p>
+                  )}
+                  {testHasPlayed && !testIsPlaying && !testPlayError && (
+                    <p className="text-green-400 text-lg font-semibold">✓ Test audio played successfully</p>
+                  )}
                 </div>
               </div>
             )}
