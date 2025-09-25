@@ -1026,6 +1026,7 @@ const Config = ({
         toast.success("Question Set updated successfully");
         setIsConfigRegistered(true);
       } else {
+        console.log("Registering new configuration...");
         const configResponse = await fetch(
           `https://www.server.speakeval.org/createconfig?pin=${userId}&id=${id}&rubric=${encodeURIComponent(
             rubricString
