@@ -1,11 +1,11 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { 
-  FaUsers, 
-  FaGraduationCap, 
+import React from "react";
+import { Link } from "react-router-dom";
+import {
+  FaUsers,
+  FaGraduationCap,
   FaArrowRight,
-  FaArrowLeft
-} from 'react-icons/fa'
+  FaArrowLeft,
+} from "react-icons/fa";
 
 const StudentView = ({ onSwitchToTeacher }) => {
   const decodeJwt = (jwt) => {
@@ -23,11 +23,18 @@ const StudentView = ({ onSwitchToTeacher }) => {
     }
   };
 
-  const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('classroom_token')) : null;
-  const classroomUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('classroom_user') || '{}') : {};
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("token") || localStorage.getItem("classroom_token")
+      : null;
+  const classroomUser =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("classroom_user") || "{}")
+      : {};
   const decoded = token ? decodeJwt(token) : null;
-  const userType = decoded?.userType || decoded?.role || classroomUser?.userType;
-  const isTeacher = userType === 'teacher';
+  const userType =
+    decoded?.userType || decoded?.role || classroomUser?.userType;
+  const isTeacher = userType === "teacher";
   const studentFeatures = [
     {
       title: "Classroom Portal",
@@ -36,27 +43,29 @@ const StudentView = ({ onSwitchToTeacher }) => {
       link: "/classroom",
       buttonText: "Enter Classroom",
       color: "from-pink-500 to-purple-600",
-      glowColor: "pink"
+      glowColor: "pink",
     },
     {
       title: "Join Live Exam",
-      description: "Participate in your scheduled oral examination with your teacher",
+      description:
+        "Participate in your scheduled oral examination with your teacher",
       icon: FaUsers,
       link: "/join-room",
       buttonText: "Join Room",
       color: "from-purple-500 to-purple-600",
-      glowColor: "purple"
+      glowColor: "purple",
     },
     {
       title: "Practice Assignment",
-      description: "Complete your assigned practice session for skill development",
+      description:
+        "Complete your assigned practice session for skill development",
       icon: FaGraduationCap,
       link: "/practice",
       buttonText: "Start Practice",
       color: "from-indigo-500 to-purple-600",
-      glowColor: "indigo"
-    }
-  ]
+      glowColor: "indigo",
+    },
+  ];
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -66,25 +75,27 @@ const StudentView = ({ onSwitchToTeacher }) => {
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-pink-500/25 to-purple-600/25 rounded-full filter blur-3xl animate-pulse-slow animate-float-slow"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-purple-500/25 to-pink-600/25 rounded-full filter blur-3xl animate-pulse-slow animation-delay-2000 animate-float-slow-reverse"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-pink-500/20 to-purple-600/20 rounded-full filter blur-3xl animate-pulse-slow animation-delay-1000 animate-float-slow"></div>
-        
+
         {/* Additional floating orbs */}
         <div className="absolute top-1/3 right-1/3 w-48 h-48 bg-gradient-to-r from-pink-400/15 to-purple-500/15 rounded-full filter blur-2xl animate-pulse-slow animation-delay-3000 animate-float-slow"></div>
         <div className="absolute bottom-1/3 left-1/3 w-32 h-32 bg-gradient-to-r from-purple-400/20 to-pink-500/20 rounded-full filter blur-2xl animate-pulse-slow animation-delay-1500 animate-float-slow-reverse"></div>
-        
+
         {/* Enhanced floating particles with different sizes and colors */}
         {[...Array(30)].map((_, i) => (
           <div
             key={i}
             className={`absolute rounded-full animate-float ${
-              i % 3 === 0 ? 'w-3 h-3 bg-pink-300/50' : 
-              i % 3 === 1 ? 'w-2 h-2 bg-purple-300/40' : 
-              'w-1 h-1 bg-pink-300/30'
+              i % 3 === 0
+                ? "w-3 h-3 bg-pink-300/50"
+                : i % 3 === 1
+                ? "w-2 h-2 bg-purple-300/40"
+                : "w-1 h-1 bg-pink-300/30"
             }`}
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 4}s`,
-              animationDuration: `${4 + Math.random() * 3}s`
+              animationDuration: `${4 + Math.random() * 3}s`,
             }}
           />
         ))}
@@ -102,7 +113,10 @@ const StudentView = ({ onSwitchToTeacher }) => {
           {onSwitchToTeacher && isTeacher && (
             <div className="text-center mb-8">
               <button
-                onClick={onSwitchToTeacher}
+                onClick={() => {
+                  throw new Error("Function not implemented.");
+                  onSwitchToTeacher();
+                }}
                 className="inline-flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all duration-300 border border-white/20 hover:border-white/40"
               >
                 <FaArrowLeft className="mr-2 w-4 h-4" />
@@ -110,7 +124,7 @@ const StudentView = ({ onSwitchToTeacher }) => {
               </button>
             </div>
           )}
-          
+
           {/* Header */}
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
@@ -130,24 +144,24 @@ const StudentView = ({ onSwitchToTeacher }) => {
                 key={index}
                 className="group relative animate-fade-in-up"
                 style={{
-                  animationDelay: `${index * 200}ms`
+                  animationDelay: `${index * 200}ms`,
                 }}
               >
                 <div className="relative overflow-hidden backdrop-blur-sm rounded-3xl transition-all duration-700 transform group-hover:scale-105 group-hover:-translate-y-3 group-hover:rotate-1">
                   {/* Card Background */}
-                  <div 
+                  <div
                     className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-3xl"
                     style={{
                       boxShadow: `0 0 40px rgba(236, 72, 153, 0.15)`,
                     }}
                   />
-                  
+
                   {/* Enhanced Animated Border */}
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-pink-500/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-all duration-700 animate-pulse-slow" />
-                  
+
                   {/* Enhanced Glow Effect */}
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-pink-500/5 to-purple-600/5 group-hover:from-pink-500/15 group-hover:to-purple-600/15 transition-all duration-700" />
-                  
+
                   {/* Shimmer Effect */}
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-transparent via-pink-400/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
 
@@ -173,7 +187,9 @@ const StudentView = ({ onSwitchToTeacher }) => {
                     >
                       {/* Button Shimmer */}
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
-                      <span className="relative z-10">{feature.buttonText}</span>
+                      <span className="relative z-10">
+                        {feature.buttonText}
+                      </span>
                       <FaArrowRight className="ml-3 w-5 h-5 transform group-hover:translate-x-2 group-hover:scale-110 transition-all duration-500" />
                     </Link>
                   </div>
@@ -184,8 +200,7 @@ const StudentView = ({ onSwitchToTeacher }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default StudentView
-
+export default StudentView;
