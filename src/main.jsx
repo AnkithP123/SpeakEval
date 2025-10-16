@@ -21,7 +21,7 @@ Sentry.init({
   // Sentry can track user navigation and clicks as 'breadcrumbs' leading up to an error.
   integrations: [
     Sentry.browserTracingIntegration(), // Performance monitoring for browsers
-    Sentry.reactRouterV6BrowserTracingIntegration(), // If you use React Router v6
+    //Sentry.reactRouterV6BrowserTracingIntegration(), // If you use React Router v6
     Sentry.replayIntegration({
       // Session Replay records user interaction up to the point of an error.
       // Adjust this sample rate down to 0.05 or 0.01 in production for cost control.
