@@ -69,14 +69,6 @@ const TeacherView = () => {
       icon: FaGraduationCap,
       cards: [
         {
-          title: "Classroom Dashboard",
-          description:
-            "Create classes, manage assignments, and track student progress",
-          link: "/classroom",
-          icon: FaGraduationCap,
-          buttonText: "Manage Classes",
-        },
-        {
           title: "Grade Live Room",
           description:
             "Review and grade completed student responses from live sessions",
@@ -91,6 +83,14 @@ const TeacherView = () => {
           link: "/practice-exams",
           icon: FaGraduationCap,
           buttonText: "View Practice",
+        },
+        {
+          title: "Classroom Dashboard",
+          description:
+            "Create classes, manage assignments, and track student progress",
+          link: "/classroom",
+          icon: FaGraduationCap,
+          buttonText: "Manage Classes",
         },
       ],
     },
