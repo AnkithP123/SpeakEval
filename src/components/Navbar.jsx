@@ -26,7 +26,7 @@ const checkTokenExpiry = async () => {
       setUserName(null);
       setPin(null);
       toast.error("Session expired. Please log in again.");
-      navigate("/login");
+      window.location.href = "/login";
     } else {
       setUserName(tokenExpiredJson.decoded.username);
       localStorage.setItem("username", tokenExpiredJson.decoded.username);
@@ -113,15 +113,15 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
     localStorage.removeItem("pin");
     setPin(null);
     localStorage.removeItem("token");
-    
+
     // Also clear classroom authentication data
     localStorage.removeItem("classroom_user");
     localStorage.removeItem("classroom_token");
     localStorage.removeItem("token");
-    
+
     // Dispatch custom event to update classroom navbar
-    window.dispatchEvent(new CustomEvent('userUpdated'));
-    
+    window.dispatchEvent(new CustomEvent("userUpdated"));
+
     //reload
     window.location.reload();
   };
