@@ -18,7 +18,7 @@ Sentry.init({
   // ADDED: This tells Sentry to automatically attach tracing headers to requests
   // made to these URLs, linking the frontend event to the backend trace.
   // *** REPLACE 'https://yourdomain.com/api' with your actual backend URL ***
-  tracePropagationTargets: ["localhost", "https://server.speakeval.org", /^\//],
+  tracePropagationTargets: ["localhost", "https://server.speakeval.org", "https://www.server.speakeval.org", /^\//],
 
   // Sentry can track user navigation and clicks as 'breadcrumbs' leading up to an error.
   integrations: [
@@ -30,7 +30,7 @@ Sentry.init({
       // Session Replay records user interaction up to the point of an error.
       // Adjust this sample rate down to 0.05 or 0.01 in production for cost control.
       maskAllText: false,
-      blockAllMedia: true,
+      blockAllMedia: false,
     }),
   ],
 
