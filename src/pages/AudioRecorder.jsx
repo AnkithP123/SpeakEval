@@ -2820,7 +2820,8 @@ export default function AudioRecorder() {
                       hasPlayed: true,
                     });
                   }}
-                  onError={() => {
+                  onError={(e) => {
+                    console.error("Audio play error:", e);
                     updateAudioPlayData({
                       isPlaying: false,
                       playError: "Failed to load audio",
