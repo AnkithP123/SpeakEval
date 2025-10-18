@@ -5,6 +5,21 @@ import "./index.css";
 
 import * as Sentry from "@sentry/react";
 
+// A utility function to safely get all localStorage items
+function getLocalStorageData() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    try {
+      data[key] = localStorage.getItem(key);
+    } catch (e) {
+      console.error("Failed to read local storage key", key, e);
+    }
+  }
+  return data;
+}
+
+
 Sentry.init({
   // WARNING: Use the DSN for your FRONTEND project here!
   dsn: "https://1de7869188b45dbd704581d31a1e7821@o4510194898829312.ingest.us.sentry.io/4510198357426176",
@@ -36,7 +51,32 @@ Sentry.init({
 
   // Optional: Automatically set the current environment
   environment: process.env.NODE_ENV || "development",
+
+  beforeSend(event) {
+    try {
+      const snapshot = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        // You can filter keys here if needed:
+        if (!key.toLowerCase().includes("token") && !key.toLowerCase().includes("auth")) {
+          snapshot[key] = localStorage.getItem(key);
+        }
+      }
+
+      event.extra = {
+        ...event.extra,
+        localStorage: snapshot,
+      };
+    } catch (err) {
+      console.warn("Failed to capture localStorage:", err);
+    }
+
+    return event;
+  },
+
 });
+
+Sentry.setContext("storage", getLocalStorageData());
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
