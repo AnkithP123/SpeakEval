@@ -47,11 +47,6 @@ Sentry.init({
       maskAllText: false,
       blockAllMedia: false,
       networkCapture: true,
-      networkCaptureOptions: {
-        include: ["fetch", "xhr", "fetch", "xhr"],
-      },
-      networkRequestHeaders: true,
-      networkResponseHeaders: true,
       networkCaptureBodies: true,
       networkDetailAllowUrls: ["https://www.server.speakeval.org", "https://speakeval.org"],
     }),
