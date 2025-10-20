@@ -403,6 +403,7 @@ export default function AudioRecorder() {
 
   // WebSocket connection and event listeners
   useEffect(() => {
+    document.fullscreenElement = true;
     if (tokenManager.isAuthenticated()) {
       // Try to reconnect with existing token
       const existingToken = tokenManager.getStudentToken();

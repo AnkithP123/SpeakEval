@@ -16,6 +16,7 @@ import {
   FaStop,
   FaSave,
   FaTrash,
+  FaEye,
 } from "react-icons/fa";
 import urlCache from "../utils/urlCache";
 
@@ -79,6 +80,11 @@ function ProfileCard({
   const [recordedAudioBlob, setRecordedAudioBlob] = useState(null);
   const [localVoiceComment, setLocalVoiceComment] = useState(voiceComment);
   const [voiceCommentUrl, setVoiceCommentUrl] = useState(null);
+
+  // Video viewer states
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   //console.log("Voice Comment: " + voiceComment);
   useEffect(() => {
     if (localVoiceComment && localVoiceComment instanceof Blob) {
@@ -705,6 +711,47 @@ Teacher's Comment: ${comment}`
     setRecordedAudioBlob(null);
   };
 
+  const handleViewVideo = async () => {
+    if (!effectiveName)
+      return toast.error("Participant has not completed the task");
+    
+    setIsLoadingVideo(true);
+    setShowVideoModal(true);
+    
+    try {
+      let videoUrl;
+      
+      // Check if we already have a presigned URL
+      if (effectiveAudio && effectiveAudio.startsWith("http")) {
+        videoUrl = effectiveAudio;
+      } else {
+        // Fetch the video URL from the server
+        const response = await fetch(
+          `https://www.server.speakeval.org/fetch_audio?token=${audio}`
+        );
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch video: " + data.error);
+        }
+        
+        if (data.audioUrl) {
+          videoUrl = data.audioUrl;
+        } else {
+          throw new Error("No video URL received");
+        }
+      }
+      
+      setVideoUrl(videoUrl);
+    } catch (error) {
+      console.error("Error fetching video:", error);
+      toast.error("Error loading video");
+      setShowVideoModal(false);
+    } finally {
+      setIsLoadingVideo(false);
+    }
+  };
+
   if (downloadMode && !downloadedData) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -851,6 +898,13 @@ Teacher's Comment: ${comment}`
               {effectiveCustomName || effectiveName}
             </span>
             <div className="flex gap-2 ml-auto">
+              <button
+                className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md shadow-indigo-500/50"
+                onClick={handleViewVideo}
+                title="View Video"
+              >
+                <FaEye />
+              </button>
               <button
                 className="p-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-full hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-md shadow-blue-500/50"
                 onClick={handleDownload}
@@ -1108,6 +1162,51 @@ Teacher's Comment: ${comment}`
                 <FaSave className="mr-2" />
                 Save
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showVideoModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[9999]">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg p-6 w-11/12 md:w-4/5 lg:w-3/5 shadow-xl border border-cyan-500/30">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white">
+                Video Response: {effectiveName}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowVideoModal(false);
+                  setVideoUrl(null);
+                }}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="relative">
+              {isLoadingVideo ? (
+                <div className="flex items-center justify-center h-64 bg-gray-800 rounded-lg">
+                  <div className="text-center">
+                    <FaSpinner className="animate-spin text-cyan-400 text-3xl mx-auto mb-2" />
+                    <p className="text-white">Loading video...</p>
+                  </div>
+                </div>
+              ) : videoUrl ? (
+                <video
+                  src={videoUrl}
+                  controls
+                  className="w-full h-auto max-h-[70vh] rounded-lg"
+                  preload="metadata"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <div className="flex items-center justify-center h-64 bg-gray-800 rounded-lg">
+                  <p className="text-white">No video available</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
