@@ -1091,10 +1091,10 @@ Teacher's Comment: ${comment}`
               </button>
             ) : (
               // In download mode, this just acts as a static label.
-              <div className="flex items-center px-3 py-2 text-gray-400">
+              voiceCommentUrl && (<div className="flex items-center px-3 py-2 text-gray-400">
                 <FaMicrophone className="mr-2" />
                 Voice Comment
-              </div>
+              </div>)
             )}
 
             {/* The standard HTML audio player is shown if a voice comment exists. */}
