@@ -898,13 +898,14 @@ Teacher's Comment: ${comment}`
               {effectiveCustomName || effectiveName}
             </span>
             <div className="flex gap-2 ml-auto">
-              <button
+            {!downloadMode && (
+              (<button
                 className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md shadow-indigo-500/50"
                 onClick={handleViewVideo}
                 title="View Video"
               >
                 <FaEye />
-              </button>
+              </button>))}
               <button
                 className="p-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-full hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-md shadow-blue-500/50"
                 onClick={handleDownload}
