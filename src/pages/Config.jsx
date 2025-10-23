@@ -96,7 +96,7 @@ const Config = ({
   const [categories, setCategories] = useState([
     { name: "", descriptions: Array(5).fill("") },
   ]);
-  const [pointValues, setPointValues] = useState([5, 4, 3, 2, 1]);
+  const [pointValues, setPointValues] = useState([1, 2, 3, 4, 5]);
   const [maxTime, setMaxTime] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [otherLanguage, setOtherLanguage] = useState("");
