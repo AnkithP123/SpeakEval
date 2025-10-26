@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useClassroom } from '../hooks/useClassroom.jsx';
 import { useToast } from '../hooks/useToast.jsx';
 import LoadingSpinner from './LoadingSpinner';
-import { FaPlus, FaUsers, FaGraduationCap, FaChalkboardTeacher, FaUserGraduate, FaClipboardList, FaFire, FaArrowRight, FaCalendarAlt, FaBell } from 'react-icons/fa';
+import { FaPlus, FaUsers, FaGraduationCap, FaChalkboardTeacher, FaUserGraduate, FaClipboardList, FaFire, FaArrowRight, FaCalendarAlt, FaBell, FaBook } from 'react-icons/fa';
 
 const Dashboard = () => {
   const { classes, loading, error, fetchClasses } = useClassroom();
@@ -347,7 +347,9 @@ const Dashboard = () => {
             {/* Empty State */}
             {classes.length === 0 && (
               <div className="col-span-2 text-center py-16">
-                <div className="text-6xl mb-6">📚</div>
+                <div className="text-6xl mb-6">
+                  <FaBook />
+                </div>
                 <h3 className="text-3xl font-bold text-white mb-4">No Classes Yet</h3>
                 <p className="text-gray-300 mb-8 text-lg">
                   {userRole.isStudent 
