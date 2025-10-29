@@ -38,6 +38,7 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
     const [randomizeQuestions, setRandomizeQuestions] = useState(false)
     const [randomSeed, setRandomSeed] = useState(0)
     const [showTranscriptions, setShowTranscriptions] = useState(true)
+    const [randomizationChosen, setRandomizationChosen] = useState(false)
 
     const mediaRecorder = useRef(null)
     const audioChunks = useRef([])
@@ -72,6 +73,12 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
         return x - Math.floor(x);
       }
       
+
+    const handleRandomizationChoice = (randomize) => {
+        setRandomizeQuestions(randomize)
+        setRandomSeed(Math.random())
+        setRandomizationChosen(true)
+    }
 
     const getExamData = () => {
         if (randomizeQuestions) {
@@ -282,25 +289,64 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
         animation: `${animation}`,
     }
 
+    // Show initial randomization choice if not chosen yet
+    if (!randomizationChosen) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-b from-background to-gray-900">
+                <div className="glass-morphism p-8 w-full max-w-2xl">
+                    <h1 className="text-3xl font-bold mb-6 text-center text-foreground">Practice Exam Setup</h1>
+                    
+                    <div className="text-center mb-8">
+                        <h2 className="text-xl font-semibold mb-4 text-foreground">How would you like to practice?</h2>
+                        <p className="text-gray-300 mb-6">Choose how you want the questions to be presented</p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+                        <button
+                            onClick={() => handleRandomizationChoice(false)}
+                            className="futuristic-button flex-1 py-4 px-6 text-lg"
+                        >
+                            <div className="text-center">
+                                <div className="text-2xl mb-2">📋</div>
+                                <div className="font-bold">In Order</div>
+                                <div className="text-sm opacity-80">Questions in original sequence</div>
+                            </div>
+                        </button>
+                        
+                        <button
+                            onClick={() => handleRandomizationChoice(true)}
+                            className="futuristic-button flex-1 py-4 px-6 text-lg"
+                        >
+                            <div className="text-center">
+                                <div className="text-2xl mb-2">🔀</div>
+                                <div className="font-bold">Randomized</div>
+                                <div className="text-sm opacity-80">Questions in random order</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div className="flex justify-center mb-4">
+                        <label className="flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={showTranscriptions}
+                                onChange={() => setShowTranscriptions(!showTranscriptions)}
+                                className="mr-2"
+                            />
+                            Show Transcriptions
+                        </label>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-b from-background to-gray-900">
         <div className="glass-morphism p-8 w-full max-w-2xl">
           <h1 className="text-3xl font-bold mb-6 text-center text-foreground">Practice Exam</h1>
                   
-                <div className="flex justify-between mb-4">
-                    <label className="flex items-center">
-                        <input
-                            type="checkbox"
-                            checked={randomizeQuestions}
-                            onChange={() => {
-                                if (isPlaying || waiting || isRecording || countdownRef.current > 0) return
-                                setRandomizeQuestions(!randomizeQuestions)
-                                setRandomSeed(Math.random())
-                            }}
-                            className="mr-2"
-                        />
-                        Randomize Questions
-                    </label>
+                <div className="flex justify-center mb-4">
                     <label className="flex items-center">
                         <input
                             type="checkbox"
