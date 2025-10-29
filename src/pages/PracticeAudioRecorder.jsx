@@ -156,7 +156,20 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
 
     if (questionAudioRef.current) {
       questionAudioRef.current.src = audioUrl
-      await questionAudioRef.current.play()
+      // Attempt to play and catch not supported error
+      try {
+        await questionAudioRef.current.play()
+      } catch (err) {
+        // Fallback: reload the audio and retry, or show a user-friendly error if persistent
+        console.error("Audio play error:", err)
+        questionAudioRef.current.load()
+        try {
+          await questionAudioRef.current.play()
+        } catch (err2) {
+          console.error("Failed again to play audio. Audio format may not be supported in this browser.", err2)
+          // Optionally, show an alert or UI message to user
+        }
+      }
     }
   }
 
@@ -348,7 +361,6 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
               className="futuristic-button flex-1 py-4 px-6 text-lg"
             >
               <div className="text-center">
-                <div className="text-2xl mb-2">📋</div>
                 <div className="font-bold">In Order</div>
                 <div className="text-sm opacity-80">Questions in original sequence</div>
               </div>
@@ -359,7 +371,6 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
               className="futuristic-button flex-1 py-4 px-6 text-lg"
             >
               <div className="text-center">
-                <div className="text-2xl mb-2">🔀</div>
                 <div className="font-bold">Randomized</div>
                 <div className="text-sm opacity-80">Questions in random order</div>
               </div>

@@ -307,7 +307,6 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                             className="futuristic-button flex-1 py-4 px-6 text-lg"
                         >
                             <div className="text-center">
-                                <div className="text-2xl mb-2">📋</div>
                                 <div className="font-bold">In Order</div>
                                 <div className="text-sm opacity-80">Questions in original sequence</div>
                             </div>
@@ -318,7 +317,6 @@ export default function PracticeAudioRecorder({ examData, onComplete }) {
                             className="futuristic-button flex-1 py-4 px-6 text-lg"
                         >
                             <div className="text-center">
-                                <div className="text-2xl mb-2">🔀</div>
                                 <div className="font-bold">Randomized</div>
                                 <div className="text-sm opacity-80">Questions in random order</div>
                             </div>
