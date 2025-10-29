@@ -29,6 +29,7 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
   const mediaRecorder = useRef(null)
   const audioChunks = useRef([])
   const timerInterval = useRef(null)
+  const countdownInterval = useRef(null)
   const questionAudioRef = useRef(null)
   const timer = useRef(0)
   const countdownRef = useRef(0)
@@ -41,6 +42,7 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
     
     return () => {
       clearInterval(timerInterval.current)
+      clearInterval(countdownInterval.current)
       if (mediaRecorder.current && mediaRecorder.current.state === "recording") {
         mediaRecorder.current.stop()
       }
@@ -188,11 +190,11 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
     countdownRef.current = getExamData().thinkingTime
     setCountdownDisplay(countdownRef.current)
 
-    const countdownInterval = setInterval(() => {
+    countdownInterval.current = setInterval(() => {
       countdownRef.current -= 1
       setCountdownDisplay(countdownRef.current)
       if (countdownRef.current <= 0) {
-        clearInterval(countdownInterval)
+        clearInterval(countdownInterval.current)
         startRecording()
       }
     }, 1000)
@@ -216,6 +218,7 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
     setCountdownDisplay(0)
     countdownRef.current = 0
     stopTimer()
+    clearInterval(countdownInterval.current)
     
     if (questionAudioRef.current) {
       questionAudioRef.current.pause()
