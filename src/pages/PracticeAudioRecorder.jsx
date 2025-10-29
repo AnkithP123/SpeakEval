@@ -167,7 +167,7 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
           await questionAudioRef.current.play()
         } catch (err2) {
           console.error("Failed again to play audio. Audio format may not be supported in this browser.", err2)
-          // Optionally, show an alert or UI message to user
+          throw err2
         }
       }
     }
