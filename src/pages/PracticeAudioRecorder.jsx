@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react"
 import { Play, Square, RotateCcw, FastForward } from 'lucide-react'
 import styled, { css, keyframes } from "styled-components"
+import * as Sentry from "@sentry/react";
 import * as Tone from "tone"
 import "../styles/globals2.css"
 import tokenManager from "../utils/tokenManager"
@@ -180,6 +181,7 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
         } catch (err2) {
           console.error("Failed again to play audio. Audio format may not be supported in this browser.", err2)
           throw err2
+          Sentry.captureException(err2)
         }
       }
     }
