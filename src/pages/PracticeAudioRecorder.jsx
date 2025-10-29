@@ -34,6 +34,11 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
   const countdownRef = useRef(0)
 
   useEffect(() => {
+    // Set initial display time to max time limit
+    if (examData && examData.timeLimit) {
+      setDisplayTime(formatTime(examData.timeLimit))
+    }
+    
     return () => {
       clearInterval(timerInterval.current)
       if (mediaRecorder.current && mediaRecorder.current.state === "recording") {
@@ -43,7 +48,7 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
         questionAudioRef.current.pause()
       }
     }
-  }, [])
+  }, [examData])
 
   const handleRandomizationChoice = (randomize) => {
     setRandomizeQuestions(randomize)
@@ -112,7 +117,12 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
       mediaRecorder.current.onstop = () => {
         const audioBlob = new Blob(audioChunks.current, { type: "audio/webm" })
         const audioUrl = URL.createObjectURL(audioBlob)
-        setRecordings(prev => [...prev, { questionIndex: currentQuestionIndex, audioUrl }])
+        setRecordings(prev => {
+          // Remove any existing recording for this question
+          const filteredRecordings = prev.filter(rec => rec.questionIndex !== currentQuestionIndex)
+          // Add the new recording
+          return [...filteredRecordings, { questionIndex: currentQuestionIndex, audioUrl }]
+        })
       }
 
       mediaRecorder.current.start()
@@ -193,14 +203,20 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
       ? Math.min(currentQuestionIndex + 1, getExamData().questions.length - 1)
       : Math.max(currentQuestionIndex - 1, 0)
     
+    // If currently recording, stop and save to current question before switching
+    if (isRecording && mediaRecorder.current && mediaRecorder.current.state === "recording") {
+      mediaRecorder.current.stop()
+      // The onstop handler will save the recording to currentQuestionIndex
+    }
+    
     setCurrentQuestionIndex(newIndex)
     setIsPlaying(false)
     setIsRecording(false)
-    setDisplayTime("00:00")
+    setDisplayTime(formatTime(getExamData().timeLimit))
+    setCountdownDisplay(0)
+    countdownRef.current = 0
     stopTimer()
-    if (mediaRecorder.current && mediaRecorder.current.state === "recording") {
-      mediaRecorder.current.stop()
-    }
+    
     if (questionAudioRef.current) {
       questionAudioRef.current.pause()
       questionAudioRef.current.currentTime = 0
