@@ -935,6 +935,8 @@ const Config = ({
       "audio/wav",
       "audio/mp4",
       "audio/x-m4a",
+      "audio/mpeg",
+      "audio/ogg",
     ];
     console.log("Validating blob:", JSON.stringify(blob));
     console.log("Blob type:", blob.type);
