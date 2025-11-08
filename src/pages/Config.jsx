@@ -525,14 +525,17 @@ const Config = ({
   const handleTextImport = async (text) => {
     setIsUploading(true);
     try {
-      const response = await fetch("https://www.server.speakeval.org/upload_text", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text,
-          token: userId,
-        }),
-      });
+      const response = await fetch(
+        "https://www.server.speakeval.org/upload_text",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text,
+            token: userId,
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to process text. Please try again.");
@@ -933,7 +936,8 @@ const Config = ({
       "audio/mp4",
       "audio/x-m4a",
     ];
-
+    console.log("Validating blob:", JSON.stringify(blob));
+    console.log("Blob type:", blob.type);
     if (!allowedTypes.includes(blob.type)) {
       toast.error(
         `Question ${
@@ -2022,45 +2026,71 @@ const Config = ({
                       </button>
                     </div>
 
-                    {!showTextInput && !uploadedFile && !isUploading && !processedStrings && (
-                      <div className="space-y-4">
-                        <div
-                          className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
-                            dragActive ? "border-cyan-400 bg-cyan-500/10" : "border-gray-500 hover:border-cyan-500"
-                          }`}
-                          onDragEnter={handleDrag}
-                          onDragLeave={handleDrag}
-                          onDragOver={handleDrag}
-                          onDrop={handleDrop}
-                        >
-                          <div className="space-y-4">
-                            <div className="text-4xl text-gray-400">📁</div>
-                            <div>
-                              <p className="text-white text-lg font-medium">Drag and drop your file here</p>
-                              <p className="text-gray-400 text-sm mt-2">Supported formats: PDF, DOCX, TXT (Max 10MB)</p>
-                            </div>
-                            <div className="relative">
-                              <input type="file" accept=".pdf,.docx,.doc,.txt" onChange={handleFileInputChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                              <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 font-medium">Choose File</button>
+                    {!showTextInput &&
+                      !uploadedFile &&
+                      !isUploading &&
+                      !processedStrings && (
+                        <div className="space-y-4">
+                          <div
+                            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
+                              dragActive
+                                ? "border-cyan-400 bg-cyan-500/10"
+                                : "border-gray-500 hover:border-cyan-500"
+                            }`}
+                            onDragEnter={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDragOver={handleDrag}
+                            onDrop={handleDrop}
+                          >
+                            <div className="space-y-4">
+                              <div className="text-4xl text-gray-400">📁</div>
+                              <div>
+                                <p className="text-white text-lg font-medium">
+                                  Drag and drop your file here
+                                </p>
+                                <p className="text-gray-400 text-sm mt-2">
+                                  Supported formats: PDF, DOCX, TXT (Max 10MB)
+                                </p>
+                              </div>
+                              <div className="relative">
+                                <input
+                                  type="file"
+                                  accept=".pdf,.docx,.doc,.txt"
+                                  onChange={handleFileInputChange}
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 font-medium">
+                                  Choose File
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex gap-3 justify-center">
-                          <button
-                            onClick={() => { setShowTextInput(true); setTextInputValue(""); }}
-                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                          >
-                            Paste / Type Text Instead
-                          </button>
-                          <button onClick={closeImportModal} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">Cancel</button>
+                          <div className="flex gap-3 justify-center">
+                            <button
+                              onClick={() => {
+                                setShowTextInput(true);
+                                setTextInputValue("");
+                              }}
+                              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                            >
+                              Paste / Type Text Instead
+                            </button>
+                            <button
+                              onClick={closeImportModal}
+                              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     {showTextInput && !processedStrings && (
                       <div className="space-y-4">
-                        <label className="text-gray-300">Paste questions (one per line):</label>
+                        <label className="text-gray-300">
+                          Paste questions (one per line):
+                        </label>
                         <textarea
                           value={textInputValue}
                           onChange={(e) => setTextInputValue(e.target.value)}
@@ -2070,8 +2100,14 @@ const Config = ({
                         <div className="flex gap-3">
                           <button
                             onClick={() => {
-                              const lines = textInputValue.split("\n").map(l => l.trim()).filter(Boolean);
-                              if (lines.length === 0) { toast.error("Please add at least one question"); return; }
+                              const lines = textInputValue
+                                .split("\n")
+                                .map((l) => l.trim())
+                                .filter(Boolean);
+                              if (lines.length === 0) {
+                                toast.error("Please add at least one question");
+                                return;
+                              }
                               handleTextImport(textInputValue);
                             }}
                             className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors flex-1"
@@ -2079,7 +2115,10 @@ const Config = ({
                             Process Text
                           </button>
                           <button
-                            onClick={() => { setShowTextInput(false); setTextInputValue(""); }}
+                            onClick={() => {
+                              setShowTextInput(false);
+                              setTextInputValue("");
+                            }}
                             className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                           >
                             Back
@@ -2091,18 +2130,31 @@ const Config = ({
                     {isUploading && (
                       <div className="text-center py-8">
                         <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mb-4"></div>
-                        <p className="text-white text-lg font-medium">Processing your file...</p>
-                        <p className="text-gray-400 text-sm mt-2">Please wait while we extract the content</p>
+                        <p className="text-white text-lg font-medium">
+                          Processing your file...
+                        </p>
+                        <p className="text-gray-400 text-sm mt-2">
+                          Please wait while we extract the content
+                        </p>
                       </div>
                     )}
 
                     {isConfirming && (
                       <div className="text-center py-12">
                         <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-purple-400 mb-6"></div>
-                        <p className="text-white text-xl font-medium mb-2">Converting text to speech...</p>
-                        <p className="text-gray-400 text-lg mb-4">Generating audio for {processedStrings?.length || 0} questions</p>
+                        <p className="text-white text-xl font-medium mb-2">
+                          Converting text to speech...
+                        </p>
+                        <p className="text-gray-400 text-lg mb-4">
+                          Generating audio for {processedStrings?.length || 0}{" "}
+                          questions
+                        </p>
                         <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600">
-                          <p className="text-cyan-400 text-lg font-semibold">Estimated time: {Math.ceil((processedStrings?.length || 0) / 30)} minutes</p>
+                          <p className="text-cyan-400 text-lg font-semibold">
+                            Estimated time:{" "}
+                            {Math.ceil((processedStrings?.length || 0) / 30)}{" "}
+                            minutes
+                          </p>
                         </div>
                       </div>
                     )}
@@ -2110,9 +2162,13 @@ const Config = ({
                     {processedStrings && !isConfirming && (
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                          <p className="text-white text-lg font-medium">Edit the extracted content:</p>
+                          <p className="text-white text-lg font-medium">
+                            Edit the extracted content:
+                          </p>
                           <button
-                            onClick={() => setProcessedStrings([...processedStrings, ""]) }
+                            onClick={() =>
+                              setProcessedStrings([...processedStrings, ""])
+                            }
                             className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-2"
                           >
                             <FaPlus size={14} />
@@ -2124,13 +2180,21 @@ const Config = ({
                           {processedStrings.map((str, index) => (
                             <div key={index} className="space-y-2">
                               <div className="flex justify-between items-center">
-                                <label className="text-gray-300 text-sm">Question {index + 1}:</label>
+                                <label className="text-gray-300 text-sm">
+                                  Question {index + 1}:
+                                </label>
                                 <button
                                   onClick={() => {
                                     if (processedStrings.length > 1) {
-                                      setProcessedStrings(processedStrings.filter((_, i) => i !== index));
+                                      setProcessedStrings(
+                                        processedStrings.filter(
+                                          (_, i) => i !== index
+                                        )
+                                      );
                                     } else {
-                                      toast.error("You must have at least one question");
+                                      toast.error(
+                                        "You must have at least one question"
+                                      );
                                     }
                                   }}
                                   className="text-red-400 hover:text-red-300 transition-colors p-1"
@@ -2141,7 +2205,9 @@ const Config = ({
                               </div>
                               <textarea
                                 value={str}
-                                onChange={(e) => handleStringEdit(index, e.target.value)}
+                                onChange={(e) =>
+                                  handleStringEdit(index, e.target.value)
+                                }
                                 className="w-full h-[50px] bg-black/30 border border-cyan-500/30 rounded p-3 text-white resize-none"
                                 rows={3}
                                 placeholder={`Content ${index + 1}`}
@@ -2161,7 +2227,9 @@ const Config = ({
                             onClick={handleConfirmStrings}
                             disabled={isConfirming}
                             className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
-                              isConfirming ? "bg-gray-600 text-gray-400 cursor-not-allowed" : "bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
+                              isConfirming
+                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                : "bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
                             }`}
                           >
                             Confirm Changes
@@ -2169,7 +2237,6 @@ const Config = ({
                         </div>
                       </div>
                     )}
-
                   </div>
                 </div>
               </div>
