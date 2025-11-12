@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useReactMediaRecorder } from "react-media-recorder";
+import { useAudioPlayer } from "react-use-audio-player";
 import { Play } from "lucide-react";
 import * as Tone from "tone";
 import styled, { css, keyframes } from "styled-components";
@@ -20,14 +21,28 @@ export default function AudioRecorder() {
   const [audioURL, setAudioURL] = useState(null);
   const [finished, setFinished] = useState(false);
   const [stopped, setStopped] = useState(false);
-  const [playing, setPlaying] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
   const [audioBlobURL, setAudioBlobURL] = useState(null);
   const countdownRef = useRef(0);
   const [countdownDisplay, setCountdownDisplay] = useState(0);
   const timer = useRef(-1);
 
-  const audioRef = useRef(null);
+  // Audio player hook
+  const {
+    load,
+    play: playAudio,
+    pause: pauseAudio,
+    stop: stopAudio,
+    playing,
+    ready,
+    ended,
+    getPosition,
+    seek,
+    duration,
+    volume,
+    setVolume,
+    error: audioPlayerError,
+  } = useAudioPlayer();
   const [displayTime, setDisplayTime] = useState("xx:xx");
   const [obtainedAudio, setObtainedAudio] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -37,7 +52,7 @@ export default function AudioRecorder() {
   const [allowRepeat, setAllowRepeat] = useState(true);
   const [timeLimit, setTimeLimit] = useState(-1); // Time limit in seconds (-1 means no limit)
   const [remainingTime, setRemainingTime] = useState(-1); // Current remaining time in seconds
-  const [isFullscreen, setIsFullscreen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [examStarted, setExamStarted] = useState(false); // Track when exam has actually started
   const [finishedRecording, setFinishedRecording] = useState(false);
   const [hasScreenPermission, setHasScreenPermission] = useState(false);
@@ -59,7 +74,7 @@ export default function AudioRecorder() {
   const finalRecognizedTextRef = useRef(""); // Ref to store final recognized text for immediate access
 
   let questionIndex;
-  let played = false;
+  const playedRef = useRef(false);
 
   // Stage-based data-driven approach
   const [currentStage, setCurrentStage] = useState("initializing");
@@ -103,11 +118,12 @@ export default function AudioRecorder() {
     },
 
     // Stage: 'audio_play'
-    audioPlay: {
-      hasPlayed: false,
-      isPlaying: false,
-      playError: null,
-    },
+      audioPlay: {
+        hasPlayed: false,
+        isPlaying: false,
+        playError: null,
+        audioLoaded: false,
+      },
 
     // Stage: 'thinking'
     thinking: {
@@ -176,6 +192,10 @@ export default function AudioRecorder() {
     setError(null);
     setIsError(false);
 
+    // Stop and reset audio player
+    stopAudio();
+    seek(0);
+
     // Clear any existing timers
     if (timer.current !== -1) {
       clearInterval(timer.current);
@@ -194,6 +214,7 @@ export default function AudioRecorder() {
         hasPlayed: false,
         isPlaying: false,
         playError: null,
+        audioLoaded: false,
       },
       thinking: {
         thinkingTimeRemaining: 0,
@@ -223,6 +244,9 @@ export default function AudioRecorder() {
 
     // Reset thinking progress
     setThinkingProgress(1);
+
+    // Reset played flag
+    playedRef.current = false;
 
     // Reset anticheat flags for room restart
     setFullscreenViolationReported(false);
@@ -280,6 +304,45 @@ export default function AudioRecorder() {
       },
     }));
   };
+
+  // Load audio when audioBlobURL changes
+  useEffect(() => {
+    if (audioBlobURL && currentStage === "audio_play") {
+      try {
+        load(audioBlobURL);
+        updateAudioPlayData({ audioLoaded: true, playError: null });
+      } catch (error) {
+        console.error("Error loading audio:", error);
+        updateAudioPlayData({
+          audioLoaded: false,
+          playError: "Failed to load audio",
+        });
+      }
+    }
+  }, [audioBlobURL, currentStage, load]);
+
+  // Cleanup audio when leaving audio_play stage
+  useEffect(() => {
+    if (currentStage !== "audio_play") {
+      stopAudio();
+    }
+  }, [currentStage, stopAudio]);
+
+  // Sync playing state with audio player
+  useEffect(() => {
+    updateAudioPlayData({ isPlaying: playing });
+  }, [playing]);
+
+  // Handle audio player errors
+  useEffect(() => {
+    if (audioPlayerError && currentStage === "audio_play") {
+      console.error("Audio player error:", audioPlayerError);
+      updateAudioPlayData({
+        isPlaying: false,
+        playError: audioPlayerError.message || "Failed to play audio",
+      });
+    }
+  }, [audioPlayerError, currentStage]);
 
   const updateThinkingData = (updates) => {
     setStageData((prev) => ({
@@ -373,6 +436,17 @@ export default function AudioRecorder() {
     reportError,
     reconnect,
   } = useRealTimeCommunication();
+
+  // Handle audio ended event (must be after useRealTimeCommunication hook)
+  useEffect(() => {
+    if (ended && currentStage === "audio_play") {
+      updateAudioPlayData({
+        isPlaying: false,
+        hasPlayed: true,
+      });
+      audioPlaybackCompleted();
+    }
+  }, [ended, currentStage, audioPlaybackCompleted]);
 
   // Media recorder setup - we'll handle permissions manually
   const {
@@ -1162,9 +1236,6 @@ export default function AudioRecorder() {
     await upload(formData);
     setAudioURL(blobUrl);
     setIsRecording(false);
-    if (audioRef.current) {
-      audioRef.current.src = blobUrl;
-    }
   };
 
   const handleScreenStop = async (blobUrl, blob) => {
@@ -1219,7 +1290,7 @@ export default function AudioRecorder() {
     }
   };
 
-  // Cleanup streams on component unmount
+  // Cleanup streams and audio player on component unmount
   useEffect(() => {
     return () => {
       // Clean up microphone stream
@@ -1234,8 +1305,10 @@ export default function AudioRecorder() {
       if (speechRecognition && isListening) {
         speechRecognition.stop();
       }
+      // Clean up audio player
+      stopAudio();
     };
-  }, [microphoneStream, screenStream, speechRecognition, isListening]);
+  }, [microphoneStream, screenStream, speechRecognition, isListening, stopAudio]);
 
   // Initialize setup on component mount
   useEffect(() => {
@@ -2063,29 +2136,56 @@ export default function AudioRecorder() {
   };
 
   const playRecording = async () => {
-    if (playing || waiting || played) return;
+    if (playing || waiting || playedRef.current) return;
 
-    setPlaying(true);
     setHasPlayed(true);
-    played = true;
+    playedRef.current = true;
 
     // Notify WebSocket about audio playback
     audioPlaybackStarted();
 
-    const playAudio = () => {
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play();
-
-        // Notify WebSocket when audio playback completes
-        audioRef.current.onended = () => {
-          audioPlaybackCompleted();
-        };
-      } else {
-        setTimeout(playAudio, 100);
+    // Ensure audio is loaded before playing
+    if (!ready && audioBlobURL) {
+      try {
+        load(audioBlobURL);
+        updateAudioPlayData({ audioLoaded: true, playError: null });
+        // Wait a bit for audio to load
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error("Error loading audio for playback:", error);
+        updateAudioPlayData({
+          playError: "Failed to load audio",
+        });
+        return;
       }
-    };
-    playAudio();
+    }
+
+    // Reset to beginning and play
+    if (ready || audioBlobURL) {
+      try {
+        seek(0);
+        playAudio();
+        updateAudioPlayData({ isPlaying: true });
+      } catch (error) {
+        console.error("Error playing audio:", error);
+        updateAudioPlayData({
+          isPlaying: false,
+          playError: "Failed to play audio",
+        });
+      }
+    } else {
+      // Retry after a short delay if not ready
+      setTimeout(() => {
+        if (audioBlobURL) {
+          load(audioBlobURL);
+          setTimeout(() => {
+            seek(0);
+            playAudio();
+            updateAudioPlayData({ isPlaying: true });
+          }, 200);
+        }
+      }, 100);
+    }
   };
 
   const stopRecording = () => {
@@ -2748,24 +2848,56 @@ export default function AudioRecorder() {
                   }}
                 >
                   <PulseButton
-                    onClick={() => {
-                      if (audioRef.current && audioRef.current.paused) {
-                        audioRef.current.play();
-                        updateAudioPlayData({ isPlaying: true });
+                    onClick={async () => {
+                      if (!playing && audioBlobURL) {
+                        // Ensure audio is loaded
+                        if (!ready) {
+                          try {
+                            load(audioBlobURL);
+                            updateAudioPlayData({ audioLoaded: true, playError: null });
+                            await new Promise((resolve) => setTimeout(resolve, 100));
+                          } catch (error) {
+                            console.error("Error loading audio:", error);
+                            updateAudioPlayData({
+                              playError: "Failed to load audio",
+                            });
+                            return;
+                          }
+                        }
+                        
+                        try {
+                          seek(0);
+                          playAudio();
+                          updateAudioPlayData({ isPlaying: true });
+                          if (!stageData.audioPlay.hasPlayed) {
+                            setHasPlayed(true);
+                            playedRef.current = true;
+                            audioPlaybackStarted();
+                          }
+                        } catch (error) {
+                          console.error("Error playing audio:", error);
+                          updateAudioPlayData({
+                            isPlaying: false,
+                            playError: "Failed to play audio",
+                          });
+                        }
+                      } else if (playing) {
+                        pauseAudio();
+                        updateAudioPlayData({ isPlaying: false });
                       }
                     }}
                     style={{
                       width: "80px",
                       height: "80px",
                       borderRadius: "50%",
-                      backgroundColor: "#28a745",
+                      backgroundColor: playing ? "#EF4444" : "#28a745",
                       border: "none",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       transition: "background-color 0.3s",
-                      animation: "none",
+                      animation: playing ? `${animation}` : "none",
                     }}
                   >
                     <Play size={24} color="white" fill="white" />
@@ -2773,11 +2905,34 @@ export default function AudioRecorder() {
 
                   {stageData.audioPlay.hasPlayed && (
                     <button
-                      onClick={() => {
-                        if (audioRef.current) {
-                          audioRef.current.currentTime = 0;
-                          audioRef.current.play();
-                          updateAudioPlayData({ isPlaying: true });
+                      onClick={async () => {
+                        if (audioBlobURL) {
+                          // Ensure audio is loaded
+                          if (!ready) {
+                            try {
+                              load(audioBlobURL);
+                              updateAudioPlayData({ audioLoaded: true, playError: null });
+                              await new Promise((resolve) => setTimeout(resolve, 100));
+                            } catch (error) {
+                              console.error("Error loading audio:", error);
+                              updateAudioPlayData({
+                                playError: "Failed to load audio",
+                              });
+                              return;
+                            }
+                          }
+                          
+                          try {
+                            seek(0);
+                            playAudio();
+                            updateAudioPlayData({ isPlaying: true });
+                          } catch (error) {
+                            console.error("Error replaying audio:", error);
+                            updateAudioPlayData({
+                              isPlaying: false,
+                              playError: "Failed to replay audio",
+                            });
+                          }
                         }
                       }}
                       style={{
@@ -2805,36 +2960,20 @@ export default function AudioRecorder() {
                   )}
                 </div>
 
-                {/* Hidden Audio Element */}
-                <audio
-                  ref={audioRef}
-                  style={{ display: "none" }}
-                  onPlay={() => {
-                    updateAudioPlayData({ isPlaying: true });
-                  }}
-                  onPause={() => {
-                    updateAudioPlayData({ isPlaying: false });
-                  }}
-                  onEnded={() => {
-                    updateAudioPlayData({
-                      isPlaying: false,
-                      hasPlayed: true,
-                    });
-                  }}
-                  onError={(e) => {
-                    console.error("Audio play error:", e);
-                    updateAudioPlayData({
-                      isPlaying: false,
-                      playError: "Failed to load audio",
-                    });
-                  }}
-                  src={audioBlobURL}
-                >
-                  Your browser does not support the audio element.
-                </audio>
-
                 {/* Status Message */}
                 <div style={{ textAlign: "center" }}>
+                  {!stageData.audioPlay.audioLoaded && audioBlobURL && (
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6B7280",
+                        margin: "4px 0",
+                      }}
+                    >
+                      Loading audio...
+                    </p>
+                  )}
+
                   {stageData.audioPlay.isPlaying && (
                     <p
                       style={{

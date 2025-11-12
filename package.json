@@ -37,6 +37,7 @@
     "react-spinners": "^0.17.0",
     "react-toastify": "^10.0.5",
     "react-typed": "^2.0.12",
+    "react-use-audio-player": "^4.0.2",
     "recharts": "^2.15.0",
     "tailwindcss-animate": "^1.0.7",
     "tone": "^15.0.4"
