@@ -1381,7 +1381,7 @@ const Config = ({
                 </Card>
 
                 {/* Instructions Card (Conditional) */}
-                {/* {
+                {
                   <Card
                     color="green"
                     className={
@@ -1458,7 +1458,7 @@ const Config = ({
                                 onChange={(e) =>
                                   handleInstructionTextChange(index, e)
                                 }
-                                placeholder={`Enter instructions for the user...`}
+                                placeholder={`Enter instructions for the student...`}
                                 className="w-full bg-black/30 border border-green-500/30 rounded p-2 text-white overflow-hidden resize-none"
                                 style={{ minHeight: "50px" }}
                               />
@@ -1488,7 +1488,7 @@ const Config = ({
                                 <option value="Once at the Start of Room">
                                   Once at the Start of Room
                                 </option>
-                                <option value="Always">Always</option>
+                                <option value="Always">Always on the Left</option>
                                 <option value="Question Prompt">
                                   Question Prompt
                                 </option>
@@ -1507,7 +1507,7 @@ const Config = ({
                       </div>
                     )}
                   </Card>
-                } */}
+                }
 
                 {/* Record Questions Card (Conditional) */}
                 {
