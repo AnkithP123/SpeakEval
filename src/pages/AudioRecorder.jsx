@@ -57,7 +57,7 @@ export default function AudioRecorder() {
       volume,
       position: getPosition ? getPosition() : "N/A",
     });
-  }, [isPlaying, isReady, isLoading, isUnloaded, audioPlayerError, duration, volume, getPosition]);
+  }, [isLoading, isUnloaded, audioPlayerError, duration, volume, getPosition]);
 
   const [displayTime, setDisplayTime] = useState("xx:xx");
   const [obtainedAudio, setObtainedAudio] = useState(false);
