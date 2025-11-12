@@ -44,6 +44,21 @@ export default function AudioRecorder() {
     setVolume,
     error: audioPlayerError,
   } = useAudioPlayer();
+
+  // Debug: Log audio player state changes
+  useEffect(() => {
+    console.log("🎵 [AUDIO PLAYER STATE] State update:", {
+      isPlaying,
+      isReady,
+      isLoading,
+      isUnloaded,
+      error: audioPlayerError,
+      duration,
+      volume,
+      position: getPosition ? getPosition() : "N/A",
+    });
+  }, [isPlaying, isReady, isLoading, isUnloaded, audioPlayerError, duration, volume, getPosition]);
+
   const [displayTime, setDisplayTime] = useState("xx:xx");
   const [obtainedAudio, setObtainedAudio] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -318,11 +333,17 @@ export default function AudioRecorder() {
 
   // Sync playing state with audio player
   useEffect(() => {
+    console.log("🔄 [STATE SYNC] isPlaying changed:", isPlaying);
     updateAudioPlayData({ isPlaying: isPlaying });
   }, [isPlaying]);
 
   // Sync loading state
   useEffect(() => {
+    console.log("🔄 [STATE SYNC] Loading state changed:", {
+      isLoading,
+      isReady,
+      isUnloaded,
+    });
     if (isLoading) {
       updateAudioPlayData({ audioLoaded: false });
     } else if (isReady) {
@@ -333,7 +354,14 @@ export default function AudioRecorder() {
   // Handle audio player errors
   useEffect(() => {
     if (audioPlayerError && currentStage === "audio_play") {
-      console.error("Audio player error:", audioPlayerError);
+      console.error("❌ [AUDIO ERROR] Audio player error detected:", audioPlayerError);
+      console.error("❌ [AUDIO ERROR] Error context:", {
+        currentStage,
+        isPlaying,
+        isReady,
+        isLoading,
+        audioBlobURL: !!audioBlobURL,
+      });
       updateAudioPlayData({
         isPlaying: false,
         playError: audioPlayerError || "Failed to play audio",
@@ -444,14 +472,28 @@ export default function AudioRecorder() {
   useEffect(() => {
     if (audioBlobURL) {
       try {
-        console.log("🎵 Preloading audio for zero-latency playback:", audioBlobURL);
+        console.log("🎵 [AUDIO LOAD] Preloading audio for zero-latency playback");
+        console.log("🎵 [AUDIO LOAD] URL:", audioBlobURL);
+        console.log("🎵 [AUDIO LOAD] Current state:", {
+          isReady,
+          isLoading,
+          isUnloaded,
+          isPlaying,
+        });
+        
         load(audioBlobURL, {
           autoplay: false,
           onload: () => {
-            console.log("✅ Audio preloaded and ready");
+            console.log("✅ [AUDIO LOAD] onload callback fired - Audio preloaded and ready");
+            console.log("✅ [AUDIO LOAD] State after load:", {
+              isReady,
+              isLoading,
+              isUnloaded,
+            });
             updateAudioPlayData({ audioLoaded: true, playError: null });
           },
           onend: () => {
+            console.log("🏁 [AUDIO LOAD] onend callback fired - Audio playback ended");
             updateAudioPlayData({
               isPlaying: false,
               hasPlayed: true,
@@ -461,22 +503,33 @@ export default function AudioRecorder() {
             }
           },
           onplay: () => {
+            console.log("▶️ [AUDIO LOAD] onplay callback fired - Audio started playing");
             updateAudioPlayData({ isPlaying: true });
           },
           onpause: () => {
+            console.log("⏸️ [AUDIO LOAD] onpause callback fired - Audio paused");
             updateAudioPlayData({ isPlaying: false });
           },
           onstop: () => {
+            console.log("⏹️ [AUDIO LOAD] onstop callback fired - Audio stopped");
             updateAudioPlayData({ isPlaying: false });
           },
         });
+        console.log("🎵 [AUDIO LOAD] load() called, waiting for onload callback...");
       } catch (error) {
-        console.error("❌ Error preloading audio:", error);
+        console.error("❌ [AUDIO LOAD] Error preloading audio:", error);
+        console.error("❌ [AUDIO LOAD] Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        });
         updateAudioPlayData({
           audioLoaded: false,
           playError: "Failed to load audio",
         });
       }
+    } else {
+      console.log("🎵 [AUDIO LOAD] No audioBlobURL available yet");
     }
   }, [audioBlobURL, load]);
 
@@ -1636,6 +1689,7 @@ export default function AudioRecorder() {
 
       if (audioUrls && audioUrls.length > 0) {
         // Use the presigned URL directly
+        console.log("📥 [AUDIO DOWNLOAD] Setting audioBlobURL:", audioUrls[0]);
         setAudioBlobURL(audioUrls[0]);
         questionIndex = receivedData.questionIndex;
 
@@ -2870,35 +2924,69 @@ export default function AudioRecorder() {
                 >
                   <PulseButton
                     onClick={async () => {
+                      console.log("🔵 PLAY BUTTON CLICKED");
+                      console.log("🔵 State check:", {
+                        isPlaying,
+                        audioBlobURL,
+                        isReady,
+                        isLoading,
+                        isUnloaded,
+                        currentStage,
+                        stageData: stageData.audioPlay,
+                      });
+                      
                       if (!isPlaying && audioBlobURL) {
                         // Audio should already be preloaded, but check if ready
                         if (!isReady) {
                           console.log("⏳ Audio still loading, please wait...");
+                          console.log("⏳ Audio state:", {
+                            isReady,
+                            isLoading,
+                            isUnloaded,
+                            audioBlobURL,
+                          });
                           updateAudioPlayData({
                             playError: "Audio is still loading. Please wait a moment.",
                           });
                           return;
                         }
                         
+                        console.log("▶️ Attempting to play audio...");
                         try {
+                          console.log("▶️ Seeking to position 0...");
                           seek(0);
+                          console.log("▶️ Calling playAudio()...");
                           playAudio();
+                          console.log("▶️ playAudio() called, updating state...");
                           updateAudioPlayData({ isPlaying: true });
                           if (!stageData.audioPlay.hasPlayed) {
+                            console.log("▶️ First time playing, setting hasPlayed...");
                             setHasPlayed(true);
                             playedRef.current = true;
                             audioPlaybackStarted();
                           }
+                          console.log("✅ Play initiated successfully");
                         } catch (error) {
                           console.error("❌ Error playing audio:", error);
+                          console.error("❌ Error details:", {
+                            message: error.message,
+                            stack: error.stack,
+                            name: error.name,
+                          });
                           updateAudioPlayData({
                             isPlaying: false,
                             playError: "Failed to play audio",
                           });
                         }
                       } else if (isPlaying) {
+                        console.log("⏸️ Pausing audio...");
                         pauseAudio();
                         updateAudioPlayData({ isPlaying: false });
+                      } else {
+                        console.log("⚠️ Play button clicked but conditions not met:", {
+                          isPlaying,
+                          audioBlobURL: !!audioBlobURL,
+                        });
                       }
                     }}
                     style={{
