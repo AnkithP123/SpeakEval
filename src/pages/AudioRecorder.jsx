@@ -210,6 +210,7 @@ export default function AudioRecorder() {
 
     // Stop and reset audio player
     audioLoadedRef.current = false; // Reset so audio can be reloaded for new question
+    callbacksSetupRef.current = false; // Reset callbacks setup flag
     stopAudio();
     seek(0);
 
@@ -328,14 +329,21 @@ export default function AudioRecorder() {
   // Cleanup audio when leaving audio_play stage
   // Use a ref to track previous stage to avoid stopping on initial mount
   const prevStageRef = useRef(currentStage);
+  const stopAudioRef = useRef(stopAudio);
+  
+  // Keep stopAudio ref up to date
+  useEffect(() => {
+    stopAudioRef.current = stopAudio;
+  }, [stopAudio]);
+  
   useEffect(() => {
     // Only stop audio if we're actually leaving audio_play stage (not on initial mount)
     if (prevStageRef.current === "audio_play" && currentStage !== "audio_play") {
       console.log("🛑 [CLEANUP] Leaving audio_play stage, stopping audio");
-      stopAudio();
+      stopAudioRef.current();
     }
     prevStageRef.current = currentStage;
-  }, [currentStage, stopAudio]);
+  }, [currentStage]);
 
   // Sync playing state with audio player
   useEffect(() => {
@@ -475,11 +483,18 @@ export default function AudioRecorder() {
 
   // Track if audio has been loaded to prevent reloading
   const audioLoadedRef = useRef(false);
+  const loadRef = useRef(load);
+  const callbacksSetupRef = useRef(false);
+
+  // Keep load function ref up to date
+  useEffect(() => {
+    loadRef.current = load;
+  }, [load]);
 
   // Load audio immediately when audioBlobURL is available (preload for zero latency)
   // This happens in the "initializing" stage so audio is ready by "audio_play" stage
   useEffect(() => {
-    if (audioBlobURL && !audioLoadedRef.current) {
+    if (audioBlobURL && !audioLoadedRef.current && !callbacksSetupRef.current) {
       try {
         console.log("🎵 [AUDIO LOAD] Preloading audio for zero-latency playback");
         console.log("🎵 [AUDIO LOAD] URL:", audioBlobURL);
@@ -490,9 +505,10 @@ export default function AudioRecorder() {
           isPlaying,
         });
         
+        callbacksSetupRef.current = true;
         audioLoadedRef.current = true;
         
-        load(audioBlobURL, {
+        loadRef.current(audioBlobURL, {
           autoplay: false,
           onload: () => {
             console.log("✅ [AUDIO LOAD] onload callback fired - Audio preloaded and ready");
@@ -522,10 +538,10 @@ export default function AudioRecorder() {
             updateAudioPlayData({ isPlaying: false });
           },
           onstop: () => {
-            console.log("⏹️ [AUDIO LOAD] onstop callback fired - Audio stopped");
-            // Don't update state here - it's already synced via the isPlaying state from the hook
-            // Updating here causes infinite loops because it triggers re-renders that fire onstop again
-            // Also, onstop can fire during load/initialization, so we ignore it unless we're actually playing
+            // Silently ignore onstop - it fires during initialization and causes loops
+            // State is already synced via isPlaying from the hook
+            // Don't update state or log here to prevent infinite loops
+            // The onstop callback can fire multiple times during load/initialization
           },
         });
         console.log("🎵 [AUDIO LOAD] load() called, waiting for onload callback...");
@@ -536,6 +552,7 @@ export default function AudioRecorder() {
           stack: error.stack,
           name: error.name,
         });
+        callbacksSetupRef.current = false;
         audioLoadedRef.current = false; // Reset on error so we can retry
         updateAudioPlayData({
           audioLoaded: false,
@@ -544,9 +561,10 @@ export default function AudioRecorder() {
       }
     } else if (!audioBlobURL) {
       console.log("🎵 [AUDIO LOAD] No audioBlobURL available yet");
+      callbacksSetupRef.current = false;
       audioLoadedRef.current = false;
     }
-  }, [audioBlobURL, load]);
+  }, [audioBlobURL]);
 
   // Media recorder setup - we'll handle permissions manually
   const {
