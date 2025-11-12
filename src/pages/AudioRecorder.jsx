@@ -819,7 +819,11 @@ export default function AudioRecorder() {
       autoplay: false,
       initialVolume: 1.0,
       onload: () => {
-        // Audio loaded successfully
+        // Audio loaded successfully - mark as downloaded
+        updateStageData({
+          audioDownloaded: true,
+          audioDownloadError: null,
+        });
         updateAudioPlayData({
           playError: null,
         });
@@ -842,6 +846,10 @@ export default function AudioRecorder() {
       },
       onerror: () => {
         console.error("Audio load/play error");
+        updateStageData({
+          audioDownloaded: false,
+          audioDownloadError: "Failed to load audio",
+        });
         updateAudioPlayData({
           isPlaying: false,
           playError: "Failed to load audio",
@@ -857,6 +865,26 @@ export default function AudioRecorder() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioBlobURL]);
+
+  // Also watch for isReady state change in case onload doesn't fire
+  useEffect(() => {
+    if (audioPlayer && audioBlobURL) {
+      if (audioPlayer.isReady && !stageData.audioDownloaded && !stageData.audioDownloadError) {
+        // Audio is ready but we haven't marked it as downloaded yet
+        updateStageData({
+          audioDownloaded: true,
+          audioDownloadError: null,
+        });
+      }
+      if (audioPlayer.error && !stageData.audioDownloadError) {
+        // Audio loading failed
+        updateStageData({
+          audioDownloaded: false,
+          audioDownloadError: audioPlayer.error || "Failed to load audio",
+        });
+      }
+    }
+  }, [audioPlayer?.isReady, audioPlayer?.error, audioBlobURL, stageData.audioDownloaded, stageData.audioDownloadError]);
 
   // Sync audio player state with stageData - this effect watches for state changes
   useEffect(() => {
@@ -1612,11 +1640,8 @@ export default function AudioRecorder() {
         setAudioBlobURL(audioUrls[0]);
         questionIndex = receivedData.questionIndex;
 
-        // Mark audio as downloaded successfully
-        updateStageData({
-          audioDownloaded: true,
-          audioDownloadError: null,
-        });
+        // Don't mark as downloaded yet - wait for audio player to load
+        // The audio player loading will be handled by the useEffect that watches audioBlobURL
       } else {
         updateStageData({
           audioDownloaded: false,
