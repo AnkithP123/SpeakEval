@@ -269,6 +269,7 @@ function JoinRoomContent() {
   };
 
   const handleNextStep = async () => {
+    setRejoinData(null);
     setLoading(true);
     // Verify room code here
     const res = await fetch(
