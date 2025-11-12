@@ -1620,7 +1620,7 @@ export default function AudioRecorder() {
       } else {
         updateStageData({
           audioDownloaded: false,
-          audioDownloadError: "No questions received" + receivedData.error ? ": " + receivedData.error : "",
+          audioDownloadError: "No questions received" + receivedData.error ? receivedData.error : "",
         });
       }
 
@@ -3172,16 +3172,40 @@ export default function AudioRecorder() {
                   )}
 
                 {stageData.recording.isRecording && (
-                  <PulseButton
-                    onClick={() => {
-                      stopRecording();
-                      updateRecordingData({
-                        isRecording: false,
-                        hasRecorded: true,
-                      });
-                    }}
-                    style={recordStyle}
-                  />
+                  // <PulseButton
+                  //   onClick={() => {
+                  //     stopRecording();
+                  //     updateRecordingData({
+                  //       isRecording: false,
+                  //       hasRecorded: true,
+                  //     });
+                  //   }}
+                  //   style={recordStyle}
+                  // />
+                <button
+                  onClick={() => {
+                    stopRecording();
+                    updateRecordingData({
+                      isRecording: false,
+                      hasRecorded: true,
+                    });
+                  }}
+                  style={{
+                    width: "120px",
+                    height: "48px",
+                    backgroundColor: "#dc2626", // tailwind red-600
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+                    transition: "background 0.2s",
+                  }}
+                >
+                  Stop
+                </button>
                 )}
 
                 {stageData.recording.hasRecorded &&
