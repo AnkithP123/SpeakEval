@@ -209,6 +209,7 @@ export default function AudioRecorder() {
     setIsError(false);
 
     // Stop and reset audio player
+    audioLoadedRef.current = false; // Reset so audio can be reloaded for new question
     stopAudio();
     seek(0);
 
@@ -325,10 +326,15 @@ export default function AudioRecorder() {
   const audioPlaybackCompletedRef = useRef(null);
 
   // Cleanup audio when leaving audio_play stage
+  // Use a ref to track previous stage to avoid stopping on initial mount
+  const prevStageRef = useRef(currentStage);
   useEffect(() => {
-    if (currentStage !== "audio_play") {
+    // Only stop audio if we're actually leaving audio_play stage (not on initial mount)
+    if (prevStageRef.current === "audio_play" && currentStage !== "audio_play") {
+      console.log("🛑 [CLEANUP] Leaving audio_play stage, stopping audio");
       stopAudio();
     }
+    prevStageRef.current = currentStage;
   }, [currentStage, stopAudio]);
 
   // Sync playing state with audio player
@@ -467,10 +473,13 @@ export default function AudioRecorder() {
     audioPlaybackCompletedRef.current = audioPlaybackCompleted;
   }, [audioPlaybackCompleted]);
 
+  // Track if audio has been loaded to prevent reloading
+  const audioLoadedRef = useRef(false);
+
   // Load audio immediately when audioBlobURL is available (preload for zero latency)
   // This happens in the "initializing" stage so audio is ready by "audio_play" stage
   useEffect(() => {
-    if (audioBlobURL) {
+    if (audioBlobURL && !audioLoadedRef.current) {
       try {
         console.log("🎵 [AUDIO LOAD] Preloading audio for zero-latency playback");
         console.log("🎵 [AUDIO LOAD] URL:", audioBlobURL);
@@ -480,6 +489,8 @@ export default function AudioRecorder() {
           isUnloaded,
           isPlaying,
         });
+        
+        audioLoadedRef.current = true;
         
         load(audioBlobURL, {
           autoplay: false,
@@ -512,7 +523,9 @@ export default function AudioRecorder() {
           },
           onstop: () => {
             console.log("⏹️ [AUDIO LOAD] onstop callback fired - Audio stopped");
-            updateAudioPlayData({ isPlaying: false });
+            // Don't update state here - it's already synced via the isPlaying state from the hook
+            // Updating here causes infinite loops because it triggers re-renders that fire onstop again
+            // Also, onstop can fire during load/initialization, so we ignore it unless we're actually playing
           },
         });
         console.log("🎵 [AUDIO LOAD] load() called, waiting for onload callback...");
@@ -523,13 +536,15 @@ export default function AudioRecorder() {
           stack: error.stack,
           name: error.name,
         });
+        audioLoadedRef.current = false; // Reset on error so we can retry
         updateAudioPlayData({
           audioLoaded: false,
           playError: "Failed to load audio",
         });
       }
-    } else {
+    } else if (!audioBlobURL) {
       console.log("🎵 [AUDIO LOAD] No audioBlobURL available yet");
+      audioLoadedRef.current = false;
     }
   }, [audioBlobURL, load]);
 
