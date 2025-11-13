@@ -1097,8 +1097,13 @@ const Config = ({
       const maxFileSizeBytes = 15 * 1024 * 1024;
       const allFilesAreValid = await Promise.all(
         questions.map(async (questionUrl, i) => {
-          const blob = await fetch(questionUrl).then((res) => res.blob());
-          return validateAudioBlob(blob, i, maxFileSizeBytes);
+          try {
+            const blob = await fetch(questionUrl).then((res) => res.blob());
+            return validateAudioBlob(blob, i, maxFileSizeBytes);
+          } catch (err) {
+            console.error('Error fetching audio:', err);
+            return true;
+          }
         })
       );
 
@@ -1150,7 +1155,7 @@ const Config = ({
             formData.append(key, value);
           });
           formData.append("file", blob);
-          formData.append("content-type", "audio/wav");
+          formData.append("Content-Type", "audio/wav");
 
           const uploadResponse = await fetch(url, {
             method: "POST",
