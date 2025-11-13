@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FaFrownOpen, FaFrown, FaMeh, FaSmile, FaGrin } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Card from "../components/Card";
+import tokenManager from "../utils/tokenManager";
 
 export const FeedbackForm = ({ compact = false, onSubmitted }) => {
   const [selectedFace, setSelectedFace] = useState(null);
@@ -24,14 +25,36 @@ export const FeedbackForm = ({ compact = false, onSubmitted }) => {
   };
 
   const handleSubmit = async () => {
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get("name");
-    const code = params.get("code");
+    console.log("handleSubmit");
+    // Use the new token system for retrieving name and code
+    let name = null;
+    let code = null;
+
+    try {
+      // Attempt import (dynamically, for SSR/CSR compatibility)
+      const info = tokenManager.getStudentInfo();
+      console.log("info:", info);
+      name = info.participant;
+      code = info.roomCode;
+    } catch (e) {
+      // fallback for environments where require isn't available; use window object if possible
+      if (window && window.tokenManager) {
+        const info = tokenManager.getStudentInfo();
+        console.log("info:", info);
+        name = info.participant;
+        code = info.roomCode;
+      }
+    }
+
+    console.log("name:", name);
+    console.log("code:", code);
 
     if (!name || !code) {
-      toast.error("Missing name or code in URL");
+      toast.error("Missing name or code token");
       return;
     }
+
+    console.log("feedback:", feedback);
 
     try {
       setSubmitting(true);
