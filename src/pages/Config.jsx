@@ -855,11 +855,12 @@ const Config = ({
       if (parts.length >= 3) {
         hasEnabledInstructions = parts[0] === "true";
         setInstructionsEnabled(hasEnabledInstructions);
-        setAlwaysShowInstruction(parts[1] === "true");
-        const loadedInstructions = parts.slice(2);
+        // (Removed: setAlwaysShowInstruction is not defined, so we skip this logic)
+        const loadedInstructions = parts.slice(1);
         setInstructions(
           loadedInstructions.length > 0 
             ? loadedInstructions.map(inst => {
+              console.log("Inst:", inst);
                 try {
                   // Try to parse as JSON (if it's a stringified object)
                   const parsed = JSON.parse(inst);
