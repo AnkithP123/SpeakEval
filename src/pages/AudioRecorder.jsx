@@ -1406,7 +1406,7 @@ export default function AudioRecorder() {
         
         // Start recording immediately - but don't save chunks yet
         try {
-          mediaRecorder.start(1000); // Collect data every second
+          mediaRecorder.start(250); // Collect data every second
           // Store the recorder only if start succeeded
           readyMediaRecorderRef.current = mediaRecorder;
         } catch (startErr) {
