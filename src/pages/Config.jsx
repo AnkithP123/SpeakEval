@@ -1588,7 +1588,7 @@ const Config = ({
                                   }
                                 `}</style>
                                 <ReactQuill
-                                  key={`quill-${configType}-${index}-${instruction.text?.substring(0, 20)}`}
+                                  key={`quill-${configType}-${index}`}
                                   theme="snow"
                                   value={instruction.text || ""}
                                   onChange={(content, delta, source, editor) =>
