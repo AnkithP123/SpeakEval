@@ -209,6 +209,7 @@ export default function AudioRecorder() {
       audioDownloadError: null,
       setup: {
         microphonePermission: false, // Will be checked after audio download
+        mediaRecorderReady: false, // Track if MediaRecorder successfully started
         fullscreenEnabled: false, // Will be checked after audio download
       },
       instructions: {
@@ -341,7 +342,7 @@ export default function AudioRecorder() {
 
   const canAdvanceToInstructions = () => {
     const setup = stageData.setup;
-    return setup.microphonePermission && setup.fullscreenEnabled;
+    return setup.microphonePermission && setup.mediaRecorderReady && setup.fullscreenEnabled;
   };
 
   const canAdvanceToAudioPlay = () => {
@@ -1333,13 +1334,16 @@ export default function AudioRecorder() {
 
   const requestPermissions = async () => {
     try {
-      // Check if we already have a valid microphone stream (kept alive)
-      if (microphoneStream && isStreamValid(microphoneStream)) {
-        setHasPermissions(true);
-        setError(null);
-        setIsError(false);
-        return { permissionGranted: true, stream: microphoneStream };
-      }
+        // Check if we already have a valid microphone stream (kept alive)
+        if (microphoneStream && isStreamValid(microphoneStream)) {
+          // Check if MediaRecorder is also ready
+          const mediaRecorderReady = readyMediaRecorderRef.current !== null && 
+                                     readyMediaRecorderRef.current.state === "recording";
+          setHasPermissions(true);
+          setError(mediaRecorderReady ? null : "MediaRecorder not ready. Please try again.");
+          setIsError(!mediaRecorderReady);
+          return { permissionGranted: true, stream: microphoneStream, mediaRecorderReady };
+        }
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -1401,13 +1405,25 @@ export default function AudioRecorder() {
         };
         
         // Start recording immediately - but don't save chunks yet
-        mediaRecorder.start(1000); // Collect data every second
-        
-        // Store the recorder
-        readyMediaRecorderRef.current = mediaRecorder;
+        try {
+          mediaRecorder.start(1000); // Collect data every second
+          // Store the recorder only if start succeeded
+          readyMediaRecorderRef.current = mediaRecorder;
+        } catch (startErr) {
+          console.error("Error starting MediaRecorder:", startErr);
+          // If start fails, don't store the recorder - we'll fall back to hook
+          throw startErr; // Re-throw to be caught by outer catch
+        }
       } catch (err) {
-        console.error("Error creating continuous MediaRecorder:", err);
-        // Continue anyway - we'll fall back to hook
+        console.error("Error creating/starting continuous MediaRecorder:", err);
+        // MediaRecorder creation or start failed
+        // Clear any partial recorder
+        readyMediaRecorderRef.current = null;
+        // Return failure - MediaRecorder is required
+        setHasPermissions(true); // Permissions granted, but MediaRecorder failed
+        setError("MediaRecorder failed to start. Please try again or refresh the page.");
+        setIsError(true);
+        return { permissionGranted: true, stream, mediaRecorderReady: false };
       }
       
       // Monitor stream for permission revocation
@@ -1427,14 +1443,14 @@ export default function AudioRecorder() {
       setHasPermissions(true);
       setError(null); // Clear error when permissions are granted
       setIsError(false);
-      return { permissionGranted: true, stream };
+      return { permissionGranted: true, stream, mediaRecorderReady: true };
     } catch (err) {
       console.error("Error requesting microphone permission:", err);
       setError(
         "Microphone and camera access is required first. Click here to try again."
       );
       setIsError(true);
-      return { permissionGranted: false };
+      return { permissionGranted: false, mediaRecorderReady: false };
     }
   };
 
@@ -3023,8 +3039,10 @@ export default function AudioRecorder() {
                           width: "20px",
                           height: "20px",
                           borderRadius: "50%",
-                          backgroundColor: stageData.setup.microphonePermission
+                          backgroundColor: stageData.setup.microphonePermission && stageData.setup.mediaRecorderReady
                             ? "#10B981"
+                            : stageData.setup.microphonePermission && !stageData.setup.mediaRecorderReady
+                            ? "#EF4444"
                             : setupLoading.microphone
                             ? "#3B82F6"
                             : "#D1D5DB",
@@ -3033,7 +3051,7 @@ export default function AudioRecorder() {
                           justifyContent: "center",
                         }}
                       >
-                        {stageData.setup.microphonePermission && (
+                        {stageData.setup.microphonePermission && stageData.setup.mediaRecorderReady && (
                           <span
                             style={{
                               color: "white",
@@ -3042,6 +3060,17 @@ export default function AudioRecorder() {
                             }}
                           >
                             ✓
+                          </span>
+                        )}
+                        {stageData.setup.microphonePermission && !stageData.setup.mediaRecorderReady && (
+                          <span
+                            style={{
+                              color: "white",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            ✕
                           </span>
                         )}
                         {setupLoading.microphone && (
@@ -3079,7 +3108,7 @@ export default function AudioRecorder() {
                         </p>
                       </div>
                     </div>
-                    {!stageData.setup.microphonePermission && (
+                    {(!stageData.setup.microphonePermission || !stageData.setup.mediaRecorderReady) && (
                       <button
                         onClick={async () => {
                           setSetupLoading((prev) => ({
@@ -3088,7 +3117,17 @@ export default function AudioRecorder() {
                           }));
                           const perms = await requestPermissions();
                           if (perms.permissionGranted) {
-                            updateSetup({ microphonePermission: true });
+                            updateSetup({ 
+                              microphonePermission: true,
+                              mediaRecorderReady: perms.mediaRecorderReady !== false
+                            });
+                            if (!perms.mediaRecorderReady) {
+                              setError("MediaRecorder failed to start. Please refresh the page and try again.");
+                              setIsError(true);
+                            } else {
+                              setError(null);
+                              setIsError(false);
+                            }
                           }
                           setSetupLoading((prev) => ({
                             ...prev,
@@ -3112,9 +3151,11 @@ export default function AudioRecorder() {
                         onMouseOut={(e) =>
                           (e.target.style.backgroundColor = "#3B82F6")
                         }
-                      >
-                        Grant Access
-                      </button>
+                        >
+                          {stageData.setup.microphonePermission && !stageData.setup.mediaRecorderReady
+                            ? "Try Again"
+                            : "Grant Access"}
+                        </button>
                     )}
                   </div>
 
