@@ -138,6 +138,8 @@ const Config = ({
   // State for instructions
   const [instructions, setInstructions] = useState([]);
   const [instructionsEnabled, setInstructionsEnabled] = useState(true );
+  const [showConfigTypeWarning, setShowConfigTypeWarning] = useState(false);
+  const [pendingConfigType, setPendingConfigType] = useState(null);
 
   // import modal text-mode state
   const [showTextInput, setShowTextInput] = useState(false);
@@ -361,6 +363,19 @@ const Config = ({
       ...newInstructions[index],
       text: value
     };
+
+    // If this is instruction 2 in AP Simulated Conversation, sync instruction 3
+    if (configType === "Simulated_Conversation" && index === 1) {
+      const instruction3 = newInstructions[2];
+      if (instruction3 && instruction3.syncWithIndex === 1) {
+        // Preserve displayTime when syncing
+        newInstructions[2] = {
+          ...instruction3,
+          text: value
+        };
+      }
+    }
+
     setInstructions(newInstructions);
   };
 
@@ -379,11 +394,77 @@ const Config = ({
   };
 
   const handleDeleteInstruction = (index) => {
+    // Don't allow deleting instruction 1 or 3 if it's AP Simulated Conversation
+    if (configType === "Simulated_Conversation" && (index === 0 || index === 2)) {
+      toast.error("Cannot delete framework instructions");
+      return;
+    }
     if (instructions.length > 0) {
       setInstructions(instructions.filter((_, i) => i !== index));
     } else {
       setInstructions([{ text: "", show: "Once at the Start of Room" }]);
     }
+  };
+
+  const loadAPSimulatedConversationFramework = () => {
+    const framework = [
+      {
+        text: "<p>You will have <strong>1 minute</strong> to read the instructions before the conversation begins. The instructions will also be available in the sidebar during the conversation for your reference.</p>",
+        show: "Once at the Start of Room",
+        isEditable: false,
+        isFramework: true,
+      },
+      {
+        text: "<p>Read the following conversation framework and prepare your responses:</p><p><br></p><p>[Your conversation scenario will appear here]</p>",
+        show: "Always",
+        isEditable: true,
+        isFramework: true,
+      },
+      {
+        text: "<p>Read the following conversation framework and prepare your responses:</p><p><br></p><p>[Your conversation scenario will appear here]</p>",
+        show: "Once at the Start of Room",
+        isEditable: false,
+        isFramework: true,
+        syncWithIndex: 1, // Sync with instruction at index 1
+        displayTime: 60, // 60 seconds display time, uneditable
+      },
+    ];
+    setInstructions(framework);
+  };
+
+  const handleConfigTypeChange = (newType) => {
+    // Check if switching to/from AP Simulated Conversation with existing instructions
+    const isSwitchingToAP = newType === "Simulated_Conversation" && configType !== "Simulated_Conversation";
+    const isSwitchingFromAP = configType === "Simulated_Conversation" && newType !== "Simulated_Conversation";
+    
+    if ((isSwitchingToAP || isSwitchingFromAP) && instructions.length > 0) {
+      // Show warning
+      setPendingConfigType(newType);
+      setShowConfigTypeWarning(true);
+    } else {
+      // No instructions, proceed directly
+      setConfigType(newType);
+      if (newType === "Simulated_Conversation") {
+        loadAPSimulatedConversationFramework();
+      }
+    }
+  };
+
+  const confirmConfigTypeChange = () => {
+    if (pendingConfigType === "Simulated_Conversation") {
+      // Load framework first, then update config type
+      loadAPSimulatedConversationFramework();
+      // Use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        setConfigType(pendingConfigType);
+      }, 0);
+    } else {
+      // Clear instructions when switching away from AP Simulated Conversation
+      setInstructions([]);
+      setConfigType(pendingConfigType);
+    }
+    setShowConfigTypeWarning(false);
+    setPendingConfigType(null);
   };
 
   const handleAddCategory = () => {
@@ -1376,7 +1457,7 @@ const Config = ({
                           key={type.key}
                           onClick={() => {
                             if (isEnabled) {
-                              setConfigType(type.key);
+                              handleConfigTypeChange(type.key);
                             } else {
                               toast.info(
                                 "This feature is still in development."
@@ -1446,14 +1527,25 @@ const Config = ({
                     </div>
                     {(
                       <div className="space-y-4">
-                        {instructions.map((instruction, index) => (
+                        {instructions.map((instruction, index) => {
+                          const isUneditable = configType === "Simulated_Conversation" && 
+                            instruction && instruction.isFramework && !instruction.isEditable;
+                          
+                          return (
                           <div
                             key={index}
-                            className="bg-black/20 border border-green-500/30 rounded-lg p-4 space-y-3"
+                            className={`bg-black/20 border border-green-500/30 rounded-lg p-4 space-y-3 ${
+                              isUneditable ? "opacity-75" : ""
+                            }`}
                           >
                             <div className="flex items-start space-x-3">
                               <label className="text-white w-28 pt-2 flex-shrink-0">
                                 Instruction {index + 1}
+                                {isUneditable && (
+                                  <span className="block text-xs text-gray-400 mt-1">
+                                    (Framework - Read Only)
+                                  </span>
+                                )}
                               </label>
                               <div className="w-full">
                                 <style>{`
@@ -1496,13 +1588,15 @@ const Config = ({
                                   }
                                 `}</style>
                                 <ReactQuill
+                                  key={`quill-${configType}-${index}-${instruction.text?.substring(0, 20)}`}
                                   theme="snow"
-                                  value={instruction.text}
+                                  value={instruction.text || ""}
                                   onChange={(content, delta, source, editor) =>
                                     handleInstructionTextChange(index, { target: { value: content } })
                                   }
+                                  readOnly={isUneditable}
                                   modules={{
-                                    toolbar: [
+                                    toolbar: isUneditable ? false : [
                                       [{ 'font': [] }, { 'size': [] }],
                                       ['bold', 'italic', 'underline', 'strike'],
                                       [{ 'color': [] }, { 'background': [] }],
@@ -1527,13 +1621,15 @@ const Config = ({
                                   style={{ minHeight: "75px" }}
                                 />
                               </div>
-                              <button
-                                onClick={() => handleDeleteInstruction(index)}
-                                className="text-red-400 hover:text-red-300 transition-colors p-2 flex-shrink-0"
-                                title="Delete Instruction"
-                              >
-                                <FaTimes />
-                              </button>
+                              {!isUneditable && (
+                                <button
+                                  onClick={() => handleDeleteInstruction(index)}
+                                  className="text-red-400 hover:text-red-300 transition-colors p-2 flex-shrink-0"
+                                  title="Delete Instruction"
+                                >
+                                  <FaTimes />
+                                </button>
+                              )}
                             </div>
                             <div className="flex items-center justify-end space-x-2 border-t border-green-500/20 pt-3">
                               <label
@@ -1548,19 +1644,51 @@ const Config = ({
                                 onChange={(e) =>
                                   handleInstructionShowChange(index, e)
                                 }
-                                className="bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500"
+                                disabled={isUneditable}
+                                className={`bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
+                                  isUneditable ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
                               >
                                 <option value="Once at the Start of Room">
-                                  Before Each Question
+                                  Before Question
                                 </option>
                                 <option value="Always">Always on the Left</option>
                                 <option value="Question Prompt">
                                   Question Prompt
                                 </option>
                               </select>
+                              {instruction.show === "Once at the Start of Room" && (
+                                <div className="flex items-center space-x-2">
+                                  <label
+                                    htmlFor={`display-time-${index}`}
+                                    className="text-sm text-gray-300"
+                                  >
+                                    Display Time (seconds):
+                                  </label>
+                                  <input
+                                    id={`display-time-${index}`}
+                                    type="number"
+                                    value={instruction.displayTime || 60}
+                                    onChange={(e) => {
+                                      const newInstructions = [...instructions];
+                                      newInstructions[index] = {
+                                        ...newInstructions[index],
+                                        displayTime: parseInt(e.target.value) || 60
+                                      };
+                                      setInstructions(newInstructions);
+                                    }}
+                                    disabled={isUneditable}
+                                    min="1"
+                                    className={`w-20 bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
+                                      isUneditable ? "opacity-50 cursor-not-allowed" : ""
+                                    }`}
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
-                        ))}
+                        );
+                        })}
                         <div className="pt-2">
                           <button
                             onClick={handleAddInstruction}
@@ -2304,6 +2432,63 @@ const Config = ({
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Config Type Change Warning Modal */}
+            {showConfigTypeWarning && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+                <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 p-8 rounded-2xl border border-amber-500/30 backdrop-blur-md shadow-2xl w-full max-w-lg mx-auto">
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-orange-500/5 pointer-events-none" />
+                  
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-500">
+                        Instructions Will Be Replaced
+                      </h2>
+                      <button
+                        onClick={() => {
+                          setShowConfigTypeWarning(false);
+                          setPendingConfigType(null);
+                        }}
+                        className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-lg"
+                      >
+                        <FaTimes size={20} />
+                      </button>
+                    </div>
+
+                    <div className="mb-6">
+                      <p className="text-white text-lg mb-4">
+                        {pendingConfigType === "Simulated_Conversation" 
+                          ? "Switching to AP Simulated Conversation will load a pre-configured instruction framework. Your current instructions will be replaced."
+                          : "Switching away from AP Simulated Conversation will clear the framework instructions."}
+                      </p>
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                        <p className="text-amber-200 text-sm">
+                          <strong>Important:</strong> If you want to keep your current instructions, click Cancel and copy them to another platform (like Google Docs) before proceeding.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          setShowConfigTypeWarning(false);
+                          setPendingConfigType(null);
+                        }}
+                        className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={confirmConfigTypeChange}
+                        className="flex-1 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-medium shadow-lg shadow-amber-500/30"
+                      >
+                        Continue
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -53,8 +53,10 @@ export default function AudioRecorder() {
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [instructions, setInstructions] = useState([]); // Array of instruction objects with {text, show}
+  const [instructions, setInstructions] = useState([]); // Array of instruction objects with {text, show, displayTime}
   const [instructionsCollapsed, setInstructionsCollapsed] = useState(false); // Collapse state for side panel
+  const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0); // Current instruction index for "Before Question"
+  const [instructionTimeRemaining, setInstructionTimeRemaining] = useState(null); // Time remaining for current instruction
 
   // Web Speech API states
   const [speechRecognition, setSpeechRecognition] = useState(null);
@@ -248,6 +250,8 @@ export default function AudioRecorder() {
 
     // Reset instructions
     setInstructions([]);
+    setCurrentInstructionIndex(0);
+    setInstructionTimeRemaining(null);
 
     // Reset anticheat flags for room restart
     setFullscreenViolationReported(false);
@@ -1052,8 +1056,69 @@ export default function AudioRecorder() {
   useEffect(() => {
     if (currentStage === "instructions") {
       setInstructionsCollapsed(false);
+      // Reset instruction index when entering instructions stage
+      setCurrentInstructionIndex(0);
     }
   }, [currentStage]);
+
+  // Handle instruction timer for instructions with displayTime
+  useEffect(() => {
+    if (currentStage !== "instructions") {
+      setInstructionTimeRemaining(null);
+      return;
+    }
+
+    const beforeQuestionInstructions = instructions.filter(
+      (inst) => inst.show === "Once at the Start of Room"
+    );
+
+    if (beforeQuestionInstructions.length === 0) {
+      return;
+    }
+
+    const currentInstruction = beforeQuestionInstructions[currentInstructionIndex];
+    
+    // If current instruction has displayTime, start timer
+    if (currentInstruction && currentInstruction.displayTime) {
+      setInstructionTimeRemaining(currentInstruction.displayTime);
+      
+      const timer = setInterval(() => {
+        setInstructionTimeRemaining((prev) => {
+          if (prev === null || prev <= 1) {
+            clearInterval(timer);
+            
+            // Use functional update to get latest state
+            setCurrentInstructionIndex((currentIdx) => {
+              const beforeQuestionInsts = instructions.filter(
+                (inst) => inst.show === "Once at the Start of Room"
+              );
+              
+              // Move to next instruction or advance stage
+              if (currentIdx < beforeQuestionInsts.length - 1) {
+                return currentIdx + 1;
+              } else {
+                // All instructions viewed, proceed to audio_play
+                updateInstructionsData({ hasViewed: true });
+                setIsFullscreen(true);
+                setExamStarted(true);
+                advanceStage("audio_play");
+                return currentIdx;
+              }
+            });
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => {
+        clearInterval(timer);
+      };
+    } else {
+      // No timer, user must click "Understood"
+      setInstructionTimeRemaining(null);
+    }
+  }, [currentStage, currentInstructionIndex, instructions]);
 
   // Fallback: Auto-start recording if somehow we're in recording stage without recording started
   useEffect(() => {
@@ -1712,9 +1777,13 @@ export default function AudioRecorder() {
         } catch (err) {
           console.error("Error parsing instructions:", err);
           setInstructions([]);
+    setCurrentInstructionIndex(0);
+    setInstructionTimeRemaining(null);
         }
       } else {
         setInstructions([]);
+    setCurrentInstructionIndex(0);
+    setInstructionTimeRemaining(null);
       }
 
       if (audioUrls && audioUrls.length > 0) {
@@ -2497,37 +2566,48 @@ export default function AudioRecorder() {
                   }}
                 >
                   {alwaysInstructions.map((instruction, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        backgroundColor: "#F9FAFB",
-                        border: "1px solid #E5E7EB",
-                        borderRadius: "8px",
-                        padding: "16px",
-                      }}
-                    >
-                      <style>{`
-                        .side-instruction-quill-${index} .ql-container.ql-snow {
-                          border: none !important;
-                          font-size: 14px;
-                          color: #374151;
-                          line-height: 1.5;
-                        }
-                        .side-instruction-quill-${index} .ql-editor {
-                          padding: 0 !important;
-                        }
-                        .side-instruction-quill-${index} .ql-editor.ql-blank::before {
-                          display: none;
-                        }
-                      `}</style>
-                      <div className={`side-instruction-quill-${index}`}>
-                        <ReactQuill
-                          theme="snow"
-                          value={instruction.text || ""}
-                          readOnly={true}
-                          modules={{ toolbar: false }}
-                          style={{ border: "none" }}
+                    <div key={index}>
+                      {index > 0 && (
+                        <div
+                          style={{
+                            height: "1px",
+                            backgroundColor: "#E5E7EB",
+                            marginBottom: "16px",
+                            marginTop: "0px",
+                          }}
                         />
+                      )}
+                      <div
+                        style={{
+                          backgroundColor: "#F9FAFB",
+                          border: "1px solid #E5E7EB",
+                          borderRadius: "8px",
+                          padding: "16px",
+                        }}
+                      >
+                        <style>{`
+                          .side-instruction-quill-${index} .ql-container.ql-snow {
+                            border: none !important;
+                            font-size: 14px;
+                            color: #374151;
+                            line-height: 1.5;
+                          }
+                          .side-instruction-quill-${index} .ql-editor {
+                            padding: 0 !important;
+                          }
+                          .side-instruction-quill-${index} .ql-editor.ql-blank::before {
+                            display: none;
+                          }
+                        `}</style>
+                        <div className={`side-instruction-quill-${index}`}>
+                          <ReactQuill
+                            theme="snow"
+                            value={instruction.text || ""}
+                            readOnly={true}
+                            modules={{ toolbar: false }}
+                            style={{ border: "none" }}
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -3079,118 +3159,153 @@ export default function AudioRecorder() {
           )}
 
           {/* Instructions Stage */}
-          {currentStage === "instructions" && (
-            <div style={{ marginTop: "20px", width: "100%" }}>
-              <h1
-                style={{
-                  fontSize: "32px",
-                  fontWeight: "700",
-                  color: "#374151",
-                  marginBottom: "20px",
-                }}
-              >
-                Instructions
-              </h1>
-              <p
-                style={{
-                  fontSize: "16px",
-                  color: "#6B7280",
-                  marginBottom: "24px",
-                }}
-              >
-                Please read the following instructions carefully before proceeding:
-              </p>
+          {currentStage === "instructions" && (() => {
+            const beforeQuestionInstructions = instructions.filter(
+              (inst) => inst.show === "Once at the Start of Room"
+            );
+            
+            if (beforeQuestionInstructions.length === 0) {
+              return null;
+            }
 
-              {/* Instructions Display */}
-              <div
-                style={{
-                  maxWidth: "600px",
-                  margin: "0 auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "20px",
-                  marginBottom: "32px",
-                }}
-              >
-                {instructions
-                  .filter((inst) => inst.show === "Once at the Start of Room")
-                  .map((instruction, index) => (
+            const currentInstruction = beforeQuestionInstructions[currentInstructionIndex];
+            const hasDisplayTime = currentInstruction && currentInstruction.displayTime;
+            const isLastInstruction = currentInstructionIndex === beforeQuestionInstructions.length - 1;
+
+            return (
+              <div style={{ marginTop: "20px", width: "100%" }}>
+                <h1
+                  style={{
+                    fontSize: "32px",
+                    fontWeight: "700",
+                    color: "#374151",
+                    marginBottom: "20px",
+                  }}
+                >
+                  Instructions {beforeQuestionInstructions.length > 1 ? `(${currentInstructionIndex + 1} of ${beforeQuestionInstructions.length})` : ""}
+                </h1>
+                <p
+                  style={{
+                    fontSize: "16px",
+                    color: "#6B7280",
+                    marginBottom: "24px",
+                  }}
+                >
+                  Please read the following instructions carefully before proceeding:
+                </p>
+
+                {/* Instructions Display - Show only current instruction */}
+                <div
+                  style={{
+                    maxWidth: "600px",
+                    margin: "0 auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "20px",
+                    marginBottom: "32px",
+                  }}
+                >
+                  <div
+                    style={{
+                      backgroundColor: "#F9FAFB",
+                      border: "1px solid #E5E7EB",
+                      borderRadius: "12px",
+                      padding: "24px",
+                      textAlign: "left",
+                    }}
+                  >
+                    <style>{`
+                      .instruction-quill-current .ql-container.ql-snow {
+                        border: none !important;
+                        font-size: 16px;
+                        color: #374151;
+                        line-height: 1.6;
+                      }
+                      .instruction-quill-current .ql-editor {
+                        padding: 0 !important;
+                      }
+                      .instruction-quill-current .ql-editor.ql-blank::before {
+                        display: none;
+                      }
+                    `}</style>
+                    <div className="instruction-quill-current">
+                      <ReactQuill
+                        theme="snow"
+                        value={currentInstruction?.text || ""}
+                        readOnly={true}
+                        modules={{ toolbar: false }}
+                        style={{ border: "none" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timer or Understood Button */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginTop: "24px",
+                  }}
+                >
+                  {hasDisplayTime && instructionTimeRemaining !== null && (
                     <div
-                      key={index}
                       style={{
-                        backgroundColor: "#F9FAFB",
-                        border: "1px solid #E5E7EB",
-                        borderRadius: "12px",
-                        padding: "24px",
-                        textAlign: "left",
+                        fontSize: "24px",
+                        fontWeight: "600",
+                        color: "#374151",
+                        padding: "12px 24px",
+                        backgroundColor: "#F3F4F6",
+                        borderRadius: "8px",
+                        minWidth: "100px",
+                        textAlign: "center",
                       }}
                     >
-                      <style>{`
-                        .instruction-quill-${index} .ql-container.ql-snow {
-                          border: none !important;
-                          font-size: 16px;
-                          color: #374151;
-                          line-height: 1.6;
-                        }
-                        .instruction-quill-${index} .ql-editor {
-                          padding: 0 !important;
-                        }
-                        .instruction-quill-${index} .ql-editor.ql-blank::before {
-                          display: none;
-                        }
-                      `}</style>
-                      <div className={`instruction-quill-${index}`}>
-                        <ReactQuill
-                          theme="snow"
-                          value={instruction.text || ""}
-                          readOnly={true}
-                          modules={{ toolbar: false }}
-                          style={{ border: "none" }}
-                        />
-                      </div>
+                      {instructionTimeRemaining}s
                     </div>
-                  ))}
+                  )}
+                  
+                  {!hasDisplayTime && (
+                    <button
+                      onClick={() => {
+                        // Move to next instruction or advance stage
+                        if (!isLastInstruction) {
+                          setCurrentInstructionIndex(currentInstructionIndex + 1);
+                        } else {
+                          updateInstructionsData({ hasViewed: true });
+                          setIsFullscreen(true);
+                          setExamStarted(true);
+                          advanceStage("audio_play");
+                        }
+                      }}
+                      style={{
+                        padding: "12px 32px",
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: "white",
+                        backgroundColor: "#10B981",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        transition: "background-color 0.3s ease",
+                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                      }}
+                      onMouseOver={(e) =>
+                        (e.target.style.backgroundColor = "#059669")
+                      }
+                      onMouseOut={(e) =>
+                        (e.target.style.backgroundColor = "#10B981")
+                      }
+                    >
+                      {isLastInstruction ? "Understood" : "Next"}
+                    </button>
+                  )}
+                </div>
               </div>
-
-              {/* Understood Button */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  marginTop: "24px",
-                }}
-              >
-                <button
-                  onClick={() => {
-                    updateInstructionsData({ hasViewed: true });
-                    setIsFullscreen(true); // Enable fullscreen monitoring
-                    setExamStarted(true); // Mark exam as started
-                    advanceStage("audio_play");
-                  }}
-                  style={{
-                    padding: "12px 32px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: "white",
-                    backgroundColor: "#10B981",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    transition: "background-color 0.3s ease",
-                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                  }}
-                  onMouseOver={(e) =>
-                    (e.target.style.backgroundColor = "#059669")
-                  }
-                  onMouseOut={(e) =>
-                    (e.target.style.backgroundColor = "#10B981")
-                  }
-                >
-                  Understood
-                </button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Audio Play Stage */}
           {currentStage === "audio_play" && (
