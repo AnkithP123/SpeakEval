@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useReactMediaRecorder } from "react-media-recorder";
 import { useAudioPlayer } from "react-use-audio-player";
-import { Play } from "lucide-react";
+import { Play, ChevronLeft, ChevronRight } from "lucide-react";
 import * as Tone from "tone";
 import styled, { css, keyframes } from "styled-components";
 import { cuteAlert, cuteToast } from "cute-alert";
@@ -54,6 +54,7 @@ export default function AudioRecorder() {
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [instructions, setInstructions] = useState([]); // Array of instruction objects with {text, show}
+  const [instructionsCollapsed, setInstructionsCollapsed] = useState(false); // Collapse state for side panel
 
   // Web Speech API states
   const [speechRecognition, setSpeechRecognition] = useState(null);
@@ -1046,6 +1047,13 @@ export default function AudioRecorder() {
       };
     }
   }, [currentStage, thinkingTime]);
+
+  // Auto-expand instructions panel when on instructions stage
+  useEffect(() => {
+    if (currentStage === "instructions") {
+      setInstructionsCollapsed(false);
+    }
+  }, [currentStage]);
 
   // Fallback: Auto-start recording if somehow we're in recording stage without recording started
   useEffect(() => {
@@ -2388,28 +2396,176 @@ export default function AudioRecorder() {
           flexDirection: "column",
           height: "100%",
           backgroundColor: "#bfdbfe",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "20px",
           minHeight: "100vh",
+          position: "relative",
         }}
       >
+        {/* Side Panel for "Always" Instructions */}
+        {(() => {
+          const alwaysInstructions = instructions.filter(
+            (inst) => inst.show === "Always"
+          );
+
+          if (alwaysInstructions.length === 0) return null;
+
+          return (
+            <div
+              style={{
+                position: "fixed",
+                left: "0",
+                top: "0",
+                width: instructionsCollapsed ? "0px" : "20vw",
+                height: "100vh",
+                backgroundColor: "white",
+                borderRight: "2px solid #E5E7EB",
+                transition: "width 0.3s ease",
+                overflow: "visible",
+                boxShadow: "2px 0 8px rgba(0, 0, 0, 0.1)",
+                zIndex: 1000,
+              }}
+            >
+              {/* Collapse Button - Always visible, sticks out when collapsed */}
+              <button
+                onClick={() => setInstructionsCollapsed(!instructionsCollapsed)}
+                style={{
+                  position: "absolute",
+                  top: "12px",
+                  right: "0px",
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  backgroundColor: "white",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.3s ease",
+                  zIndex: 12,
+                  transform: "translateX(20px)",
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = "#F3F4F6";
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = "white";
+                }}
+              >
+                {instructionsCollapsed ? (
+                  <div style={{ transform: "translateX(6px)" }}>
+                    <ChevronRight size={22} color="#374151" />
+                  </div>
+                ) : (
+                  <div style={{ transform: "translateX(6px)" }}>
+                    <ChevronLeft size={22} color="#374151" />
+                  </div>
+                )}
+              </button>
+
+              <div
+                style={{
+                  width: "100%",
+                  height: "100vh",
+                  overflowY: "auto",
+                  padding: "20px",
+                  paddingTop: "60px",
+                  overflowX: "hidden",
+                  opacity: instructionsCollapsed ? 0 : 1,
+                  transition: "opacity 0.3s ease",
+                  pointerEvents: instructionsCollapsed ? "none" : "auto",
+                }}
+              >
+
+                {/* Instructions Title */}
+                <h2
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "700",
+                    color: "#374151",
+                    marginBottom: "20px",
+                  }}
+                >
+                  Instructions
+                </h2>
+
+                {/* Instructions List */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                  }}
+                >
+                  {alwaysInstructions.map((instruction, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        border: "1px solid #E5E7EB",
+                        borderRadius: "8px",
+                        padding: "16px",
+                      }}
+                    >
+                      <style>{`
+                        .side-instruction-quill-${index} .ql-container.ql-snow {
+                          border: none !important;
+                          font-size: 14px;
+                          color: #374151;
+                          line-height: 1.5;
+                        }
+                        .side-instruction-quill-${index} .ql-editor {
+                          padding: 0 !important;
+                        }
+                        .side-instruction-quill-${index} .ql-editor.ql-blank::before {
+                          display: none;
+                        }
+                      `}</style>
+                      <div className={`side-instruction-quill-${index}`}>
+                        <ReactQuill
+                          theme="snow"
+                          value={instruction.text || ""}
+                          readOnly={true}
+                          modules={{ toolbar: false }}
+                          style={{ border: "none" }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Main Content */}
         <div
           style={{
-            position: "absolute",
-            top: "80px",
-            fontSize: "48px",
-            fontWeight: "bold",
-            color:
-              displayTime !== "xx:xx" && remainingTime > 0 && remainingTime <= 5
-                ? "red"
-                : "#374151",
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            width: "100%",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            minHeight: "100vh",
           }}
         >
-          {displayTime}
-        </div>
+          <div
+            style={{
+              position: "absolute",
+              top: "80px",
+              fontSize: "48px",
+              fontWeight: "bold",
+              color:
+                displayTime !== "xx:xx" && remainingTime > 0 && remainingTime <= 5
+                  ? "red"
+                  : "#374151",
+            }}
+          >
+            {displayTime}
+          </div>
 
-        {/* Stage-based content */}
+          {/* Stage-based content */}
         <div
           style={{
             display: "flex",
@@ -3708,6 +3864,7 @@ export default function AudioRecorder() {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
 
