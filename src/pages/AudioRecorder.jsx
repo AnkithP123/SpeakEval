@@ -51,6 +51,10 @@ export default function AudioRecorder() {
   const [tabSwitchReported, setTabSwitchReported] = useState(false);
   const [screenStream, setScreenStream] = useState(null);
   const [microphoneStream, setMicrophoneStream] = useState(null);
+  const readyMediaRecorderRef = useRef(null); // MediaRecorder kept ready from permission grant
+  const readyScreenRecorderRef = useRef(null); // Screen recorder kept ready
+  const audioChunksRef = useRef([]); // Store audio chunks for ready recorder
+  const isSavingChunksRef = useRef(false); // Flag to control whether we save chunks
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [instructions, setInstructions] = useState([]); // Array of instruction objects with {text, show, displayTime}
@@ -1329,7 +1333,7 @@ export default function AudioRecorder() {
 
   const requestPermissions = async () => {
     try {
-      // Check if we already have a valid microphone stream
+      // Check if we already have a valid microphone stream (kept alive)
       if (microphoneStream && isStreamValid(microphoneStream)) {
         setHasPermissions(true);
         setError(null);
@@ -1350,8 +1354,76 @@ export default function AudioRecorder() {
         videoTracks[0].enabled = true;
       }
 
-      // Store the microphone stream for later reuse
+      // Store the microphone stream for later reuse - KEEP IT ALIVE
+      // Don't stop the tracks - we'll reuse this stream for all recordings
       setMicrophoneStream(stream);
+      
+      // Create ONE MediaRecorder and start it immediately
+      // We'll record continuously but only save chunks when actually "recording"
+      // Record both audio and video from the stream
+      try {
+        // Try to use mp4 with H.264, fallback to other formats if not supported
+        let mimeType = "video/mp4;codecs=h264,aac";
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = "video/mp4";
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = "video/webm;codecs=vp8,opus";
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+              mimeType = "video/webm";
+            }
+          }
+        }
+        
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: mimeType,
+        });
+        
+        // Set up data handler - only save chunks if flag is set
+        audioChunksRef.current = [];
+        isSavingChunksRef.current = false; // Start with saving disabled
+        
+        mediaRecorder.ondataavailable = (event) => {
+          // Only save chunks if we're actually "recording" (user wants to save)
+          if (isSavingChunksRef.current && event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+        
+        // Set up stop handler (only called on component unmount)
+        mediaRecorder.onstop = async () => {
+          // Only process if we have chunks saved
+          if (audioChunksRef.current.length > 0) {
+            const recorderMimeType = mediaRecorder.mimeType || "video/mp4";
+            const videoBlob = new Blob(audioChunksRef.current, { type: recorderMimeType });
+            const videoUrl = URL.createObjectURL(videoBlob);
+            await handleAudioStop(videoUrl, videoBlob);
+          }
+        };
+        
+        // Start recording immediately - but don't save chunks yet
+        mediaRecorder.start(1000); // Collect data every second
+        
+        // Store the recorder
+        readyMediaRecorderRef.current = mediaRecorder;
+      } catch (err) {
+        console.error("Error creating continuous MediaRecorder:", err);
+        // Continue anyway - we'll fall back to hook
+      }
+      
+      // Monitor stream for permission revocation
+      stream.getAudioTracks().forEach((track) => {
+        track.onended = () => {
+          console.warn("⚠️ Microphone track ended - permission may have been revoked");
+          // Clean up
+          if (readyMediaRecorderRef.current) {
+            readyMediaRecorderRef.current.stop();
+            readyMediaRecorderRef.current = null;
+          }
+          setMicrophoneStream(null);
+          setHasPermissions(false);
+        };
+      });
+      
       setHasPermissions(true);
       setError(null); // Clear error when permissions are granted
       setIsError(false);
@@ -1368,7 +1440,8 @@ export default function AudioRecorder() {
 
   const handleAudioStop = async (blobUrl, blob) => {
     const formData = new FormData();
-    formData.append("audio", blob, "audio.wav");
+    // Record both audio and video, but keep field name as "audio" for backend compatibility
+    formData.append("audio", blob, "recording.mp4");
 
     // Update recording data with blob
     updateRecordingData({
@@ -1440,6 +1513,18 @@ export default function AudioRecorder() {
   // Cleanup streams on component unmount
   useEffect(() => {
     return () => {
+      // Stop saving chunks
+      isSavingChunksRef.current = false;
+      
+      // Stop the MediaRecorder (only time we actually stop it)
+      if (readyMediaRecorderRef.current) {
+        const recorder = readyMediaRecorderRef.current;
+        if (recorder.state === "recording") {
+          recorder.stop(); // This will trigger onstop if there are chunks
+        }
+        readyMediaRecorderRef.current = null;
+      }
+      
       // Clean up microphone stream
       if (microphoneStream) {
         microphoneStream.getTracks().forEach((track) => track.stop());
@@ -1881,10 +1966,32 @@ export default function AudioRecorder() {
         return;
       }
 
-      // Start recording - this will use the browser's MediaRecorder API
-      // which should work with the permissions we've already granted
+      // Start "recording" - just enable saving chunks (MediaRecorder already running)
       try {
-        startAudioRecording();
+        // Check if we have a valid MediaRecorder that's already running
+        if (readyMediaRecorderRef.current && microphoneStream && isStreamValid(microphoneStream)) {
+          // MediaRecorder is already running from permission grant
+          // Just clear old chunks and start saving new ones
+          audioChunksRef.current = [];
+          isSavingChunksRef.current = true; // Enable saving chunks
+          
+          // Set up stop handler for this recording session
+          readyMediaRecorderRef.current.onstop = async () => {
+            // Only process if we have chunks saved
+            if (audioChunksRef.current.length > 0) {
+              // Get the mimeType from the recorder
+              const mimeType = readyMediaRecorderRef.current.mimeType || "video/mp4";
+              const videoBlob = new Blob(audioChunksRef.current, { type: mimeType });
+              const videoUrl = URL.createObjectURL(videoBlob);
+              await handleAudioStop(videoUrl, videoBlob);
+            }
+            // Re-enable saving for next recording (MediaRecorder keeps running)
+            isSavingChunksRef.current = true;
+          };
+        } else {
+          // Fall back to hook if MediaRecorder not available
+          startAudioRecording();
+        }
 
         // Start speech recognition only if language is available from API
         if (examLanguage) {
@@ -1893,10 +2000,12 @@ export default function AudioRecorder() {
       } catch (recordingError) {
         console.error("❌ Failed to start audio recording:", recordingError);
         // If recording fails, try to refresh permissions and try again
-        setMicrophoneStream(null); // Clear the cached stream
         const refreshResult = await requestPermissions();
-        if (refreshResult.permissionGranted) {
-          startAudioRecording();
+        if (refreshResult.permissionGranted && readyMediaRecorderRef.current) {
+          // MediaRecorder should now be running, just enable saving chunks
+          audioChunksRef.current = [];
+          isSavingChunksRef.current = true;
+          
           if (examLanguage) {
             startSpeechRecognition();
           }
@@ -2365,6 +2474,12 @@ export default function AudioRecorder() {
   };
 
   const stopRecording = () => {
+    // Only stop if we're actually recording - prevent premature stops
+    if (!isRecording) {
+      console.warn("⚠️ stopRecording called but not currently recording, ignoring");
+      return;
+    }
+
     setStopped(true);
     setIsRecording(false);
 
@@ -2375,8 +2490,29 @@ export default function AudioRecorder() {
 
     stopSpeechRecognition();
 
-    // Stop the media recorders - this will trigger handleAudioStop
-    stopAudioRecording();
+    // Stop saving chunks (but MediaRecorder keeps running)
+    isSavingChunksRef.current = false;
+    
+    // Process the saved chunks immediately
+    if (readyMediaRecorderRef.current && audioChunksRef.current.length > 0) {
+      // Create blob from saved chunks (video with audio)
+      const mimeType = readyMediaRecorderRef.current.mimeType || "video/mp4";
+      const videoBlob = new Blob(audioChunksRef.current, { type: mimeType });
+      const videoUrl = URL.createObjectURL(videoBlob);
+      
+      // Process the recording
+      handleAudioStop(videoUrl, videoBlob).catch(err => {
+        console.error("Error processing video stop:", err);
+      });
+      
+      // Clear chunks for next recording
+      audioChunksRef.current = [];
+    } else {
+      // Fallback to hook only if ready recorder doesn't exist
+      stopAudioRecording();
+    }
+    
+    // Stop screen recording
     stopScreenRecording();
 
     // Clear timer properly
