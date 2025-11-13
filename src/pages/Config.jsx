@@ -15,6 +15,8 @@ import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Card from "../components/Card";
 import Upgrade from "./Upgrade";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 // Draggable column component
 const DraggableColumn = ({
@@ -135,7 +137,7 @@ const Config = ({
 
   // State for instructions
   const [instructions, setInstructions] = useState([]);
-  const [instructionsEnabled, setInstructionsEnabled] = useState(false);
+  const [instructionsEnabled, setInstructionsEnabled] = useState(true );
 
   // import modal text-mode state
   const [showTextInput, setShowTextInput] = useState(false);
@@ -347,15 +349,18 @@ const Config = ({
   };
 
   const handleInstructionTextChange = (index, event) => {
-    const textarea = event.target;
-    const { value } = textarea;
-
-    // Auto-resize logic
-    textarea.style.height = "auto";
-    textarea.style.height = `${textarea.scrollHeight}px`;
-
+    // ReactQuill passes HTML content directly, not a textarea event
+    const value = event.target ? event.target.value : event;
+    
     const newInstructions = [...instructions];
-    newInstructions[index].text = value;
+    // Ensure the instruction object exists
+    if (!newInstructions[index]) {
+      newInstructions[index] = { text: "", show: "Once at the Start of Room" };
+    }
+    newInstructions[index] = {
+      ...newInstructions[index],
+      text: value
+    };
     setInstructions(newInstructions);
   };
 
@@ -367,14 +372,14 @@ const Config = ({
   };
 
   const handleAddInstruction = () => {
-    setInstructions([
-      ...instructions,
+    setInstructions((prevInstructions) => [
+      ...prevInstructions,
       { text: "", show: "Once at the Start of Room" },
     ]);
   };
 
   const handleDeleteInstruction = (index) => {
-    if (instructions.length > 1) {
+    if (instructions.length > 0) {
       setInstructions(instructions.filter((_, i) => i !== index));
     } else {
       setInstructions([{ text: "", show: "Once at the Start of Room" }]);
@@ -853,7 +858,20 @@ const Config = ({
         setAlwaysShowInstruction(parts[1] === "true");
         const loadedInstructions = parts.slice(2);
         setInstructions(
-          loadedInstructions.length > 0 ? loadedInstructions : [""]
+          loadedInstructions.length > 0 
+            ? loadedInstructions.map(inst => {
+                try {
+                  // Try to parse as JSON (if it's a stringified object)
+                  const parsed = JSON.parse(inst);
+                  return typeof parsed === 'object' && parsed !== null 
+                    ? parsed 
+                    : { text: inst, show: "Once at the Start of Room" };
+                } catch (e) {
+                  // If not JSON, treat as plain text
+                  return { text: inst, show: "Once at the Start of Room" };
+                }
+              })
+            : [{ text: "", show: "Once at the Start of Room" }]
         );
       }
     } else {
@@ -1350,7 +1368,7 @@ const Config = ({
                   </h2>
                   <div className="flex w-full max-w-2xl mx-auto bg-black/30 rounded-lg p-1 border border-gray-500/30">
                     {configTypes.map((type, index) => {
-                      const isEnabled = index === 0; // Only the first button is enabled
+                      const isEnabled = index === 0 || index === 2;
 
                       return (
                         <button
@@ -1360,7 +1378,7 @@ const Config = ({
                               setConfigType(type.key);
                             } else {
                               toast.info(
-                                "These features are still in beta and in development."
+                                "This feature is still in development."
                               );
                             }
                           }}
@@ -1424,25 +1442,8 @@ const Config = ({
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <label
-                          htmlFor="enable-instructions"
-                          className="text-white"
-                        >
-                          Enable
-                        </label>
-                        <input
-                          type="checkbox"
-                          id="enable-instructions"
-                          checked={instructionsEnabled}
-                          onChange={(e) =>
-                            setInstructionsEnabled(e.target.checked)
-                          }
-                          className="w-5 h-5 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-500"
-                        />
-                      </div>
                     </div>
-                    {instructionsEnabled && (
+                    {(
                       <div className="space-y-4">
                         {instructions.map((instruction, index) => (
                           <div
@@ -1453,15 +1454,78 @@ const Config = ({
                               <label className="text-white w-28 pt-2 flex-shrink-0">
                                 Instruction {index + 1}
                               </label>
-                              <textarea
-                                value={instruction.text}
-                                onChange={(e) =>
-                                  handleInstructionTextChange(index, e)
-                                }
-                                placeholder={`Enter instructions for the student...`}
-                                className="w-full bg-black/30 border border-green-500/30 rounded p-2 text-white overflow-hidden resize-none"
-                                style={{ minHeight: "50px" }}
-                              />
+                              <div className="w-full">
+                                <style>{`
+                                  .ql-container {
+                                    background-color: rgba(0, 0, 0, 0.3) !important;
+                                    border-color: rgba(34, 197, 94, 0.3) !important;
+                                    color: white !important;
+                                    border-radius: 0.375rem;
+                                  }
+                                  .ql-toolbar {
+                                    background-color: rgba(0, 0, 0, 0.4) !important;
+                                    border-color: rgba(34, 197, 94, 0.3) !important;
+                                    border-top-left-radius: 0.375rem;
+                                    border-top-right-radius: 0.375rem;
+                                  }
+                                  .ql-editor {
+                                    background-color: rgba(0, 0, 0, 0.3) !important;
+                                    color: white !important;
+                                    min-height: 75px;
+                                  }
+                                  .ql-editor.ql-blank::before {
+                                    color: rgba(255, 255, 255, 0.5) !important;
+                                    font-style: italic;
+                                  }
+                                  .ql-toolbar .ql-stroke {
+                                    stroke: white;
+                                  }
+                                  .ql-toolbar .ql-fill {
+                                    fill: white;
+                                  }
+                                  .ql-toolbar .ql-picker-label {
+                                    color: white;
+                                  }
+                                  .ql-picker-options {
+                                    background-color: rgba(0, 0, 0, 0.9) !important;
+                                    border-color: rgba(34, 197, 94, 0.3) !important;
+                                  }
+                                  .ql-picker-item {
+                                    color: white;
+                                  }
+                                `}</style>
+                                <ReactQuill
+                                  theme="snow"
+                                  value={instruction.text}
+                                  onChange={(content, delta, source, editor) =>
+                                    handleInstructionTextChange(index, { target: { value: content } })
+                                  }
+                                  modules={{
+                                    toolbar: [
+                                      [{ 'font': [] }, { 'size': [] }],
+                                      ['bold', 'italic', 'underline', 'strike'],
+                                      [{ 'color': [] }, { 'background': [] }],
+                                      [{ 'script': 'sub'}, { 'script': 'super' }],
+                                      ['blockquote', 'code-block'],
+                                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                      [{ 'indent': '-1'}, { 'indent': '+1' }, { 'align': [] }],
+                                      ['link', 'image'],
+                                      ['clean']
+                                    ]
+                                  }}
+                                  formats={[
+                                    'font', 'size',
+                                    'bold', 'italic', 'underline', 'strike',
+                                    'color', 'background',
+                                    'script',
+                                    'blockquote', 'code-block',
+                                    'list', 'bullet', 'indent', 'align',
+                                    'link', 'image'
+                                  ]}
+                                  placeholder="Enter instructions for the student..."
+                                  style={{ minHeight: "75px" }}
+                                />
+                              </div>
                               <button
                                 onClick={() => handleDeleteInstruction(index)}
                                 className="text-red-400 hover:text-red-300 transition-colors p-2 flex-shrink-0"
@@ -1486,7 +1550,7 @@ const Config = ({
                                 className="bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500"
                               >
                                 <option value="Once at the Start of Room">
-                                  Once at the Start of Room
+                                  Before Each Question
                                 </option>
                                 <option value="Always">Always on the Left</option>
                                 <option value="Question Prompt">

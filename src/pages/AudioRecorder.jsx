@@ -13,6 +13,8 @@ import tokenManager from "../utils/tokenManager";
 import { useRealTimeCommunication } from "../hooks/useRealTimeCommunication";
 import websocketService from "../utils/websocketService";
 import { FeedbackForm } from "./FeedbackPage";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 export default function AudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -51,6 +53,7 @@ export default function AudioRecorder() {
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [instructions, setInstructions] = useState([]); // Array of instruction objects with {text, show}
 
   // Web Speech API states
   const [speechRecognition, setSpeechRecognition] = useState(null);
@@ -101,6 +104,11 @@ export default function AudioRecorder() {
     setup: {
       microphonePermission: false,
       fullscreenEnabled: false,
+    },
+
+    // Stage: 'instructions'
+    instructions: {
+      hasViewed: false,
     },
 
     // Stage: 'audio_play'
@@ -196,6 +204,9 @@ export default function AudioRecorder() {
         microphonePermission: false, // Will be checked after audio download
         fullscreenEnabled: false, // Will be checked after audio download
       },
+      instructions: {
+        hasViewed: false,
+      },
       audioPlay: {
         hasPlayed: false,
         isPlaying: false,
@@ -233,6 +244,9 @@ export default function AudioRecorder() {
     // Reset audio playback state
     setHasPlayed(false);
     playedRef.current = false;
+
+    // Reset instructions
+    setInstructions([]);
 
     // Reset anticheat flags for room restart
     setFullscreenViolationReported(false);
@@ -301,14 +315,36 @@ export default function AudioRecorder() {
     }));
   };
 
+  const updateInstructionsData = (updates) => {
+    setStageData((prev) => ({
+      ...prev,
+      instructions: {
+        ...prev.instructions,
+        ...updates,
+      },
+    }));
+  };
+
   // Stage validation functions
   const canAdvanceToSetup = () => {
     return stageData.audioDownloaded && !stageData.audioDownloadError;
   };
 
-  const canAdvanceToAudioPlay = () => {
+  const canAdvanceToInstructions = () => {
     const setup = stageData.setup;
     return setup.microphonePermission && setup.fullscreenEnabled;
+  };
+
+  const canAdvanceToAudioPlay = () => {
+    // If there are instructions to show, they must be viewed first
+    const instructionsToShow = instructions.filter(
+      (inst) => inst.show === "Once at the Start of Room"
+    );
+    if (instructionsToShow.length > 0) {
+      return stageData.instructions.hasViewed;
+    }
+    // If no instructions, can proceed directly
+    return true;
   };
 
   const canAdvanceToThinking = () => {
@@ -737,6 +773,9 @@ export default function AudioRecorder() {
   // Automatic stage transitions (only for non-user-initiated stages)
   useEffect(() => {
     const handleStageTransitions = async () => {
+      // Don't auto-advance from setup - user must click "Continue to Question"
+      // Don't auto-advance from instructions - user must click "Understood"
+
       // Auto-advance to thinking when audio play is complete (only if there's thinking time)
       if (
         currentStage === "audio_play" &&
@@ -1635,6 +1674,41 @@ export default function AudioRecorder() {
         setExamLanguage(null);
       }
 
+      // Parse instructions if available
+      if (receivedData.instructions) {
+        try {
+          // Instructions can come in different formats:
+          // 1. As a string with format: "true|i_i|true|i_i|{...}|i_i|{...}"
+          // 2. As an array of objects
+          let parsedInstructions = [];
+          
+          if (typeof receivedData.instructions === "string") {
+            const parts = receivedData.instructions.split("|i_i|");
+            if (parts.length >= 3) {
+              // Format: enabled|i_i|alwaysShow|i_i|instruction1|i_i|instruction2...
+              const instructionStrings = parts.slice(2);
+              parsedInstructions = instructionStrings.map((instStr) => {
+                try {
+                  return JSON.parse(instStr);
+                } catch (e) {
+                  // If parsing fails, treat as plain text
+                  return { text: instStr, show: "Once at the Start of Room" };
+                }
+              });
+            }
+          } else if (Array.isArray(receivedData.instructions)) {
+            parsedInstructions = receivedData.instructions;
+          }
+          
+          setInstructions(parsedInstructions);
+        } catch (err) {
+          console.error("Error parsing instructions:", err);
+          setInstructions([]);
+        }
+      } else {
+        setInstructions([]);
+      }
+
       if (audioUrls && audioUrls.length > 0) {
         // Use the presigned URL directly
         setAudioBlobURL(audioUrls[0]);
@@ -2466,10 +2540,18 @@ export default function AudioRecorder() {
                                   permissions.fullscreenEnabled,
                               });
 
-                              // Enable anticheat and go directly to audio play
-                              setIsFullscreen(true);
-                              setExamStarted(true);
-                              advanceStage("audio_play");
+                              // Check if we need to show instructions
+                              const instructionsToShow = instructions.filter(
+                                (inst) => inst.show === "Once at the Start of Room"
+                              );
+                              if (instructionsToShow.length > 0) {
+                                advanceStage("instructions");
+                              } else {
+                                // No instructions, go directly to audio play
+                                setIsFullscreen(true);
+                                setExamStarted(true);
+                                advanceStage("audio_play");
+                              }
                             } else {
                               advanceStage("setup");
                             }
@@ -2790,40 +2872,166 @@ export default function AudioRecorder() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    opacity: canAdvanceToAudioPlay() ? 1 : 0,
+                    opacity: canAdvanceToInstructions() ? 1 : 0,
                     transition: "opacity 0.3s ease",
                   }}
                 >
-                  {canAdvanceToAudioPlay() && (
-                    <button
-                      onClick={() => {
-                        setIsFullscreen(true); // Enable fullscreen monitoring
-                        setExamStarted(true); // Mark exam as started
-                        advanceStage("audio_play");
-                      }}
-                      style={{
-                        padding: "12px 32px",
-                        fontSize: "16px",
-                        fontWeight: "600",
-                        color: "white",
-                        backgroundColor: "#10B981",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        transition: "background-color 0.3s ease",
-                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                      }}
-                      onMouseOver={(e) =>
-                        (e.target.style.backgroundColor = "#059669")
-                      }
-                      onMouseOut={(e) =>
-                        (e.target.style.backgroundColor = "#10B981")
-                      }
-                    >
-                      Continue to Question
-                    </button>
-                  )}
+                  {canAdvanceToInstructions() && (() => {
+                    const instructionsToShow = instructions.filter(
+                      (inst) => inst.show === "Once at the Start of Room"
+                    );
+                    const hasInstructions = instructionsToShow.length > 0;
+                    
+                    return (
+                      <button
+                        onClick={() => {
+                          if (hasInstructions) {
+                            advanceStage("instructions");
+                          } else {
+                            // No instructions, go directly to audio_play
+                            setIsFullscreen(true);
+                            setExamStarted(true);
+                            advanceStage("audio_play");
+                          }
+                        }}
+                        style={{
+                          padding: "12px 32px",
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          color: "white",
+                          backgroundColor: "#10B981",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          transition: "background-color 0.3s ease",
+                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        }}
+                        onMouseOver={(e) =>
+                          (e.target.style.backgroundColor = "#059669")
+                        }
+                        onMouseOut={(e) =>
+                          (e.target.style.backgroundColor = "#10B981")
+                        }
+                      >
+                        {hasInstructions ? "Continue to Instructions" : "Continue to Question"}
+                      </button>
+                    );
+                  })()}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Instructions Stage */}
+          {currentStage === "instructions" && (
+            <div style={{ marginTop: "20px", width: "100%" }}>
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "#374151",
+                  marginBottom: "20px",
+                }}
+              >
+                Instructions
+              </h1>
+              <p
+                style={{
+                  fontSize: "16px",
+                  color: "#6B7280",
+                  marginBottom: "24px",
+                }}
+              >
+                Please read the following instructions carefully before proceeding:
+              </p>
+
+              {/* Instructions Display */}
+              <div
+                style={{
+                  maxWidth: "600px",
+                  margin: "0 auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "20px",
+                  marginBottom: "32px",
+                }}
+              >
+                {instructions
+                  .filter((inst) => inst.show === "Once at the Start of Room")
+                  .map((instruction, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        border: "1px solid #E5E7EB",
+                        borderRadius: "12px",
+                        padding: "24px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <style>{`
+                        .instruction-quill-${index} .ql-container.ql-snow {
+                          border: none !important;
+                          font-size: 16px;
+                          color: #374151;
+                          line-height: 1.6;
+                        }
+                        .instruction-quill-${index} .ql-editor {
+                          padding: 0 !important;
+                        }
+                        .instruction-quill-${index} .ql-editor.ql-blank::before {
+                          display: none;
+                        }
+                      `}</style>
+                      <div className={`instruction-quill-${index}`}>
+                        <ReactQuill
+                          theme="snow"
+                          value={instruction.text || ""}
+                          readOnly={true}
+                          modules={{ toolbar: false }}
+                          style={{ border: "none" }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Understood Button */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: "24px",
+                }}
+              >
+                <button
+                  onClick={() => {
+                    updateInstructionsData({ hasViewed: true });
+                    setIsFullscreen(true); // Enable fullscreen monitoring
+                    setExamStarted(true); // Mark exam as started
+                    advanceStage("audio_play");
+                  }}
+                  style={{
+                    padding: "12px 32px",
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    color: "white",
+                    backgroundColor: "#10B981",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    transition: "background-color 0.3s ease",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                  }}
+                  onMouseOver={(e) =>
+                    (e.target.style.backgroundColor = "#059669")
+                  }
+                  onMouseOut={(e) =>
+                    (e.target.style.backgroundColor = "#10B981")
+                  }
+                >
+                  Understood
+                </button>
               </div>
             </div>
           )}
