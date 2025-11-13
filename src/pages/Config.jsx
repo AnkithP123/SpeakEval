@@ -1663,17 +1663,27 @@ const Config = ({
                                     htmlFor={`display-time-${index}`}
                                     className="text-sm text-gray-300"
                                   >
-                                    Display Time (seconds):
+                                    Display Time (seconds, optional):
                                   </label>
                                   <input
                                     id={`display-time-${index}`}
                                     type="number"
-                                    value={instruction.displayTime || 60}
+                                    value={instruction.displayTime || ""}
+                                    placeholder="Optional"
                                     onChange={(e) => {
                                       const newInstructions = [...instructions];
+                                      const value = e.target.value.trim();
+                                      let displayTime = undefined;
+                                      if (value !== "") {
+                                        const parsed = parseInt(value, 10);
+                                        // Only set displayTime if it's a valid positive number
+                                        if (!isNaN(parsed) && parsed > 0) {
+                                          displayTime = parsed;
+                                        }
+                                      }
                                       newInstructions[index] = {
                                         ...newInstructions[index],
-                                        displayTime: parseInt(e.target.value) || 60
+                                        displayTime: displayTime
                                       };
                                       setInstructions(newInstructions);
                                     }}

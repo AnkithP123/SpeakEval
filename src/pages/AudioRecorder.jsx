@@ -1083,8 +1083,11 @@ export default function AudioRecorder() {
 
     const currentInstruction = beforeQuestionInstructions[currentInstructionIndex];
     
-    // If current instruction has displayTime, start timer
-    if (currentInstruction && currentInstruction.displayTime) {
+    // If current instruction has displayTime (explicitly set and positive), start timer
+    if (currentInstruction && 
+        currentInstruction.displayTime !== undefined && 
+        currentInstruction.displayTime !== null && 
+        currentInstruction.displayTime > 0) {
       setInstructionTimeRemaining(currentInstruction.displayTime);
       
       const timer = setInterval(() => {
@@ -3346,7 +3349,11 @@ export default function AudioRecorder() {
             }
 
             const currentInstruction = beforeQuestionInstructions[currentInstructionIndex];
-            const hasDisplayTime = currentInstruction && currentInstruction.displayTime;
+            // Only show timer if displayTime is explicitly set and is a positive number
+            const hasDisplayTime = currentInstruction && 
+                                   currentInstruction.displayTime !== undefined && 
+                                   currentInstruction.displayTime !== null && 
+                                   currentInstruction.displayTime > 0;
             const isLastInstruction = currentInstructionIndex === beforeQuestionInstructions.length - 1;
 
             return (
