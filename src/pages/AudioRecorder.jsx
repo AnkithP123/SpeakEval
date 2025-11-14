@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useReactMediaRecorder } from "react-media-recorder";
 import { useAudioPlayer } from "react-use-audio-player";
-import { Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, ChevronLeft, ChevronRight, Mic } from "lucide-react";
 import * as Tone from "tone";
 import styled, { css, keyframes } from "styled-components";
 import { cuteAlert, cuteToast } from "cute-alert";
@@ -53,14 +53,23 @@ export default function AudioRecorder() {
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const readyMediaRecorderRef = useRef(null); // MediaRecorder kept ready from permission grant
   const readyScreenRecorderRef = useRef(null); // Screen recorder kept ready
-  const audioChunksRef = useRef([]); // Store audio chunks for ready recorder
+  const audioChunksRef = useRef([]); // Store audio chunks for ready recorder (current recording)
   const isSavingChunksRef = useRef(false); // Flag to control whether we save chunks
+  const currentPromptChunksRef = useRef([]); // Store chunks for the current prompt's response
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [instructions, setInstructions] = useState([]); // Array of instruction objects with {text, show, displayTime}
   const [instructionsCollapsed, setInstructionsCollapsed] = useState(false); // Collapse state for side panel
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0); // Current instruction index for "Before Question"
   const [instructionTimeRemaining, setInstructionTimeRemaining] = useState(null); // Time remaining for current instruction
+  const [promptClips, setPromptClips] = useState([]); // Array of prompt clip URLs for AP Simulated Conversation
+  const [currentPromptIndex, setCurrentPromptIndex] = useState(0); // Current prompt clip being played
+  const [isSimulatedConversation, setIsSimulatedConversation] = useState(false); // Track if this is a simulated conversation
+  const [collectedRecordings, setCollectedRecordings] = useState([]); // Store all recordings for Simulated_Conversation to upload at end
+  const [recordingStartTime, setRecordingStartTime] = useState(null); // Track when current recording started for 20s auto-advance
+  const [recordingCountdown, setRecordingCountdown] = useState(20); // Countdown timer for recording (20 seconds)
+  const promptTimerRef = useRef(null); // Timer for 20-second auto-advance
+  const countdownIntervalRef = useRef(null); // Interval for countdown updates
 
   // Web Speech API states
   const [speechRecognition, setSpeechRecognition] = useState(null);
@@ -119,11 +128,11 @@ export default function AudioRecorder() {
     },
 
     // Stage: 'audio_play'
-    audioPlay: {
-      hasPlayed: false,
-      isPlaying: false,
-      playError: null,
-    },
+      audioPlay: {
+        hasPlayed: false,
+        isPlaying: false,
+        playError: null,
+      },
 
     // Stage: 'thinking'
     thinking: {
@@ -162,19 +171,6 @@ export default function AudioRecorder() {
 
   // Reset state for new question
   const resetForNewQuestion = () => {
-    // Stop speech recognition if active and capture any remaining text
-    if (speechRecognition && isListening) {
-      // Capture any remaining interim text before stopping
-      if (speechRecognition.lastInterimText) {
-        setRecognizedText((prev) => {
-          const newText = prev + speechRecognition.lastInterimText;
-          return newText;
-        });
-      }
-
-      speechRecognition.stop();
-    }
-
     // Reset speech recognition states
     setRecognizedText("");
     finalRecognizedTextRef.current = ""; // Reset ref as well
@@ -257,6 +253,11 @@ export default function AudioRecorder() {
     setInstructions([]);
     setCurrentInstructionIndex(0);
     setInstructionTimeRemaining(null);
+
+    // Reset prompt clips
+    setPromptClips([]);
+    setCurrentPromptIndex(0);
+    setIsSimulatedConversation(false);
 
     // Reset anticheat flags for room restart
     setFullscreenViolationReported(false);
@@ -365,6 +366,10 @@ export default function AudioRecorder() {
   };
 
   const canAdvanceToRecording = () => {
+    // For Simulated_Conversation, skip thinking time entirely
+    if (isSimulatedConversation) {
+      return true; // Can always advance to recording for simulated conversation
+    }
     // If thinking time is 0 or less, skip thinking stage
     if (thinkingTime <= 0) {
       return stageData.audioPlay.hasPlayed && !stageData.audioPlay.playError;
@@ -786,20 +791,23 @@ export default function AudioRecorder() {
       // Don't auto-advance from setup - user must click "Continue to Question"
       // Don't auto-advance from instructions - user must click "Understood"
 
-      // Auto-advance to thinking when audio play is complete (only if there's thinking time)
+      // Skip thinking stage for Simulated_Conversation
+      // Auto-advance to thinking when audio play is complete (only if there's thinking time and not Simulated_Conversation)
       if (
         currentStage === "audio_play" &&
         canAdvanceToThinking() &&
-        thinkingTime > 0
+        thinkingTime > 0 &&
+        !isSimulatedConversation
       ) {
         advanceStage("thinking");
       }
 
-      // Auto-advance directly to recording when audio play is complete and no thinking time
+      // Auto-advance directly to recording when audio play is complete and no thinking time (or Simulated_Conversation)
       if (
         currentStage === "audio_play" &&
         canAdvanceToRecording() &&
-        thinkingTime <= 0
+        (thinkingTime <= 0 || isSimulatedConversation) &&
+        !isSimulatedConversation // Simulated_Conversation doesn't use audio_play stage
       ) {
         try {
           // Start recording BEFORE switching to recording stage for minimal delay
@@ -846,7 +854,8 @@ export default function AudioRecorder() {
       }
 
       // Auto-advance to uploading when recording is complete
-      if (currentStage === "recording" && canAdvanceToUploading()) {
+      // BUT NOT for simulated conversation - those are handled by playNextPrompt
+      if (currentStage === "recording" && canAdvanceToUploading() && !isSimulatedConversation) {
         advanceStage("uploading");
       }
     };
@@ -1088,7 +1097,7 @@ export default function AudioRecorder() {
         currentInstruction.displayTime !== undefined && 
         currentInstruction.displayTime !== null && 
         currentInstruction.displayTime > 0) {
-      setInstructionTimeRemaining(currentInstruction.displayTime);
+      setInstructionTimeRemaining(currentInstruction.displayTime/10);
       
       const timer = setInterval(() => {
         setInstructionTimeRemaining((prev) => {
@@ -1105,11 +1114,18 @@ export default function AudioRecorder() {
               if (currentIdx < beforeQuestionInsts.length - 1) {
                 return currentIdx + 1;
               } else {
-                // All instructions viewed, proceed to audio_play
+                // All instructions viewed
                 updateInstructionsData({ hasViewed: true });
                 setIsFullscreen(true);
                 setExamStarted(true);
-                advanceStage("audio_play");
+                // For Simulated_Conversation, go directly to playing prompts (which starts recording)
+                if (isSimulatedConversation && promptClips.length > 0) {
+                  // Start playing prompts immediately
+                  playNextPrompt(0);
+                } else {
+                  // Regular flow: proceed to audio_play
+                  advanceStage("audio_play");
+                }
                 return currentIdx;
               }
             });
@@ -1338,15 +1354,27 @@ export default function AudioRecorder() {
   const requestPermissions = async () => {
     try {
         // Check if we already have a valid microphone stream (kept alive)
-        if (microphoneStream && isStreamValid(microphoneStream)) {
+      if (microphoneStream) {
+        // Check if stream is valid without throwing
+        let streamValid = false;
+        try {
+          const tracks = microphoneStream.getTracks();
+          streamValid = tracks.length > 0 && tracks.every(track => track.readyState === 'live');
+        } catch (e) {
+          // Stream check failed, will request new permissions
+          streamValid = false;
+        }
+
+        if (streamValid) {
           // Check if MediaRecorder is also ready
           const mediaRecorderReady = readyMediaRecorderRef.current !== null && 
                                      readyMediaRecorderRef.current.state === "recording";
           setHasPermissions(true);
-          setError(mediaRecorderReady ? null : "MediaRecorder not ready. Please try again.");
-          setIsError(!mediaRecorderReady);
+          setError(null); // Clear any errors
+          setIsError(false);
           return { permissionGranted: true, stream: microphoneStream, mediaRecorderReady };
         }
+      }
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -1391,17 +1419,24 @@ export default function AudioRecorder() {
         
         mediaRecorder.ondataavailable = (event) => {
           // Only save chunks if we're actually "recording" (user wants to save)
+          // Save to both the main array and the current prompt's array
           if (isSavingChunksRef.current && event.data.size > 0) {
             audioChunksRef.current.push(event.data);
+            currentPromptChunksRef.current.push(event.data);
           }
         };
         
         // Set up stop handler (only called on component unmount)
+        // Note: MediaRecorder should never stop during normal operation - it runs continuously
         mediaRecorder.onstop = async () => {
-          // Only process if we have chunks saved
-          if (audioChunksRef.current.length > 0) {
+          // Only process if we have chunks saved (this should rarely happen since we keep it running)
+          if (audioChunksRef.current.length > 0 || currentPromptChunksRef.current.length > 0) {
             const recorderMimeType = mediaRecorder.mimeType || "video/mp4";
-            const videoBlob = new Blob(audioChunksRef.current, { type: recorderMimeType });
+            // Use whichever chunks array has data
+            const chunksToUse = currentPromptChunksRef.current.length > 0 
+              ? currentPromptChunksRef.current 
+              : audioChunksRef.current;
+            const videoBlob = new Blob(chunksToUse, { type: recorderMimeType });
             const videoUrl = URL.createObjectURL(videoBlob);
             await handleAudioStop(videoUrl, videoBlob);
           }
@@ -1458,6 +1493,20 @@ export default function AudioRecorder() {
   };
 
   const handleAudioStop = async (blobUrl, blob) => {
+    // For Simulated_Conversation, don't upload here - recordings are collected and uploaded at the end
+    // Also don't set hasRecorded to true - we handle that in stopRecordingForNextPrompt
+    if (isSimulatedConversation) {
+      // Just update state, don't upload, and don't mark as recorded (we'll do that at the end)
+      updateRecordingData({
+        recordingBlob: blob,
+        hasRecorded: false, // Keep false - we'll handle recording completion in stopRecordingForNextPrompt
+        isRecording: false,
+      });
+      setAudioURL(blobUrl);
+      setIsRecording(false);
+      return;
+    }
+
     const formData = new FormData();
     // Record both audio and video, but keep field name as "audio" for backend compatibility
     formData.append("audio", blob, "recording.mp4");
@@ -1890,13 +1939,21 @@ export default function AudioRecorder() {
     setInstructionTimeRemaining(null);
       }
 
+      // Check if this is a Simulated Conversation (multiple audio URLs)
+      if (receivedData.configType === "Simulated_Conversation" || (audioUrls && audioUrls.length > 1)) {
+        setIsSimulatedConversation(true);
+        setPromptClips(audioUrls || []);
+        // Set first prompt as current audio
       if (audioUrls && audioUrls.length > 0) {
-        // Use the presigned URL directly
+        setAudioBlobURL(audioUrls[0]);
+        }
+        questionIndex = receivedData.questionIndex;
+      } else if (audioUrls && audioUrls.length > 0) {
+        // Regular single question
+        setIsSimulatedConversation(false);
+        setPromptClips([]);
         setAudioBlobURL(audioUrls[0]);
         questionIndex = receivedData.questionIndex;
-
-        // Don't mark as downloaded yet - wait for audio player to load
-        // The audio player loading will be handled by the useEffect that watches audioBlobURL
       } else {
         updateStageData({
           audioDownloaded: false,
@@ -1958,9 +2015,39 @@ export default function AudioRecorder() {
     setIsFullscreen(true);
 
     try {
-      // Ensure permissions are granted before starting recording
-      const permissionResult = await requestPermissions();
-      if (!permissionResult.permissionGranted) {
+      // Check if we already have permissions and MediaRecorder running
+      let permissionResult = null;
+      if (readyMediaRecorderRef.current && microphoneStream) {
+        // Check if stream is still valid
+        try {
+          const tracks = microphoneStream.getTracks();
+          const isValid = tracks.length > 0 && tracks.every(track => track.readyState === 'live');
+          if (isValid && readyMediaRecorderRef.current.state === "recording") {
+            // Everything is ready, just enable chunk saving
+            permissionResult = { permissionGranted: true, stream: microphoneStream, mediaRecorderReady: true };
+          }
+        } catch (e) {
+          // Stream check failed, need to request permissions again
+        }
+      }
+
+      // Only request permissions if we don't already have them
+      if (!permissionResult || !permissionResult.permissionGranted) {
+        try {
+          permissionResult = await requestPermissions();
+        } catch (permError) {
+          // If requestPermissions throws, handle it gracefully
+          console.warn("⚠️ Permission request had an issue, but continuing:", permError);
+          // Check if we have a working MediaRecorder anyway
+          if (readyMediaRecorderRef.current && readyMediaRecorderRef.current.state === "recording") {
+            permissionResult = { permissionGranted: true, stream: microphoneStream, mediaRecorderReady: true };
+          } else {
+            permissionResult = { permissionGranted: false, mediaRecorderReady: false };
+          }
+        }
+      }
+
+      if (!permissionResult || !permissionResult.permissionGranted) {
         console.error("❌ Microphone permission not granted");
         setError(
           "Microphone permission is required to start recording. Please grant permission and try again."
@@ -1986,70 +2073,25 @@ export default function AudioRecorder() {
       }
 
       // Start "recording" - just enable saving chunks (MediaRecorder already running)
-      try {
-        // Check if we have a valid MediaRecorder that's already running
-        if (readyMediaRecorderRef.current && microphoneStream && isStreamValid(microphoneStream)) {
-          // MediaRecorder is already running from permission grant
-          // Just clear old chunks and start saving new ones
-          audioChunksRef.current = [];
-          isSavingChunksRef.current = true; // Enable saving chunks
-          
-          // Set up stop handler for this recording session
-          readyMediaRecorderRef.current.onstop = async () => {
-            // Only process if we have chunks saved
-            if (audioChunksRef.current.length > 0) {
-              // Get the mimeType from the recorder
-              const mimeType = readyMediaRecorderRef.current.mimeType || "video/mp4";
-              const videoBlob = new Blob(audioChunksRef.current, { type: mimeType });
-              const videoUrl = URL.createObjectURL(videoBlob);
-              await handleAudioStop(videoUrl, videoBlob);
-            }
-            // Re-enable saving for next recording (MediaRecorder keeps running)
-            isSavingChunksRef.current = true;
-          };
-        } else {
-          // Fall back to hook if MediaRecorder not available
-          startAudioRecording();
-        }
-
-        // Start speech recognition only if language is available from API
-        if (examLanguage) {
-          startSpeechRecognition();
-        }
-      } catch (recordingError) {
-        console.error("❌ Failed to start audio recording:", recordingError);
-        // If recording fails, try to refresh permissions and try again
-        const refreshResult = await requestPermissions();
-        if (refreshResult.permissionGranted && readyMediaRecorderRef.current) {
-          // MediaRecorder should now be running, just enable saving chunks
-          audioChunksRef.current = [];
-          isSavingChunksRef.current = true;
-          
-          if (examLanguage) {
-            startSpeechRecognition();
-          }
-        } else {
-          console.error("❌ Failed to refresh microphone permissions");
-          setError("Unable to access microphone after multiple attempts.");
-          setIsError(true);
-          setIsRecording(false);
-
-          // Show prominent error alert with reload instructions
-          cuteAlert({
-            type: "error",
-            title: "Microphone Access Failed",
-            description:
-              "We tried multiple times but couldn't access your microphone. Please check your browser settings to ensure microphone access is allowed for this site, then reload the page to try again.",
-            primaryButtonText: "Reload Page",
-            secondaryButtonText: "Cancel",
-            primaryButtonAction: () => {
-              window.location.reload();
-            },
-          });
-
-          return;
-        }
+      // MediaRecorder should NEVER be started/stopped here - it runs continuously from permissions
+      if (readyMediaRecorderRef.current) {
+        // MediaRecorder is already running continuously from permission grant
+        // Just clear old chunks and start saving new ones for this recording session
+        audioChunksRef.current = [];
+        currentPromptChunksRef.current = []; // Clear current prompt's chunks
+        isSavingChunksRef.current = true; // Enable saving chunks
+        
+        console.log(`🎙️ Started saving chunks for recording. MediaRecorder state: ${readyMediaRecorderRef.current.state} (should be 'recording')`);
+        
+        // Note: We don't set up onstop handler here because MediaRecorder never stops
+        // It runs continuously and we just toggle chunk saving
+      } else {
+        // Fall back to hook if MediaRecorder not available (shouldn't happen if permissions were granted)
+        console.warn("⚠️ MediaRecorder not available, falling back to hook");
+        startAudioRecording();
       }
+
+      // Start speech recognition only if language is available from API
 
       // Notify server via WebSocket
       wsStartRecording();
@@ -2444,7 +2486,419 @@ export default function AudioRecorder() {
     }
   };
 
+  const playNextPrompt = async (index) => {
+    console.log(`🎵 playNextPrompt called with index: ${index}, total prompts: ${promptClips.length}`);
+    
+    // Clear any existing timer
+    if (promptTimerRef.current !== null) {
+      clearTimeout(promptTimerRef.current);
+      promptTimerRef.current = null;
+    }
+
+    if (index >= promptClips.length) {
+      // All prompts and recordings done, upload all recordings
+      console.log(`✅ All prompts complete. Collected ${collectedRecordings.length} recordings. Starting upload...`);
+      await uploadAllRecordings();
+      return;
+    }
+
+    // Preload next prompt while we're working with current one
+    if (index + 1 < promptClips.length) {
+      // Preload next prompt in background
+      const nextPromptUrl = promptClips[index + 1];
+      const preloadAudio = new Audio();
+      preloadAudio.src = nextPromptUrl;
+      preloadAudio.preload = "auto";
+    }
+
+    // Load and play the current prompt
+    const promptUrl = promptClips[index];
+    console.log(`📻 Loading prompt ${index + 1}: ${promptUrl}`);
+    
+    setAudioBlobURL(promptUrl);
+    setCurrentPromptIndex(index);
+    
+    // Reset audio play state for new prompt
+    updateAudioPlayData({
+      isPlaying: false,
+      hasPlayed: false,
+      playError: null,
+    });
+    
+    try {
+      audioPlayer.load(promptUrl, {
+        autoplay: true,
+        initialVolume: 1.0,
+        onplay: () => {
+          console.log(`▶️ Prompt ${index + 1} started playing`);
+          audioPlaybackStarted();
+          updateAudioPlayData({ isPlaying: true });
+        },
+        onend: async () => {
+          console.log(`✅ Prompt ${index + 1} finished playing`);
+        audioPlaybackCompleted();
+        updateAudioPlayData({
+          isPlaying: false,
+          hasPlayed: true,
+        });
+        
+        // Prompt finished, immediately start recording
+        playRecordingStarted(); // Play tone
+        try {
+          // Set start time FIRST before advancing stage, so countdown displays correctly
+          const startTime = Date.now();
+          setRecordingStartTime(startTime);
+          setRecordingCountdown(20);
+          
+          // Advance to recording stage
+          advanceStage("recording");
+          await startRecording();
+          updateRecordingData({
+            isRecording: true,
+            hasRecorded: false,
+            recordingError: null,
+          });
+          
+          // Update countdown every 100ms for smooth UI updates
+          countdownIntervalRef.current = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const remaining = Math.max(0, 20 - elapsed);
+            setRecordingCountdown(remaining);
+            if (remaining <= 0) {
+              clearInterval(countdownIntervalRef.current);
+            }
+          }, 100);
+          
+          // Set 20-second timer to auto-advance to next prompt
+          promptTimerRef.current = setTimeout(async () => {
+            console.log(`⏰ 20 seconds elapsed for prompt ${index + 1}, stopping recording...`);
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+            }
+            // 20 seconds elapsed, stop recording and move to next prompt
+            await stopRecordingForNextPrompt(index);
+          }, 20000);
+        } catch (error) {
+          // Don't show error to user - just log it and continue
+          // The MediaRecorder should already be running from permissions
+          console.warn("⚠️ Recording setup had an issue (continuing anyway):", error);
+          // Still update state to indicate we're ready
+          updateRecordingData({
+            isRecording: true,
+            hasRecorded: false,
+            recordingError: null, // Don't set error - we'll continue anyway
+          });
+        }
+      },
+      onerror: (error) => {
+        console.error(`❌ Audio play error for prompt ${index + 1}:`, error);
+        updateAudioPlayData({
+          isPlaying: false,
+          playError: "Failed to load audio",
+        });
+      },
+    });
+    } catch (loadError) {
+      console.error(`❌ Failed to load prompt ${index + 1}:`, loadError);
+      updateAudioPlayData({
+        isPlaying: false,
+        playError: "Failed to load audio",
+      });
+    }
+  };
+
+  const stopRecordingForNextPrompt = async (currentIndex) => {
+    console.log(`🛑 stopRecordingForNextPrompt called for prompt ${currentIndex + 1}`);
+    console.log(`   isRecording: ${isRecording}, stageData.recording.isRecording: ${stageData.recording.isRecording}`);
+    
+    // Stop the current recording - check both state sources
+    if (isRecording || stageData.recording.isRecording) {
+      console.log(`🛑 Stopping recording for prompt ${currentIndex + 1} after 20 seconds`);
+      
+      // Stop saving chunks (MediaRecorder keeps running continuously)
+      isSavingChunksRef.current = false;
+      
+      // Wait a bit to ensure all pending chunks are collected (MediaRecorder collects every 250ms)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Request any final data from MediaRecorder (it's still running, just not saving)
+      if (readyMediaRecorderRef.current && readyMediaRecorderRef.current.state === "recording") {
+        try {
+          readyMediaRecorderRef.current.requestData();
+        } catch (e) {
+          console.warn("Could not request final data from MediaRecorder:", e);
+        }
+      }
+      
+      // Wait a bit more for the final data to arrive
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Fetch the prompt audio as a blob
+      let promptBlob = null;
+      try {
+        const promptUrl = promptClips[currentIndex];
+        const promptResponse = await fetch(promptUrl);
+        promptBlob = await promptResponse.blob();
+        console.log(`📥 Fetched prompt ${currentIndex + 1} audio, size: ${promptBlob.size} bytes`);
+      } catch (error) {
+        console.error(`❌ Failed to fetch prompt ${currentIndex + 1} audio:`, error);
+      }
+      
+      // Use the current prompt's chunks (separate storage per prompt)
+      if (currentPromptChunksRef.current.length > 0) {
+        const mimeType = readyMediaRecorderRef.current?.mimeType || "video/mp4";
+        const responseBlob = new Blob(currentPromptChunksRef.current, { type: mimeType });
+        
+        console.log(`💾 Saved response ${currentIndex + 1}, chunks: ${currentPromptChunksRef.current.length}, size: ${responseBlob.size} bytes`);
+        
+        // Store both prompt and response (don't upload yet)
+        setCollectedRecordings((prev) => [
+          ...prev,
+          {
+            promptBlob: promptBlob,
+            responseBlob: responseBlob,
+            promptIndex: currentIndex,
+          },
+        ]);
+      } else {
+        console.warn(`⚠️ No chunks collected for prompt ${currentIndex + 1}`);
+        // Still store the prompt even if no response was recorded
+        if (promptBlob) {
+          setCollectedRecordings((prev) => [
+            ...prev,
+            {
+              promptBlob: promptBlob,
+              responseBlob: null,
+              promptIndex: currentIndex,
+            },
+          ]);
+        }
+      }
+      
+      // Clear chunks for next recording (but MediaRecorder keeps running)
+      audioChunksRef.current = [];
+      currentPromptChunksRef.current = [];
+      
+      // Stop speech recognition
+      stopSpeechRecognition();
+      
+      // Update recording state but DON'T set hasRecorded to true yet (we'll do that at the end)
+      setIsRecording(false);
+      updateRecordingData({
+        isRecording: false,
+        hasRecorded: false, // Keep false to prevent premature upload and "completed" message
+        recordingError: null,
+      });
+      setRecordingStartTime(null);
+      setRecordingCountdown(20); // Reset countdown
+      
+      // Clear the timers
+      if (promptTimerRef.current !== null) {
+        clearTimeout(promptTimerRef.current);
+        promptTimerRef.current = null;
+      }
+      if (countdownIntervalRef.current !== null) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      
+      // Re-enable saving chunks for next recording
+      isSavingChunksRef.current = true;
+      
+      console.log(`▶️ Moving to next prompt: ${currentIndex + 2} of ${promptClips.length}`);
+      
+      // Reset audio play state for the next prompt
+      updateAudioPlayData({
+        isPlaying: false,
+        hasPlayed: false,
+        playError: null,
+      });
+      
+      // For simulated conversation, directly play next prompt (don't use audio_play stage)
+      // This prevents showing "Preparing to record..." while transitioning
+      // Move to next prompt - use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        playNextPrompt(currentIndex + 1);
+      }, 100);
+    } else {
+      console.warn("⚠️ stopRecordingForNextPrompt called but not recording - moving to next prompt anyway");
+      // Reset audio play state
+      updateAudioPlayData({
+        isPlaying: false,
+        hasPlayed: false,
+        playError: null,
+      });
+      // Even if not recording, try to move to next prompt
+      setTimeout(() => {
+        playNextPrompt(currentIndex + 1);
+      }, 100);
+    }
+  };
+
+  // Combine all prompt+response segments into one final recording
+  const combineAllSegments = async (segments) => {
+    console.log(`🔗 Combining ${segments.length} segments into one recording...`);
+    
+    // For now, we'll combine the segments by creating a new blob that contains all segments
+    // Since proper video concatenation requires re-encoding (complex), we'll use a simpler approach:
+    // Combine all the blobs in order (prompt + response for each segment)
+    const allBlobs = [];
+    
+    for (const segment of segments) {
+      if (segment.promptBlob) {
+        allBlobs.push(segment.promptBlob);
+      }
+      if (segment.responseBlob) {
+        allBlobs.push(segment.responseBlob);
+      }
+    }
+    
+    if (allBlobs.length === 0) {
+      throw new Error("No segments to combine");
+    }
+    
+    // For proper video/audio concatenation, we'd need FFmpeg.wasm or similar
+    // For now, we'll create a combined blob (this may not work perfectly for video, but it's a start)
+    // The backend can handle proper concatenation if needed
+    const combinedBlob = new Blob(allBlobs, { type: "video/mp4" });
+    
+    console.log(`✅ Combined ${allBlobs.length} segments into one blob, size: ${combinedBlob.size} bytes`);
+    return combinedBlob;
+  };
+
+  const uploadAllRecordings = async () => {
+    console.log(`📤 uploadAllRecordings called with ${collectedRecordings.length} recordings`);
+    
+    if (collectedRecordings.length === 0) {
+      // No recordings to upload, just advance to uploading stage
+      console.warn("⚠️ No recordings collected, but uploadAllRecordings was called");
+      advanceStage("uploading");
+      return;
+    }
+
+    // Update to uploading stage
+    advanceStage("uploading");
+    updateUploadingData({
+      isUploading: true,
+      uploadProgress: 0,
+      uploadComplete: false,
+      uploadError: null,
+    });
+
+    setError(
+      "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
+    );
+    setIsError(false);
+    setFinishedRecording(true);
+
+    // Disable anti-cheat system after upload starts
+    setIsFullscreen(false);
+
+    // Notify WebSocket about upload start
+    uploadStarted();
+    updateStudentStatus("uploading");
+
+    // Check if student is authenticated
+    if (!tokenManager.isAuthenticated()) {
+      toast.error("Please join the room first");
+      navigate("/join-room");
+      return;
+    }
+
+    const token = tokenManager.getStudentToken();
+
+    try {
+      // Combine all segments (prompt + response pairs) into one final recording
+      console.log("🔗 Stitching all segments together...");
+      setUploadProgress(10); // Show progress
+      
+      const combinedBlob = await combineAllSegments(collectedRecordings);
+      
+      setUploadProgress(30);
+      
+      // Get upload URL for the combined recording (use index 0 since it's a single combined file)
+      const uploadUrlResponse = await fetch(
+        `https://www.server.speakeval.org/get-recording-upload-url?token=${token}&index=0`,
+        {
+          method: "GET",
+        }
+      );
+
+      if (!uploadUrlResponse.ok) {
+        throw new Error("Failed to get upload URL");
+      }
+
+      const { uploadUrl } = await uploadUrlResponse.json();
+
+      setUploadProgress(50);
+
+      // Upload the combined recording to S3
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        body: combinedBlob,
+        headers: {
+          "Content-Type": "video/mp4",
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload to S3");
+      }
+
+      setUploadProgress(80);
+
+      // Notify server that the combined recording is uploaded
+      const uploadData = {
+        uploaded: true,
+        speechRecognitionText: recognizedText || null,
+        recognitionLanguage: examLanguage,
+      };
+
+      await fetch(
+        `https://www.server.speakeval.org/upload?token=${token}&index=0`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(uploadData),
+        }
+      );
+
+      setUploadProgress(100);
+
+      // All uploads complete
+      updateUploadingData({
+        isUploading: false,
+        uploadComplete: true,
+        uploadError: null,
+        waitingForTranscription: false,
+      });
+
+      uploadCompleted();
+      updateStudentStatus("upload_completed");
+      questionCompleted(questionIndex);
+
+      setCollectedRecordings([]); // Clear collected recordings
+    } catch (error) {
+      console.error("Error uploading recordings:", error);
+      setError("Failed to upload recordings. Please try again.");
+      setIsError(true);
+      updateUploadingData({
+        isUploading: false,
+        uploadComplete: false,
+        uploadError: "Failed to upload recordings. Please try again.",
+      });
+    }
+  };
+
   const playRecording = async () => {
+    // For Simulated Conversation, start sequential playback
+    if (isSimulatedConversation && promptClips.length > 0) {
+      playNextPrompt(0);
+      return;
+    }
+
     // Check if audio is already playing or has been played
     if (audioPlayer?.isPlaying || playedRef.current) return;
 
@@ -2465,8 +2919,8 @@ export default function AudioRecorder() {
         },
         onend: () => {
           audioPlaybackCompleted();
-          updateAudioPlayData({
-            isPlaying: false,
+      updateAudioPlayData({
+        isPlaying: false,
             hasPlayed: true,
           });
           setHasPlayed(true);
@@ -2528,7 +2982,7 @@ export default function AudioRecorder() {
       audioChunksRef.current = [];
     } else {
       // Fallback to hook only if ready recorder doesn't exist
-      stopAudioRecording();
+    stopAudioRecording();
     }
     
     // Stop screen recording
@@ -2779,12 +3233,14 @@ export default function AudioRecorder() {
             flexDirection: "column",
             height: "100%",
             width: "100%",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-            minHeight: "100vh",
-          }}
-        >
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px",
+          minHeight: "100vh",
+        }}
+      >
+        {/* Hide timer for Simulated_Conversation */}
+        {!isSimulatedConversation && (
           <div
             style={{
               position: "absolute",
@@ -2799,8 +3255,9 @@ export default function AudioRecorder() {
           >
             {displayTime}
           </div>
+        )}
 
-          {/* Stage-based content */}
+        {/* Stage-based content */}
         <div
           style={{
             display: "flex",
@@ -2939,9 +3396,9 @@ export default function AudioRecorder() {
                                 advanceStage("instructions");
                               } else {
                                 // No instructions, go directly to audio play
-                                setIsFullscreen(true);
-                                setExamStarted(true);
-                                advanceStage("audio_play");
+                              setIsFullscreen(true);
+                              setExamStarted(true);
+                              advanceStage("audio_play");
                               }
                             } else {
                               advanceStage("setup");
@@ -3154,11 +3611,11 @@ export default function AudioRecorder() {
                         onMouseOut={(e) =>
                           (e.target.style.backgroundColor = "#3B82F6")
                         }
-                        >
+                      >
                           {stageData.setup.microphonePermission && !stageData.setup.mediaRecorderReady
                             ? "Try Again"
                             : "Grant Access"}
-                        </button>
+                      </button>
                     )}
                   </div>
 
@@ -3299,38 +3756,38 @@ export default function AudioRecorder() {
                     const hasInstructions = instructionsToShow.length > 0;
                     
                     return (
-                      <button
-                        onClick={() => {
+                    <button
+                      onClick={() => {
                           if (hasInstructions) {
                             advanceStage("instructions");
                           } else {
                             // No instructions, go directly to audio_play
                             setIsFullscreen(true);
                             setExamStarted(true);
-                            advanceStage("audio_play");
+                        advanceStage("audio_play");
                           }
-                        }}
-                        style={{
-                          padding: "12px 32px",
-                          fontSize: "16px",
-                          fontWeight: "600",
-                          color: "white",
-                          backgroundColor: "#10B981",
-                          border: "none",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          transition: "background-color 0.3s ease",
-                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                        }}
-                        onMouseOver={(e) =>
-                          (e.target.style.backgroundColor = "#059669")
-                        }
-                        onMouseOut={(e) =>
-                          (e.target.style.backgroundColor = "#10B981")
-                        }
-                      >
+                      }}
+                      style={{
+                        padding: "12px 32px",
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: "white",
+                        backgroundColor: "#10B981",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        transition: "background-color 0.3s ease",
+                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                      }}
+                      onMouseOver={(e) =>
+                        (e.target.style.backgroundColor = "#059669")
+                      }
+                      onMouseOut={(e) =>
+                        (e.target.style.backgroundColor = "#10B981")
+                      }
+                    >
                         {hasInstructions ? "Continue to Instructions" : "Continue to Question"}
-                      </button>
+                    </button>
                     );
                   })()}
                 </div>
@@ -3420,8 +3877,8 @@ export default function AudioRecorder() {
                         modules={{ toolbar: false }}
                         style={{ border: "none" }}
                       />
-                    </div>
-                  </div>
+                </div>
+              </div>
                 </div>
 
                 {/* Timer or Understood Button */}
@@ -3448,43 +3905,64 @@ export default function AudioRecorder() {
                       }}
                     >
                       {instructionTimeRemaining}s
-                    </div>
-                  )}
+            </div>
+          )}
                   
                   {!hasDisplayTime && (
-                    <button
-                      onClick={() => {
-                        // Move to next instruction or advance stage
-                        if (!isLastInstruction) {
-                          setCurrentInstructionIndex(currentInstructionIndex + 1);
+                    <>
+                      {isLastInstruction && isSimulatedConversation && (
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            color: "#6B7280",
+                            fontStyle: "italic",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          Audio playing will start immediately after you click "Understood"
+                        </p>
+                      )}
+                      <button
+                        onClick={() => {
+                          // Move to next instruction or advance stage
+                          if (!isLastInstruction) {
+                            setCurrentInstructionIndex(currentInstructionIndex + 1);
                         } else {
                           updateInstructionsData({ hasViewed: true });
                           setIsFullscreen(true);
                           setExamStarted(true);
-                          advanceStage("audio_play");
+                          // For Simulated_Conversation, go directly to playing prompts (which starts recording)
+                          if (isSimulatedConversation && promptClips.length > 0) {
+                            // Start playing prompts immediately
+                            playNextPrompt(0);
+                          } else {
+                            // Regular flow: proceed to audio_play
+                            advanceStage("audio_play");
+                          }
                         }
-                      }}
-                      style={{
-                        padding: "12px 32px",
-                        fontSize: "16px",
-                        fontWeight: "600",
-                        color: "white",
-                        backgroundColor: "#10B981",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        transition: "background-color 0.3s ease",
-                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                      }}
-                      onMouseOver={(e) =>
-                        (e.target.style.backgroundColor = "#059669")
-                      }
-                      onMouseOut={(e) =>
-                        (e.target.style.backgroundColor = "#10B981")
-                      }
-                    >
-                      {isLastInstruction ? "Understood" : "Next"}
-                    </button>
+                        }}
+                        style={{
+                          padding: "12px 32px",
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          color: "white",
+                          backgroundColor: "#10B981",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          transition: "background-color 0.3s ease",
+                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        }}
+                        onMouseOver={(e) =>
+                          (e.target.style.backgroundColor = "#059669")
+                        }
+                        onMouseOut={(e) =>
+                          (e.target.style.backgroundColor = "#10B981")
+                        }
+                      >
+                        {isLastInstruction ? "Understood" : "Next"}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -3502,7 +3980,7 @@ export default function AudioRecorder() {
                   marginBottom: "20px",
                 }}
               >
-                Listen to Question
+                {isSimulatedConversation ? "Conversation Prompts" : "Listen to Question"}
               </h1>
               <p
                 style={{
@@ -3511,8 +3989,9 @@ export default function AudioRecorder() {
                   marginBottom: "24px",
                 }}
               >
-                Please listen to the question carefully before recording your
-                response.
+                {isSimulatedConversation 
+                  ? "Click the microphone to start. Prompts will play sequentially, then recording will begin automatically."
+                  : "Please listen to the question carefully before recording your response."}
               </p>
 
               {/* Audio Player */}
@@ -3535,65 +4014,94 @@ export default function AudioRecorder() {
                     marginBottom: "20px",
                   }}
                 >
+                  {isSimulatedConversation ? (
                   <PulseButton
-                    onClick={() => {
-                      if (audioPlayer) {
-                        if (audioPlayer.isPaused || audioPlayer.isStopped) {
-                          // If audio is not loaded or ready, load it first
-                          if (audioPlayer.isUnloaded || !audioPlayer.isReady) {
-                            if (audioBlobURL) {
-                              audioPlayer.load(audioBlobURL, {
-                                autoplay: true,
-                                initialVolume: 1.0,
-                                onplay: () => {
-                                  audioPlaybackStarted();
-                                  updateAudioPlayData({ isPlaying: true });
-                                },
-                                onend: () => {
-                                  audioPlaybackCompleted();
-                                  updateAudioPlayData({
-                                    isPlaying: false,
-                                    hasPlayed: true,
-                                  });
-                                  setHasPlayed(true);
-                                },
-                                onerror: () => {
-                                  updateAudioPlayData({
-                                    isPlaying: false,
-                                    playError: "Failed to load audio",
-                                  });
-                                },
-                              });
+                      onClick={() => {
+                        if (!isRecording && !stageData.recording.isRecording && currentStage === "audio_play") {
+                          playRecording();
+                        }
+                      }}
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        borderRadius: "50%",
+                        backgroundColor: isRecording || stageData.recording.isRecording || currentStage === "recording" 
+                          ? "#dc2626" // Red when recording
+                          : stageData.audioPlay.isPlaying 
+                            ? "#6B7280" // Gray when audio is playing
+                            : "#6B7280", // Gray by default
+                        border: "none",
+                        cursor: isRecording || stageData.recording.isRecording || currentStage === "recording" ? "not-allowed" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "background-color 0.3s",
+                        animation: isRecording || stageData.recording.isRecording || currentStage === "recording" ? `${animation}` : "none",
+                      }}
+                    >
+                      <Mic size={32} color="white" fill="white" />
+                    </PulseButton>
+                  ) : (
+                    <PulseButton
+                      onClick={() => {
+                        if (audioPlayer) {
+                          if (audioPlayer.isPaused || audioPlayer.isStopped) {
+                            // If audio is not loaded or ready, load it first
+                            if (audioPlayer.isUnloaded || !audioPlayer.isReady) {
+                              if (audioBlobURL) {
+                                audioPlayer.load(audioBlobURL, {
+                                  autoplay: true,
+                                  initialVolume: 1.0,
+                                  onplay: () => {
+                            audioPlaybackStarted();
+                                    updateAudioPlayData({ isPlaying: true });
+                                  },
+                                  onend: () => {
+                                    audioPlaybackCompleted();
+                                    updateAudioPlayData({
+                                      isPlaying: false,
+                                      hasPlayed: true,
+                                    });
+                                    setHasPlayed(true);
+                                  },
+                                  onerror: () => {
+                          updateAudioPlayData({
+                            isPlaying: false,
+                                      playError: "Failed to load audio",
+                                    });
+                                  },
+                          });
+                        }
+                      } else {
+                              // Audio is ready, just play it
+                              audioPlayer.play();
+                              audioPlaybackStarted();
+                              updateAudioPlayData({ isPlaying: true });
                             }
                           } else {
-                            // Audio is ready, just play it
-                            audioPlayer.play();
-                            audioPlaybackStarted();
-                            updateAudioPlayData({ isPlaying: true });
+                            // Audio is playing, pause it
+                            audioPlayer.pause();
+                            updateAudioPlayData({ isPlaying: false });
                           }
-                        } else {
-                          // Audio is playing, pause it
-                          audioPlayer.pause();
-                          updateAudioPlayData({ isPlaying: false });
-                        }
                       }
                     }}
                     style={{
                       width: "80px",
                       height: "80px",
                       borderRadius: "50%",
-                      backgroundColor: "#28a745",
+                        backgroundColor: "#28a745",
                       border: "none",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       transition: "background-color 0.3s",
-                      animation: "none",
+                        animation: "none",
                     }}
                   >
                     <Play size={24} color="white" fill="white" />
                   </PulseButton>
+                  )}
 
                   {stageData.audioPlay.hasPlayed && (
                     <button
@@ -3612,14 +4120,14 @@ export default function AudioRecorder() {
                               },
                               onend: () => {
                                 audioPlaybackCompleted();
-                                updateAudioPlayData({
+                            updateAudioPlayData({
                                   isPlaying: false,
                                   hasPlayed: true,
                                 });
                               },
                               onerror: () => {
-                                updateAudioPlayData({
-                                  isPlaying: false,
+                            updateAudioPlayData({
+                              isPlaying: false,
                                   playError: "Failed to load audio",
                                 });
                               },
@@ -3658,6 +4166,18 @@ export default function AudioRecorder() {
 
                 {/* Status Message */}
                 <div style={{ textAlign: "center" }}>
+                  {isSimulatedConversation && promptClips.length > 0 && (
+                    <p
+                      style={{
+                        fontSize: "16px",
+                        color: "#6B7280",
+                        margin: "8px 0",
+                      }}
+                    >
+                      Prompt {currentPromptIndex + 1} of {promptClips.length}
+                    </p>
+                  )}
+
                   {(audioPlayer?.isPlaying || stageData.audioPlay.isPlaying) && (
                     <p
                       style={{
@@ -3667,7 +4187,7 @@ export default function AudioRecorder() {
                         margin: "4px 0",
                       }}
                     >
-                      Playing...
+                      {isSimulatedConversation ? "Playing prompt..." : "Playing..."}
                     </p>
                   )}
 
@@ -3698,7 +4218,8 @@ export default function AudioRecorder() {
                   {stageData.audioPlay.hasPlayed &&
                     !stageData.audioPlay.playError &&
                     !audioPlayer?.error &&
-                    !(audioPlayer?.isPlaying || stageData.audioPlay.isPlaying) && (
+                    !(audioPlayer?.isPlaying || stageData.audioPlay.isPlaying) &&
+                    !isSimulatedConversation && (
                       <p
                         style={{
                           fontSize: "16px",
@@ -3708,6 +4229,19 @@ export default function AudioRecorder() {
                         }}
                       >
                         ✓ Question played successfully
+                      </p>
+                    )}
+
+                  {isSimulatedConversation && (isRecording || stageData.recording.isRecording) && (
+                    <p
+                      style={{
+                        fontSize: "20px",
+                        color: "#dc2626",
+                        fontWeight: "700",
+                        margin: "8px 0",
+                      }}
+                    >
+                      Recording...
                       </p>
                     )}
                 </div>
@@ -3832,8 +4366,36 @@ export default function AudioRecorder() {
                   marginBottom: "20px",
                 }}
               >
-                Recording Your Response
+                {isSimulatedConversation ? "Recording Your Response" : "Recording Your Response"}
               </h1>
+
+              {/* Show prompt info for Simulated_Conversation */}
+              {isSimulatedConversation && promptClips.length > 0 && (
+                <div style={{ textAlign: "center", marginBottom: "20px" }}>
+                  <p
+                    style={{
+                      fontSize: "18px",
+                      color: "#6B7280",
+                      fontWeight: "500",
+                      margin: "8px 0",
+                    }}
+                  >
+                    Prompt {currentPromptIndex + 1} of {promptClips.length}
+                  </p>
+                  {recordingStartTime && (
+                    <p
+                      style={{
+                        fontSize: "24px",
+                        color: "#dc2626",
+                        fontWeight: "700",
+                        margin: "8px 0",
+                      }}
+                    >
+                      {recordingCountdown}s remaining
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Recording Button */}
               <div
@@ -3844,8 +4406,43 @@ export default function AudioRecorder() {
                   gap: "20px",
                 }}
               >
+                {/* Show gray microphone when audio is playing (prompt) for simulated conversation */}
+                {isSimulatedConversation && 
+                  stageData.audioPlay.isPlaying && 
+                  !stageData.recording.isRecording && (
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        borderRadius: "50%",
+                        backgroundColor: "#6B7280", // Gray
+                        border: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto",
+                        transition: "background-color 0.3s",
+                      }}
+                    >
+                      <Mic size={32} color="white" fill="white" />
+                    </div>
+                    <p
+                      style={{
+                        fontSize: "16px",
+                        color: "#6B7280",
+                        margin: "16px 0 8px 0",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Playing prompt...
+                    </p>
+                  </div>
+                )}
+
                 {!stageData.recording.isRecording &&
-                  !stageData.recording.hasRecorded && (
+                  !stageData.recording.hasRecorded &&
+                  !stageData.audioPlay.isPlaying && ( // Don't show "Preparing to record" if audio is playing (next prompt)
                     <div style={{ textAlign: "center" }}>
                       <p
                         style={{
@@ -3854,12 +4451,12 @@ export default function AudioRecorder() {
                           margin: "8px 0",
                         }}
                       >
-                        Preparing to record...
+                        {isSimulatedConversation ? "Loading next prompt..." : "Preparing to record..."}
                       </p>
                     </div>
                   )}
 
-                {stageData.recording.isRecording && (
+                {stageData.recording.isRecording && !isSimulatedConversation && (
                   // <PulseButton
                   //   onClick={() => {
                   //     stopRecording();
@@ -3871,13 +4468,13 @@ export default function AudioRecorder() {
                   //   style={recordStyle}
                   // />
                 <button
-                  onClick={() => {
-                    stopRecording();
-                    updateRecordingData({
-                      isRecording: false,
-                      hasRecorded: true,
-                    });
-                  }}
+                    onClick={() => {
+                      stopRecording();
+                      updateRecordingData({
+                        isRecording: false,
+                        hasRecorded: true,
+                      });
+                    }}
                   style={{
                     width: "120px",
                     height: "48px",
@@ -3896,8 +4493,50 @@ export default function AudioRecorder() {
                 </button>
                 )}
 
+                {stageData.recording.isRecording && isSimulatedConversation && (
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        borderRadius: "50%",
+                        backgroundColor: "#dc2626", // Red when recording
+                        border: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto",
+                        animation: `${animation}`,
+                        transition: "background-color 0.3s",
+                      }}
+                    >
+                      <Mic size={32} color="white" fill="white" />
+                    </div>
+                    <p
+                      style={{
+                        fontSize: "20px",
+                        color: "#dc2626",
+                        fontWeight: "700",
+                        margin: "16px 0 8px 0",
+                      }}
+                    >
+                      Recording...
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6B7280",
+                        margin: "8px 0",
+                      }}
+                    >
+                      Recording will stop automatically after 20 seconds
+                    </p>
+                  </div>
+                )}
+
                 {stageData.recording.hasRecorded &&
-                  !stageData.recording.isRecording && (
+                  !stageData.recording.isRecording &&
+                  !isSimulatedConversation && ( // Don't show for simulated conversation - we handle it differently
                     <div style={{ textAlign: "center" }}>
                       <p
                         style={{

@@ -145,6 +145,11 @@ const Config = ({
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInputValue, setTextInputValue] = useState("");
 
+  // State for AP Simulated Conversation prompt clips
+  const [promptClips, setPromptClips] = useState([]);
+  const [recordingPrompt, setRecordingPrompt] = useState(false);
+  const promptMediaRecorderRef = useRef(null);
+
   const presetRubrics = {
     "AP Language Arts": {
       pointValues: [4, 3, 2, 1],
@@ -343,6 +348,47 @@ const Config = ({
     }
   };
 
+  // Handle prompt clip recording
+  const handleTogglePromptRecording = () => {
+    if (navigator.mediaDevices.getUserMedia) {
+      if (recordingPrompt) {
+        promptMediaRecorderRef.current.stop();
+        setRecordingPrompt(false);
+      } else {
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then((stream) => {
+            promptMediaRecorderRef.current = new MediaRecorder(stream);
+            promptMediaRecorderRef.current.start();
+            promptMediaRecorderRef.current.addEventListener(
+              "dataavailable",
+              (event) => {
+                if (event.data.size > 0) {
+                  const recordedClip = URL.createObjectURL(event.data);
+                  setPromptClips((prevClips) => [...prevClips, recordedClip]);
+                }
+              }
+            );
+            setRecordingPrompt(true);
+          })
+          .catch((err) => {
+            console.error("Error accessing microphone", err);
+            toast.error("Error accessing microphone");
+          });
+      }
+    } else {
+      console.error("getUserMedia not supported");
+      toast.error("getUserMedia not supported");
+    }
+  };
+
+  const handleDeletePromptClip = (index) => {
+    setPromptClips((prevClips) =>
+      prevClips.filter((_, i) => i !== index)
+    );
+    toast.success("Prompt clip deleted");
+  };
+
   const handleDeleteQuestion = (index) => {
     setQuestions((prevQuestions) =>
       prevQuestions.filter((_, i) => i !== index)
@@ -443,10 +489,13 @@ const Config = ({
       setShowConfigTypeWarning(true);
     } else {
       // No instructions, proceed directly
-      setConfigType(newType);
       if (newType === "Simulated_Conversation") {
+        setQuestions([]); // Clear questions when switching to Simulated_Conversation
         loadAPSimulatedConversationFramework();
+      } else if (configType === "Simulated_Conversation") {
+        setPromptClips([]); // Clear prompt clips when switching away
       }
+      setConfigType(newType);
     }
   };
 
@@ -454,13 +503,16 @@ const Config = ({
     if (pendingConfigType === "Simulated_Conversation") {
       // Load framework first, then update config type
       loadAPSimulatedConversationFramework();
+      // Clear questions when switching to Simulated_Conversation
+      setQuestions([]);
       // Use setTimeout to ensure state updates are processed
       setTimeout(() => {
         setConfigType(pendingConfigType);
       }, 0);
     } else {
-      // Clear instructions when switching away from AP Simulated Conversation
+      // Clear instructions and prompt clips when switching away from AP Simulated Conversation
       setInstructions([]);
+      setPromptClips([]);
       setConfigType(pendingConfigType);
     }
     setShowConfigTypeWarning(false);
@@ -961,11 +1013,40 @@ const Config = ({
       setInstructionsEnabled(false);
     }
 
-    // Set config type based on whether instructions are present and enabled
-    if (hasEnabledInstructions) {
+    // Set config type
+    if (config.configType) {
+      setConfigType(config.configType);
+    } else if (hasEnabledInstructions) {
       setConfigType("Questions and Instructions");
     } else {
       setConfigType("Classic");
+    }
+
+    // Load prompt clips if Simulated_Conversation
+    if (config.configType === "Simulated_Conversation" && config.questions) {
+      // Load prompt clips from questions array
+      const loadPromptClips = async () => {
+        const loadedPromptClips = [];
+        for (const question of config.questions) {
+          let url;
+          if (question.audioUrl) {
+            url = question.audioUrl;
+          } else if (question.audio) {
+            const blob = await fetch(
+              `data:audio/wav;base64,${question.audio}`
+            ).then((res) => res.blob());
+            url = URL.createObjectURL(blob);
+          }
+          if (url) {
+            loadedPromptClips.push(url);
+          }
+        }
+        setPromptClips(loadedPromptClips);
+      };
+      loadPromptClips();
+    } else {
+      // Clear prompt clips if not Simulated_Conversation
+      setPromptClips([]);
     }
 
     if (autofillOptions.timeLimit) {
@@ -986,20 +1067,23 @@ const Config = ({
     }
 
     if (autofillOptions.questions && config.questions) {
-      config.questions.map(async (question) => {
-        let url;
-        if (question.audioUrl) {
-          url = question.audioUrl;
-        } else if (question.audio) {
-          const blob = await fetch(
-            `data:audio/wav;base64,${question.audio}`
-          ).then((res) => res.blob());
-          url = URL.createObjectURL(blob);
-        }
-        if (url) {
-          setQuestions((prevQuestions) => [...prevQuestions, url]);
-        }
-      });
+      // Only load questions if not Simulated_Conversation (those are loaded as prompt clips above)
+      if (config.configType !== "Simulated_Conversation") {
+        config.questions.map(async (question) => {
+          let url;
+          if (question.audioUrl) {
+            url = question.audioUrl;
+          } else if (question.audio) {
+            const blob = await fetch(
+              `data:audio/wav;base64,${question.audio}`
+            ).then((res) => res.blob());
+            url = URL.createObjectURL(blob);
+          }
+          if (url) {
+            setQuestions((prevQuestions) => [...prevQuestions, url]);
+          }
+        });
+      }
     }
 
     setShowSelectiveAutofillModal(false);
@@ -1070,9 +1154,17 @@ const Config = ({
       toast.error("Please log in");
       return;
     }
-    if (questions.length === 0) {
-      toast.error("Please record at least one question");
-      return;
+    // For Simulated_Conversation, check prompt clips; otherwise check questions
+    if (configType === "Simulated_Conversation") {
+      if (promptClips.length === 0) {
+        toast.error("Please record at least one prompt clip");
+        return;
+      }
+    } else {
+      if (questions.length === 0) {
+        toast.error("Please record at least one question");
+        return;
+      }
     }
 
     try {
@@ -1095,10 +1187,12 @@ const Config = ({
         selectedLanguage === "Other" ? otherLanguage : selectedLanguage;
 
       const maxFileSizeBytes = 15 * 1024 * 1024;
+      // Validate files based on config type
+      const filesToValidate = configType === "Simulated_Conversation" ? promptClips : questions;
       const allFilesAreValid = await Promise.all(
-        questions.map(async (questionUrl, i) => {
+        filesToValidate.map(async (fileUrl, i) => {
           try {
-            const blob = await fetch(questionUrl).then((res) => res.blob());
+            const blob = await fetch(fileUrl).then((res) => res.blob());
             return validateAudioBlob(blob, i, maxFileSizeBytes);
           } catch (err) {
             console.error('Error fetching audio:', err);
@@ -1132,10 +1226,14 @@ const Config = ({
           throw new Error(updateResult.error || "Failed to update config");
         }
 
-        toast.success("Config updated successfully, uploading questions...");
+        toast.success("Config updated successfully, uploading audio files...");
 
-        for (let i = 0; i < questions.length; i++) {
-          const res = await fetch(questions[i]);
+        // Upload files based on config type
+        const filesToUpload = configType === "Simulated_Conversation" ? promptClips : questions;
+        const totalFiles = filesToUpload.length;
+
+        for (let i = 0; i < filesToUpload.length; i++) {
+          const res = await fetch(filesToUpload[i]);
           const blob = await res.blob();
 
           const uploadUrlResponse = await fetch(
@@ -1181,11 +1279,11 @@ const Config = ({
 
           if (!questionResponse.ok || questionResult.error) {
             throw new Error(
-              questionResult.error || `Failed to upload question ${i + 1}`
+              questionResult.error || `Failed to upload ${configType === "Simulated_Conversation" ? "prompt" : "question"} ${i + 1}`
             );
           }
 
-          setUploadProgress(Math.round(((i + 1) / questions.length) * 100));
+          setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
         }
 
         toast.success("Question Set updated successfully");
@@ -1209,10 +1307,14 @@ const Config = ({
           throw new Error(configResult.error || "Failed to create config");
         }
 
-        toast.success("Question set registered. Uploading questions...");
+        toast.success("Question set registered. Uploading audio files...");
 
-        for (let i = 0; i < questions.length; i++) {
-          const res = await fetch(questions[i]);
+        // Upload files based on config type
+        const filesToUpload = configType === "Simulated_Conversation" ? promptClips : questions;
+        const totalFiles = filesToUpload.length;
+
+        for (let i = 0; i < filesToUpload.length; i++) {
+          const res = await fetch(filesToUpload[i]);
           const blob = await res.blob();
 
           const base64Audio = await new Promise((resolve) => {
@@ -1267,11 +1369,11 @@ const Config = ({
 
           if (!questionResponse.ok || questionResult.error) {
             throw new Error(
-              questionResult.error || `Failed to upload question ${i + 1}`
+              questionResult.error || `Failed to upload ${configType === "Simulated_Conversation" ? "prompt" : "question"} ${i + 1}`
             );
           }
 
-          setUploadProgress(Math.round(((i + 1) / questions.length) * 100));
+          setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
         }
 
         cuteAlert({
@@ -1602,7 +1704,24 @@ const Config = ({
                                   readOnly={isUneditable}
                                   modules={{
                                     toolbar: isUneditable ? false : [
-                                      [{ 'font': [] }, { 'size': [] }],
+                                      [{ 
+                                        'font': [
+                                          'roboto', 
+                                          'arial', 
+                                          'times-new-roman', 
+                                          'sans-serif',
+                                          'serif',
+                                          'georgia', 
+                                          'comic-sans-ms', 
+                                          'courier-new', 
+                                          'helvetica', 
+                                          'lucida', 
+                                          'tahoma', 
+                                          'trebuchet-ms', 
+                                          'verdana', 
+                                          'impact'
+                                        ] 
+                                      }, { 'size': [] }],
                                       ['bold', 'italic', 'underline', 'strike'],
                                       [{ 'color': [] }, { 'background': [] }],
                                       [{ 'script': 'sub'}, { 'script': 'super' }],
@@ -1719,65 +1838,131 @@ const Config = ({
 
                 {/* Record Questions Card (Conditional) */}
                 {
-                  <Card color="cyan">
-                    <h2 className="text-2xl font-bold text-white mb-4">
-                      {configType === "Classic"
-                        ? "Record Questions"
-                        : "Record Prompts"}
-                    </h2>
-                    <button
-                      onClick={handleImportClick}
-                      className="fixed top-4 right-6 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
-                    >
-                      Import
-                    </button>
-                    <div className="space-y-4">
-                      <div className="flex justify-center">
-                        <button
-                          onClick={handleToggleRecording}
-                          className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white transition-all duration-300 ${
-                            recording
-                              ? "bg-red-500 hover:bg-red-600"
-                              : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-                          }`}
-                        >
-                          {recording ? (
-                            <FaStop className="mr-2" />
-                          ) : (
-                            <FaMicrophone className="mr-2" />
-                          )}
-                          <span>
-                            {recording ? "Stop Recording" : "Start Recording"}
-                          </span>
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {questions.map((question, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30"
-                          >
-                            <audio
-                              controls
-                              src={question}
-                              className="mr-2"
-                              style={{
-                                backgroundColor: "transparent",
-                                border: "none",
-                                filter: "invert(1)",
-                              }}
-                            />
-                            <button
-                              onClick={() => handleDeleteQuestion(index)}
-                              className="text-red-400 hover:text-red-300 transition-colors p-2"
-                            >
-                              <FaTimes />
-                            </button>
+                  configType === "Simulated_Conversation" ? (
+                    <Card color="cyan">
+                      <h2 className="text-2xl font-bold text-white mb-4">
+                        Record Conversation Prompts
+                      </h2>
+                      <p className="text-gray-300 text-sm mb-6">
+                        Record audio prompts that will play sequentially. Students will respond after each prompt.
+                      </p>
+                      <div className="space-y-6">
+                        {/* Linear Prompt Clips Display */}
+                        <div className="overflow-x-auto pb-4">
+                          <div className="flex items-center gap-4 min-w-max">
+                            {promptClips.map((clip, index) => (
+                              <div key={index} className="flex items-center gap-4">
+                                {/* Audio Clip */}
+                                <div className="flex flex-col items-center gap-2">
+                                  <div className="bg-black/30 p-3 rounded-lg border border-cyan-500/30">
+                                    <audio
+                                      controls
+                                      src={clip}
+                                      style={{
+                                        backgroundColor: "transparent",
+                                        border: "none",
+                                        filter: "invert(1)",
+                                        width: "200px",
+                                      }}
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={() => handleDeletePromptClip(index)}
+                                    className="text-red-400 hover:text-red-300 transition-colors text-sm"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                                {/* Connecting Line */}
+                                <div className="flex items-center">
+                                  <div className="w-12 h-0.5 bg-cyan-500/50"></div>
+                                  <div className="w-0 h-0 border-l-4 border-l-cyan-500/50 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                                </div>
+                              </div>
+                            ))}
+                            {/* Record Button at the End */}
+                            <div className="flex flex-col items-center gap-2">
+                              <button
+                                onClick={handleTogglePromptRecording}
+                                className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg text-white transition-all duration-300 ${
+                                  recordingPrompt
+                                    ? "bg-red-500 hover:bg-red-600"
+                                    : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                                }`}
+                              >
+                                {recordingPrompt ? (
+                                  <FaStop className="mr-2" />
+                                ) : (
+                                  <FaMicrophone className="mr-2" />
+                                )}
+                                <span>
+                                  {recordingPrompt ? "Stop Recording" : "Record Prompt"}
+                                </span>
+                              </button>
+                            </div>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    </div>
-                  </Card>
+                    </Card>
+                  ) : (
+                    <Card color="cyan">
+                      <h2 className="text-2xl font-bold text-white mb-4">
+                        Record Questions
+                      </h2>
+                      <button
+                        onClick={handleImportClick}
+                        className="fixed top-4 right-6 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                      >
+                        Import
+                      </button>
+                      <div className="space-y-4">
+                        <div className="flex justify-center">
+                          <button
+                            onClick={handleToggleRecording}
+                            className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white transition-all duration-300 ${
+                              recording
+                                ? "bg-red-500 hover:bg-red-600"
+                                : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                            }`}
+                          >
+                            {recording ? (
+                              <FaStop className="mr-2" />
+                            ) : (
+                              <FaMicrophone className="mr-2" />
+                            )}
+                            <span>
+                              {recording ? "Stop Recording" : "Start Recording"}
+                            </span>
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {questions.map((question, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30"
+                            >
+                              <audio
+                                controls
+                                src={question}
+                                className="mr-2"
+                                style={{
+                                  backgroundColor: "transparent",
+                                  border: "none",
+                                  filter: "invert(1)",
+                                }}
+                              />
+                              <button
+                                onClick={() => handleDeleteQuestion(index)}
+                                className="text-red-400 hover:text-red-300 transition-colors p-2"
+                              >
+                                <FaTimes />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Card>
+                  )
                 }
 
                 {/* Create Rubric Card (Conditional) */}
