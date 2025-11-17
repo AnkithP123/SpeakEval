@@ -66,6 +66,7 @@ export default function AudioRecorder() {
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0); // Current prompt clip being played
   const [isSimulatedConversation, setIsSimulatedConversation] = useState(false); // Track if this is a simulated conversation
   const [collectedRecordings, setCollectedRecordings] = useState([]); // Store all recordings for Simulated_Conversation to upload at end
+  const collectedRecordingsRef = useRef([]); // Ref to track collectedRecordings for immediate access
   const [recordingStartTime, setRecordingStartTime] = useState(null); // Track when current recording started for 20s auto-advance
   const [recordingCountdown, setRecordingCountdown] = useState(20); // Countdown timer for recording (20 seconds)
   const promptTimerRef = useRef(null); // Timer for 20-second auto-advance
@@ -864,8 +865,14 @@ export default function AudioRecorder() {
   }, [currentStage, stageData]);
 
   // Load audio when audioBlobURL is available
+  // BUT: Skip this for simulated conversations - they handle audio loading directly in playNextPrompt
   useEffect(() => {
     if (!audioBlobURL || !audioPlayer) return;
+    
+    // Skip automatic loading for simulated conversations - playNextPrompt handles it
+    if (isSimulatedConversation) {
+      return;
+    }
 
     // Stop any existing audio first
     if (!audioPlayer.isUnloaded) {
@@ -923,6 +930,11 @@ export default function AudioRecorder() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioBlobURL]);
+
+  // Keep collectedRecordingsRef in sync with collectedRecordings state
+  useEffect(() => {
+    collectedRecordingsRef.current = collectedRecordings;
+  }, [collectedRecordings]);
 
   // Also watch for isReady state change in case onload doesn't fire
   useEffect(() => {
@@ -2033,6 +2045,10 @@ export default function AudioRecorder() {
         setAudioBlobURL(audioUrls[0]);
         }
         questionIndex = receivedData.questionIndex;
+        updateStageData({
+          audioDownloaded: true,
+          audioDownloadError: null,
+        });
       } else if (audioUrls && audioUrls.length > 0) {
         // Regular single question
         setIsSimulatedConversation(false);
@@ -2597,7 +2613,8 @@ export default function AudioRecorder() {
 
     if (index >= promptClips.length) {
       // All prompts and recordings done, upload all recordings
-      console.log(`✅ All prompts complete. Collected ${collectedRecordings.length} recordings. Starting upload...`);
+      // Use ref to get the latest count immediately (state may not have updated yet)
+      console.log(`✅ All prompts complete. Collected ${collectedRecordingsRef.current.length} recordings. Starting upload...`);
       await uploadAllRecordings();
       return;
     }
@@ -2626,6 +2643,11 @@ export default function AudioRecorder() {
     });
     
     try {
+      // Stop any existing audio first to ensure clean state
+      if (!audioPlayer.isUnloaded) {
+        audioPlayer.stop();
+      }
+      
       audioPlayer.load(promptUrl, {
         autoplay: true,
         initialVolume: 1.0,
@@ -2648,7 +2670,7 @@ export default function AudioRecorder() {
           // Set start time FIRST before advancing stage, so countdown displays correctly
           const startTime = Date.now();
           setRecordingStartTime(startTime);
-          setRecordingCountdown(20);
+          setRecordingCountdown(5);
           
           // Advance to recording stage
           advanceStage("recording");
@@ -2677,7 +2699,7 @@ export default function AudioRecorder() {
             }
             // 20 seconds elapsed, stop recording and move to next prompt
             await stopRecordingForNextPrompt(index);
-          }, 20000);
+          }, 5000);
         } catch (error) {
           // Don't show error to user - just log it and continue
           // The MediaRecorder should already be running from permissions
@@ -2771,29 +2793,33 @@ export default function AudioRecorder() {
         console.log(`   - MimeType: ${mimeType}`);
         
         // Store both prompt and response (don't upload yet)
-        setCollectedRecordings((prev) => [
-          ...prev,
-          {
-            promptBlob: promptBlob,
-            responseBlob: responseBlob,
-            promptIndex: currentIndex,
-          },
-        ]);
+        const newRecording = {
+          promptBlob: promptBlob,
+          responseBlob: responseBlob,
+          promptIndex: currentIndex,
+        };
+        setCollectedRecordings((prev) => {
+          const updated = [...prev, newRecording];
+          collectedRecordingsRef.current = updated; // Update ref immediately
+          return updated;
+        });
         
         console.log(`✅ [Stop Recording] Saved response ${currentIndex + 1} to collectedRecordings`);
-        console.log(`✅ [Stop Recording] Total recordings collected: ${collectedRecordings.length + 1}`);
+        console.log(`✅ [Stop Recording] Total recordings collected: ${collectedRecordingsRef.current.length}`);
       } else {
         console.warn(`⚠️ [Stop Recording] No chunks collected for prompt ${currentIndex + 1}`);
         // Still store the prompt even if no response was recorded
         if (promptBlob) {
-          setCollectedRecordings((prev) => [
-            ...prev,
-            {
-              promptBlob: promptBlob,
-              responseBlob: null,
-              promptIndex: currentIndex,
-            },
-          ]);
+          const newRecording = {
+            promptBlob: promptBlob,
+            responseBlob: null,
+            promptIndex: currentIndex,
+          };
+          setCollectedRecordings((prev) => {
+            const updated = [...prev, newRecording];
+            collectedRecordingsRef.current = updated; // Update ref immediately
+            return updated;
+          });
           console.log(`✅ [Stop Recording] Saved prompt ${currentIndex + 1} only (no response recorded)`);
         }
       }
@@ -2866,41 +2892,12 @@ export default function AudioRecorder() {
     }
   };
 
-  // Combine all prompt+response segments into one final recording
-  const combineAllSegments = async (segments) => {
-    console.log(`🔗 Combining ${segments.length} segments into one recording...`);
-    
-    // For now, we'll combine the segments by creating a new blob that contains all segments
-    // Since proper video concatenation requires re-encoding (complex), we'll use a simpler approach:
-    // Combine all the blobs in order (prompt + response for each segment)
-    const allBlobs = [];
-    
-    for (const segment of segments) {
-      if (segment.promptBlob) {
-        allBlobs.push(segment.promptBlob);
-      }
-      if (segment.responseBlob) {
-        allBlobs.push(segment.responseBlob);
-      }
-    }
-    
-    if (allBlobs.length === 0) {
-      throw new Error("No segments to combine");
-    }
-    
-    // For proper video/audio concatenation, we'd need FFmpeg.wasm or similar
-    // For now, we'll create a combined blob (this may not work perfectly for video, but it's a start)
-    // The backend can handle proper concatenation if needed
-    const combinedBlob = new Blob(allBlobs, { type: "video/mp4" });
-    
-    console.log(`✅ Combined ${allBlobs.length} segments into one blob, size: ${combinedBlob.size} bytes`);
-    return combinedBlob;
-  };
-
   const uploadAllRecordings = async () => {
-    console.log(`📤 uploadAllRecordings called with ${collectedRecordings.length} recordings`);
+    // Use ref to get the latest recordings immediately (state may not have updated yet)
+    const recordingsToUpload = collectedRecordingsRef.current;
+    console.log(`📤 uploadAllRecordings called with ${recordingsToUpload.length} recordings`);
     
-    if (collectedRecordings.length === 0) {
+    if (recordingsToUpload.length === 0) {
       // No recordings to upload, just advance to uploading stage
       console.warn("⚠️ No recordings collected, but uploadAllRecordings was called");
       advanceStage("uploading");
@@ -2939,66 +2936,82 @@ export default function AudioRecorder() {
     const token = tokenManager.getStudentToken();
 
     try {
-      // Combine all segments (prompt + response pairs) into one final recording
-      console.log("🔗 Stitching all segments together...");
-      setUploadProgress(10); // Show progress
+      const totalRecordings = recordingsToUpload.length;
       
-      const combinedBlob = await combineAllSegments(collectedRecordings);
-      
-      setUploadProgress(30);
-      
-      // Get upload URL for the combined recording (use index 0 since it's a single combined file)
-      const uploadUrlResponse = await fetch(
-        `https://www.server.speakeval.org/get-recording-upload-url?token=${token}&index=0`,
-        {
-          method: "GET",
+      // Upload each response recording separately with different indices (NO combining - that's done in StatsCard)
+      for (let i = 0; i < recordingsToUpload.length; i++) {
+        const segment = recordingsToUpload[i];
+        const progressBase = (i / totalRecordings) * 100;
+        
+        // Only upload if we have a response blob
+        if (!segment.responseBlob) {
+          console.warn(`⚠️ No response blob for segment ${i + 1}, skipping...`);
+          continue;
         }
-      );
+        
+        console.log(`📤 Uploading response ${i + 1} of ${totalRecordings}...`);
+        updateUploadingData({ uploadProgress: progressBase + 5 });
+        
+        // Get upload URL for this response (use index i)
+        const uploadUrlResponse = await fetch(
+          `https://www.server.speakeval.org/get-recording-upload-url?token=${token}&index=${i}`,
+          {
+            method: "GET",
+          }
+        );
 
-      if (!uploadUrlResponse.ok) {
-        throw new Error("Failed to get upload URL");
-      }
+        if (!uploadUrlResponse.ok) {
+          throw new Error(`Failed to get upload URL for response ${i + 1}`);
+        }
 
-      const { uploadUrl } = await uploadUrlResponse.json();
+        const { uploadUrl } = await uploadUrlResponse.json();
 
-      setUploadProgress(50);
+        updateUploadingData({ uploadProgress: progressBase + 20 });
 
-      // Upload the combined recording to S3
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        body: combinedBlob,
-        headers: {
-          "Content-Type": "video/mp4",
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("Failed to upload to S3");
-      }
-
-      setUploadProgress(80);
-
-      // Notify server that the combined recording is uploaded
-      const uploadData = {
-        uploaded: true,
-        speechRecognitionText: recognizedText || null,
-        recognitionLanguage: examLanguage,
-      };
-
-      await fetch(
-        `https://www.server.speakeval.org/upload?token=${token}&index=0`,
-        {
-          method: "POST",
+        // Upload ONLY the response recording (no prompt - stitching happens in StatsCard)
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "PUT",
+          body: segment.responseBlob, // Only upload response, not prompt
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "video/mp4",
           },
-          body: JSON.stringify(uploadData),
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error(`Failed to upload response ${i + 1} to S3`);
         }
-      );
 
-      setUploadProgress(100);
+        updateUploadingData({ uploadProgress: progressBase + 40 });
 
-      // All uploads complete
+        // Notify server that this response is uploaded
+        const uploadData = {
+          uploaded: true,
+          speechRecognitionText: recognizedText || null,
+          recognitionLanguage: examLanguage,
+        };
+
+        try {
+          await fetch(
+            `https://www.server.speakeval.org/upload?token=${token}&index=${i}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(uploadData),
+            }
+          );
+        } catch (uploadError) {
+          // Log error but don't fail the upload - S3 upload already succeeded
+          console.warn(`Failed to notify server of response ${i + 1} upload completion:`, uploadError);
+        }
+        
+        updateUploadingData({ uploadProgress: progressBase + 50 });
+      }
+
+      updateUploadingData({ uploadProgress: 100 });
+
+      // Upload complete - no transcription waiting
       updateUploadingData({
         isUploading: false,
         uploadComplete: true,
@@ -3011,6 +3024,7 @@ export default function AudioRecorder() {
       questionCompleted(questionIndex);
 
       setCollectedRecordings([]); // Clear collected recordings
+      collectedRecordingsRef.current = []; // Clear ref as well
     } catch (error) {
       console.error("Error uploading recordings:", error);
       setError("Failed to upload recordings. Please try again.");
@@ -4170,7 +4184,7 @@ export default function AudioRecorder() {
                         animation: isRecording || stageData.recording.isRecording || currentStage === "recording" ? `${animation}` : "none",
                       }}
                     >
-                      <Mic size={32} color="white" fill="white" />
+                      <Mic size={32} color="white" />
                     </PulseButton>
                   ) : (
                     <PulseButton
@@ -4556,7 +4570,7 @@ export default function AudioRecorder() {
                         transition: "background-color 0.3s",
                       }}
                     >
-                      <Mic size={32} color="white" fill="white" />
+                      <Mic size={32} color="white" />
                     </div>
                     <p
                       style={{
@@ -4641,7 +4655,7 @@ export default function AudioRecorder() {
                         transition: "background-color 0.3s",
                       }}
                     >
-                      <Mic size={32} color="white" fill="white" />
+                      <Mic size={32} color="white" />
                     </div>
                     <p
                       style={{
@@ -4926,7 +4940,7 @@ export default function AudioRecorder() {
                           textAlign: "center",
                         }}
                       >
-                        ✓ Upload and transcription completed
+                        ✓ Upload completed
                       </p>
                     )}
                 </div>

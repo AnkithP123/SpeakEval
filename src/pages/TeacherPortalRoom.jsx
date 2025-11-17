@@ -1231,37 +1231,82 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
           <div className="w-full text-center py-12">
             <h1 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600">
-              Grading: {roomCode.toString().slice(0, -3)} (Question #
-              {questionData.currentIndex})
+              Grading: {roomCode.toString().slice(0, -3)} {!showByPerson && (() => {
+                // Check if current question is a simulated conversation
+                const currentQuestion = participants.find(q => q.questionCode === roomCode);
+                const isSimulatedConversation = currentQuestion?.participants?.some(
+                  p => p?.promptRecordings && p.promptRecordings.length > 0
+                );
+                
+                if (isSimulatedConversation) {
+                  return "Simulated Conversation";
+                }
+                return `(Question #${questionData.currentIndex})`;
+              })()}
             </h1>
-            {!showByPerson && (
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={() => handleNavigateQuestion("previous")}
-                  disabled={questionData.currentIndex === 1}
-                  className={`px-6 py-2 rounded-lg shadow-lg transition-all duration-300 ${
-                    questionData.currentIndex === 1
-                      ? "bg-gray-600/50 cursor-not-allowed"
-                      : "bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-yellow-500/30 hover:shadow-yellow-500/50"
-                  }`}
-                >
-                  Previous Question
-                </button>
-                <button
-                  onClick={() => handleNavigateQuestion("next")}
-                  disabled={
-                    questionData.currentIndex === questionData.totalQuestions
-                  }
-                  className={`px-6 py-2 rounded-lg shadow-lg transition-all duration-300 ${
-                    questionData.currentIndex === questionData.totalQuestions
-                      ? "bg-gray-600/50 cursor-not-allowed"
-                      : "bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-yellow-500/30 hover:shadow-yellow-500/50"
-                  }`}
-                >
-                  Next Question
-                </button>
-              </div>
-            )}
+            {!showByPerson && (() => {
+              // Check if current question is a simulated conversation
+              const currentQuestion = participants.find(q => q.questionCode === roomCode);
+              const isSimulatedConversation = currentQuestion?.participants?.some(
+                p => p?.promptRecordings && p.promptRecordings.length > 0
+              );
+              
+              if (isSimulatedConversation) {
+                // Show prompts display instead of navigation buttons
+                const firstParticipant = currentQuestion?.participants?.find(
+                  p => p?.promptRecordings && p.promptRecordings.length > 0
+                );
+                
+                if (firstParticipant?.promptAudioUrls && firstParticipant.promptAudioUrls.length > 0) {
+                  return (
+                    <div className="mt-6">
+                      <h2 className="text-2xl font-semibold text-white mb-4">Prompts ({firstParticipant.promptAudioUrls.length})</h2>
+                      <div className="flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
+                        {firstParticipant.promptAudioUrls.map((promptAudio, idx) => (
+                          <div
+                            key={promptAudio.index}
+                            className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300"
+                          >
+                            Prompt {idx + 1}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }
+              
+              // Regular question - show navigation buttons
+              return (
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={() => handleNavigateQuestion("previous")}
+                    disabled={questionData.currentIndex === 1}
+                    className={`px-6 py-2 rounded-lg shadow-lg transition-all duration-300 ${
+                      questionData.currentIndex === 1
+                        ? "bg-gray-600/50 cursor-not-allowed"
+                        : "bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-yellow-500/30 hover:shadow-yellow-500/50"
+                    }`}
+                  >
+                    Previous Question
+                  </button>
+                  <button
+                    onClick={() => handleNavigateQuestion("next")}
+                    disabled={
+                      questionData.currentIndex === questionData.totalQuestions
+                    }
+                    className={`px-6 py-2 rounded-lg shadow-lg transition-all duration-300 ${
+                      questionData.currentIndex === questionData.totalQuestions
+                        ? "bg-gray-600/50 cursor-not-allowed"
+                        : "bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-yellow-500/30 hover:shadow-yellow-500/50"
+                    }`}
+                  >
+                    Next Question
+                  </button>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="w-full px-6 pb-12">
@@ -1335,6 +1380,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       initialTotalScore={
                                         responseData.totalScore
                                       }
+                                      promptRecordings={responseData.promptRecordings}
+                                      promptAudioUrls={responseData.promptAudioUrls}
                                       className=""
                                     />
                                   ) : (
@@ -1392,6 +1439,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             initialGrades={participant.grades}
                             initialComment={participant.teacherComment}
                             initialTotalScore={participant.totalScore}
+                            promptRecordings={participant.promptRecordings}
+                            promptAudioUrls={participant.promptAudioUrls}
                             className=""
                           />
                         );
