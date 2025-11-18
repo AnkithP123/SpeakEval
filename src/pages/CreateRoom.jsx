@@ -69,7 +69,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
     let parsedData;
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/teacherpin?pin=${userId}`
+        `https://www.server.speakeval.org/teacherpin?pin=${userId}` //why the fuck do we have this old endpoint lol (it just checks if a pin is valid and this method isnt even ever called)
       );
       parsedData = await res.json();
 
