@@ -17,6 +17,7 @@ import {
   FaSave,
   FaTrash,
   FaEye,
+  FaRedo,
 } from "react-icons/fa";
 import urlCache from "../utils/urlCache";
 
@@ -44,6 +45,8 @@ function ProfileCard({
   initialGrades,
   initialComment,
   initialTotalScore,
+  promptRecordings = null, // Array of {index, audio, transcription} for simulated conversations
+  promptAudioUrls = null, // Array of {index, audioUrl} for prompt audio URLs in simulated conversations
 }) {
   // States used in both modes
   const [fetchedAudio, setFetchedAudio] = useState(false);
@@ -136,6 +139,20 @@ function ProfileCard({
     downloadMode && downloadedData
       ? downloadedData.questionAudioUrl
       : questionAudioUrl;
+  const effectivePromptRecordings =
+    downloadMode && downloadedData
+      ? downloadedData.promptRecordings
+      : promptRecordings;
+  const effectivePromptAudioUrls =
+    downloadMode && downloadedData
+      ? downloadedData.promptAudioUrls
+      : promptAudioUrls;
+  
+  // State for tracking which prompt is playing
+  const [playingPromptIndex, setPlayingPromptIndex] = useState(null);
+  const [promptPlayerStates, setPromptPlayerStates] = useState({}); // {index: {isPlaying, isLoading, manuallyPaused}}
+  const [manuallyPaused, setManuallyPaused] = useState(false); // For regular audio player
+  const [cachedStitchedUrls, setCachedStitchedUrls] = useState({}); // Store stitched URLs for prompts to avoid re-fetching
 
   useEffect(() => {
     if (effectiveName) {
@@ -292,7 +309,154 @@ function ProfileCard({
     return new Blob([buffer], { type: "audio/wav" });
   }
 
+  // Handle playing a specific prompt (for simulated conversations)
+  const handlePlayPrompt = async (promptIndex) => {
+    if (!effectiveName) {
+      return toast.error("Participant has not completed the task");
+    }
+    
+    if (!effectivePromptRecordings || !effectivePromptAudioUrls) {
+      return toast.error("No prompt recordings available");
+    }
+    
+    const promptRecording = effectivePromptRecordings.find(pr => pr.index === promptIndex);
+    const promptAudioUrl = effectivePromptAudioUrls.find(pa => pa.index === promptIndex);
+    
+    if (!promptRecording || !promptAudioUrl) {
+      return toast.error(`Prompt ${promptIndex + 1} not found`);
+    }
+    
+    // Create or get audio player for this prompt
+    const playerId = `promptAudioPlayer-${effectiveName}-${effectiveCode}-${promptIndex}`;
+    let audioPlayer = document.getElementById(playerId);
+    
+    if (!audioPlayer) {
+      audioPlayer = document.createElement("audio");
+      audioPlayer.id = playerId;
+      audioPlayer.style.display = "none";
+      document.body.appendChild(audioPlayer);
+    }
+    
+    // Check if we already have the stitched URL (player already loaded)
+    const currentState = promptPlayerStates[promptIndex];
+    if (audioPlayer.src && currentState?.isPlaying) {
+      // Just pause if already playing
+      await audioPlayer.pause();
+      setPromptPlayerStates(prev => ({
+        ...prev,
+        [promptIndex]: { ...prev[promptIndex], isPlaying: false, isLoading: false, manuallyPaused: true },
+      }));
+      setPlayingPromptIndex(null);
+      return;
+    }
+    
+    // If not loaded or was paused, we need to fetch and set up
+    try {
+      // Update state for this specific prompt
+      setPromptPlayerStates(prev => ({
+        ...prev,
+        [promptIndex]: { ...prev[promptIndex], isLoading: true },
+      }));
+      
+      // Check if we have cached URL
+      let stitchedUrl = cachedStitchedUrls[promptIndex];
+      
+      if (!stitchedUrl) {
+        // Fetch both prompt audio and response audio
+        const [promptAudioResponse, responseAudioResponse] = await Promise.all([
+          fetch(promptAudioUrl.audioUrl),
+          fetch(`https://www.server.speakeval.org/fetch_audio?token=${promptRecording.audio}&index=${promptIndex}`),
+        ]);
+        
+        if (!promptAudioResponse.ok || !responseAudioResponse.ok) {
+          throw new Error("Failed to fetch audio");
+        }
+        
+        const responseData = await responseAudioResponse.json();
+        if (!responseData.audioUrl) {
+          throw new Error("No audio URL received");
+        }
+        
+        // Get audio blobs
+        const promptBlob = await promptAudioResponse.blob();
+        const responseBlob = await fetch(responseData.audioUrl).then(r => r.blob());
+        
+        // Stitch together: prompt audio + response audio
+        const stitchedBlob = new Blob([promptBlob, responseBlob], { type: "video/mp4" });
+        stitchedUrl = URL.createObjectURL(stitchedBlob);
+        
+        // Cache the URL
+        setCachedStitchedUrls(prev => ({
+          ...prev,
+          [promptIndex]: stitchedUrl,
+        }));
+      }
+      
+      audioPlayer.src = stitchedUrl;
+      
+      // Stop any other playing prompt
+      if (playingPromptIndex !== null && playingPromptIndex !== promptIndex) {
+        const otherPlayer = document.getElementById(`promptAudioPlayer-${effectiveName}-${effectiveCode}-${playingPromptIndex}`);
+        if (otherPlayer) {
+          otherPlayer.pause();
+        }
+        setPromptPlayerStates(prev => ({
+          ...prev,
+          [playingPromptIndex]: { ...prev[playingPromptIndex], isPlaying: false },
+        }));
+      }
+      
+      // Resume from where we left off (currentTime stays where it was if manually paused)
+      await audioPlayer.play();
+      setPromptPlayerStates(prev => ({
+        ...prev,
+        [promptIndex]: { isPlaying: true, isLoading: false, manuallyPaused: false },
+      }));
+      setPlayingPromptIndex(promptIndex);
+      
+      audioPlayer.addEventListener("ended", () => {
+        setPromptPlayerStates(prev => ({
+          ...prev,
+          [promptIndex]: { ...prev[promptIndex], isPlaying: false, manuallyPaused: false },
+        }));
+        setPlayingPromptIndex(null);
+      }, { once: true });
+      
+      setError(false);
+    } catch (error) {
+      console.error("Error playing prompt audio:", error);
+      toast.error("Error playing prompt audio");
+      setPromptPlayerStates(prev => ({
+        ...prev,
+        [promptIndex]: { ...prev[promptIndex], isLoading: false, isPlaying: false },
+      }));
+    }
+  };
+  
+  // Restart a specific prompt
+  const handleRestartPrompt = async (promptIndex) => {
+    const playerId = `promptAudioPlayer-${effectiveName}-${effectiveCode}-${promptIndex}`;
+    const audioPlayer = document.getElementById(playerId);
+    
+    if (audioPlayer) {
+      audioPlayer.currentTime = 0;
+      await audioPlayer.play();
+      setPromptPlayerStates(prev => ({
+        ...prev,
+        [promptIndex]: { ...prev[promptIndex], isPlaying: true, manuallyPaused: false },
+      }));
+      setPlayingPromptIndex(promptIndex);
+    }
+  };
+
   const handlePlay = async () => {
+    // For simulated conversations with prompt recordings, use the prompt play handler
+    if (effectivePromptRecordings && effectivePromptRecordings.length > 0) {
+      // Play first prompt by default
+      handlePlayPrompt(effectivePromptRecordings[0].index);
+      return;
+    }
+    
     if (!effectiveName)
       return toast.error("Participant has not completed the task");
     if (effectiveText === "" && !downloadMode) {
@@ -307,13 +471,17 @@ function ProfileCard({
         if (isPlaying) {
           await answerAudioPlayer.pause();
           setIsPlaying(false);
+          setManuallyPaused(true);
         } else {
+          // Resume from where we left off (currentTime stays where it was)
           await answerAudioPlayer.play();
           setIsLoading(false);
           setIsPlaying(true);
+          setManuallyPaused(false);
           answerAudioPlayer.addEventListener("ended", () => {
             setIsPlaying(false);
-          });
+            setManuallyPaused(false);
+          }, { once: true });
         }
       } else {
         await fetchAudio();
@@ -326,6 +494,23 @@ function ProfileCard({
       setError(true);
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Restart regular audio playback
+  const handleRestart = async () => {
+    const answerAudioPlayer = document.getElementById(
+      `answerAudioPlayer-${effectiveName}-${effectiveCode}`
+    );
+    if (answerAudioPlayer && answerAudioPlayer.src) {
+      answerAudioPlayer.currentTime = 0;
+      await answerAudioPlayer.play();
+      setIsPlaying(true);
+      setManuallyPaused(false);
+      answerAudioPlayer.addEventListener("ended", () => {
+        setIsPlaying(false);
+        setManuallyPaused(false);
+      }, { once: true });
     }
   };
 
@@ -711,6 +896,85 @@ Teacher's Comment: ${comment}`
     setRecordedAudioBlob(null);
   };
 
+  // Create a black screen video blob of a given duration
+  // For now, we'll create a minimal video blob - actual video stitching with black screen
+  // would require more complex video processing. This is a placeholder that creates
+  // a simple blob that can be combined with the response video.
+  const createBlackScreenVideo = async (durationMs) => {
+    // Create a canvas to generate black frame
+    const canvas = document.createElement("canvas");
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Capture canvas as video stream
+    const canvasStream = canvas.captureStream(10);
+    const videoTrack = canvasStream.getVideoTracks()[0];
+    
+    // Create a silent audio context for audio track
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    gainNode.gain.value = 0; // Silent
+    
+    const mediaStreamDestination = audioContext.createMediaStreamDestination();
+    oscillator.connect(mediaStreamDestination);
+    oscillator.start();
+    
+    const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
+    const combinedStream = new MediaStream([videoTrack, audioTrack]);
+    
+    const recorder = new MediaRecorder(combinedStream, {
+      mimeType: "video/webm;codecs=vp9,opus",
+    });
+    
+    return new Promise((resolve, reject) => {
+      const chunks = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+      recorder.onstop = () => {
+        videoTrack.stop();
+        audioTrack.stop();
+        oscillator.stop();
+        audioContext.close();
+        const blob = new Blob(chunks, { type: "video/webm" });
+        resolve(blob);
+      };
+      recorder.onerror = (e) => {
+        reject(new Error("MediaRecorder error"));
+      };
+      
+      recorder.start();
+      setTimeout(() => {
+        if (recorder.state === "recording") {
+          recorder.stop();
+        }
+      }, durationMs);
+    });
+  };
+
+  // Get audio duration from blob
+  const getAudioDuration = async (audioBlob) => {
+    return new Promise((resolve, reject) => {
+      const audio = new Audio();
+      const url = URL.createObjectURL(audioBlob);
+      audio.src = url;
+      audio.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        resolve(audio.duration * 1000); // Return in milliseconds
+      };
+      audio.onerror = reject;
+    });
+  };
+
   const handleViewVideo = async () => {
     if (!effectiveName)
       return toast.error("Participant has not completed the task");
@@ -719,30 +983,88 @@ Teacher's Comment: ${comment}`
     setShowVideoModal(true);
     
     try {
-      let videoUrl;
-      
-      // Check if we already have a presigned URL
-      if (effectiveAudio && effectiveAudio.startsWith("http")) {
-        videoUrl = effectiveAudio;
+      // For simulated conversations, stitch all prompt+response segments together
+      if (effectivePromptRecordings && effectivePromptRecordings.length > 0 && effectivePromptAudioUrls) {
+        const videoSegments = [];
+        
+        // Process each prompt+response pair
+        for (const promptRecording of effectivePromptRecordings) {
+          const promptIndex = promptRecording.index;
+          const promptAudioUrl = effectivePromptAudioUrls.find(pa => pa.index === promptIndex);
+          
+          if (!promptAudioUrl) continue;
+          
+          try {
+            // Fetch prompt audio and response video
+            const [promptAudioResponse, responseResponse] = await Promise.all([
+              fetch(promptAudioUrl.audioUrl),
+              fetch(`https://www.server.speakeval.org/fetch_audio?token=${promptRecording.audio}&index=${promptIndex}`),
+            ]);
+            
+            if (!promptAudioResponse.ok || !responseResponse.ok) {
+              console.warn(`Failed to fetch prompt ${promptIndex + 1} or response`);
+              continue;
+            }
+            
+            const responseData = await responseResponse.json();
+            if (!responseData.audioUrl) {
+              console.warn(`No audio URL for response ${promptIndex + 1}`);
+              continue;
+            }
+            
+            // Get blobs
+            const promptAudioBlob = await promptAudioResponse.blob();
+            const responseVideoBlob = await fetch(responseData.audioUrl).then(r => r.blob());
+            
+            // Get prompt audio duration to create black screen video
+            const promptDuration = await getAudioDuration(promptAudioBlob);
+            
+            // Create black screen video for prompt duration
+            const blackScreenVideo = await createBlackScreenVideo(promptDuration);
+            
+            // Add segments in order: black screen (prompt) + response video
+            videoSegments.push(blackScreenVideo);
+            videoSegments.push(responseVideoBlob);
+          } catch (error) {
+            console.error(`Error processing prompt ${promptIndex + 1}:`, error);
+          }
+        }
+        
+        if (videoSegments.length === 0) {
+          throw new Error("No video segments to combine");
+        }
+        
+        // Stitch all segments together
+        const stitchedBlob = new Blob(videoSegments, { type: "video/webm" });
+        const videoUrl = URL.createObjectURL(stitchedBlob);
+        setVideoUrl(videoUrl);
       } else {
-        // Fetch the video URL from the server
-        const response = await fetch(
-          `https://www.server.speakeval.org/fetch_audio?token=${audio}`
-        );
-        const data = await response.json();
+        // Regular single recording - fetch normally
+        let videoUrl;
         
-        if (!response.ok) {
-          throw new Error("Failed to fetch video: " + data.error);
-        }
-        
-        if (data.audioUrl) {
-          videoUrl = data.audioUrl;
+        // Check if we already have a presigned URL
+        if (effectiveAudio && effectiveAudio.startsWith("http")) {
+          videoUrl = effectiveAudio;
         } else {
-          throw new Error("No video URL received");
+          // Fetch the video URL from the server
+          const response = await fetch(
+            `https://www.server.speakeval.org/fetch_audio?token=${audio}`
+          );
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error("Failed to fetch video: " + data.error);
+          }
+          
+          if (data.audioUrl) {
+            videoUrl = data.audioUrl;
+          } else {
+            throw new Error("No video URL received");
+          }
         }
+        
+        setVideoUrl(videoUrl);
       }
-      
-      setVideoUrl(videoUrl);
     } catch (error) {
       console.error("Error fetching video:", error);
       toast.error("Error loading video");
@@ -876,15 +1198,6 @@ Teacher's Comment: ${comment}`
                 </div>
               </div>
 
-              {/* View Infractions button */}
-              <div className="absolute top-20 right-6 z-10">
-                <button
-                  onClick={() => onShowInfractionsModal({ cheatingData, name })}
-                  className="ml-2 px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs rounded-md shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 flex items-center"
-                >
-                  <FaInfoCircle className="mr-1.5" /> View Infractions
-                </button>
-              </div>
             </>
           )}
           <div className="flex items-center w-full mb-4">
@@ -897,39 +1210,34 @@ Teacher's Comment: ${comment}`
             >
               {effectiveCustomName || effectiveName}
             </span>
-            <div className="flex gap-2 ml-auto">
-            {!downloadMode && (
-              (<button
-                className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md shadow-indigo-500/50"
-                onClick={handleViewVideo}
-                title="View Video"
-              >
-                <FaEye />
-              </button>))}
-              <button
-                className="p-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-full hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-md shadow-blue-500/50"
-                onClick={handleDownload}
-              >
-                <FaDownload />
-              </button>
-              <button
-                className={`p-2 ${
-                  error
-                    ? "bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 shake"
-                    : "bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
-                } text-white rounded-full transition-all duration-300 shadow-md shadow-green-500/50`}
-                onClick={handlePlay}
-              >
-                {isLoading ? (
-                  <FaSpinner className="animate-spin" />
-                ) : isPlaying ? (
-                  <FaPause />
-                ) : (
-                  <FaPlay />
+            <div className="flex flex-col items-end gap-2 ml-auto">
+              <div className="flex gap-2">
+                <button
+                  className={`p-2 ${
+                    error
+                      ? "bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 shake"
+                      : "bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+                  } text-white rounded-full transition-all duration-300 shadow-md shadow-green-500/50`}
+                  onClick={handlePlay}
+                >
+                  {isLoading ? (
+                    <FaSpinner className="animate-spin" />
+                  ) : isPlaying ? (
+                    <FaPause />
+                  ) : (
+                    <FaPlay />
+                  )}
+                </button>
+                {!isPlaying && manuallyPaused && (
+                  <button
+                    className="p-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-full transition-all duration-300 shadow-md shadow-gray-500/50"
+                    onClick={handleRestart}
+                    title="Restart"
+                  >
+                    <FaRedo />
+                  </button>
                 )}
-              </button>
-              {!downloadMode && (
-                <>
+                {!downloadMode && (
                   <button
                     className={`p-2 ${
                       isGrading 
@@ -945,6 +1253,25 @@ Teacher's Comment: ${comment}`
                       <FaRobot />
                     )}
                   </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {!downloadMode && (
+                  <button
+                    className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md shadow-indigo-500/50"
+                    onClick={handleViewVideo}
+                    title="View Video"
+                  >
+                    <FaEye />
+                  </button>
+                )}
+                <button
+                  className="p-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-full hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-md shadow-blue-500/50"
+                  onClick={handleDownload}
+                >
+                  <FaDownload />
+                </button>
+                {!downloadMode && (
                   <button
                     className={
                       info.email
@@ -962,8 +1289,8 @@ Teacher's Comment: ${comment}`
                       </span>
                     )}
                   </button>
-                </>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
@@ -979,18 +1306,80 @@ Teacher's Comment: ${comment}`
           <div className="mt-4"></div>
 
           <div className="w-full space-y-4">
-            <div className="p-3 bg-gray-800 rounded-lg shadow-inner">
-              <h3 className="text-lg font-semibold text-cyan-300 mb-2">
-                Question:
-              </h3>
-              <p className="text-gray-300 break-words">{effectiveQuestion}</p>
-            </div>
-            <div className="p-3 bg-gray-800 rounded-lg shadow-inner">
-              <h3 className="text-lg font-semibold text-cyan-300 mb-2">
-                Answer:
-              </h3>
-              <p className="text-gray-300 break-words">{effectiveText}</p>
-            </div>
+            {/* Only show Question field if NOT a simulated conversation */}
+            {!(effectivePromptRecordings && effectivePromptRecordings.length > 0) && (
+              <div className="p-3 bg-gray-800 rounded-lg shadow-inner">
+                <h3 className="text-lg font-semibold text-cyan-300 mb-2">
+                  Question:
+                </h3>
+                <p className="text-gray-300 break-words">{effectiveQuestion}</p>
+              </div>
+            )}
+            {/* Show prompt play buttons for simulated conversations, or Answer transcription for regular */}
+            {effectivePromptRecordings && effectivePromptRecordings.length > 0 ? (
+              <div className="p-3 bg-gray-800 rounded-lg shadow-inner">
+                <h3 className="text-lg font-semibold text-cyan-300 mb-2">
+                  Prompts:
+                </h3>
+                <div className="flex flex-col gap-3">
+                  {effectivePromptRecordings.map((promptRecording, idx) => {
+                    const promptNum = promptRecording.index + 1;
+                    const playerState = promptPlayerStates[promptRecording.index] || { isPlaying: false, isLoading: false, manuallyPaused: false };
+                    
+                    return (
+                      <div key={promptRecording.index} className="flex items-center gap-3">
+                        <button
+                          className={`flex items-center justify-center px-4 py-2 rounded-lg transition-all duration-300 ${
+                            playerState.isPlaying
+                              ? "bg-red-600 hover:bg-red-700 text-white"
+                              : "bg-blue-600 hover:bg-blue-700 text-white"
+                          } ${playerState.isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                          onClick={() => handlePlayPrompt(promptRecording.index)}
+                          disabled={playerState.isLoading}
+                        >
+                          {playerState.isLoading ? (
+                            <FaSpinner className="animate-spin mr-2" />
+                          ) : playerState.isPlaying ? (
+                            <FaPause className="mr-2" />
+                          ) : (
+                            <FaPlay className="mr-2" />
+                          )}
+                          Prompt {promptNum}
+                        </button>
+                        {!playerState.isPlaying && playerState.manuallyPaused && (
+                          <button
+                            className="p-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-full transition-all duration-300 shadow-md shadow-gray-500/50"
+                            onClick={() => handleRestartPrompt(promptRecording.index)}
+                            title="Restart"
+                          >
+                            <FaRedo />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-gray-800 rounded-lg shadow-inner">
+                <h3 className="text-lg font-semibold text-cyan-300 mb-2">
+                  Answer:
+                </h3>
+                <p className="text-gray-300 break-words">{effectiveText}</p>
+              </div>
+            )}
+            
+            {/* View Infractions button - moved down below prompts/answer */}
+            {hasCheated && !downloadMode && (
+              <div className="mt-4">
+                <button
+                  onClick={() => onShowInfractionsModal({ cheatingData, name })}
+                  className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm rounded-md shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 flex items-center"
+                >
+                  <FaInfoCircle className="mr-1.5" /> View Infractions
+                </button>
+              </div>
+            )}
           </div>
 
           {!downloadMode && (
