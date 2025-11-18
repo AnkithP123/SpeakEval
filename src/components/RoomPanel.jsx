@@ -34,7 +34,7 @@ function RoomPanel({ roomCode, userId, config, setRoomCodes }) {
   const [studentUuid, setStudentUuid] = useState("");
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
   const [isLoadingNewQuestion, setIsLoadingNewQuestion] = useState(false);
-  const [questionsGiven, setQuestionsGiven] = useState(0);
+  const [questionsGiven, setQuestionsGiven] = useState(1);
   const navigate = useNavigate();
   const displayNameInputRef = useRef(null);
 
