@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cuteAlert } from "cute-alert";
 import { toast } from "react-toastify";
+import { useAuth } from "../contexts/AuthContext";
 
 let username;
 
@@ -12,35 +13,9 @@ const setUserName = (val) => {
   console.log("New Username!", username);
 };
 
-const storedUsername = localStorage.getItem("username");
-const storedToken = localStorage.getItem("token");
-const checkTokenExpiry = async () => {
-  if (storedToken) {
-    let tokenExpired = await fetch(
-      "https://www.server.speakeval.org/expired-token?token=" + storedToken
-    );
-    let tokenExpiredJson = await tokenExpired.json();
-    if (tokenExpiredJson.expired) {
-      localStorage.removeItem("username");
-      localStorage.removeItem("token");
-      setUserName(null);
-      setPin(null);
-      toast.error("Session expired. Please log in again.");
-      window.location.href = "/login";
-    } else {
-      setUserName(tokenExpiredJson.decoded.username);
-      localStorage.setItem("username", tokenExpiredJson.decoded.username);
-    }
-  } else if (!storedToken) {
-    localStorage.removeItem("username");
-    setUserName(null);
-  } else if (storedUsername) {
-    setUserName(storedUsername);
-    console.log("Username:", storedUsername);
-  }
-};
-
-checkTokenExpiry();
+// Token verification is now handled by AuthContext
+// Removed module-level checkTokenExpiry() call to prevent race conditions
+// AuthContext handles token verification on app initialization
 
 let pin = null;
 
@@ -88,16 +63,17 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
     setName(username);
   }, [username]);
 
+  const { token, username: authUsername } = useAuth();
+  
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
-    if (storedUsername) {
-      setUserName(storedUsername);
+    if (storedUsername || authUsername) {
+      setUserName(storedUsername || authUsername);
     }
-    const storedPin = localStorage.getItem("token");
-    if (storedPin) {
-      setPin(storedPin);
+    if (token) {
+      setPin(token);
     }
-  }, []);
+  }, [token, authUsername]);
 
   const handleLogin = () => {
     navigate("/login");

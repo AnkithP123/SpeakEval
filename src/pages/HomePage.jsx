@@ -3,13 +3,15 @@ import Hero from "../components/Hero";
 import TeacherView from "../components/TeacherView";
 import StudentView from "../components/StudentView";
 import { cuteAlert } from "cute-alert";
+import { useAuth } from "../contexts/AuthContext";
 
 function HomePage({ maintenance }) {
+  const { token } = useAuth();
   const [currentView, setCurrentView] = useState("teacher"); // 'teacher' or 'student'
 
   // Check if user is authenticated and determine their role
   useEffect(() => {
-    const token = localStorage.getItem("token") || localStorage.getItem("classroom_token");
+    const effectiveToken = token || localStorage.getItem("classroom_token");
     const classroomUser = JSON.parse(localStorage.getItem("classroom_user") || '{}');
 
     const decodeJwt = (jwt) => {
@@ -29,8 +31,8 @@ function HomePage({ maintenance }) {
     };
 
     let userType = null;
-    if (token) {
-      const decoded = decodeJwt(token);
+    if (effectiveToken) {
+      const decoded = decodeJwt(effectiveToken);
       userType = decoded?.userType || decoded?.role || null;
     }
     if (!userType && classroomUser && classroomUser.userType) {
@@ -45,7 +47,7 @@ function HomePage({ maintenance }) {
       // Default to student view when unknown
       setCurrentView('student');
     }
-  }, []);
+  }, [token]);
 
   return (
     <div style={{ fontFamily: "Montserrat" }}>

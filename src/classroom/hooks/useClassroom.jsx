@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ClassroomContext = createContext();
 
@@ -25,9 +26,11 @@ export const ClassroomProvider = ({ children }) => {
   };
 
   // Helper function to get auth headers
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+  // Note: This is used in a context provider, so we can't use useAuth hook here
+  // We'll get the token from the component that uses this hook
+  const getAuthHeaders = (token) => {
+    const effectiveToken = token || localStorage.getItem('token') || localStorage.getItem('classroom_token');
+    return effectiveToken ? { Authorization: `Bearer ${effectiveToken}` } : {};
   };
 
   // Fetch all classes for current user
@@ -50,7 +53,13 @@ export const ClassroomProvider = ({ children }) => {
         }
       };
 
-      const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
+      // Try to get token from AuthContext via window (if available) or fallback to localStorage
+      const getToken = () => {
+        // AuthContext token is stored in cookies/localStorage, so we check localStorage first
+        // This maintains compatibility while using AuthContext
+        return localStorage.getItem('token') || localStorage.getItem('classroom_token');
+      };
+      const token = getToken();
       const decoded = token ? decodeJwt(token) : null;
       const classroomUser = JSON.parse(localStorage.getItem('classroom_user') || '{}');
 
@@ -88,7 +97,8 @@ export const ClassroomProvider = ({ children }) => {
     setError(null);
     
     try {
-      const teacherToken = localStorage.getItem('token');
+      // Get token from AuthContext (via localStorage/cookies) or fallback
+      const teacherToken = localStorage.getItem('token') || localStorage.getItem('classroom_token');
       const teacherUsername = localStorage.getItem('username');
       const classroomUser = JSON.parse(localStorage.getItem('classroom_user') || '{}');
       
@@ -366,7 +376,8 @@ export const ClassroomProvider = ({ children }) => {
   // Get available question sets (configs)
   const fetchConfigs = async () => {
     try {
-      const teacherToken = localStorage.getItem('token');
+      // Get token from AuthContext (via localStorage/cookies) or fallback
+      const teacherToken = localStorage.getItem('token') || localStorage.getItem('classroom_token');
       if (!teacherToken) {
         throw new Error('No authentication token found');
       }

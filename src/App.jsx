@@ -40,6 +40,7 @@ import PracticeExams from "./pages/PracticeExams";
 import PracticeExamSubmissions from "./pages/PracticeExamSubmissions";
 import PracticeExamResponses from "./pages/PracticeExamResponses";
 import ClassroomApp from "./classroom/ClassroomApp";
+import { AuthProvider } from "./contexts/AuthContext";
 
 function AudioRecorderRouteWrapper() {
   // AudioRecorder now uses token system from localStorage
@@ -198,20 +199,22 @@ function App() {
   );
 
   return (
-    <RouterProvider
-      router={
-        maintenance
-          ? createBrowserRouter(
-              createRoutesFromElements(
-                <Route element={null} errorElement={<ErrorPage />}>
-                  <Route path="/" element={<HomePage maintenance={true} />} />
-                  <Route path="/*" element={<MaintenancePage />} />
-                </Route>
+    <AuthProvider>
+      <RouterProvider
+        router={
+          maintenance
+            ? createBrowserRouter(
+                createRoutesFromElements(
+                  <Route element={null} errorElement={<ErrorPage />}>
+                    <Route path="/" element={<HomePage maintenance={true} />} />
+                    <Route path="/*" element={<MaintenancePage />} />
+                  </Route>
+                )
               )
-            )
-          : route
-      }
-    />
+            : route
+        }
+      />
+    </AuthProvider>
   );
 }
 

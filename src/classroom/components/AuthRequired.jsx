@@ -1,51 +1,41 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
+/**
+ * Updated AuthRequired component using centralized AuthContext
+ * 
+ * Industry standard approach:
+ * - Uses centralized auth state (no race conditions)
+ * - Shows loading state while auth is being verified
+ * - Only redirects after auth check is complete
+ */
 const AuthRequired = ({ children }) => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check if user is authenticated (either as student or teacher)
-    const teacherToken = localStorage.getItem('token');
-    const teacherUsername = localStorage.getItem('username');
-    const classroomUser = localStorage.getItem('classroom_user');
-    
-    // Check teacher authentication
-    if (teacherToken && teacherUsername) {
-      // Teacher is authenticated - allow access
-      return;
-    }
-    
-    // Check classroom authentication (both teachers and students)
-    if (classroomUser) {
-      try {
-        const user = JSON.parse(classroomUser);
-        if (user.isAuthenticated && (user.userType === 'student' || user.userType === 'teacher')) {
-          // User is authenticated - allow access
-          return;
-        }
-      } catch (error) {
-        // Invalid JSON - redirect to login
-        navigate('/classroom/login');
-        return;
-      }
-    }
-    
-    // No valid authentication found - redirect to login
-    navigate('/classroom/login');
-  }, [navigate]);
-
-  // Check authentication on render
-  const teacherToken = localStorage.getItem('token');
-  const teacherUsername = localStorage.getItem('username');
-  const classroomUser = localStorage.getItem('classroom_user');
+  const { isAuthenticated, isLoading } = useAuth();
   
-  // Check teacher authentication
-  if (teacherToken && teacherUsername) {
+  // Also check classroom_user for classroom-specific auth
+  const classroomUser = typeof window !== 'undefined' 
+    ? localStorage.getItem('classroom_user') 
+    : null;
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mb-4"></div>
+          <p className="text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check teacher authentication via AuthContext
+  if (isAuthenticated) {
     return children;
   }
-  
-  // Check classroom authentication (both teachers and students)
+
+  // Check classroom authentication (for students/teachers in classroom)
   if (classroomUser) {
     try {
       const user = JSON.parse(classroomUser);
@@ -53,13 +43,13 @@ const AuthRequired = ({ children }) => {
         return children;
       }
     } catch (error) {
-      // Invalid JSON - don't render
-      return null;
+      // Invalid JSON - redirect to login
+      return <Navigate to="/classroom/login" replace />;
     }
   }
-  
-  // No valid authentication - don't render (will redirect in useEffect)
-  return null;
+
+  // No valid authentication - redirect to login
+  return <Navigate to="/classroom/login" replace />;
 };
 
 export default AuthRequired;

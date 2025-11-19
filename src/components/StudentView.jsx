@@ -6,8 +6,10 @@ import {
   FaArrowRight,
   FaArrowLeft,
 } from "react-icons/fa";
+import { useAuth } from "../contexts/AuthContext";
 
 const StudentView = ({ onSwitchToTeacher }) => {
+  const { token: authToken } = useAuth();
   const decodeJwt = (jwt) => {
     try {
       const payload = jwt.split(".")[1];
@@ -25,7 +27,7 @@ const StudentView = ({ onSwitchToTeacher }) => {
 
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("classroom_token")
+      ? authToken || localStorage.getItem("classroom_token")
       : null;
   const classroomUser =
     typeof window !== "undefined"

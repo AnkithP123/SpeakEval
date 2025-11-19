@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useClassroom } from '../hooks/useClassroom.jsx';
 import { useToast } from '../hooks/useToast.jsx';
+import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
 import { FaPlus, FaUsers, FaGraduationCap, FaChalkboardTeacher, FaUserGraduate, FaClipboardList, FaFire, FaArrowRight, FaCalendarAlt, FaBell } from 'react-icons/fa';
 
 const Dashboard = () => {
+  const { token: authToken } = useAuth();
   const { classes, loading, error, fetchClasses } = useClassroom();
   const { showError } = useToast();
   const location = useLocation();
@@ -29,7 +31,7 @@ const Dashboard = () => {
           }
         };
 
-        const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
+        const token = authToken || localStorage.getItem('classroom_token');
         const decoded = token ? decodeJwt(token) : null;
         const classroomUserStr = localStorage.getItem('classroom_user');
         const classroomUser = classroomUserStr ? JSON.parse(classroomUserStr) : null;

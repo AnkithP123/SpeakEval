@@ -5,16 +5,22 @@ import { useParams } from "react-router-dom";
 import ProfileCard from "../components/StatsCard";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
+import { useAuth } from "../contexts/AuthContext";
 import {
   FaArrowUp,
   FaArrowDown,
   FaEnvelope,
   FaSpinner,
   FaExclamationTriangle,
+  FaPlay,
+  FaPause,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa";
 import urlCache from "../utils/urlCache";
 
 function TeacherPortalRoom({ initialRoomCode, pin }) {
+  const { token } = useAuth();
   const { roomCode: paramRoomCode } = useParams();
   const [roomCode, setRoomCode] = useState(initialRoomCode || paramRoomCode);
   const [participants, setParticipants] = useState([]);
@@ -81,6 +87,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
   });
   const [showInfractionsModal, setShowInfractionsModal] = useState(false);
   const [cheatingData, setCheatingData] = useState({});
+  const [promptQuestions, setPromptQuestions] = useState([]); // Store questions for prompts
+  const [playingPromptIndex, setPlayingPromptIndex] = useState(null); // Track which prompt is playing
+  const [promptsExpanded, setPromptsExpanded] = useState(false); // Track if prompts section is expanded
 
   useEffect(() => {
     localStorage.setItem("descriptions", JSON.stringify(descriptions));
@@ -114,6 +123,40 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       organizeParticipantsFromCompleteStore();
     }
   }, [COMPLETE_DATA_STORE, showByPerson, roomCode]);
+
+  // Fetch questions for simulated conversations
+  useEffect(() => {
+    const fetchPromptQuestions = async () => {
+      if (!info?.config || !COMPLETE_DATA_STORE.isFullyLoaded) {
+        setPromptQuestions([]);
+        return;
+      }
+      
+      const currentQuestion = participants.find(q => q.questionCode === roomCode);
+      const isSimulatedConversation = currentQuestion?.participants?.some(
+        p => p?.promptRecordings && p.promptRecordings.length > 0
+      );
+      
+      if (isSimulatedConversation) {
+        try {
+          const response = await fetch(
+            `https://www.server.speakeval.org/getconfig?name=${info.config}&pin=${token}`
+          );
+          const configData = await response.json();
+          if (configData.questions) {
+            setPromptQuestions(configData.questions);
+          }
+        } catch (error) {
+          console.error("Error fetching prompt questions:", error);
+          setPromptQuestions([]);
+        }
+      } else {
+        setPromptQuestions([]);
+      }
+    };
+    
+    fetchPromptQuestions();
+  }, [info, participants, roomCode, COMPLETE_DATA_STORE.isFullyLoaded]);
 
   useEffect(() => {
     if (showBulkEmailModal || showSingleEmailModal) {
@@ -879,7 +922,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             includeResponseLink,
             includeVoice,
             subject: emailSubject,
-            pin: localStorage.getItem("token"),
+            pin: token,
           }),
         }
       );
@@ -1007,7 +1050,7 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         code: singleEmailData.code,
         participant: singleEmailData.studentName,
         subject: singleEmailData.emailSubject,
-        pin: localStorage.getItem("token"),
+        pin: token,
       });
       queryParams.append("link", singleEmailData.includeResponseLink);
       if (!singleEmailData.voiceCommentAudio) {
@@ -1258,19 +1301,96 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                 );
                 
                 if (firstParticipant?.promptAudioUrls && firstParticipant.promptAudioUrls.length > 0) {
+                  const handlePlayPrompt = async (promptIndex, audioUrl) => {
+                    const playerId = `promptPlayer-${promptIndex}`;
+                    let audioPlayer = document.getElementById(playerId);
+                    
+                    if (!audioPlayer) {
+                      audioPlayer = document.createElement("audio");
+                      audioPlayer.id = playerId;
+                      audioPlayer.style.display = "none";
+                      document.body.appendChild(audioPlayer);
+                    }
+                    
+                    // Check if this prompt is currently playing
+                    if (playingPromptIndex === promptIndex) {
+                      const currentPlayer = document.getElementById(`promptPlayer-${promptIndex}`);
+                      if (currentPlayer && !currentPlayer.paused) {
+                        // Pause if playing
+                        currentPlayer.pause();
+                        setPlayingPromptIndex(null);
+                        return;
+                      }
+                    }
+                    
+                    // Stop other players
+                    if (playingPromptIndex !== null) {
+                      const otherPlayer = document.getElementById(`promptPlayer-${playingPromptIndex}`);
+                      if (otherPlayer) {
+                        otherPlayer.pause();
+                      }
+                    }
+                    
+                    audioPlayer.src = audioUrl;
+                    await audioPlayer.play();
+                    setPlayingPromptIndex(promptIndex);
+                    
+                    audioPlayer.addEventListener("ended", () => {
+                      setPlayingPromptIndex(null);
+                    }, { once: true });
+                  };
+                  
                   return (
-                    <div className="mt-6">
-                      <h2 className="text-2xl font-semibold text-white mb-4">Prompts ({firstParticipant.promptAudioUrls.length})</h2>
-                      <div className="flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
-                        {firstParticipant.promptAudioUrls.map((promptAudio, idx) => (
-                          <div
-                            key={promptAudio.index}
-                            className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300"
-                          >
-                            Prompt {idx + 1}
-                          </div>
-                        ))}
-                      </div>
+                    <div className="mt-6 max-w-5xl mx-auto">
+                      <button
+                        onClick={() => setPromptsExpanded(!promptsExpanded)}
+                        className="w-full flex items-center justify-between bg-gray-800/60 rounded-lg p-4 border border-cyan-500/30 shadow-lg hover:bg-gray-800/80 transition-all duration-300"
+                      >
+                        <h2 className="text-2xl font-semibold text-white">
+                          Prompts ({firstParticipant.promptAudioUrls.length})
+                        </h2>
+                        {promptsExpanded ? (
+                          <FaChevronUp className="text-cyan-400 text-xl" />
+                        ) : (
+                          <FaChevronDown className="text-cyan-400 text-xl" />
+                        )}
+                      </button>
+                      {promptsExpanded && (
+                        <div className="mt-4 space-y-4">
+                          {firstParticipant.promptAudioUrls.map((promptAudio, idx) => {
+                            const question = promptQuestions[promptAudio.index];
+                            const isPlaying = playingPromptIndex === promptAudio.index;
+                            
+                            return (
+                              <div
+                                key={promptAudio.index}
+                                className="bg-gray-800/60 rounded-lg p-4 border border-cyan-500/30 shadow-lg"
+                              >
+                                <div className="flex items-start gap-4">
+                                  <button
+                                    onClick={() => handlePlayPrompt(promptAudio.index, promptAudio.audioUrl)}
+                                    className={`p-3 rounded-full transition-all duration-300 flex-shrink-0 ${
+                                      isPlaying
+                                        ? "bg-red-600 hover:bg-red-700 text-white"
+                                        : "bg-cyan-600 hover:bg-cyan-700 text-white"
+                                    }`}
+                                  >
+                                    {isPlaying ? <FaPause /> : <FaPlay />}
+                                  </button>
+                                  <div className="flex-1">
+                                    <h3 className="text-lg font-semibold text-cyan-300 mb-2">
+                                      Prompt {idx + 1}
+                                    </h3>
+                                    <p className="text-gray-300 break-words">
+                                      {question?.transcription || "Loading transcription..."}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 }

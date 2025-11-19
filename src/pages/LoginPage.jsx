@@ -10,9 +10,11 @@ import {
   GoogleLogin,
   GoogleOAuthProvider,
 } from "@react-oauth/google";
+import { useAuth } from "../contexts/AuthContext";
 import "./auth.css";
 
 function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
+  const { setToken: setAuthToken, setUsername: setAuthUsername, token, isAuthenticated, isLoading: authLoading } = useAuth();
   const [usernameInput, setUsernameInput] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,36 +31,14 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
   const redirect = searchParams.get("redirect");
 
   useEffect(() => {
-    const checkToken = async () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const response = await fetch(
-            "https://www.server.speakeval.org/expired-token?token=" + token
-          );
-          const tokenExpiredJson = await response.json();
+    // Wait for auth to finish loading
+    if (authLoading) return;
 
-          if (tokenExpiredJson.expired) {
-            localStorage.removeItem("token");
-            localStorage.removeItem("username");
-            toast.error("Your session has expired. Please log in again.");
-            navigate("/login");
-          } else {
-            setUsername(tokenExpiredJson.decoded.username);
-            navigate(redirect || "/");
-          }
-        } catch (error) {
-          console.error("Token check failed:", error);
-          localStorage.removeItem("token");
-          localStorage.removeItem("username");
-        }
-      } else {
-        localStorage.removeItem("username");
-      }
-    };
-
-    checkToken();
-  }, [navigate, redirect, setUsername]);
+    // If authenticated, redirect to intended page
+    if (isAuthenticated && token) {
+      navigate(redirect || "/");
+    }
+  }, [navigate, redirect, isAuthenticated, authLoading, token]);
 
   const handleGoogleFailure = (response) => {
     toast.error("Google sign-in failed. Please try again.");
@@ -181,9 +161,11 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
       
       console.log("Login successful:", data);
       if (data.token) {
-        // Store authentication data
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("username", data.username);
+        // Use AuthContext to set token (handles cookies and localStorage)
+        setAuthToken(data.token);
+        setAuthUsername(data.username);
+        
+        // Also set for backward compatibility
         setUsername(data.username);
         setPin(data.token);
         
@@ -204,7 +186,6 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
             userType: 'student',
             isAuthenticated: true
           }));
-          localStorage.setItem("token", data.token);
           navigate("/classroom");
         } else {
           // Teacher - go to main site

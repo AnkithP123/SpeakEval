@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { FaEye, FaUsers, FaCheckCircle, FaClock, FaPlay, FaCog } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Card from "../components/Card";
+import { useAuth } from "../contexts/AuthContext";
 
 const PracticeExams = () => {
+  const { token } = useAuth();
   const navigate = useNavigate();
   const [practiceExams, setPracticeExams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,11 +15,10 @@ const PracticeExams = () => {
 
   useEffect(() => {
     fetchPracticeExams();
-  }, []);
+  }, [token]);
 
   const fetchPracticeExams = async () => {
     try {
-      const token = localStorage.getItem("token");
       if (!token) {
         setError("Teacher authentication required");
         setLoading(false);

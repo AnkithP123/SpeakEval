@@ -52,10 +52,13 @@ export default function AudioRecorder() {
   const [screenStream, setScreenStream] = useState(null);
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const readyMediaRecorderRef = useRef(null); // MediaRecorder kept ready from permission grant
+  const recorderMimeTypeRef = useRef("video/webm"); // Remember the last working mime type
   const readyScreenRecorderRef = useRef(null); // Screen recorder kept ready
-  const audioChunksRef = useRef([]); // Store audio chunks for ready recorder (current recording)
-  const isSavingChunksRef = useRef(false); // Flag to control whether we save chunks
-  const currentPromptChunksRef = useRef([]); // Store chunks for the current prompt's response
+  const audioChunksRef = useRef([]); // Store audio chunks - always saving from start
+  const currentPromptChunksRef = useRef([]); // Store chunks for the current prompt's response (for simulated conversations)
+  const mediaRecorderStartTimeRef = useRef(null); // Timestamp when MediaRecorder started
+  const recordingStartTimeRef = useRef(null); // Timestamp when actual recording started
+  const recordingStopTimeRef = useRef(null); // Timestamp when recording stopped
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [instructions, setInstructions] = useState([]); // Array of instruction objects with {text, show, displayTime}
@@ -1369,6 +1372,133 @@ export default function AudioRecorder() {
     return languageMap[examLang] || examLang || null;
   };
 
+  const getPreferredMimeType = () => {
+    const candidates = [
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp8,opus",
+      "video/mp4;codecs=h264,aac",
+      "video/webm",
+      "video/mp4",
+    ];
+
+    for (const type of candidates) {
+      try {
+        if (MediaRecorder.isTypeSupported(type)) {
+          return type;
+        }
+      } catch (err) {
+        // Some browsers throw when checking unsupported types; ignore and continue
+      }
+    }
+
+    return "video/webm";
+  };
+
+  const handleRecorderError = (event) => {
+    console.error("❌ [MediaRecorder Error] MediaRecorder error:", event?.error || event);
+    console.error("❌ [MediaRecorder Error] Error name:", event?.error?.name);
+    console.error("❌ [MediaRecorder Error] Error message:", event?.error?.message);
+  };
+
+  const handleRecorderData = (event) => {
+    if (!event || !event.data || event.data.size === 0) {
+      return;
+    }
+
+    // Always save chunks - recording continuously from start
+    audioChunksRef.current.push(event.data);
+    currentPromptChunksRef.current.push(event.data);
+    console.log(
+      `📦 [Chunk Saved] Saved chunk: ${event.data.size} bytes | Total chunks: ${audioChunksRef.current.length}`
+    );
+  };
+
+  const startContinuousRecorder = (stream, preferredMimeType = null) => {
+    if (!stream) {
+      throw new Error("Cannot start MediaRecorder without a valid stream");
+    }
+
+    const mimeType = preferredMimeType || getPreferredMimeType();
+    console.log(
+      "🔧 [MediaRecorder Setup] Initializing MediaRecorder with mimeType:",
+      mimeType
+    );
+    console.log(
+      "🔧 [MediaRecorder Setup] Stream tracks:",
+      stream.getTracks().map((t) => ({
+        kind: t.kind,
+        readyState: t.readyState,
+        enabled: t.enabled,
+      }))
+    );
+
+    const recorder = new MediaRecorder(stream, {
+      mimeType,
+    });
+
+    recorderMimeTypeRef.current = recorder.mimeType || mimeType;
+
+    recorder.onerror = handleRecorderError;
+    recorder.ondataavailable = handleRecorderData;
+    recorder.onstop = () => {
+      handleRecorderStopped(recorder, stream).catch((err) => {
+        console.error("❌ [MediaRecorder Stop Handler] Error:", err);
+      });
+    };
+
+    recorder.start(500);
+    readyMediaRecorderRef.current = recorder;
+    
+    // Track when MediaRecorder starts
+    mediaRecorderStartTimeRef.current = Date.now();
+    console.log(`📅 [MediaRecorder Start] Timestamp: ${mediaRecorderStartTimeRef.current}`);
+
+    // Clear chunks and start fresh
+    audioChunksRef.current = [];
+    currentPromptChunksRef.current = [];
+
+    console.log("✅ [MediaRecorder Start] MediaRecorder started successfully!");
+    console.log(`✅ [MediaRecorder Start] State: ${recorder.state}`);
+    console.log(`✅ [MediaRecorder Start] MimeType: ${recorder.mimeType}`);
+    console.log("✅ [MediaRecorder Start] Recording continuously - all chunks will be saved");
+
+    return recorder;
+  };
+
+  const handleRecorderStopped = async (recorder, stream) => {
+    console.log("🛑 [MediaRecorder Stop] MediaRecorder stopped");
+
+    if (isUnmountingRef.current) {
+      // Only process if we have chunks saved
+      if (audioChunksRef.current.length > 0) {
+        const recorderMimeType = recorder.mimeType || recorderMimeTypeRef.current || "video/mp4";
+        const videoBlob = new Blob(audioChunksRef.current, { type: recorderMimeType });
+        const videoUrl = URL.createObjectURL(videoBlob);
+        await handleAudioStop(videoUrl, videoBlob);
+      }
+      return;
+    }
+
+    // When recording stops (not unmounting), create blob from all chunks
+    if (audioChunksRef.current.length > 0) {
+      const recorderMimeType = recorder.mimeType || recorderMimeTypeRef.current || "video/mp4";
+      const videoBlob = new Blob(audioChunksRef.current, { type: recorderMimeType });
+      const videoUrl = URL.createObjectURL(videoBlob);
+      
+      // Set the video URL so it can be displayed
+      setAudioURL(videoUrl);
+      updateRecordingData({
+        recordingBlob: videoBlob,
+      });
+      
+      // For simulated conversations, we'll handle upload in uploadAllRecordings
+      // For regular recordings, handle it here
+      if (!isSimulatedConversation) {
+        await handleAudioStop(videoUrl, videoBlob);
+      }
+    }
+  };
+
   const requestPermissions = async () => {
     try {
         // Check if we already have a valid microphone stream (kept alive)
@@ -1425,96 +1555,10 @@ export default function AudioRecorder() {
       // We'll record continuously but only save chunks when actually "recording"
       // Record both audio and video from the stream
       try {
-        // Try to use efficient codecs to minimize file size
-        // Prefer VP9/Opus (more efficient) or H.264/AAC
-        let mimeType = "video/webm;codecs=vp9,opus"; // VP9 is more efficient than VP8/H.264
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = "video/webm;codecs=vp8,opus"; // VP8 is more efficient than H.264
-          if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = "video/mp4;codecs=h264,aac";
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-              mimeType = "video/webm"; // Fallback
-              if (!MediaRecorder.isTypeSupported(mimeType)) {
-                mimeType = "video/mp4"; // Last resort
-              }
-            }
-          }
-        }
-        
-        const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: mimeType,
-        });
-        
-        // Set up error handler to catch any issues
-        mediaRecorder.onerror = (event) => {
-          console.error("❌ [MediaRecorder Error] MediaRecorder error:", event.error);
-          console.error("❌ [MediaRecorder Error] Error name:", event.error?.name);
-          console.error("❌ [MediaRecorder Error] Error message:", event.error?.message);
-        };
-        
-        // Set up data handler - only save chunks if flag is set
-        audioChunksRef.current = [];
-        currentPromptChunksRef.current = [];
-        isSavingChunksRef.current = false; // Start with saving disabled
-        
-        console.log("🔧 [MediaRecorder Setup] Initializing MediaRecorder with mimeType:", mimeType);
-        console.log("🔧 [MediaRecorder Setup] Stream tracks:", stream.getTracks().map(t => ({ kind: t.kind, readyState: t.readyState, enabled: t.enabled })));
-        console.log("🔧 [MediaRecorder Setup] isSavingChunksRef set to: false (chunks will be discarded)");
-        
-        mediaRecorder.ondataavailable = (event) => {
-          // Only save chunks if we're actually "recording" (user wants to save)
-          if (isSavingChunksRef.current && event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
-            currentPromptChunksRef.current.push(event.data);
-            console.log(`📦 [Chunk Saved] Saved chunk: ${event.data.size} bytes | Total chunks: ${currentPromptChunksRef.current.length} | isSavingChunks: ${isSavingChunksRef.current}`);
-          } else {
-            // Chunk received but not saving (discarded)
-            if (event.data.size > 0) {
-              console.log(`🗑️ [Chunk Discarded] Discarded chunk: ${event.data.size} bytes | isSavingChunks: ${isSavingChunksRef.current}`);
-            }
-          }
-        };
-        
-        // Set up stop handler (only called on component unmount)
-        // Note: MediaRecorder should never stop during normal operation - it runs continuously
-        mediaRecorder.onstop = async () => {
-          console.log("🛑 [MediaRecorder Stop] MediaRecorder stopped (should only happen on unmount)");
-          console.log("🛑 [MediaRecorder Stop] Stack trace:", new Error().stack);
-          console.log("🛑 [MediaRecorder Stop] Stream tracks state:", stream.getTracks().map(t => ({ kind: t.kind, readyState: t.readyState, enabled: t.enabled })));
-          // Only process if we have chunks saved (this should rarely happen since we keep it running)
-          if (audioChunksRef.current.length > 0 || currentPromptChunksRef.current.length > 0) {
-            const recorderMimeType = mediaRecorder.mimeType || "video/mp4";
-            // Use whichever chunks array has data
-            const chunksToUse = currentPromptChunksRef.current.length > 0 
-              ? currentPromptChunksRef.current 
-              : audioChunksRef.current;
-            const videoBlob = new Blob(chunksToUse, { type: recorderMimeType });
-            const videoUrl = URL.createObjectURL(videoBlob);
-            await handleAudioStop(videoUrl, videoBlob);
-          }
-        };
-        
-        // Start recording immediately - but don't save chunks yet
-        try {
-          console.log("▶️ [MediaRecorder Start] Starting MediaRecorder immediately after permissions granted...");
-          // Use 500ms interval instead of 250ms to reduce overhead and slightly reduce file size
-          mediaRecorder.start(500); // Collect data every 500ms (reduces overhead)
-          // Store the recorder only if start succeeded
-          readyMediaRecorderRef.current = mediaRecorder;
-          console.log("✅ [MediaRecorder Start] MediaRecorder started successfully!");
-          console.log(`✅ [MediaRecorder Start] State: ${mediaRecorder.state}`);
-          console.log(`✅ [MediaRecorder Start] MimeType: ${mediaRecorder.mimeType}`);
-          console.log(`✅ [MediaRecorder Start] isSavingChunks: ${isSavingChunksRef.current} (chunks will be discarded until flag is enabled)`);
-          console.log("✅ [MediaRecorder Start] MediaRecorder is now running continuously - it will NEVER stop until component unmounts");
-        } catch (startErr) {
-          console.error("❌ [MediaRecorder Start] Error starting MediaRecorder:", startErr);
-          // If start fails, don't store the recorder - we'll fall back to hook
-          throw startErr; // Re-throw to be caught by outer catch
-        }
+        startContinuousRecorder(stream);
       } catch (err) {
         console.error("Error creating/starting continuous MediaRecorder:", err);
         // MediaRecorder creation or start failed
-        // Clear any partial recorder
         readyMediaRecorderRef.current = null;
         // Return failure - MediaRecorder is required
         setHasPermissions(true); // Permissions granted, but MediaRecorder failed
@@ -1563,9 +1607,10 @@ export default function AudioRecorder() {
       
       console.log("✅ [Permissions] Permissions granted successfully!");
       console.log(`✅ [Permissions] MediaRecorder state: ${readyMediaRecorderRef.current?.state}`);
-      console.log(`✅ [Permissions] MediaRecorder is running continuously from now on`);
-      console.log(`✅ [Permissions] isSavingChunks: ${isSavingChunksRef.current} (chunks discarded until recording starts)`);
-      console.log("✅ [Permissions] MediaRecorder will NEVER stop until component unmounts");
+      console.log("✅ [Permissions] MediaRecorder is recording continuously - all chunks are being saved");
+      console.log(
+        "✅ [Permissions] MediaRecorder will automatically restart between recordings to finalize files properly"
+      );
       
       return { permissionGranted: true, stream, mediaRecorderReady: true };
     } catch (err) {
@@ -1576,6 +1621,67 @@ export default function AudioRecorder() {
       setIsError(true);
       return { permissionGranted: false, mediaRecorderReady: false };
     }
+  };
+
+  const trimVideo = async (videoBlob, startTime, endTime) => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement("video");
+      const videoUrl = URL.createObjectURL(videoBlob);
+      video.src = videoUrl;
+      video.crossOrigin = "anonymous";
+      
+      video.onloadedmetadata = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        const stream = canvas.captureStream(30); // 30 fps
+        const mimeType = videoBlob.type || "video/webm;codecs=vp9,opus";
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: mimeType,
+          videoBitsPerSecond: 2500000,
+        });
+        
+        const chunks = [];
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+          URL.revokeObjectURL(videoUrl);
+          const trimmedBlob = new Blob(chunks, { type: mimeType });
+          resolve(trimmedBlob);
+        };
+        
+        mediaRecorder.onerror = (e) => {
+          URL.revokeObjectURL(videoUrl);
+          reject(new Error("MediaRecorder error: " + e.error));
+        };
+        
+        video.currentTime = startTime;
+        video.ontimeupdate = () => {
+          if (video.currentTime >= endTime) {
+            video.pause();
+            mediaRecorder.stop();
+            video.ontimeupdate = null;
+          } else if (mediaRecorder.state === "recording") {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          }
+        };
+        
+        video.onplay = () => {
+          mediaRecorder.start();
+        };
+        
+        video.play().catch(reject);
+      };
+      
+      video.onerror = () => {
+        URL.revokeObjectURL(videoUrl);
+        reject(new Error("Failed to load video"));
+      };
+    });
   };
 
   const handleAudioStop = async (blobUrl, blob) => {
@@ -1593,20 +1699,43 @@ export default function AudioRecorder() {
       return;
     }
 
+    // Trim the video to only include the recording period
+    let trimmedBlob = blob;
+    if (mediaRecorderStartTimeRef.current && recordingStartTimeRef.current && recordingStopTimeRef.current) {
+      const startOffset = (recordingStartTimeRef.current - mediaRecorderStartTimeRef.current) / 1000;
+      const endTime = (recordingStopTimeRef.current - mediaRecorderStartTimeRef.current) / 1000;
+      
+      console.log(`✂️ [Trim Video] Trimming video from ${startOffset.toFixed(2)}s to ${endTime.toFixed(2)}s`);
+      
+      try {
+        trimmedBlob = await trimVideo(blob, startOffset, endTime);
+        console.log(`✅ [Trim Video] Video trimmed successfully. Original size: ${blob.size} bytes, Trimmed size: ${trimmedBlob.size} bytes`);
+        
+        // Create new URL for trimmed video
+        const trimmedUrl = URL.createObjectURL(trimmedBlob);
+        setAudioURL(trimmedUrl);
+      } catch (err) {
+        console.error("❌ [Trim Video] Error trimming video:", err);
+        // Continue with original blob if trimming fails
+        setAudioURL(blobUrl);
+      }
+    } else {
+      setAudioURL(blobUrl);
+    }
+
     const formData = new FormData();
     // Record both audio and video, but keep field name as "audio" for backend compatibility
-    formData.append("audio", blob, "recording.mp4");
+    formData.append("audio", trimmedBlob, "recording.mp4");
 
-    // Update recording data with blob
+    // Update recording data with trimmed blob
     updateRecordingData({
-      recordingBlob: blob,
+      recordingBlob: trimmedBlob,
       hasRecorded: true,
       isRecording: false,
     });
 
     // Start upload process
     await upload(formData);
-    setAudioURL(blobUrl);
     setIsRecording(false);
     // Note: audioBlobURL is for question audio, not recorded audio playback
     // Recorded audio playback would use a separate player if needed
@@ -1674,10 +1803,7 @@ export default function AudioRecorder() {
       isUnmountingRef.current = true;
       console.log("🧹 [Cleanup] Component unmounting - cleaning up MediaRecorder and streams");
       
-      // Stop saving chunks
-      isSavingChunksRef.current = false;
-      
-      // Stop the MediaRecorder (only time we actually stop it)
+      // Stop the MediaRecorder
       if (readyMediaRecorderRef.current) {
         const recorder = readyMediaRecorderRef.current;
         console.log(`🧹 [Cleanup] Stopping MediaRecorder (state: ${recorder.state})`);
@@ -2097,6 +2223,21 @@ export default function AudioRecorder() {
 
   const startRecording = async () => {
     const currentTime = Date.now();
+    
+    // Track when actual recording starts
+    // For simulated conversations, only set it on the first recording
+    // For regular recordings, always set it
+    if (!recordingStartTimeRef.current || !isSimulatedConversation) {
+      recordingStartTimeRef.current = Date.now();
+      console.log(`📅 [Start Recording] Recording start timestamp: ${recordingStartTimeRef.current}`);
+      if (mediaRecorderStartTimeRef.current) {
+        const offsetSeconds = (recordingStartTimeRef.current - mediaRecorderStartTimeRef.current) / 1000;
+        console.log(`📅 [Start Recording] Offset from MediaRecorder start: ${offsetSeconds.toFixed(2)} seconds`);
+      }
+    } else {
+      console.log(`📅 [Start Recording] Simulated conversation - keeping first recording start time: ${recordingStartTimeRef.current}`);
+    }
+    
     setIsRecording(true);
     setAudioURL(null);
 
@@ -2173,28 +2314,18 @@ export default function AudioRecorder() {
         return;
       }
 
-      // Start "recording" - just enable saving chunks (MediaRecorder already running)
-      // MediaRecorder should NEVER be started/stopped here - it runs continuously from permissions
+      // MediaRecorder is already running continuously from permission grant
+      // Chunks are already being saved, so we don't need to do anything here
       if (readyMediaRecorderRef.current) {
-        // MediaRecorder is already running continuously from permission grant
-        console.log("🎙️ [Start Recording] Enabling chunk saving...");
-        console.log(`🎙️ [Start Recording] MediaRecorder state BEFORE: ${readyMediaRecorderRef.current.state}`);
-        console.log(`🎙️ [Start Recording] isSavingChunks BEFORE: ${isSavingChunksRef.current}`);
-        console.log(`🎙️ [Start Recording] Current chunks count: ${audioChunksRef.current.length} (main), ${currentPromptChunksRef.current.length} (prompt)`);
+        console.log("🎙️ [Start Recording] MediaRecorder already running and saving chunks");
+        console.log(`🎙️ [Start Recording] MediaRecorder state: ${readyMediaRecorderRef.current.state}`);
+        console.log(`🎙️ [Start Recording] Current chunks count: ${audioChunksRef.current.length}`);
         
-        // Just clear old chunks and start saving new ones for this recording session
-        audioChunksRef.current = [];
-        currentPromptChunksRef.current = []; // Clear current prompt's chunks
-        isSavingChunksRef.current = true; // Enable saving chunks
-        
-        console.log(`✅ [Start Recording] Chunk saving ENABLED`);
-        console.log(`✅ [Start Recording] MediaRecorder state AFTER: ${readyMediaRecorderRef.current.state} (should be 'recording')`);
-        console.log(`✅ [Start Recording] isSavingChunks AFTER: ${isSavingChunksRef.current}`);
-        console.log(`✅ [Start Recording] Chunks cleared - ready to save new chunks`);
-        console.log("✅ [Start Recording] MediaRecorder continues running - we only toggled the save flag");
-        
-        // Note: We don't set up onstop handler here because MediaRecorder never stops
-        // It runs continuously and we just toggle chunk saving
+        // For simulated conversations, clear current prompt chunks when starting a new prompt recording
+        if (isSimulatedConversation) {
+          currentPromptChunksRef.current = [];
+          console.log("🎙️ [Start Recording] Cleared current prompt chunks for new prompt");
+        }
       } else {
         // MediaRecorder should always be available if permissions were granted
         // If it's not, we need to request permissions first
@@ -2612,9 +2743,44 @@ export default function AudioRecorder() {
     }
 
     if (index >= promptClips.length) {
-      // All prompts and recordings done, upload all recordings
-      // Use ref to get the latest count immediately (state may not have updated yet)
-      console.log(`✅ All prompts complete. Collected ${collectedRecordingsRef.current.length} recordings. Starting upload...`);
+      // All prompts and recordings done - stop recording and upload the entire continuous recording
+      console.log(`✅ All prompts complete. Stopping continuous recording and uploading...`);
+      
+      // Stop the MediaRecorder to finalize the entire recording
+      if (readyMediaRecorderRef.current && readyMediaRecorderRef.current.state === "recording") {
+        console.log("🛑 [Final Stop] Stopping MediaRecorder to finalize entire recording...");
+        
+        // Request any final data before stopping
+        try {
+          readyMediaRecorderRef.current.requestData();
+        } catch (e) {
+          console.warn("⚠️ Could not request final data:", e);
+        }
+        
+        // Wait a bit for final data
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Stop the recorder
+        try {
+          readyMediaRecorderRef.current.stop();
+          console.log("✅ [Final Stop] MediaRecorder stopped");
+        } catch (err) {
+          console.error("❌ [Final Stop] Error stopping MediaRecorder:", err);
+        }
+      }
+      
+      // Track the final stop time for simulated conversations
+      recordingStopTimeRef.current = Date.now();
+      console.log(`📅 [Simulated Conversation] Final recording stop: ${recordingStopTimeRef.current}`);
+      if (recordingStartTimeRef.current) {
+        const totalDuration = (recordingStopTimeRef.current - recordingStartTimeRef.current) / 1000;
+        console.log(`📅 [Simulated Conversation] Total recording duration: ${totalDuration.toFixed(2)} seconds`);
+      }
+      
+      // Wait a moment for onstop handler to process
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Upload the entire continuous recording (will be trimmed)
       await uploadAllRecordings();
       return;
     }
@@ -2732,103 +2898,34 @@ export default function AudioRecorder() {
   const stopRecordingForNextPrompt = async (currentIndex) => {
     console.log(`🛑 stopRecordingForNextPrompt called for prompt ${currentIndex + 1}`);
     console.log(`   isRecording: ${isRecording}, stageData.recording.isRecording: ${stageData.recording.isRecording}`);
-    console.log(`   isSavingChunks: ${isSavingChunksRef.current}`);
     
-    // Always stop saving chunks if we're saving them, regardless of recording state
-    // The timer fired, so we need to stop saving chunks and save what we have
-    if (isSavingChunksRef.current || isRecording || stageData.recording.isRecording) {
-      console.log(`🛑 Stopping recording for prompt ${currentIndex + 1} after 20 seconds`);
+    if (isRecording || stageData.recording.isRecording) {
+      console.log(`🛑 Processing recording for prompt ${currentIndex + 1} after 20 seconds`);
       
-      // Stop saving chunks (MediaRecorder keeps running continuously)
-      console.log("🛑 [Stop Recording] Disabling chunk saving...");
-      console.log(`🛑 [Stop Recording] isSavingChunks BEFORE: ${isSavingChunksRef.current}`);
-      console.log(`🛑 [Stop Recording] Current chunks count: ${currentPromptChunksRef.current.length} (prompt), ${audioChunksRef.current.length} (main)`);
-      console.log(`🛑 [Stop Recording] MediaRecorder state: ${readyMediaRecorderRef.current?.state} (should be 'recording')`);
-      
-      isSavingChunksRef.current = false;
-      console.log(`✅ [Stop Recording] Chunk saving DISABLED - chunks will now be discarded`);
-      console.log(`✅ [Stop Recording] isSavingChunks AFTER: ${isSavingChunksRef.current}`);
-      console.log("✅ [Stop Recording] MediaRecorder continues running - we only toggled the save flag");
-      
-      // Wait a bit to ensure all pending chunks are collected (MediaRecorder collects every 250ms)
-      console.log("⏳ [Stop Recording] Waiting 500ms for pending chunks...");
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Request any final data from MediaRecorder (it's still running, just not saving)
+      console.log(
+        `🛑 [Stop Recording] Current chunks count: ${currentPromptChunksRef.current.length} (prompt), ${audioChunksRef.current.length} (main)`
+      );
+      console.log(
+        `🛑 [Stop Recording] MediaRecorder state: ${readyMediaRecorderRef.current?.state} (should be 'recording')`
+      );
+
+      // Request final data for current prompt
       if (readyMediaRecorderRef.current && readyMediaRecorderRef.current.state === "recording") {
         try {
-          console.log("📥 [Stop Recording] Requesting final data from MediaRecorder...");
           readyMediaRecorderRef.current.requestData();
+          await new Promise(resolve => setTimeout(resolve, 300));
         } catch (e) {
-          console.warn("⚠️ [Stop Recording] Could not request final data from MediaRecorder:", e);
+          console.warn("⚠️ Could not request final data:", e);
         }
       }
       
-      // Wait a bit more for the final data to arrive
-      console.log("⏳ [Stop Recording] Waiting 300ms for final data...");
-      await new Promise(resolve => setTimeout(resolve, 300));
+      console.log(`📊 [Stop Recording] Total chunks so far: ${audioChunksRef.current.length}`);
       
-      console.log(`📊 [Stop Recording] Final chunks count: ${currentPromptChunksRef.current.length} (prompt), ${audioChunksRef.current.length} (main)`);
-      
-      // Fetch the prompt audio as a blob
-      let promptBlob = null;
-      try {
-        const promptUrl = promptClips[currentIndex];
-        console.log(`📥 [Stop Recording] Fetching prompt ${currentIndex + 1} audio from: ${promptUrl}`);
-        const promptResponse = await fetch(promptUrl);
-        promptBlob = await promptResponse.blob();
-        console.log(`✅ [Stop Recording] Fetched prompt ${currentIndex + 1} audio, size: ${promptBlob.size} bytes`);
-      } catch (error) {
-        console.error(`❌ [Stop Recording] Failed to fetch prompt ${currentIndex + 1} audio:`, error);
-      }
-      
-      // Use the current prompt's chunks (separate storage per prompt)
-      if (currentPromptChunksRef.current.length > 0) {
-        const mimeType = readyMediaRecorderRef.current?.mimeType || "video/mp4";
-        const responseBlob = new Blob(currentPromptChunksRef.current, { type: mimeType });
-        
-        console.log(`💾 [Stop Recording] Saving response ${currentIndex + 1}:`);
-        console.log(`   - Chunks: ${currentPromptChunksRef.current.length}`);
-        console.log(`   - Total size: ${responseBlob.size} bytes`);
-        console.log(`   - MimeType: ${mimeType}`);
-        
-        // Store both prompt and response (don't upload yet)
-        const newRecording = {
-          promptBlob: promptBlob,
-          responseBlob: responseBlob,
-          promptIndex: currentIndex,
-        };
-        setCollectedRecordings((prev) => {
-          const updated = [...prev, newRecording];
-          collectedRecordingsRef.current = updated; // Update ref immediately
-          return updated;
-        });
-        
-        console.log(`✅ [Stop Recording] Saved response ${currentIndex + 1} to collectedRecordings`);
-        console.log(`✅ [Stop Recording] Total recordings collected: ${collectedRecordingsRef.current.length}`);
-      } else {
-        console.warn(`⚠️ [Stop Recording] No chunks collected for prompt ${currentIndex + 1}`);
-        // Still store the prompt even if no response was recorded
-        if (promptBlob) {
-          const newRecording = {
-            promptBlob: promptBlob,
-            responseBlob: null,
-            promptIndex: currentIndex,
-          };
-          setCollectedRecordings((prev) => {
-            const updated = [...prev, newRecording];
-            collectedRecordingsRef.current = updated; // Update ref immediately
-            return updated;
-          });
-          console.log(`✅ [Stop Recording] Saved prompt ${currentIndex + 1} only (no response recorded)`);
-        }
-      }
-      
-      // Clear chunks for next recording (but MediaRecorder keeps running)
-      console.log("🧹 [Stop Recording] Clearing chunks for next recording...");
-      audioChunksRef.current = [];
+      // Clear current prompt chunks for next prompt (but keep main chunks - recording continues)
+      // We're recording continuously, so we don't need to save individual prompt recordings
+      console.log("🧹 [Stop Recording] Clearing current prompt chunks for next prompt...");
       currentPromptChunksRef.current = [];
-      console.log(`✅ [Stop Recording] Chunks cleared. MediaRecorder state: ${readyMediaRecorderRef.current?.state} (still running)`);
+      console.log(`✅ [Stop Recording] Current prompt chunks cleared. Main chunks: ${audioChunksRef.current.length}. MediaRecorder state: ${readyMediaRecorderRef.current?.state} (still running)`);
       
       // Stop speech recognition
       stopSpeechRecognition();
@@ -2853,9 +2950,7 @@ export default function AudioRecorder() {
         countdownIntervalRef.current = null;
       }
       
-      // DON'T re-enable saving chunks here - wait until next recording starts
-      // isSavingChunksRef.current should stay false until next prompt starts recording
-      console.log(`✅ [Stop Recording] Chunk saving will remain disabled until next recording starts`);
+      console.log(`✅ [Stop Recording] Recording continues for next prompt`);
       
       console.log(`▶️ Moving to next prompt: ${currentIndex + 2} of ${promptClips.length}`);
       
@@ -2873,12 +2968,7 @@ export default function AudioRecorder() {
         playNextPrompt(currentIndex + 1);
       }, 100);
     } else {
-      console.warn("⚠️ stopRecordingForNextPrompt called but not saving chunks - moving to next prompt anyway");
-      // Make sure chunk saving is disabled (should already be false, but double-check)
-      if (isSavingChunksRef.current) {
-        console.warn("⚠️ Chunk saving was still enabled, disabling it now");
-        isSavingChunksRef.current = false;
-      }
+      console.warn("⚠️ stopRecordingForNextPrompt called but not recording - moving to next prompt anyway");
       // Reset audio play state
       updateAudioPlayData({
         isPlaying: false,
@@ -2893,12 +2983,127 @@ export default function AudioRecorder() {
   };
 
   const uploadAllRecordings = async () => {
-    // Use ref to get the latest recordings immediately (state may not have updated yet)
+    // For continuous recording, use all chunks from the start
+    // Check if we have chunks from the continuous recording
+    if (audioChunksRef.current.length > 0) {
+      console.log(`📤 uploadAllRecordings: Uploading continuous recording with ${audioChunksRef.current.length} chunks`);
+      
+      const mimeType = readyMediaRecorderRef.current?.mimeType || recorderMimeTypeRef.current || "video/mp4";
+      let fullRecordingBlob = new Blob(audioChunksRef.current, { type: mimeType });
+      
+      // Trim the video to only include the recording period
+      if (mediaRecorderStartTimeRef.current && recordingStartTimeRef.current && recordingStopTimeRef.current) {
+        const startOffset = (recordingStartTimeRef.current - mediaRecorderStartTimeRef.current) / 1000;
+        const endTime = (recordingStopTimeRef.current - mediaRecorderStartTimeRef.current) / 1000;
+        
+        console.log(`✂️ [Trim Video] Trimming simulated conversation video from ${startOffset.toFixed(2)}s to ${endTime.toFixed(2)}s`);
+        
+        try {
+          fullRecordingBlob = await trimVideo(fullRecordingBlob, startOffset, endTime);
+          console.log(`✅ [Trim Video] Video trimmed successfully. Trimmed size: ${fullRecordingBlob.size} bytes`);
+        } catch (err) {
+          console.error("❌ [Trim Video] Error trimming video:", err);
+          // Continue with original blob if trimming fails
+        }
+      }
+      
+      // Upload as a single recording (index 0)
+      const token = tokenManager.getStudentToken();
+      
+      try {
+        advanceStage("uploading");
+        updateUploadingData({
+          isUploading: true,
+          uploadProgress: 0,
+          uploadComplete: false,
+          uploadError: null,
+        });
+
+        setError(
+          "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
+        );
+        setIsError(false);
+        setFinishedRecording(true);
+        setIsFullscreen(false);
+        uploadStarted();
+        updateStudentStatus("uploading");
+
+        // Get upload URL
+        const uploadUrlResponse = await fetch(
+          `https://www.server.speakeval.org/get-recording-upload-url?token=${token}&index=0`,
+          { method: "GET" }
+        );
+
+        if (!uploadUrlResponse.ok) {
+          throw new Error("Failed to get upload URL");
+        }
+
+        const { uploadUrl } = await uploadUrlResponse.json();
+        updateUploadingData({ uploadProgress: 20 });
+
+        // Upload the entire recording
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "PUT",
+          body: fullRecordingBlob,
+          headers: { "Content-Type": "video/mp4" },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload to S3");
+        }
+
+        updateUploadingData({ uploadProgress: 60 });
+
+        // Notify server
+        const uploadData = {
+          uploaded: true,
+          speechRecognitionText: recognizedText || null,
+          recognitionLanguage: examLanguage,
+        };
+
+        await fetch(
+          `https://www.server.speakeval.org/upload?token=${token}&index=0`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(uploadData),
+          }
+        );
+
+        updateUploadingData({
+          isUploading: false,
+          uploadComplete: true,
+          uploadError: null,
+          waitingForTranscription: false,
+        });
+
+        uploadCompleted();
+        updateStudentStatus("upload_completed");
+        questionCompleted(questionIndex);
+
+        setCollectedRecordings([]);
+        collectedRecordingsRef.current = [];
+        audioChunksRef.current = [];
+        
+        return;
+      } catch (error) {
+        console.error("Error uploading continuous recording:", error);
+        setError("Failed to upload recording. Please try again.");
+        setIsError(true);
+        updateUploadingData({
+          isUploading: false,
+          uploadComplete: false,
+          uploadError: "Failed to upload recording. Please try again.",
+        });
+        return;
+      }
+    }
+    
+    // Fallback to old method if we have collected recordings (shouldn't happen with new approach)
     const recordingsToUpload = collectedRecordingsRef.current;
-    console.log(`📤 uploadAllRecordings called with ${recordingsToUpload.length} recordings`);
+    console.log(`📤 uploadAllRecordings called with ${recordingsToUpload.length} recordings (fallback)`);
     
     if (recordingsToUpload.length === 0) {
-      // No recordings to upload, just advance to uploading stage
       console.warn("⚠️ No recordings collected, but uploadAllRecordings was called");
       advanceStage("uploading");
       return;
@@ -3091,43 +3296,65 @@ export default function AudioRecorder() {
     playedRef.current = true;
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     // Only stop if we're actually recording - prevent premature stops
     if (!isRecording) {
       console.warn("⚠️ stopRecording called but not currently recording, ignoring");
       return;
     }
 
+    // Track when recording stops
+    recordingStopTimeRef.current = Date.now();
+    console.log(`📅 [Stop Recording] Recording stop timestamp: ${recordingStopTimeRef.current}`);
+    if (recordingStartTimeRef.current) {
+      const durationSeconds = (recordingStopTimeRef.current - recordingStartTimeRef.current) / 1000;
+      console.log(`📅 [Stop Recording] Recording duration: ${durationSeconds.toFixed(2)} seconds`);
+    }
+
     setStopped(true);
     setIsRecording(false);
 
-    // Stop speech recognition and log final text after a small delay
-
-    // Capture current recognized text before stopping recognition
-    const currentRecognizedText = recognizedText;
-
+    // Stop speech recognition
     stopSpeechRecognition();
 
-    // Stop saving chunks (but MediaRecorder keeps running)
-    isSavingChunksRef.current = false;
+    // Stop the MediaRecorder to finalize the recording
+    if (readyMediaRecorderRef.current && readyMediaRecorderRef.current.state === "recording") {
+      console.log("🛑 [Stop Recording] Stopping MediaRecorder to finalize recording...");
+      
+      // Request any final data before stopping
+      try {
+        readyMediaRecorderRef.current.requestData();
+      } catch (e) {
+        console.warn("⚠️ Could not request final data:", e);
+      }
+      
+      // Wait a bit for final data
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Stop the recorder - this will trigger onstop handler which creates the blob
+      try {
+        readyMediaRecorderRef.current.stop();
+        console.log("✅ [Stop Recording] MediaRecorder stopped");
+      } catch (err) {
+        console.error("❌ [Stop Recording] Error stopping MediaRecorder:", err);
+      }
+    }
     
-    // Process the saved chunks immediately
-    if (readyMediaRecorderRef.current && audioChunksRef.current.length > 0) {
-      // Create blob from saved chunks (video with audio)
-      const mimeType = readyMediaRecorderRef.current.mimeType || "video/mp4";
-      const videoBlob = new Blob(audioChunksRef.current, { type: mimeType });
+    // Process the saved chunks
+    if (audioChunksRef.current.length > 0) {
+      const activeMimeType =
+        readyMediaRecorderRef.current?.mimeType || recorderMimeTypeRef.current || "video/mp4";
+      const videoBlob = new Blob(audioChunksRef.current, { type: activeMimeType });
       const videoUrl = URL.createObjectURL(videoBlob);
       
       // Process the recording
-      handleAudioStop(videoUrl, videoBlob).catch(err => {
-        console.error("Error processing video stop:", err);
-      });
+      await handleAudioStop(videoUrl, videoBlob);
       
       // Clear chunks for next recording
       audioChunksRef.current = [];
     } else {
       // Fallback to hook only if ready recorder doesn't exist
-    stopAudioRecording();
+      stopAudioRecording();
     }
     
     // Stop screen recording
@@ -4682,17 +4909,43 @@ export default function AudioRecorder() {
                 {stageData.recording.hasRecorded &&
                   !stageData.recording.isRecording &&
                   !isSimulatedConversation && ( // Don't show for simulated conversation - we handle it differently
-                    <div style={{ textAlign: "center" }}>
+                    <div style={{ textAlign: "center", width: "100%" }}>
                       <p
                         style={{
                           fontSize: "16px",
                           color: "#10B981",
                           fontWeight: "500",
-                          margin: "8px 0",
+                          margin: "8px 0 16px 0",
                         }}
                       >
                         ✓ Recording completed successfully
                       </p>
+                      
+                      {/* Video Player */}
+                      {audioURL && (
+                        <div
+                          style={{
+                            maxWidth: "640px",
+                            margin: "0 auto 20px auto",
+                            borderRadius: "12px",
+                            overflow: "hidden",
+                            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                          }}
+                        >
+                          <video
+                            src={audioURL}
+                            controls
+                            style={{
+                              width: "100%",
+                              height: "auto",
+                              display: "block",
+                            }}
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
+                      )}
+                      
                       {recognizedText && examLanguage && (
                         <div
                           style={{
@@ -4773,6 +5026,42 @@ export default function AudioRecorder() {
                   ? "Your response has been uploaded and transcribed successfully."
                   : "Please wait while we upload your recording..."}
               </p>
+
+              {/* Video Player - Show after upload completes */}
+              {stageData.uploading.uploadComplete && audioURL && (
+                <div
+                  style={{
+                    maxWidth: "640px",
+                    margin: "0 auto 24px auto",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: "600",
+                      color: "#374151",
+                      marginBottom: "12px",
+                      textAlign: "center",
+                    }}
+                  >
+                    Your Recording
+                  </h3>
+                  <video
+                    src={audioURL}
+                    controls
+                    style={{
+                      width: "100%",
+                      height: "auto",
+                      display: "block",
+                    }}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              )}
 
               {/* Transcription Results */}
               {stageData.uploading.uploadComplete &&

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useClassroom } from '../hooks/useClassroom.jsx';
 import { useToast } from '../hooks/useToast.jsx';
+import { useAuth } from '../../contexts/AuthContext';
 import { FaArrowLeft, FaPlus, FaUsers, FaClipboardList, FaCalendar, FaCode, FaGraduationCap, FaPlay, FaEye, FaEdit, FaClock } from 'react-icons/fa';
 
 const ClassDetail = () => {
+  const { token: authToken } = useAuth();
   const { classId } = useParams();
   const navigate = useNavigate();
   const { getClass, deleteClass } = useClassroom();
@@ -29,7 +31,7 @@ const ClassDetail = () => {
           } catch { return null; }
         };
 
-        const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
+        const token = authToken || localStorage.getItem('classroom_token');
         const decoded = token ? decodeJwt(token) : null;
         const classroomUser = JSON.parse(localStorage.getItem('classroom_user') || '{}');
         const userType = decoded?.userType || decoded?.role || classroomUser?.userType;
@@ -50,7 +52,7 @@ const ClassDetail = () => {
   const handleDeleteClass = async () => {
     try {
       // Call backend delete endpoint
-      const token = localStorage.getItem('token') || localStorage.getItem('classroom_token');
+      const token = authToken || localStorage.getItem('classroom_token');
       const res = await fetch(`https://www.server.speakeval.org/classroom/${classId}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {}

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import Card from "./Card2";
 import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 // This component displays a set of cards based on the user's role (teacher or student).
-// A user is considered a teacher if a 'token' exists in local storage.
+// A user is considered a teacher if a 'token' exists in AuthContext.
 function HomeCards() {
+  const { token, isAuthenticated } = useAuth();
   // State to determine if the user is a teacher, based on the presence of a token.
   const [isTeacher, setIsTeacher] = useState(false);
   // State to manage the view for teachers, allowing them to toggle between teacher and student cards.
@@ -12,13 +14,11 @@ function HomeCards() {
 
   // useEffect runs once when the component mounts to check for the teacher token.
   useEffect(() => {
-    // Check if a token exists in local storage.
-    const token = localStorage.getItem("token");
-    // If a token is found, set isTeacher to true.
-    if (token) {
+    // If a token is found and user is authenticated, set isTeacher to true.
+    if (token && isAuthenticated) {
       setIsTeacher(true);
     }
-  }, []);
+  }, [token, isAuthenticated]);
 
   // Handler function to toggle the view for teachers.
   const handleViewToggle = () => {

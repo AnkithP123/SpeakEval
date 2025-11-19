@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "react-toastify";
+import { useAuth } from "../contexts/AuthContext";
 import {
   FaDownload,
   FaPlay,
@@ -48,6 +49,7 @@ function ProfileCard({
   promptRecordings = null, // Array of {index, audio, transcription} for simulated conversations
   promptAudioUrls = null, // Array of {index, audioUrl} for prompt audio URLs in simulated conversations
 }) {
+  const { token } = useAuth();
   // States used in both modes
   const [fetchedAudio, setFetchedAudio] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -88,6 +90,9 @@ function ProfileCard({
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
   const [isLoadingVideo, setIsLoadingVideo] = useState(false);
+  const [simulatedConversationItems, setSimulatedConversationItems] = useState([]); // For modal display
+  const [isPlayingSequential, setIsPlayingSequential] = useState(false); // Track if playing sequential prompts/responses
+  const [currentSequentialIndex, setCurrentSequentialIndex] = useState(0); // Track current item in sequential playback
   //console.log("Voice Comment: " + voiceComment);
   useEffect(() => {
     if (localVoiceComment && localVoiceComment instanceof Blob) {
@@ -309,39 +314,38 @@ function ProfileCard({
     return new Blob([buffer], { type: "audio/wav" });
   }
 
-  // Handle playing a specific prompt (for simulated conversations)
+  // Handle playing a specific response (for simulated conversations)
   const handlePlayPrompt = async (promptIndex) => {
     if (!effectiveName) {
       return toast.error("Participant has not completed the task");
     }
     
-    if (!effectivePromptRecordings || !effectivePromptAudioUrls) {
+    if (!effectivePromptRecordings) {
       return toast.error("No prompt recordings available");
     }
     
     const promptRecording = effectivePromptRecordings.find(pr => pr.index === promptIndex);
-    const promptAudioUrl = effectivePromptAudioUrls.find(pa => pa.index === promptIndex);
     
-    if (!promptRecording || !promptAudioUrl) {
-      return toast.error(`Prompt ${promptIndex + 1} not found`);
+    if (!promptRecording) {
+      return toast.error(`Response ${promptIndex + 1} not found`);
     }
     
-    // Create or get audio player for this prompt
-    const playerId = `promptAudioPlayer-${effectiveName}-${effectiveCode}-${promptIndex}`;
-    let audioPlayer = document.getElementById(playerId);
+    // Create or get video player for this response
+    const playerId = `promptResponsePlayer-${effectiveName}-${effectiveCode}-${promptIndex}`;
+    let videoPlayer = document.getElementById(playerId);
     
-    if (!audioPlayer) {
-      audioPlayer = document.createElement("audio");
-      audioPlayer.id = playerId;
-      audioPlayer.style.display = "none";
-      document.body.appendChild(audioPlayer);
+    if (!videoPlayer) {
+      videoPlayer = document.createElement("video");
+      videoPlayer.id = playerId;
+      videoPlayer.style.display = "none";
+      document.body.appendChild(videoPlayer);
     }
     
-    // Check if we already have the stitched URL (player already loaded)
+    // Check if we already have the URL (player already loaded)
     const currentState = promptPlayerStates[promptIndex];
-    if (audioPlayer.src && currentState?.isPlaying) {
+    if (videoPlayer.src && currentState?.isPlaying) {
       // Just pause if already playing
-      await audioPlayer.pause();
+      await videoPlayer.pause();
       setPromptPlayerStates(prev => ({
         ...prev,
         [promptIndex]: { ...prev[promptIndex], isPlaying: false, isLoading: false, manuallyPaused: true },
@@ -352,51 +356,44 @@ function ProfileCard({
     
     // If not loaded or was paused, we need to fetch and set up
     try {
-      // Update state for this specific prompt
+      // Update state for this specific response
       setPromptPlayerStates(prev => ({
         ...prev,
         [promptIndex]: { ...prev[promptIndex], isLoading: true },
       }));
       
       // Check if we have cached URL
-      let stitchedUrl = cachedStitchedUrls[promptIndex];
+      let responseUrl = cachedStitchedUrls[promptIndex];
       
-      if (!stitchedUrl) {
-        // Fetch both prompt audio and response audio
-        const [promptAudioResponse, responseAudioResponse] = await Promise.all([
-          fetch(promptAudioUrl.audioUrl),
-          fetch(`https://www.server.speakeval.org/fetch_audio?token=${promptRecording.audio}&index=${promptIndex}`),
-        ]);
+      if (!responseUrl) {
+        // Fetch response video/audio URL
+        const responseAudioResponse = await fetch(
+          `https://www.server.speakeval.org/fetch_audio?token=${promptRecording.audio}&index=${promptIndex}`
+        );
         
-        if (!promptAudioResponse.ok || !responseAudioResponse.ok) {
-          throw new Error("Failed to fetch audio");
+        if (!responseAudioResponse.ok) {
+          throw new Error("Failed to fetch response");
         }
         
         const responseData = await responseAudioResponse.json();
         if (!responseData.audioUrl) {
-          throw new Error("No audio URL received");
+          throw new Error("No response URL received");
         }
         
-        // Get audio blobs
-        const promptBlob = await promptAudioResponse.blob();
-        const responseBlob = await fetch(responseData.audioUrl).then(r => r.blob());
-        
-        // Stitch together: prompt audio + response audio
-        const stitchedBlob = new Blob([promptBlob, responseBlob], { type: "video/mp4" });
-        stitchedUrl = URL.createObjectURL(stitchedBlob);
+        responseUrl = responseData.audioUrl;
         
         // Cache the URL
         setCachedStitchedUrls(prev => ({
           ...prev,
-          [promptIndex]: stitchedUrl,
+          [promptIndex]: responseUrl,
         }));
       }
       
-      audioPlayer.src = stitchedUrl;
+      videoPlayer.src = responseUrl;
       
-      // Stop any other playing prompt
+      // Stop any other playing response
       if (playingPromptIndex !== null && playingPromptIndex !== promptIndex) {
-        const otherPlayer = document.getElementById(`promptAudioPlayer-${effectiveName}-${effectiveCode}-${playingPromptIndex}`);
+        const otherPlayer = document.getElementById(`promptResponsePlayer-${effectiveName}-${effectiveCode}-${playingPromptIndex}`);
         if (otherPlayer) {
           otherPlayer.pause();
         }
@@ -407,14 +404,14 @@ function ProfileCard({
       }
       
       // Resume from where we left off (currentTime stays where it was if manually paused)
-      await audioPlayer.play();
+      await videoPlayer.play();
       setPromptPlayerStates(prev => ({
         ...prev,
         [promptIndex]: { isPlaying: true, isLoading: false, manuallyPaused: false },
       }));
       setPlayingPromptIndex(promptIndex);
       
-      audioPlayer.addEventListener("ended", () => {
+      videoPlayer.addEventListener("ended", () => {
         setPromptPlayerStates(prev => ({
           ...prev,
           [promptIndex]: { ...prev[promptIndex], isPlaying: false, manuallyPaused: false },
@@ -424,8 +421,8 @@ function ProfileCard({
       
       setError(false);
     } catch (error) {
-      console.error("Error playing prompt audio:", error);
-      toast.error("Error playing prompt audio");
+      console.error("Error playing response:", error);
+      toast.error("Error playing response");
       setPromptPlayerStates(prev => ({
         ...prev,
         [promptIndex]: { ...prev[promptIndex], isLoading: false, isPlaying: false },
@@ -433,14 +430,14 @@ function ProfileCard({
     }
   };
   
-  // Restart a specific prompt
+  // Restart a specific response
   const handleRestartPrompt = async (promptIndex) => {
-    const playerId = `promptAudioPlayer-${effectiveName}-${effectiveCode}-${promptIndex}`;
-    const audioPlayer = document.getElementById(playerId);
+    const playerId = `promptResponsePlayer-${effectiveName}-${effectiveCode}-${promptIndex}`;
+    const videoPlayer = document.getElementById(playerId);
     
-    if (audioPlayer) {
-      audioPlayer.currentTime = 0;
-      await audioPlayer.play();
+    if (videoPlayer) {
+      videoPlayer.currentTime = 0;
+      await videoPlayer.play();
       setPromptPlayerStates(prev => ({
         ...prev,
         [promptIndex]: { ...prev[promptIndex], isPlaying: true, manuallyPaused: false },
@@ -449,11 +446,87 @@ function ProfileCard({
     }
   };
 
+  // Play responses sequentially for simulated conversations (skip prompts)
+  const playSequentialPromptResponse = async (index = 0) => {
+    if (!effectivePromptRecordings || index >= effectivePromptRecordings.length) {
+      setIsPlayingSequential(false);
+      setCurrentSequentialIndex(0);
+      setIsPlaying(false);
+      setIsLoading(false);
+      return;
+    }
+    
+    const promptRecording = effectivePromptRecordings[index];
+    if (!promptRecording) {
+      playSequentialPromptResponse(index + 1);
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      setIsPlaying(true);
+      setCurrentSequentialIndex(index);
+      
+      // Play response video/audio only
+      const responseResponse = await fetch(
+        `https://www.server.speakeval.org/fetch_audio?token=${promptRecording.audio}&index=${promptRecording.index}`
+      );
+      const responseData = await responseResponse.json();
+      
+      if (!responseData.audioUrl) {
+        playSequentialPromptResponse(index + 1);
+        return;
+      }
+      
+      const playerId = `sequentialResponsePlayer-${effectiveName}-${effectiveCode}-${promptRecording.index}`;
+      let videoPlayer = document.getElementById(playerId);
+      
+      if (!videoPlayer) {
+        videoPlayer = document.createElement("video");
+        videoPlayer.id = playerId;
+        videoPlayer.style.display = "none";
+        document.body.appendChild(videoPlayer);
+      }
+      
+      videoPlayer.src = responseData.audioUrl;
+      await videoPlayer.play();
+      
+      videoPlayer.addEventListener("ended", () => {
+        setIsLoading(false);
+        playSequentialPromptResponse(index + 1);
+      }, { once: true });
+    } catch (error) {
+      console.error("Error playing sequential item:", error);
+      setIsLoading(false);
+      setIsPlaying(false);
+      setIsPlayingSequential(false);
+      setCurrentSequentialIndex(0);
+    }
+  };
+
   const handlePlay = async () => {
-    // For simulated conversations with prompt recordings, use the prompt play handler
+    // For simulated conversations with prompt recordings, play sequentially
     if (effectivePromptRecordings && effectivePromptRecordings.length > 0) {
-      // Play first prompt by default
-      handlePlayPrompt(effectivePromptRecordings[0].index);
+      if (isPlayingSequential) {
+        // Stop all sequential players
+        for (let i = 0; i < effectivePromptRecordings.length; i++) {
+          const promptRecording = effectivePromptRecordings[i];
+          const responsePlayer = document.getElementById(`sequentialResponsePlayer-${effectiveName}-${effectiveCode}-${promptRecording.index}`);
+          if (responsePlayer) {
+            responsePlayer.pause();
+            responsePlayer.currentTime = 0;
+          }
+        }
+        setIsPlayingSequential(false);
+        setCurrentSequentialIndex(0);
+        setIsPlaying(false);
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsPlayingSequential(true);
+      setCurrentSequentialIndex(0);
+      playSequentialPromptResponse(0);
       return;
     }
     
@@ -602,9 +675,8 @@ function ProfileCard({
       );
     }
     
-    // Get teacher token from localStorage
-    const teacherToken = localStorage.getItem("token");
-    if (!teacherToken) {
+    // Get teacher token from AuthContext
+    if (!token) {
       return toast.error("Teacher authentication required. Please log in again.");
     }
     
@@ -616,7 +688,7 @@ function ProfileCard({
         code: effectiveCode,
         index: index,
         participant: effectiveName,
-        token: teacherToken,
+        token: token,
       }).toString();
 
       const response = await fetch(
@@ -799,7 +871,7 @@ Teacher's Comment: ${comment}`
         code: effectiveCode,
         participant: effectiveName,
         subject: emailSubject,
-        pin: localStorage.getItem("token"),
+        pin: token,
       });
       queryParams.append("link", includeResponseLink);
       const response = await fetch(
@@ -983,61 +1055,48 @@ Teacher's Comment: ${comment}`
     setShowVideoModal(true);
     
     try {
-      // For simulated conversations, stitch all prompt+response segments together
+      // For simulated conversations, show all prompts and responses in a scrollable modal
       if (effectivePromptRecordings && effectivePromptRecordings.length > 0 && effectivePromptAudioUrls) {
-        const videoSegments = [];
+        const items = [];
         
         // Process each prompt+response pair
-        for (const promptRecording of effectivePromptRecordings) {
+        for (let i = 0; i < effectivePromptRecordings.length; i++) {
+          const promptRecording = effectivePromptRecordings[i];
           const promptIndex = promptRecording.index;
           const promptAudioUrl = effectivePromptAudioUrls.find(pa => pa.index === promptIndex);
           
-          if (!promptAudioUrl) continue;
+          if (promptAudioUrl) {
+            items.push({
+              type: "audio",
+              label: `Prompt ${i + 1}`,
+              url: promptAudioUrl.audioUrl,
+              index: promptIndex,
+            });
+          }
           
           try {
-            // Fetch prompt audio and response video
-            const [promptAudioResponse, responseResponse] = await Promise.all([
-              fetch(promptAudioUrl.audioUrl),
-              fetch(`https://www.server.speakeval.org/fetch_audio?token=${promptRecording.audio}&index=${promptIndex}`),
-            ]);
+            const responseResponse = await fetch(
+              `https://www.server.speakeval.org/fetch_audio?token=${promptRecording.audio}&index=${promptIndex}`
+            );
             
-            if (!promptAudioResponse.ok || !responseResponse.ok) {
-              console.warn(`Failed to fetch prompt ${promptIndex + 1} or response`);
-              continue;
+            if (responseResponse.ok) {
+              const responseData = await responseResponse.json();
+              if (responseData.audioUrl) {
+                items.push({
+                  type: "video",
+                  label: `Response ${i + 1}`,
+                  url: responseData.audioUrl,
+                  index: promptIndex,
+                });
+              }
             }
-            
-            const responseData = await responseResponse.json();
-            if (!responseData.audioUrl) {
-              console.warn(`No audio URL for response ${promptIndex + 1}`);
-              continue;
-            }
-            
-            // Get blobs
-            const promptAudioBlob = await promptAudioResponse.blob();
-            const responseVideoBlob = await fetch(responseData.audioUrl).then(r => r.blob());
-            
-            // Get prompt audio duration to create black screen video
-            const promptDuration = await getAudioDuration(promptAudioBlob);
-            
-            // Create black screen video for prompt duration
-            const blackScreenVideo = await createBlackScreenVideo(promptDuration);
-            
-            // Add segments in order: black screen (prompt) + response video
-            videoSegments.push(blackScreenVideo);
-            videoSegments.push(responseVideoBlob);
           } catch (error) {
-            console.error(`Error processing prompt ${promptIndex + 1}:`, error);
+            console.error(`Error fetching response ${i + 1}:`, error);
           }
         }
         
-        if (videoSegments.length === 0) {
-          throw new Error("No video segments to combine");
-        }
-        
-        // Stitch all segments together
-        const stitchedBlob = new Blob(videoSegments, { type: "video/webm" });
-        const videoUrl = URL.createObjectURL(stitchedBlob);
-        setVideoUrl(videoUrl);
+        setSimulatedConversationItems(items);
+        setVideoUrl(null); // Not using single video URL for simulated conversations
       } else {
         // Regular single recording - fetch normally
         let videoUrl;
@@ -1064,6 +1123,7 @@ Teacher's Comment: ${comment}`
         }
         
         setVideoUrl(videoUrl);
+        setSimulatedConversationItems([]);
       }
     } catch (error) {
       console.error("Error fetching video:", error);
@@ -1198,6 +1258,15 @@ Teacher's Comment: ${comment}`
                 </div>
               </div>
 
+              {/* View Infractions button */}
+              <div className="absolute top-28 right-6 z-10">
+                <button
+                  onClick={() => onShowInfractionsModal({ cheatingData, name })}
+                  className="ml-2 px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs rounded-md shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 flex items-center"
+                >
+                  <FaInfoCircle className="mr-1.5" /> View Infractions
+                </button>
+              </div>
             </>
           )}
           <div className="flex items-center w-full mb-4">
@@ -1222,13 +1291,13 @@ Teacher's Comment: ${comment}`
                 >
                   {isLoading ? (
                     <FaSpinner className="animate-spin" />
-                  ) : isPlaying ? (
+                  ) : (isPlaying || isPlayingSequential) ? (
                     <FaPause />
                   ) : (
                     <FaPlay />
                   )}
                 </button>
-                {!isPlaying && manuallyPaused && (
+                {!isPlaying && !isPlayingSequential && manuallyPaused && (
                   <button
                     className="p-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-full transition-all duration-300 shadow-md shadow-gray-500/50"
                     onClick={handleRestart}
@@ -1319,7 +1388,7 @@ Teacher's Comment: ${comment}`
             {effectivePromptRecordings && effectivePromptRecordings.length > 0 ? (
               <div className="p-3 bg-gray-800 rounded-lg shadow-inner">
                 <h3 className="text-lg font-semibold text-cyan-300 mb-2">
-                  Prompts:
+                  Responses:
                 </h3>
                 <div className="flex flex-col gap-3">
                   {effectivePromptRecordings.map((promptRecording, idx) => {
@@ -1366,18 +1435,6 @@ Teacher's Comment: ${comment}`
                   Answer:
                 </h3>
                 <p className="text-gray-300 break-words">{effectiveText}</p>
-              </div>
-            )}
-            
-            {/* View Infractions button - moved down below prompts/answer */}
-            {hasCheated && !downloadMode && (
-              <div className="mt-4">
-                <button
-                  onClick={() => onShowInfractionsModal({ cheatingData, name })}
-                  className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm rounded-md shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 flex items-center"
-                >
-                  <FaInfoCircle className="mr-1.5" /> View Infractions
-                </button>
               </div>
             )}
           </div>
@@ -1559,15 +1616,18 @@ Teacher's Comment: ${comment}`
 
       {showVideoModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[9999]">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg p-6 w-11/12 md:w-4/5 lg:w-3/5 shadow-xl border border-cyan-500/30">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">
-                Video Response: {effectiveName}
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg p-4 w-11/12 md:w-4/5 lg:w-3/5 shadow-xl border border-cyan-500/30 max-h-[70vh] flex flex-col">
+            <div className="flex justify-between items-center mb-3 flex-shrink-0">
+              <h2 className="text-lg font-bold text-white">
+                {effectivePromptRecordings && effectivePromptRecordings.length > 0 
+                  ? `Simulated Conversation: ${effectiveName}`
+                  : `Video Response: ${effectiveName}`}
               </h2>
               <button
                 onClick={() => {
                   setShowVideoModal(false);
                   setVideoUrl(null);
+                  setSimulatedConversationItems([]);
                 }}
                 className="text-gray-400 hover:text-white text-2xl"
               >
@@ -1575,13 +1635,42 @@ Teacher's Comment: ${comment}`
               </button>
             </div>
 
-            <div className="relative">
+            <div className="relative flex-1 overflow-y-auto">
               {isLoadingVideo ? (
                 <div className="flex items-center justify-center h-64 bg-gray-800 rounded-lg">
                   <div className="text-center">
                     <FaSpinner className="animate-spin text-cyan-400 text-3xl mx-auto mb-2" />
-                    <p className="text-white">Loading video...</p>
+                    <p className="text-white">Loading...</p>
                   </div>
+                </div>
+              ) : effectivePromptRecordings && effectivePromptRecordings.length > 0 && simulatedConversationItems.length > 0 ? (
+                <div className="space-y-3">
+                  {simulatedConversationItems.map((item, idx) => (
+                    <div key={idx} className="bg-gray-800/60 rounded-lg p-3 border border-cyan-500/30">
+                      <h3 className="text-sm font-semibold text-cyan-300 mb-2">
+                        {item.label}
+                      </h3>
+                      {item.type === "audio" ? (
+                        <audio
+                          src={item.url}
+                          controls
+                          className="w-full"
+                          preload="metadata"
+                        >
+                          Your browser does not support the audio tag.
+                        </audio>
+                      ) : (
+                        <video
+                          src={item.url}
+                          controls
+                          className="w-full h-auto rounded-lg"
+                          preload="metadata"
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      )}
+                    </div>
+                  ))}
                 </div>
               ) : videoUrl ? (
                 <video

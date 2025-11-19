@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FaCheck, FaEye, FaPlay, FaPause, FaVolumeUp, FaTimes, FaArrowLeft, FaExternalLinkAlt, FaDownload } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Card from "../components/Card";
+import { useAuth } from "../contexts/AuthContext";
 
 // Progress Circle Component
 const ProgressCircle = ({ percentage }) => {
@@ -57,6 +58,7 @@ const CompletionStatus = ({ isCompleted, completionPercentage }) => {
 
 // Response Viewer Component
 const ResponseViewer = ({ examCode, studentName, onClose }) => {
+  const { token } = useAuth();
   const [responses, setResponses] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,11 +67,10 @@ const ResponseViewer = ({ examCode, studentName, onClose }) => {
 
   useEffect(() => {
     fetchResponses();
-  }, [examCode, studentName]);
+  }, [examCode, studentName, token]);
 
   const fetchResponses = async () => {
     try {
-      const token = localStorage.getItem("token");
       if (!token) {
         setError("Teacher authentication required");
         setLoading(false);
@@ -307,6 +308,7 @@ const ResponseViewer = ({ examCode, studentName, onClose }) => {
 };
 
 const PracticeExamSubmissions = () => {
+  const { token } = useAuth();
   const { examCode } = useParams();
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState([]);
@@ -324,7 +326,6 @@ const PracticeExamSubmissions = () => {
 
   const fetchSubmissions = async () => {
     try {
-      const token = localStorage.getItem("token");
       if (!token) {
         setError("Teacher authentication required");
         setLoading(false);
