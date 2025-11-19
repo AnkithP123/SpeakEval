@@ -27,7 +27,6 @@ export default function AudioRecorder() {
   const [audioBlobURL, setAudioBlobURL] = useState(null);
   const countdownRef = useRef(0);
   const [countdownDisplay, setCountdownDisplay] = useState(0);
-  const [uploadTimeRemaining, setUploadTimeRemaining] = useState(0);
   const uploadUrlRef = useRef(null); // Store upload URL for later use
   const timer = useRef(-1);
 
@@ -56,12 +55,11 @@ export default function AudioRecorder() {
   const readyMediaRecorderRef = useRef(null); // MediaRecorder kept ready from permission grant
   const recorderMimeTypeRef = useRef("video/webm"); // Remember the last working mime type
   const readyScreenRecorderRef = useRef(null); // Screen recorder kept ready
-  const audioChunksRef = useRef([]); // Store audio chunks - only saving when question audio starts
+  const audioChunksRef = useRef([]); // Store audio chunks - always saving from when MediaRecorder starts
   const currentPromptChunksRef = useRef([]); // Store chunks for the current prompt's response (for simulated conversations)
   const mediaRecorderStartTimeRef = useRef(null); // Timestamp when MediaRecorder started
   const recordingStartTimeRef = useRef(null); // Timestamp when actual recording started
   const recordingStopTimeRef = useRef(null); // Timestamp when recording stopped
-  const shouldSaveChunksRef = useRef(false); // Flag to control when to save chunks (start when question audio plays)
   const recordingTimeframesRef = useRef([]); // Array of {start, end} timeframes for recordings (relative to MediaRecorder start)
   const questionAudioStartTimeRef = useRef(null); // Timestamp when question audio starts playing (relative to MediaRecorder start)
   const [questionAudioReady, setQuestionAudioReady] = useState(false);
@@ -905,11 +903,10 @@ export default function AudioRecorder() {
         audioPlaybackStarted();
         updateAudioPlayData({ isPlaying: true });
         
-        // Start saving chunks when question audio starts playing
-        if (!shouldSaveChunksRef.current && mediaRecorderStartTimeRef.current) {
-          shouldSaveChunksRef.current = true;
+        // Track when question audio starts playing (for metadata)
+        if (mediaRecorderStartTimeRef.current && !questionAudioStartTimeRef.current) {
           questionAudioStartTimeRef.current = (Date.now() - mediaRecorderStartTimeRef.current) / 1000; // Relative to MediaRecorder start in seconds
-          console.log(`📅 [Question Audio Start] Started saving chunks at ${questionAudioStartTimeRef.current.toFixed(2)}s relative to MediaRecorder start`);
+          console.log(`📅 [Question Audio Start] Question audio started at ${questionAudioStartTimeRef.current.toFixed(2)}s relative to MediaRecorder start`);
         }
       },
       onpause: () => {
@@ -1417,14 +1414,12 @@ export default function AudioRecorder() {
       return;
     }
 
-    // Only save chunks when question audio has started playing
-    if (shouldSaveChunksRef.current) {
-      audioChunksRef.current.push(event.data);
-      currentPromptChunksRef.current.push(event.data);
-      console.log(
-        `📦 [Chunk Saved] Saved chunk: ${event.data.size} bytes | Total chunks: ${audioChunksRef.current.length}`
-      );
-    }
+    // Always save chunks from when MediaRecorder starts
+    audioChunksRef.current.push(event.data);
+    currentPromptChunksRef.current.push(event.data);
+    console.log(
+      `📦 [Chunk Saved] Saved chunk: ${event.data.size} bytes | Total chunks: ${audioChunksRef.current.length}`
+    );
   };
 
   const startContinuousRecorder = (stream, preferredMimeType = null) => {
@@ -1467,17 +1462,36 @@ export default function AudioRecorder() {
     mediaRecorderStartTimeRef.current = Date.now();
     console.log(`📅 [MediaRecorder Start] Timestamp: ${mediaRecorderStartTimeRef.current}`);
 
+    // Pause MediaRecorder immediately after starting (will resume when recording actually starts)
+    try {
+      if (recorder.state === "recording" && typeof recorder.pause === "function") {
+        recorder.pause();
+        console.log("⏸️ [MediaRecorder Start] MediaRecorder paused immediately after start");
+      } else {
+        // Fallback: disable tracks if pause is not available
+        stream.getTracks().forEach(track => {
+          track.enabled = false;
+        });
+        console.log("⏸️ [MediaRecorder Start] Stream tracks disabled (pause not available)");
+      }
+    } catch (pauseError) {
+      console.warn("⚠️ [MediaRecorder Start] Could not pause MediaRecorder, disabling tracks instead:", pauseError);
+      // Fallback: disable tracks
+      stream.getTracks().forEach(track => {
+        track.enabled = false;
+      });
+    }
+
     // Clear chunks and reset flags
     audioChunksRef.current = [];
     currentPromptChunksRef.current = [];
-    shouldSaveChunksRef.current = false; // Don't save chunks until question audio starts
     recordingTimeframesRef.current = []; // Reset timeframes
     questionAudioStartTimeRef.current = null;
 
     console.log("✅ [MediaRecorder Start] MediaRecorder started successfully!");
     console.log(`✅ [MediaRecorder Start] State: ${recorder.state}`);
     console.log(`✅ [MediaRecorder Start] MimeType: ${recorder.mimeType}`);
-    console.log("✅ [MediaRecorder Start] Recording continuously - all chunks will be saved");
+    console.log("✅ [MediaRecorder Start] MediaRecorder paused - will resume when recording starts");
 
     return recorder;
   };
@@ -2401,10 +2415,37 @@ export default function AudioRecorder() {
       }
 
         // MediaRecorder is already running continuously from permission grant
-      // Chunks are already being saved, so we don't need to do anything here
+      // Resume it if it's paused, or enable tracks if they were disabled
       if (readyMediaRecorderRef.current) {
-        console.log("🎙️ [Start Recording] MediaRecorder already running and saving chunks");
-        console.log(`🎙️ [Start Recording] MediaRecorder state: ${readyMediaRecorderRef.current.state}`);
+        const recorder = readyMediaRecorderRef.current;
+        console.log(`🎙️ [Start Recording] MediaRecorder state: ${recorder.state}`);
+        
+        // Resume MediaRecorder if it's paused
+        if (recorder.state === "paused" && typeof recorder.resume === "function") {
+          try {
+            recorder.resume();
+            console.log("▶️ [Start Recording] MediaRecorder resumed");
+          } catch (resumeError) {
+            console.warn("⚠️ [Start Recording] Could not resume MediaRecorder:", resumeError);
+            // Fallback: enable tracks
+            if (microphoneStream) {
+              microphoneStream.getTracks().forEach(track => {
+                track.enabled = true;
+              });
+              console.log("▶️ [Start Recording] Stream tracks enabled (resume failed)");
+            }
+          }
+        } else if (recorder.state === "recording") {
+          // If recording, make sure tracks are enabled
+          if (microphoneStream) {
+            microphoneStream.getTracks().forEach(track => {
+              track.enabled = true;
+            });
+            console.log("▶️ [Start Recording] Stream tracks enabled");
+          }
+        }
+        
+        console.log(`🎙️ [Start Recording] MediaRecorder state after resume: ${recorder.state}`);
         console.log(`🎙️ [Start Recording] Current chunks count: ${audioChunksRef.current.length}`);
         
         // For simulated conversations, clear current prompt chunks when starting a new prompt recording
@@ -2908,11 +2949,10 @@ export default function AudioRecorder() {
           audioPlaybackStarted();
           updateAudioPlayData({ isPlaying: true });
           
-          // Start saving chunks when prompt audio starts playing
-          if (!shouldSaveChunksRef.current && mediaRecorderStartTimeRef.current) {
-            shouldSaveChunksRef.current = true;
+          // Track when prompt audio starts playing (for metadata)
+          if (mediaRecorderStartTimeRef.current && !questionAudioStartTimeRef.current) {
             questionAudioStartTimeRef.current = (Date.now() - mediaRecorderStartTimeRef.current) / 1000; // Relative to MediaRecorder start in seconds
-            console.log(`📅 [Prompt Audio Start] Started saving chunks at ${questionAudioStartTimeRef.current.toFixed(2)}s relative to MediaRecorder start`);
+            console.log(`📅 [Prompt Audio Start] Prompt audio started at ${questionAudioStartTimeRef.current.toFixed(2)}s relative to MediaRecorder start`);
           }
         },
         onend: async () => {
@@ -5159,32 +5199,6 @@ export default function AudioRecorder() {
                   ? "Your response has been uploaded and transcribed successfully."
                   : "Please wait while we upload your recording..."}
               </p>
-              
-              {/* Upload Timer - Show at bottom */}
-              {(!stageData.uploading.uploadComplete && !stageData.uploading.waitingForTranscription) && (
-                <div style={{ 
-                  marginTop: "32px", 
-                  textAlign: "center",
-                  padding: "16px",
-                  backgroundColor: "#F3F4F6",
-                  borderRadius: "8px"
-                }}>
-                  <p style={{
-                    fontSize: "14px",
-                    color: "#6B7280",
-                    marginBottom: "8px",
-                  }}>
-                    Estimated time remaining
-                  </p>
-                  <p style={{
-                    fontSize: "24px",
-                    fontWeight: "600",
-                    color: "#3B82F6",
-                  }}>
-                    {Math.max(0, Math.ceil(uploadTimeRemaining))} seconds
-                  </p>
-                </div>
-              )}
 
               {/* Transcription Results */}
               {stageData.uploading.uploadComplete &&
