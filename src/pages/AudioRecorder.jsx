@@ -27,6 +27,10 @@ export default function AudioRecorder() {
   const [audioBlobURL, setAudioBlobURL] = useState(null);
   const countdownRef = useRef(0);
   const [countdownDisplay, setCountdownDisplay] = useState(0);
+  const [isProcessingVideo, setIsProcessingVideo] = useState(false);
+  const [processingTimeRemaining, setProcessingTimeRemaining] = useState(0);
+  const [uploadTimeRemaining, setUploadTimeRemaining] = useState(0);
+  const uploadUrlRef = useRef(null); // Store upload URL for later use
   const timer = useRef(-1);
 
   // Audio player hook - initialize without URL, load when audioBlobURL is available
@@ -1623,7 +1627,7 @@ export default function AudioRecorder() {
     }
   };
 
-  const trimVideo = async (videoBlob, startTime, endTime) => {
+  const trimVideo = async (videoBlob, startTime, endTime, onProgress) => {
     return new Promise((resolve, reject) => {
       const video = document.createElement("video");
       const videoUrl = URL.createObjectURL(videoBlob);
@@ -1641,7 +1645,6 @@ export default function AudioRecorder() {
         const canvasStream = canvas.captureStream(30); // 30 fps
         
         // Get audio track from the original video element
-        // We'll use the video's captureStream to get both video and audio, then replace video with canvas
         const videoStream = video.captureStream(30);
         const audioTracks = videoStream.getAudioTracks();
         
@@ -1689,50 +1692,40 @@ export default function AudioRecorder() {
           reject(new Error("MediaRecorder error: " + e.error));
         };
         
-        // Speed up video playback for faster trimming
-        // Use a high playback rate to process quickly (8x speed)
-        video.playbackRate = 8;
-        
+        const duration = endTime - startTime;
         video.currentTime = startTime;
         
-        // Use requestAnimationFrame for smooth frame capture at high speed
-        let animationFrameId = null;
-        const captureFrame = () => {
-          if (video.ended || video.paused || video.currentTime >= endTime) {
-            if (video.currentTime >= endTime) {
-              video.pause();
-              mediaRecorder.stop();
+        // Use requestAnimationFrame for smoother progress updates
+        let lastUpdateTime = Date.now();
+        const updateProgress = () => {
+          const now = Date.now();
+          if (now - lastUpdateTime >= 100) { // Update every 100ms
+            const currentTime = video.currentTime;
+            const elapsed = currentTime - startTime;
+            const remaining = Math.max(0, duration - elapsed);
+            
+            if (onProgress) {
+              onProgress(remaining);
             }
-            if (animationFrameId) {
-              cancelAnimationFrame(animationFrameId);
-            }
-            return;
+            lastUpdateTime = now;
           }
-          
-          if (mediaRecorder.state === "recording") {
-            // Draw frame to canvas
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          }
-          
-          animationFrameId = requestAnimationFrame(captureFrame);
         };
         
         video.ontimeupdate = () => {
+          updateProgress();
           const currentTime = video.currentTime;
           if (currentTime >= endTime) {
             video.pause();
             mediaRecorder.stop();
             video.ontimeupdate = null;
-            if (animationFrameId) {
-              cancelAnimationFrame(animationFrameId);
-            }
+          } else if (mediaRecorder.state === "recording") {
+            // Draw frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           }
         };
         
         video.onplay = () => {
           mediaRecorder.start();
-          // Start frame capture loop
-          animationFrameId = requestAnimationFrame(captureFrame);
         };
         
         video.play().catch(reject);
@@ -1760,6 +1753,59 @@ export default function AudioRecorder() {
       return;
     }
 
+    // Calculate duration for timer
+    let duration = 0;
+    if (mediaRecorderStartTimeRef.current && recordingStartTimeRef.current && recordingStopTimeRef.current) {
+      const startOffset = (recordingStartTimeRef.current - mediaRecorderStartTimeRef.current) / 1000;
+      const endTime = (recordingStopTimeRef.current - mediaRecorderStartTimeRef.current) / 1000;
+      duration = endTime - startOffset;
+    }
+
+    // Start upload process early (get URL while processing)
+    const token = tokenManager.getStudentToken();
+    let uploadUrlPromise = null;
+    
+    // Advance to uploading stage and show timer
+    advanceStage("uploading");
+    updateUploadingData({
+      isUploading: true,
+      uploadProgress: 0,
+      uploadComplete: false,
+      uploadError: null,
+    });
+    setError(
+      "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
+    );
+    setIsError(false);
+    setFinishedRecording(true);
+    setIsFullscreen(false);
+    uploadStarted();
+    updateStudentStatus("uploading");
+    
+    // Set upload timer to recording duration
+    setUploadTimeRemaining(duration);
+    
+    // Start countdown timer
+    const timerInterval = setInterval(() => {
+      setUploadTimeRemaining((prev) => {
+        if (prev <= 0) {
+          clearInterval(timerInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    // Get upload URL while processing
+    try {
+      uploadUrlPromise = fetch(
+        `https://www.server.speakeval.org/get-recording-upload-url?token=${token}`,
+        { method: "GET" }
+      );
+    } catch (err) {
+      console.error("Error getting upload URL:", err);
+    }
+
     // Trim the video to only include the recording period
     let trimmedBlob = blob;
     if (mediaRecorderStartTimeRef.current && recordingStartTimeRef.current && recordingStopTimeRef.current) {
@@ -1768,15 +1814,28 @@ export default function AudioRecorder() {
       
       console.log(`✂️ [Trim Video] Trimming video from ${startOffset.toFixed(2)}s to ${endTime.toFixed(2)}s`);
       
+      // Show processing state
+      setIsProcessingVideo(true);
+      setProcessingTimeRemaining(duration);
+      
       try {
-        trimmedBlob = await trimVideo(blob, startOffset, endTime);
+        trimmedBlob = await trimVideo(blob, startOffset, endTime, (remaining) => {
+          setProcessingTimeRemaining(remaining);
+        });
         console.log(`✅ [Trim Video] Video trimmed successfully. Original size: ${blob.size} bytes, Trimmed size: ${trimmedBlob.size} bytes`);
+        
+        // Hide processing state
+        setIsProcessingVideo(false);
+        setProcessingTimeRemaining(0);
         
         // Create new URL for trimmed video
         const trimmedUrl = URL.createObjectURL(trimmedBlob);
         setAudioURL(trimmedUrl);
       } catch (err) {
         console.error("❌ [Trim Video] Error trimming video:", err);
+        // Hide processing state
+        setIsProcessingVideo(false);
+        setProcessingTimeRemaining(0);
         // Continue with original blob if trimming fails
         setAudioURL(blobUrl);
       }
@@ -1784,19 +1843,163 @@ export default function AudioRecorder() {
       setAudioURL(blobUrl);
     }
 
-    const formData = new FormData();
-    // Record both audio and video, but keep field name as "audio" for backend compatibility
-    formData.append("audio", trimmedBlob, "recording.mp4");
+    // Wait for upload URL if we started fetching it
+    let uploadUrl = null;
+    if (uploadUrlPromise) {
+      try {
+        const uploadUrlResponse = await uploadUrlPromise;
+        if (uploadUrlResponse.ok) {
+          const data = await uploadUrlResponse.json();
+          uploadUrl = data.uploadUrl;
+          uploadUrlRef.current = uploadUrl;
+        } else {
+          const errorData = await uploadUrlResponse.json();
+          if (errorData.code === "RECORDING_EXISTS") {
+            setError(
+              "You have already completed this question. Please wait for the next question or for your teacher to restart the room."
+            );
+            setIsError(false);
+            setFinishedRecording(true);
+            advanceStage("finished");
+            clearInterval(timerInterval);
+            setIsRecording(false);
+            return;
+          }
+          throw new Error("Failed to get upload URL");
+        }
+      } catch (err) {
+        console.error("Error getting upload URL:", err);
+        // Fall back to regular upload function
+        const formData = new FormData();
+        formData.append("audio", trimmedBlob, "recording.mp4");
+        updateRecordingData({
+          recordingBlob: trimmedBlob,
+          hasRecorded: true,
+          isRecording: false,
+        });
+        clearInterval(timerInterval);
+        await upload(formData);
+        setIsRecording(false);
+        return;
+      }
+    }
 
-    // Update recording data with trimmed blob
-    updateRecordingData({
-      recordingBlob: trimmedBlob,
-      hasRecorded: true,
-      isRecording: false,
-    });
+    // Clear timer interval
+    clearInterval(timerInterval);
+    
+    // If timer reached 0, keep it at 0
+    if (uploadTimeRemaining <= 0) {
+      setUploadTimeRemaining(0);
+    }
 
-    // Start upload process
-    await upload(formData);
+    // Upload directly to S3
+    if (uploadUrl) {
+      try {
+        updateUploadingData({ uploadProgress: 20 });
+        
+        // Upload directly to S3 using presigned URL
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "PUT",
+          body: trimmedBlob,
+          headers: {
+            "Content-Type": "video/mp4",
+          },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload to S3");
+        }
+
+        updateUploadingData({ uploadProgress: 60 });
+
+        // Notify server
+        const uploadData = {
+          uploaded: true,
+          speechRecognitionText: finalRecognizedTextRef.current || recognizedText || null,
+          recognitionLanguage: examLanguage,
+        };
+
+        const response = await fetch(
+          `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(uploadData),
+          }
+        );
+
+        if (!response.ok) {
+          // Retry logic similar to upload function
+          const retryInterval = setInterval(async () => {
+            const retryUploadData = {
+              uploaded: true,
+              speechRecognitionText: finalRecognizedTextRef.current || recognizedText || null,
+              recognitionLanguage: examLanguage,
+            };
+
+            const retryResponse = await fetch(
+              `https://www.server.speakeval.org/upload?token=${token}&index=${questionIndex}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(retryUploadData),
+              }
+            );
+            
+            if (retryResponse.ok) {
+              clearInterval(retryInterval);
+              const data = await retryResponse.json();
+              setDisplayTime("xx:xx");
+              updateUploadingData({
+                isUploading: false,
+                uploadComplete: true,
+                uploadError: null,
+                transcriptionText: data.transcription,
+                waitingForTranscription: false,
+              });
+              uploadCompleted();
+              updateStudentStatus("upload_completed");
+              questionCompleted(questionIndex);
+            }
+          }, 10000);
+        } else {
+          const data = await response.json();
+          setDisplayTime("xx:xx");
+          updateUploadingData({
+            isUploading: false,
+            uploadComplete: true,
+            uploadError: null,
+            transcriptionText: data.transcription,
+            waitingForTranscription: false,
+          });
+          uploadCompleted();
+          updateStudentStatus("upload_completed");
+          questionCompleted(questionIndex);
+        }
+      } catch (err) {
+        console.error("Error uploading:", err);
+        // Fall back to regular upload function
+        const formData = new FormData();
+        formData.append("audio", trimmedBlob, "recording.mp4");
+        updateRecordingData({
+          recordingBlob: trimmedBlob,
+          hasRecorded: true,
+          isRecording: false,
+        });
+        await upload(formData);
+      }
+    } else {
+      // Fall back to regular upload function
+      const formData = new FormData();
+      formData.append("audio", trimmedBlob, "recording.mp4");
+      updateRecordingData({
+        recordingBlob: trimmedBlob,
+        hasRecorded: true,
+        isRecording: false,
+      });
+      await upload(formData);
+    }
+    
     setIsRecording(false);
     // Note: audioBlobURL is for question audio, not recorded audio playback
     // Recorded audio playback would use a separate player if needed
@@ -2375,7 +2578,7 @@ export default function AudioRecorder() {
         return;
       }
 
-      // MediaRecorder is already running continuously from permission grant
+        // MediaRecorder is already running continuously from permission grant
       // Chunks are already being saved, so we don't need to do anything here
       if (readyMediaRecorderRef.current) {
         console.log("🎙️ [Start Recording] MediaRecorder already running and saving chunks");
@@ -3052,6 +3255,59 @@ export default function AudioRecorder() {
       const mimeType = readyMediaRecorderRef.current?.mimeType || recorderMimeTypeRef.current || "video/mp4";
       let fullRecordingBlob = new Blob(audioChunksRef.current, { type: mimeType });
       
+      // Calculate duration for timer
+      let duration = 0;
+      if (mediaRecorderStartTimeRef.current && recordingStartTimeRef.current && recordingStopTimeRef.current) {
+        const startOffset = (recordingStartTimeRef.current - mediaRecorderStartTimeRef.current) / 1000;
+        const endTime = (recordingStopTimeRef.current - mediaRecorderStartTimeRef.current) / 1000;
+        duration = endTime - startOffset;
+      }
+      
+      // Start upload process early (get URL while processing)
+      const token = tokenManager.getStudentToken();
+      let uploadUrlPromise = null;
+      
+      // Advance to uploading stage and show timer
+      advanceStage("uploading");
+      updateUploadingData({
+        isUploading: true,
+        uploadProgress: 0,
+        uploadComplete: false,
+        uploadError: null,
+      });
+      setError(
+        "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
+      );
+      setIsError(false);
+      setFinishedRecording(true);
+      setIsFullscreen(false);
+      uploadStarted();
+      updateStudentStatus("uploading");
+      
+      // Set upload timer to recording duration
+      setUploadTimeRemaining(duration);
+      
+      // Start countdown timer
+      const timerInterval = setInterval(() => {
+        setUploadTimeRemaining((prev) => {
+          if (prev <= 0) {
+            clearInterval(timerInterval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      // Get upload URL while processing
+      try {
+        uploadUrlPromise = fetch(
+          `https://www.server.speakeval.org/get-recording-upload-url?token=${token}&index=0`,
+          { method: "GET" }
+        );
+      } catch (err) {
+        console.error("Error getting upload URL:", err);
+      }
+      
       // Trim the video to only include the recording period
       if (mediaRecorderStartTimeRef.current && recordingStartTimeRef.current && recordingStopTimeRef.current) {
         const startOffset = (recordingStartTimeRef.current - mediaRecorderStartTimeRef.current) / 1000;
@@ -3059,47 +3315,55 @@ export default function AudioRecorder() {
         
         console.log(`✂️ [Trim Video] Trimming simulated conversation video from ${startOffset.toFixed(2)}s to ${endTime.toFixed(2)}s`);
         
+        // Show processing state
+        setIsProcessingVideo(true);
+        setProcessingTimeRemaining(duration);
+        
         try {
-          fullRecordingBlob = await trimVideo(fullRecordingBlob, startOffset, endTime);
+          fullRecordingBlob = await trimVideo(fullRecordingBlob, startOffset, endTime, (remaining) => {
+            setProcessingTimeRemaining(remaining);
+          });
           console.log(`✅ [Trim Video] Video trimmed successfully. Trimmed size: ${fullRecordingBlob.size} bytes`);
+          
+          // Hide processing state
+          setIsProcessingVideo(false);
+          setProcessingTimeRemaining(0);
         } catch (err) {
           console.error("❌ [Trim Video] Error trimming video:", err);
+          // Hide processing state
+          setIsProcessingVideo(false);
+          setProcessingTimeRemaining(0);
           // Continue with original blob if trimming fails
         }
       }
       
-      // Upload as a single recording (index 0)
-      const token = tokenManager.getStudentToken();
+      // Wait for upload URL if we started fetching it
+      let uploadUrl = null;
+      if (uploadUrlPromise) {
+        try {
+          const uploadUrlResponse = await uploadUrlPromise;
+          if (uploadUrlResponse.ok) {
+            const data = await uploadUrlResponse.json();
+            uploadUrl = data.uploadUrl;
+          } else {
+            throw new Error("Failed to get upload URL");
+          }
+        } catch (err) {
+          console.error("Error getting upload URL:", err);
+          clearInterval(timerInterval);
+          throw err;
+        }
+      }
+      
+      // Clear timer interval
+      clearInterval(timerInterval);
+      
+      // If timer reached 0, keep it at 0
+      if (uploadTimeRemaining <= 0) {
+        setUploadTimeRemaining(0);
+      }
       
       try {
-        advanceStage("uploading");
-        updateUploadingData({
-          isUploading: true,
-          uploadProgress: 0,
-          uploadComplete: false,
-          uploadError: null,
-        });
-
-        setError(
-          "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
-        );
-        setIsError(false);
-        setFinishedRecording(true);
-        setIsFullscreen(false);
-        uploadStarted();
-        updateStudentStatus("uploading");
-
-        // Get upload URL
-        const uploadUrlResponse = await fetch(
-          `https://www.server.speakeval.org/get-recording-upload-url?token=${token}&index=0`,
-          { method: "GET" }
-        );
-
-        if (!uploadUrlResponse.ok) {
-          throw new Error("Failed to get upload URL");
-        }
-
-        const { uploadUrl } = await uploadUrlResponse.json();
         updateUploadingData({ uploadProgress: 20 });
 
         // Upload the entire recording
@@ -3415,7 +3679,7 @@ export default function AudioRecorder() {
       audioChunksRef.current = [];
     } else {
       // Fallback to hook only if ready recorder doesn't exist
-      stopAudioRecording();
+    stopAudioRecording();
     }
     
     // Stop screen recording
@@ -5068,7 +5332,9 @@ export default function AudioRecorder() {
                   marginBottom: "20px",
                 }}
               >
-                {stageData.uploading.waitingForTranscription
+                {isProcessingVideo
+                  ? "Processing Audio"
+                  : stageData.uploading.waitingForTranscription
                   ? "Waiting for Transcription"
                   : stageData.uploading.uploadComplete
                   ? "Upload Complete"
@@ -5081,46 +5347,38 @@ export default function AudioRecorder() {
                   marginBottom: "24px",
                 }}
               >
-                {stageData.uploading.waitingForTranscription
+                {isProcessingVideo
+                  ? "Please wait while we process your recording..."
+                  : stageData.uploading.waitingForTranscription
                   ? "Your response has been uploaded successfully. We're now waiting for the transcription to be processed..."
                   : stageData.uploading.uploadComplete
                   ? "Your response has been uploaded and transcribed successfully."
                   : "Please wait while we upload your recording..."}
               </p>
-
-              {/* Video Player - Show after upload completes */}
-              {stageData.uploading.uploadComplete && audioURL && (
-                <div
-                  style={{
-                    maxWidth: "640px",
-                    margin: "0 auto 24px auto",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                  }}
-                >
-                  <h3
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: "600",
-                      color: "#374151",
-                      marginBottom: "12px",
-                      textAlign: "center",
-                    }}
-                  >
-                    Your Recording
-                  </h3>
-                  <video
-                    src={audioURL}
-                    controls
-                    style={{
-                      width: "100%",
-                      height: "auto",
-                      display: "block",
-                    }}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+              
+              {/* Upload Timer - Show at bottom */}
+              {(isProcessingVideo || (!stageData.uploading.uploadComplete && !stageData.uploading.waitingForTranscription)) && (
+                <div style={{ 
+                  marginTop: "32px", 
+                  textAlign: "center",
+                  padding: "16px",
+                  backgroundColor: "#F3F4F6",
+                  borderRadius: "8px"
+                }}>
+                  <p style={{
+                    fontSize: "14px",
+                    color: "#6B7280",
+                    marginBottom: "8px",
+                  }}>
+                    Estimated time remaining
+                  </p>
+                  <p style={{
+                    fontSize: "24px",
+                    fontWeight: "600",
+                    color: "#3B82F6",
+                  }}>
+                    {Math.max(0, Math.ceil(uploadTimeRemaining))} seconds
+                  </p>
                 </div>
               )}
 
