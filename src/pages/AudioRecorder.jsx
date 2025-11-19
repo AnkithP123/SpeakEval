@@ -1629,6 +1629,7 @@ export default function AudioRecorder() {
       const videoUrl = URL.createObjectURL(videoBlob);
       video.src = videoUrl;
       video.crossOrigin = "anonymous";
+      video.muted = true; // Mute to prevent audio from playing through speakers during trimming
       
       video.onloadedmetadata = () => {
         const canvas = document.createElement("canvas");
@@ -1636,9 +1637,32 @@ export default function AudioRecorder() {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        const stream = canvas.captureStream(30); // 30 fps
+        // Capture video stream from canvas
+        const canvasStream = canvas.captureStream(30); // 30 fps
+        
+        // Get audio track from the original video element
+        // We'll use the video's captureStream to get both video and audio, then replace video with canvas
+        const videoStream = video.captureStream(30);
+        const audioTracks = videoStream.getAudioTracks();
+        
+        // Combine canvas video with original audio
+        const combinedStream = new MediaStream();
+        
+        // Add video track from canvas
+        const canvasVideoTracks = canvasStream.getVideoTracks();
+        if (canvasVideoTracks.length > 0) {
+          combinedStream.addTrack(canvasVideoTracks[0]);
+        }
+        
+        // Add audio track from original video
+        if (audioTracks.length > 0) {
+          combinedStream.addTrack(audioTracks[0]);
+        } else {
+          console.warn("⚠️ [Trim Video] No audio track found in original video");
+        }
+        
         const mimeType = videoBlob.type || "video/webm;codecs=vp9,opus";
-        const mediaRecorder = new MediaRecorder(stream, {
+        const mediaRecorder = new MediaRecorder(combinedStream, {
           mimeType: mimeType,
           videoBitsPerSecond: 2500000,
         });
@@ -1649,29 +1673,66 @@ export default function AudioRecorder() {
         };
         
         mediaRecorder.onstop = () => {
+          // Clean up tracks
+          canvasVideoTracks.forEach(track => track.stop());
+          audioTracks.forEach(track => track.stop());
           URL.revokeObjectURL(videoUrl);
           const trimmedBlob = new Blob(chunks, { type: mimeType });
           resolve(trimmedBlob);
         };
         
         mediaRecorder.onerror = (e) => {
+          // Clean up tracks
+          canvasVideoTracks.forEach(track => track.stop());
+          audioTracks.forEach(track => track.stop());
           URL.revokeObjectURL(videoUrl);
           reject(new Error("MediaRecorder error: " + e.error));
         };
         
+        // Speed up video playback for faster trimming
+        // Use a high playback rate to process quickly (8x speed)
+        video.playbackRate = 8;
+        
         video.currentTime = startTime;
+        
+        // Use requestAnimationFrame for smooth frame capture at high speed
+        let animationFrameId = null;
+        const captureFrame = () => {
+          if (video.ended || video.paused || video.currentTime >= endTime) {
+            if (video.currentTime >= endTime) {
+              video.pause();
+              mediaRecorder.stop();
+            }
+            if (animationFrameId) {
+              cancelAnimationFrame(animationFrameId);
+            }
+            return;
+          }
+          
+          if (mediaRecorder.state === "recording") {
+            // Draw frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          }
+          
+          animationFrameId = requestAnimationFrame(captureFrame);
+        };
+        
         video.ontimeupdate = () => {
-          if (video.currentTime >= endTime) {
+          const currentTime = video.currentTime;
+          if (currentTime >= endTime) {
             video.pause();
             mediaRecorder.stop();
             video.ontimeupdate = null;
-          } else if (mediaRecorder.state === "recording") {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            if (animationFrameId) {
+              cancelAnimationFrame(animationFrameId);
+            }
           }
         };
         
         video.onplay = () => {
           mediaRecorder.start();
+          // Start frame capture loop
+          animationFrameId = requestAnimationFrame(captureFrame);
         };
         
         video.play().catch(reject);
