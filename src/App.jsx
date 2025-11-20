@@ -48,7 +48,7 @@ function AudioRecorderRouteWrapper() {
   return <AudioRecorder />;
 }
 
-const maintenance = false;
+const maintenance = true;
 
 function App() {
   const [gold, setgold] = React.useState(
@@ -177,8 +177,14 @@ function App() {
           <Route path="/practice" element={<Practice />} />
           <Route path="/practice-exam" element={<PracticeExam />} />
           <Route path="/practice-exams" element={<PracticeExams />} />
-          <Route path="/practice-exam-submissions/:examCode" element={<PracticeExamSubmissions />} />
-          <Route path="/practice-exam-responses/:examCode/:studentName" element={<PracticeExamResponses />} />
+          <Route
+            path="/practice-exam-submissions/:examCode"
+            element={<PracticeExamSubmissions />}
+          />
+          <Route
+            path="/practice-exam-responses/:examCode/:studentName"
+            element={<PracticeExamResponses />}
+          />
           <Route path="/profile" element={<ProfileCard />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
