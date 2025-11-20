@@ -847,16 +847,18 @@ const Config = ({
           }),
         }
       );
-      if (response.error) {
-        console.error("Server Error:", response.error);
-        throw new Error(response.error);
+      const result = await response.json();
+      console.log("Result:", result);
+
+      if (result.error) {
+        console.error("Server Error:", result.error);
+        throw new Error(result.error);
       } else if (!response.ok) {
         const errorText = await response.error;
         console.error("Server Error Response:", errorText);
         throw new Error(`Server error: ${response.status}`);
       }
 
-      const result = await response.json();
 
       if (result.audio && Array.isArray(result.audio) && result.complete) {
         const audioUrls = result.audio
@@ -926,7 +928,7 @@ const Config = ({
       }
     } catch (error) {
       console.error("Confirm error:", error);
-      const errorMessage = error.message.includes("Server Error")
+      const errorMessage = error.message.includes("Server error")
         ? error.message
         : `Failed to process audio: ${error.message}`;
       toast.error(errorMessage);
