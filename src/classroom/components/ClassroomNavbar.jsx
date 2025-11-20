@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaHome, FaPlus, FaUsers, FaGraduationCap, FaSignOutAlt, FaUser, FaCog } from 'react-icons/fa';
+import { cookieUtils } from '../../utils/cookieUtils';
 
 const ClassroomNavbar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -99,22 +100,41 @@ const ClassroomNavbar = () => {
     };
   }, [dropdownOpen]);
 
-  const handleLogout = () => {
-    // Clear main site authentication
+  const handleLogout = async () => {
+    // Clear all authentication data
     localStorage.removeItem('username');
     localStorage.removeItem('token');
+    localStorage.removeItem('auth_token');
     localStorage.removeItem('pin');
     localStorage.removeItem('gold');
     localStorage.removeItem('ultimate');
-    
-    // Clear classroom authentication
     localStorage.removeItem('classroom_user');
     localStorage.removeItem('classroom_token');
-    localStorage.removeItem('token');
+    localStorage.removeItem('speakeval_student_token');
+    localStorage.removeItem('speakeval_room_session');
+    
+    // Clear all cookies using centralized utility
+    cookieUtils.deleteCookie('auth_token', { path: '/' });
+    cookieUtils.deleteCookie('token', { path: '/' });
+    cookieUtils.deleteCookie('classroom_token', { path: '/' });
+    
+    // Try to clear httpOnly cookies via server endpoint
+    try {
+      await fetch('https://www.server.speakeval.org/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.log('Server logout endpoint not available, continuing with client-side cleanup');
+    }
     
     // Dispatch custom event to update navbar
     window.dispatchEvent(new CustomEvent('userUpdated'));
     
+    // Navigate to home page
     window.location.href = '/';
   };
 

@@ -265,13 +265,46 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   // Logout function
-  const logout = () => {
+  const logout = async () => {
+    // Clear all authentication state
     setToken(null);
     setUsername(null);
     setIsAuthenticated(false);
-    setTokenInStorage(null);
     clearVerificationCache();
+    
+    // Clear all localStorage items related to authentication
+    localStorage.removeItem('token');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('classroom_token');
     localStorage.removeItem('username');
+    localStorage.removeItem('pin');
+    localStorage.removeItem('gold');
+    localStorage.removeItem('ultimate');
+    localStorage.removeItem('classroom_user');
+    localStorage.removeItem('speakeval_student_token');
+    localStorage.removeItem('speakeval_room_session');
+    
+    // Clear all cookies (try all possible cookie names)
+    cookieUtils.deleteCookie('auth_token', { path: '/' });
+    cookieUtils.deleteCookie('token', { path: '/' });
+    cookieUtils.deleteCookie('classroom_token', { path: '/' });
+    
+    // Try to clear httpOnly cookies via server endpoint
+    try {
+      await fetch('https://www.server.speakeval.org/logout', {
+        method: 'POST',
+        credentials: 'include', // Important: include cookies in request
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      // If server endpoint doesn't exist or fails, continue with client-side cleanup
+      console.log('Server logout endpoint not available, continuing with client-side cleanup');
+    }
+    
+    // Dispatch event to notify other components
+    window.dispatchEvent(new CustomEvent('userUpdated'));
   };
 
   // Periodically check token expiration (every minute)

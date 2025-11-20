@@ -63,7 +63,7 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
     setName(username);
   }, [username]);
 
-  const { token, username: authUsername } = useAuth();
+  const { token, username: authUsername, logout: authLogout } = useAuth();
   
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -78,27 +78,19 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
   const handleLogin = () => {
     navigate("/login");
   };
-
-  const handleLogout = () => {
-    localStorage.removeItem("gold");
+  
+  const handleLogout = async () => {
+    // Clear subscription state
     setVar3(false);
-    localStorage.removeItem("ultimate");
     setVar4(false);
-    localStorage.removeItem("username");
     setUserName(null);
-    localStorage.removeItem("pin");
     setPin(null);
-    localStorage.removeItem("token");
-
-    // Also clear classroom authentication data
-    localStorage.removeItem("classroom_user");
-    localStorage.removeItem("classroom_token");
-    localStorage.removeItem("token");
-
-    // Dispatch custom event to update classroom navbar
-    window.dispatchEvent(new CustomEvent("userUpdated"));
-
-    //reload
+    
+    // Use centralized logout from AuthContext (clears all tokens, cookies, and storage)
+    await authLogout();
+    
+    // Navigate to home page and reload to ensure clean state
+    navigate('/');
     window.location.reload();
   };
 

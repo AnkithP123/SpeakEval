@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { cookieUtils } from '../../utils/cookieUtils';
 
 const AuthContext = createContext();
 
@@ -114,22 +115,44 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     setToken(null);
     setUser(null);
     
-    // Clear classroom authentication
+    // Clear all localStorage items related to authentication
     localStorage.removeItem('classroom_token');
     localStorage.removeItem('classroom_user');
     localStorage.removeItem('token');
-    
-    // Also clear main site authentication
+    localStorage.removeItem('auth_token');
     localStorage.removeItem('username');
     localStorage.removeItem('pin');
     localStorage.removeItem('gold');
     localStorage.removeItem('ultimate');
+    localStorage.removeItem('speakeval_student_token');
+    localStorage.removeItem('speakeval_room_session');
+    
+    // Clear all cookies using centralized utility
+    cookieUtils.deleteCookie('auth_token', { path: '/' });
+    cookieUtils.deleteCookie('token', { path: '/' });
+    cookieUtils.deleteCookie('classroom_token', { path: '/' });
+    
+    // Try to clear httpOnly cookies via server endpoint
+    try {
+      await fetch('https://www.server.speakeval.org/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.log('Server logout endpoint not available, continuing with client-side cleanup');
+    }
     
     delete axios.defaults.headers.common['Authorization'];
+    
+    // Dispatch event to notify other components
+    window.dispatchEvent(new CustomEvent('userUpdated'));
   };
 
   const checkUserRole = async () => {

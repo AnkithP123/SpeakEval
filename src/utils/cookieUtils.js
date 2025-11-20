@@ -48,21 +48,33 @@ export const cookieUtils = {
 
   /**
    * Delete a cookie
+   * Tries multiple combinations of path/domain to ensure cookie is deleted
    */
   deleteCookie: (name, options = {}) => {
     if (typeof document === 'undefined') return;
     
-    const cookieOptions = {
-      expires: 'Thu, 01 Jan 1970 00:00:00 UTC',
-      path: options.path || '/',
-      ...(options.domain && { domain: options.domain }),
-    };
+    // Try to delete with different path/domain combinations to ensure it's cleared
+    const paths = options.path ? [options.path] : ['/', ''];
+    const domains = options.domain ? [options.domain] : [undefined, window.location.hostname, `.${window.location.hostname}`];
+    
+    paths.forEach(path => {
+      domains.forEach(domain => {
+        const cookieOptions = {
+          expires: 'Thu, 01 Jan 1970 00:00:00 UTC',
+          path: path,
+          ...(domain && { domain: domain }),
+        };
 
-    const cookieString = Object.entries(cookieOptions)
-      .map(([key, val]) => `${key}=${val}`)
-      .join('; ');
+        const cookieString = Object.entries(cookieOptions)
+          .filter(([_, val]) => val !== undefined)
+          .map(([key, val]) => `${key}=${val}`)
+          .join('; ');
 
-    document.cookie = `${name}=; ${cookieString}`;
+        document.cookie = `${name}=; ${cookieString}`;
+        // Also try with empty value
+        document.cookie = `${name}=; ${cookieString}`;
+      });
+    });
   },
 
   /**
