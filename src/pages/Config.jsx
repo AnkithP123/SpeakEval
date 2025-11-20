@@ -17,7 +17,7 @@ import Card from "../components/Card";
 import Upgrade from "./Upgrade";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import instruction from "@public/instructions.png";
+import instruction from "../../assets/instructions.png";
 
 // Draggable column component
 const DraggableColumn = ({
