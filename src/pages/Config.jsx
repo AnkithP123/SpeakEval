@@ -17,7 +17,6 @@ import Card from "../components/Card";
 import Upgrade from "./Upgrade";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import instruction from "../../assets/instructions.png";
 
 // Draggable column component
 const DraggableColumn = ({
@@ -1638,7 +1637,7 @@ const Config = ({
                               appear on the screen before the first question.
                             </p>
                             <img
-                              src={instruction}
+                              src="https://placehold.co/600x400/1e293b/94a3b8?text=Image+Placeholder"
                               alt="Instructions Example"
                               className="rounded-md w-full"
                             />
