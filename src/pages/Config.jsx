@@ -926,7 +926,7 @@ const Config = ({
       }
     } catch (error) {
       console.error("Confirm error:", error);
-      const errorMessage = error.message.includes("Server error")
+      const errorMessage = error.message.includes("Server Error")
         ? error.message
         : `Failed to process audio: ${error.message}`;
       toast.error(errorMessage);
