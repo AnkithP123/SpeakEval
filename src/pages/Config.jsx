@@ -15,8 +15,9 @@ import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Card from "../components/Card";
 import Upgrade from "./Upgrade";
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+import instruction from "@public/instructions.png";
 
 // Draggable column component
 const DraggableColumn = ({
@@ -137,7 +138,7 @@ const Config = ({
 
   // State for instructions
   const [instructions, setInstructions] = useState([]);
-  const [instructionsEnabled, setInstructionsEnabled] = useState(true );
+  const [instructionsEnabled, setInstructionsEnabled] = useState(true);
   const [showConfigTypeWarning, setShowConfigTypeWarning] = useState(false);
   const [pendingConfigType, setPendingConfigType] = useState(null);
 
@@ -383,9 +384,7 @@ const Config = ({
   };
 
   const handleDeletePromptClip = (index) => {
-    setPromptClips((prevClips) =>
-      prevClips.filter((_, i) => i !== index)
-    );
+    setPromptClips((prevClips) => prevClips.filter((_, i) => i !== index));
     toast.success("Prompt clip deleted");
   };
 
@@ -399,7 +398,7 @@ const Config = ({
   const handleInstructionTextChange = (index, event) => {
     // ReactQuill passes HTML content directly, not a textarea event
     const value = event.target ? event.target.value : event;
-    
+
     const newInstructions = [...instructions];
     // Ensure the instruction object exists
     if (!newInstructions[index]) {
@@ -407,7 +406,7 @@ const Config = ({
     }
     newInstructions[index] = {
       ...newInstructions[index],
-      text: value
+      text: value,
     };
 
     // If this is instruction 2 in AP Simulated Conversation, sync instruction 3
@@ -417,7 +416,7 @@ const Config = ({
         // Preserve displayTime when syncing
         newInstructions[2] = {
           ...instruction3,
-          text: value
+          text: value,
         };
       }
     }
@@ -441,7 +440,10 @@ const Config = ({
 
   const handleDeleteInstruction = (index) => {
     // Don't allow deleting instruction 1 or 3 if it's AP Simulated Conversation
-    if (configType === "Simulated_Conversation" && (index === 0 || index === 2)) {
+    if (
+      configType === "Simulated_Conversation" &&
+      (index === 0 || index === 2)
+    ) {
       toast.error("Cannot delete framework instructions");
       return;
     }
@@ -480,9 +482,13 @@ const Config = ({
 
   const handleConfigTypeChange = (newType) => {
     // Check if switching to/from AP Simulated Conversation with existing instructions
-    const isSwitchingToAP = newType === "Simulated_Conversation" && configType !== "Simulated_Conversation";
-    const isSwitchingFromAP = configType === "Simulated_Conversation" && newType !== "Simulated_Conversation";
-    
+    const isSwitchingToAP =
+      newType === "Simulated_Conversation" &&
+      configType !== "Simulated_Conversation";
+    const isSwitchingFromAP =
+      configType === "Simulated_Conversation" &&
+      newType !== "Simulated_Conversation";
+
     if ((isSwitchingToAP || isSwitchingFromAP) && instructions.length > 0) {
       // Show warning
       setPendingConfigType(newType);
@@ -991,14 +997,14 @@ const Config = ({
         // (Removed: setAlwaysShowInstruction is not defined, so we skip this logic)
         const loadedInstructions = parts.slice(1);
         setInstructions(
-          loadedInstructions.length > 0 
-            ? loadedInstructions.map(inst => {
-              console.log("Inst:", inst);
+          loadedInstructions.length > 0
+            ? loadedInstructions.map((inst) => {
+                console.log("Inst:", inst);
                 try {
                   // Try to parse as JSON (if it's a stringified object)
                   const parsed = JSON.parse(inst);
-                  return typeof parsed === 'object' && parsed !== null 
-                    ? parsed 
+                  return typeof parsed === "object" && parsed !== null
+                    ? parsed
                     : { text: inst, show: "Once at the Start of Room" };
                 } catch (e) {
                   // If not JSON, treat as plain text
@@ -1188,14 +1194,15 @@ const Config = ({
 
       const maxFileSizeBytes = 15 * 1024 * 1024;
       // Validate files based on config type
-      const filesToValidate = configType === "Simulated_Conversation" ? promptClips : questions;
+      const filesToValidate =
+        configType === "Simulated_Conversation" ? promptClips : questions;
       const allFilesAreValid = await Promise.all(
         filesToValidate.map(async (fileUrl, i) => {
           try {
             const blob = await fetch(fileUrl).then((res) => res.blob());
             return validateAudioBlob(blob, i, maxFileSizeBytes);
           } catch (err) {
-            console.error('Error fetching audio:', err);
+            console.error("Error fetching audio:", err);
             return true;
           }
         })
@@ -1229,7 +1236,8 @@ const Config = ({
         toast.success("Config updated successfully, uploading audio files...");
 
         // Upload files based on config type
-        const filesToUpload = configType === "Simulated_Conversation" ? promptClips : questions;
+        const filesToUpload =
+          configType === "Simulated_Conversation" ? promptClips : questions;
         const totalFiles = filesToUpload.length;
 
         for (let i = 0; i < filesToUpload.length; i++) {
@@ -1279,7 +1287,12 @@ const Config = ({
 
           if (!questionResponse.ok || questionResult.error) {
             throw new Error(
-              questionResult.error || `Failed to upload ${configType === "Simulated_Conversation" ? "prompt" : "question"} ${i + 1}`
+              questionResult.error ||
+                `Failed to upload ${
+                  configType === "Simulated_Conversation"
+                    ? "prompt"
+                    : "question"
+                } ${i + 1}`
             );
           }
 
@@ -1310,7 +1323,8 @@ const Config = ({
         toast.success("Question set registered. Uploading audio files...");
 
         // Upload files based on config type
-        const filesToUpload = configType === "Simulated_Conversation" ? promptClips : questions;
+        const filesToUpload =
+          configType === "Simulated_Conversation" ? promptClips : questions;
         const totalFiles = filesToUpload.length;
 
         for (let i = 0; i < filesToUpload.length; i++) {
@@ -1369,7 +1383,12 @@ const Config = ({
 
           if (!questionResponse.ok || questionResult.error) {
             throw new Error(
-              questionResult.error || `Failed to upload ${configType === "Simulated_Conversation" ? "prompt" : "question"} ${i + 1}`
+              questionResult.error ||
+                `Failed to upload ${
+                  configType === "Simulated_Conversation"
+                    ? "prompt"
+                    : "question"
+                } ${i + 1}`
             );
           }
 
@@ -1619,7 +1638,7 @@ const Config = ({
                               appear on the screen before the first question.
                             </p>
                             <img
-                              src="https://placehold.co/600x400/1e293b/94a3b8?text=Image+Placeholder"
+                              src={instruction}
                               alt="Instructions Example"
                               className="rounded-md w-full"
                             />
@@ -1632,30 +1651,33 @@ const Config = ({
                         </div>
                       </div>
                     </div>
-                    {(
+                    {
                       <div className="space-y-4">
                         {instructions.map((instruction, index) => {
-                          const isUneditable = configType === "Simulated_Conversation" && 
-                            instruction && instruction.isFramework && !instruction.isEditable;
-                          
+                          const isUneditable =
+                            configType === "Simulated_Conversation" &&
+                            instruction &&
+                            instruction.isFramework &&
+                            !instruction.isEditable;
+
                           return (
-                          <div
-                            key={index}
-                            className={`bg-black/20 border border-green-500/30 rounded-lg p-4 space-y-3 ${
-                              isUneditable ? "opacity-75" : ""
-                            }`}
-                          >
-                            <div className="flex items-start space-x-3">
-                              <label className="text-white w-28 pt-2 flex-shrink-0">
-                                Instruction {index + 1}
-                                {isUneditable && (
-                                  <span className="block text-xs text-gray-400 mt-1">
-                                    (Framework - Read Only)
-                                  </span>
-                                )}
-                              </label>
-                              <div className="w-full">
-                                <style>{`
+                            <div
+                              key={index}
+                              className={`bg-black/20 border border-green-500/30 rounded-lg p-4 space-y-3 ${
+                                isUneditable ? "opacity-75" : ""
+                              }`}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <label className="text-white w-28 pt-2 flex-shrink-0">
+                                  Instruction {index + 1}
+                                  {isUneditable && (
+                                    <span className="block text-xs text-gray-400 mt-1">
+                                      (Framework - Read Only)
+                                    </span>
+                                  )}
+                                </label>
+                                <div className="w-full">
+                                  <style>{`
                                   .ql-container {
                                     background-color: rgba(0, 0, 0, 0.3) !important;
                                     border-color: rgba(34, 197, 94, 0.3) !important;
@@ -1694,134 +1716,182 @@ const Config = ({
                                     color: white;
                                   }
                                 `}</style>
-                                <ReactQuill
-                                  key={`quill-${configType}-${index}`}
-                                  theme="snow"
-                                  value={instruction.text || ""}
-                                  onChange={(content, delta, source, editor) =>
-                                    handleInstructionTextChange(index, { target: { value: content } })
-                                  }
-                                  readOnly={isUneditable}
-                                  modules={{
-                                    toolbar: isUneditable ? false : [
-                                      [{ 
-                                        'font': [
-                                          'roboto', 
-                                          'arial', 
-                                          'times-new-roman', 
-                                          'sans-serif',
-                                          'serif',
-                                          'georgia', 
-                                          'comic-sans-ms', 
-                                          'courier-new', 
-                                          'helvetica', 
-                                          'lucida', 
-                                          'tahoma', 
-                                          'trebuchet-ms', 
-                                          'verdana', 
-                                          'impact'
-                                        ] 
-                                      }, { 'size': [] }],
-                                      ['bold', 'italic', 'underline', 'strike'],
-                                      [{ 'color': [] }, { 'background': [] }],
-                                      [{ 'script': 'sub'}, { 'script': 'super' }],
-                                      ['blockquote', 'code-block'],
-                                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                      [{ 'indent': '-1'}, { 'indent': '+1' }, { 'align': [] }],
-                                      ['link', 'image'],
-                                      ['clean']
-                                    ]
-                                  }}
-                                  formats={[
-                                    'font', 'size',
-                                    'bold', 'italic', 'underline', 'strike',
-                                    'color', 'background',
-                                    'script',
-                                    'blockquote', 'code-block',
-                                    'list', 'bullet', 'indent', 'align',
-                                    'link', 'image'
-                                  ]}
-                                  placeholder="Enter instructions for the student..."
-                                  style={{ minHeight: "75px" }}
-                                />
-                              </div>
-                              {!isUneditable && (
-                                <button
-                                  onClick={() => handleDeleteInstruction(index)}
-                                  className="text-red-400 hover:text-red-300 transition-colors p-2 flex-shrink-0"
-                                  title="Delete Instruction"
-                                >
-                                  <FaTimes />
-                                </button>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-end space-x-2 border-t border-green-500/20 pt-3">
-                              <label
-                                htmlFor={`show-options-${index}`}
-                                className="text-sm text-gray-300"
-                              >
-                                Show:
-                              </label>
-                              <select
-                                id={`show-options-${index}`}
-                                value={instruction.show}
-                                onChange={(e) =>
-                                  handleInstructionShowChange(index, e)
-                                }
-                                disabled={isUneditable}
-                                className={`bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
-                                  isUneditable ? "opacity-50 cursor-not-allowed" : ""
-                                }`}
-                              >
-                                <option value="Once at the Start of Room">
-                                  Before Question
-                                </option>
-                                <option value="Always">Always on the Left</option>
-                                <option value="Question Prompt">
-                                  Question Prompt
-                                </option>
-                              </select>
-                              {instruction.show === "Once at the Start of Room" && (
-                                <div className="flex items-center space-x-2">
-                                  <label
-                                    htmlFor={`display-time-${index}`}
-                                    className="text-sm text-gray-300"
-                                  >
-                                    Display Time (seconds, optional):
-                                  </label>
-                                  <input
-                                    id={`display-time-${index}`}
-                                    type="number"
-                                    value={instruction.displayTime || ""}
-                                    placeholder="Optional"
-                                    onChange={(e) => {
-                                      const newInstructions = [...instructions];
-                                      const value = e.target.value.trim();
-                                      let displayTime = undefined;
-                                      if (value !== "") {
-                                        const parsed = parseInt(value, 10);
-                                        // Only set displayTime if it's a valid positive number
-                                        if (!isNaN(parsed) && parsed > 0) {
-                                          displayTime = parsed;
-                                        }
-                                      }
-                                      newInstructions[index] = {
-                                        ...newInstructions[index],
-                                        displayTime: displayTime
-                                      };
-                                      setInstructions(newInstructions);
+                                  <ReactQuill
+                                    key={`quill-${configType}-${index}`}
+                                    theme="snow"
+                                    value={instruction.text || ""}
+                                    onChange={(
+                                      content,
+                                      delta,
+                                      source,
+                                      editor
+                                    ) =>
+                                      handleInstructionTextChange(index, {
+                                        target: { value: content },
+                                      })
+                                    }
+                                    readOnly={isUneditable}
+                                    modules={{
+                                      toolbar: isUneditable
+                                        ? false
+                                        : [
+                                            [
+                                              {
+                                                font: [
+                                                  "roboto",
+                                                  "arial",
+                                                  "times-new-roman",
+                                                  "sans-serif",
+                                                  "serif",
+                                                  "georgia",
+                                                  "comic-sans-ms",
+                                                  "courier-new",
+                                                  "helvetica",
+                                                  "lucida",
+                                                  "tahoma",
+                                                  "trebuchet-ms",
+                                                  "verdana",
+                                                  "impact",
+                                                ],
+                                              },
+                                              { size: [] },
+                                            ],
+                                            [
+                                              "bold",
+                                              "italic",
+                                              "underline",
+                                              "strike",
+                                            ],
+                                            [{ color: [] }, { background: [] }],
+                                            [
+                                              { script: "sub" },
+                                              { script: "super" },
+                                            ],
+                                            ["blockquote", "code-block"],
+                                            [
+                                              { list: "ordered" },
+                                              { list: "bullet" },
+                                            ],
+                                            [
+                                              { indent: "-1" },
+                                              { indent: "+1" },
+                                              { align: [] },
+                                            ],
+                                            ["link", "image"],
+                                            ["clean"],
+                                          ],
                                     }}
-                                    disabled={isUneditable}
-                                    min="1"
-                                    className={`w-20 bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
-                                      isUneditable ? "opacity-50 cursor-not-allowed" : ""
-                                    }`}
+                                    formats={[
+                                      "font",
+                                      "size",
+                                      "bold",
+                                      "italic",
+                                      "underline",
+                                      "strike",
+                                      "color",
+                                      "background",
+                                      "script",
+                                      "blockquote",
+                                      "code-block",
+                                      "list",
+                                      "bullet",
+                                      "indent",
+                                      "align",
+                                      "link",
+                                      "image",
+                                    ]}
+                                    placeholder="Enter instructions for the student..."
+                                    style={{ minHeight: "75px" }}
                                   />
                                 </div>
-                              )}
+                                {!isUneditable && (
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteInstruction(index)
+                                    }
+                                    className="text-red-400 hover:text-red-300 transition-colors p-2 flex-shrink-0"
+                                    title="Delete Instruction"
+                                  >
+                                    <FaTimes />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-end space-x-2 border-t border-green-500/20 pt-3">
+                                <label
+                                  htmlFor={`show-options-${index}`}
+                                  className="text-sm text-gray-300"
+                                >
+                                  Show:
+                                </label>
+                                <select
+                                  id={`show-options-${index}`}
+                                  value={instruction.show}
+                                  onChange={(e) =>
+                                    handleInstructionShowChange(index, e)
+                                  }
+                                  disabled={isUneditable}
+                                  className={`bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
+                                    isUneditable
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                  }`}
+                                >
+                                  <option value="Once at the Start of Room">
+                                    Before Question
+                                  </option>
+                                  <option value="Always">
+                                    Always on the Left
+                                  </option>
+                                  <option value="Question Prompt">
+                                    Question Prompt
+                                  </option>
+                                </select>
+                                {instruction.show ===
+                                  "Once at the Start of Room" && (
+                                  <div className="flex items-center space-x-2">
+                                    <label
+                                      htmlFor={`display-time-${index}`}
+                                      className="text-sm text-gray-300"
+                                    >
+                                      Display Time (seconds, optional):
+                                    </label>
+                                    <input
+                                      id={`display-time-${index}`}
+                                      type="number"
+                                      value={instruction.displayTime || ""}
+                                      placeholder="Optional"
+                                      onChange={(e) => {
+                                        const newInstructions = [
+                                          ...instructions,
+                                        ];
+                                        const value = e.target.value.trim();
+                                        let displayTime = undefined;
+                                        if (value !== "") {
+                                          const parsed = parseInt(value, 10);
+                                          // Only set displayTime if it's a valid positive number
+                                          if (!isNaN(parsed) && parsed > 0) {
+                                            displayTime = parsed;
+                                          }
+                                        }
+                                        newInstructions[index] = {
+                                          ...newInstructions[index],
+                                          displayTime: displayTime,
+                                        };
+                                        setInstructions(newInstructions);
+                                      }}
+                                      disabled={isUneditable}
+                                      min="1"
+                                      className={`w-20 bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
+                                        isUneditable
+                                          ? "opacity-50 cursor-not-allowed"
+                                          : ""
+                                      }`}
+                                    />
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        );
+                          );
                         })}
                         <div className="pt-2">
                           <button
@@ -1832,138 +1902,142 @@ const Config = ({
                           </button>
                         </div>
                       </div>
-                    )}
+                    }
                   </Card>
                 }
 
                 {/* Record Questions Card (Conditional) */}
-                {
-                  configType === "Simulated_Conversation" ? (
-                    <Card color="cyan">
-                      <h2 className="text-2xl font-bold text-white mb-4">
-                        Record Conversation Prompts
-                      </h2>
-                      <p className="text-gray-300 text-sm mb-6">
-                        Record audio prompts that will play sequentially. Students will respond after each prompt.
-                      </p>
-                      <div className="space-y-6">
-                        {/* Linear Prompt Clips Display */}
-                        <div className="overflow-x-auto pb-4">
-                          <div className="flex items-center gap-4 min-w-max">
-                            {promptClips.map((clip, index) => (
-                              <div key={index} className="flex items-center gap-4">
-                                {/* Audio Clip */}
-                                <div className="flex flex-col items-center gap-2">
-                                  <div className="bg-black/30 p-3 rounded-lg border border-cyan-500/30">
-                                    <audio
-                                      controls
-                                      src={clip}
-                                      style={{
-                                        backgroundColor: "transparent",
-                                        border: "none",
-                                        filter: "invert(1)",
-                                        width: "200px",
-                                      }}
-                                    />
-                                  </div>
-                                  <button
-                                    onClick={() => handleDeletePromptClip(index)}
-                                    className="text-red-400 hover:text-red-300 transition-colors text-sm"
-                                  >
-                                    Delete
-                                  </button>
+                {configType === "Simulated_Conversation" ? (
+                  <Card color="cyan">
+                    <h2 className="text-2xl font-bold text-white mb-4">
+                      Record Conversation Prompts
+                    </h2>
+                    <p className="text-gray-300 text-sm mb-6">
+                      Record audio prompts that will play sequentially. Students
+                      will respond after each prompt.
+                    </p>
+                    <div className="space-y-6">
+                      {/* Linear Prompt Clips Display */}
+                      <div className="overflow-x-auto pb-4">
+                        <div className="flex items-center gap-4 min-w-max">
+                          {promptClips.map((clip, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-4"
+                            >
+                              {/* Audio Clip */}
+                              <div className="flex flex-col items-center gap-2">
+                                <div className="bg-black/30 p-3 rounded-lg border border-cyan-500/30">
+                                  <audio
+                                    controls
+                                    src={clip}
+                                    style={{
+                                      backgroundColor: "transparent",
+                                      border: "none",
+                                      filter: "invert(1)",
+                                      width: "200px",
+                                    }}
+                                  />
                                 </div>
-                                {/* Connecting Line */}
-                                <div className="flex items-center">
-                                  <div className="w-12 h-0.5 bg-cyan-500/50"></div>
-                                  <div className="w-0 h-0 border-l-4 border-l-cyan-500/50 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
-                                </div>
+                                <button
+                                  onClick={() => handleDeletePromptClip(index)}
+                                  className="text-red-400 hover:text-red-300 transition-colors text-sm"
+                                >
+                                  Delete
+                                </button>
                               </div>
-                            ))}
-                            {/* Record Button at the End */}
-                            <div className="flex flex-col items-center gap-2">
-                              <button
-                                onClick={handleTogglePromptRecording}
-                                className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg text-white transition-all duration-300 ${
-                                  recordingPrompt
-                                    ? "bg-red-500 hover:bg-red-600"
-                                    : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-                                }`}
-                              >
-                                {recordingPrompt ? (
-                                  <FaStop className="mr-2" />
-                                ) : (
-                                  <FaMicrophone className="mr-2" />
-                                )}
-                                <span>
-                                  {recordingPrompt ? "Stop Recording" : "Record Prompt"}
-                                </span>
-                              </button>
+                              {/* Connecting Line */}
+                              <div className="flex items-center">
+                                <div className="w-12 h-0.5 bg-cyan-500/50"></div>
+                                <div className="w-0 h-0 border-l-4 border-l-cyan-500/50 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                              </div>
                             </div>
+                          ))}
+                          {/* Record Button at the End */}
+                          <div className="flex flex-col items-center gap-2">
+                            <button
+                              onClick={handleTogglePromptRecording}
+                              className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg text-white transition-all duration-300 ${
+                                recordingPrompt
+                                  ? "bg-red-500 hover:bg-red-600"
+                                  : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                              }`}
+                            >
+                              {recordingPrompt ? (
+                                <FaStop className="mr-2" />
+                              ) : (
+                                <FaMicrophone className="mr-2" />
+                              )}
+                              <span>
+                                {recordingPrompt
+                                  ? "Stop Recording"
+                                  : "Record Prompt"}
+                              </span>
+                            </button>
                           </div>
                         </div>
                       </div>
-                    </Card>
-                  ) : (
-                    <Card color="cyan">
-                      <h2 className="text-2xl font-bold text-white mb-4">
-                        Record Questions
-                      </h2>
-                      <button
-                        onClick={handleImportClick}
-                        className="fixed top-4 right-6 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
-                      >
-                        Import
-                      </button>
-                      <div className="space-y-4">
-                        <div className="flex justify-center">
-                          <button
-                            onClick={handleToggleRecording}
-                            className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white transition-all duration-300 ${
-                              recording
-                                ? "bg-red-500 hover:bg-red-600"
-                                : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-                            }`}
-                          >
-                            {recording ? (
-                              <FaStop className="mr-2" />
-                            ) : (
-                              <FaMicrophone className="mr-2" />
-                            )}
-                            <span>
-                              {recording ? "Stop Recording" : "Start Recording"}
-                            </span>
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {questions.map((question, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30"
-                            >
-                              <audio
-                                controls
-                                src={question}
-                                className="mr-2"
-                                style={{
-                                  backgroundColor: "transparent",
-                                  border: "none",
-                                  filter: "invert(1)",
-                                }}
-                              />
-                              <button
-                                onClick={() => handleDeleteQuestion(index)}
-                                className="text-red-400 hover:text-red-300 transition-colors p-2"
-                              >
-                                <FaTimes />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card color="cyan">
+                    <h2 className="text-2xl font-bold text-white mb-4">
+                      Record Questions
+                    </h2>
+                    <button
+                      onClick={handleImportClick}
+                      className="fixed top-4 right-6 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                    >
+                      Import
+                    </button>
+                    <div className="space-y-4">
+                      <div className="flex justify-center">
+                        <button
+                          onClick={handleToggleRecording}
+                          className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white transition-all duration-300 ${
+                            recording
+                              ? "bg-red-500 hover:bg-red-600"
+                              : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                          }`}
+                        >
+                          {recording ? (
+                            <FaStop className="mr-2" />
+                          ) : (
+                            <FaMicrophone className="mr-2" />
+                          )}
+                          <span>
+                            {recording ? "Stop Recording" : "Start Recording"}
+                          </span>
+                        </button>
                       </div>
-                    </Card>
-                  )
-                }
+                      <div className="flex flex-wrap gap-2">
+                        {questions.map((question, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30"
+                          >
+                            <audio
+                              controls
+                              src={question}
+                              className="mr-2"
+                              style={{
+                                backgroundColor: "transparent",
+                                border: "none",
+                                filter: "invert(1)",
+                              }}
+                            />
+                            <button
+                              onClick={() => handleDeleteQuestion(index)}
+                              className="text-red-400 hover:text-red-300 transition-colors p-2"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Card>
+                )}
 
                 {/* Create Rubric Card (Conditional) */}
                 {
@@ -2642,7 +2716,7 @@ const Config = ({
               <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
                 <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 p-8 rounded-2xl border border-amber-500/30 backdrop-blur-md shadow-2xl w-full max-w-lg mx-auto">
                   <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-orange-500/5 pointer-events-none" />
-                  
+
                   <div className="relative z-10">
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-500">
@@ -2661,13 +2735,15 @@ const Config = ({
 
                     <div className="mb-6">
                       <p className="text-white text-lg mb-4">
-                        {pendingConfigType === "Simulated_Conversation" 
+                        {pendingConfigType === "Simulated_Conversation"
                           ? "Switching to AP Simulated Conversation will load a pre-configured instruction framework. Your current instructions will be replaced."
                           : "Switching away from AP Simulated Conversation will clear the framework instructions."}
                       </p>
                       <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
                         <p className="text-amber-200 text-sm">
-                          <strong>Important:</strong> If you want to keep your current instructions, click Cancel and copy them to another platform (like Google Docs) before proceeding.
+                          <strong>Important:</strong> If you want to keep your
+                          current instructions, click Cancel and copy them to
+                          another platform (like Google Docs) before proceeding.
                         </p>
                       </div>
                     </div>
