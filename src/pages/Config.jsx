@@ -859,7 +859,6 @@ const Config = ({
         throw new Error(`Server error: ${response.status}`);
       }
 
-
       if (result.audio && Array.isArray(result.audio) && result.complete) {
         const audioUrls = result.audio
           .map((audioDataFromServer, index) => {
@@ -1577,7 +1576,7 @@ const Config = ({
                   </h2>
                   <div className="flex w-full max-w-2xl mx-auto bg-black/30 rounded-lg p-1 border border-gray-500/30">
                     {configTypes.map((type, index) => {
-                      const isEnabled = index === 0 || index === 2;
+                      const isEnabled = index === 0;
 
                       return (
                         <button
