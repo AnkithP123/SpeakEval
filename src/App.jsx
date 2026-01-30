@@ -48,14 +48,14 @@ function AudioRecorderRouteWrapper() {
   return <AudioRecorder />;
 }
 
-const maintenance = false;
+const maintenance = true;
 
 function App() {
   const [gold, setgold] = React.useState(
-    localStorage.getItem("gold") === "true"
+    localStorage.getItem("gold") === "true",
   );
   const [ultimate, setultimate] = React.useState(
-    localStorage.getItem("ultimate") === "true"
+    localStorage.getItem("ultimate") === "true",
   );
 
   // Cleanup URL cache on app unmount
@@ -200,8 +200,8 @@ function App() {
           element={<AudioRecorderRouteWrapper />}
           errorElement={<ErrorPage />}
         />
-      </>
-    )
+      </>,
+    ),
   );
 
   return (
@@ -214,8 +214,8 @@ function App() {
                   <Route element={null} errorElement={<ErrorPage />}>
                     <Route path="/" element={<HomePage maintenance={true} />} />
                     <Route path="/*" element={<MaintenancePage />} />
-                  </Route>
-                )
+                  </Route>,
+                ),
               )
             : route
         }
