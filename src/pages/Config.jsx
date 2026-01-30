@@ -1576,7 +1576,7 @@ const Config = ({
                   </h2>
                   <div className="flex w-full max-w-2xl mx-auto bg-black/30 rounded-lg p-1 border border-gray-500/30">
                     {configTypes.map((type, index) => {
-                      const isEnabled = index === 0;
+                      const isEnabled = index === 0 || index === 2;
 
                       return (
                         <button
