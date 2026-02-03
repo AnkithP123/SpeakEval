@@ -787,27 +787,29 @@ export default function AudioRecorder() {
 
   // Automatic stage transitions (only for non-user-initiated stages)
   useEffect(() => {
+    // Skip ALL auto-advance logic for simulated conversation - playNextPrompt handles everything
+    if (isSimulatedConversation) {
+      return;
+    }
+    
     const handleStageTransitions = async () => {
       // Don't auto-advance from setup - user must click "Continue to Question"
       // Don't auto-advance from instructions - user must click "Understood"
 
-      // Skip thinking stage for Simulated_Conversation
-      // Auto-advance to thinking when audio play is complete (only if there's thinking time and not Simulated_Conversation)
+      // Auto-advance to thinking when audio play is complete (only if there's thinking time)
       if (
         currentStage === "audio_play" &&
         canAdvanceToThinking() &&
-        thinkingTime > 0 &&
-        !isSimulatedConversation
+        thinkingTime > 0
       ) {
         advanceStage("thinking");
       }
 
-      // Auto-advance directly to recording when audio play is complete and no thinking time (or Simulated_Conversation)
+      // Auto-advance directly to recording when audio play is complete and no thinking time
       if (
         currentStage === "audio_play" &&
         canAdvanceToRecording() &&
-        (thinkingTime <= 0 || isSimulatedConversation) &&
-        !isSimulatedConversation // Simulated_Conversation doesn't use audio_play stage
+        thinkingTime <= 0
       ) {
         try {
           // Start recording BEFORE switching to recording stage for minimal delay
@@ -854,14 +856,13 @@ export default function AudioRecorder() {
       }
 
       // Auto-advance to uploading when recording is complete
-      // BUT NOT for simulated conversation - those are handled by playNextPrompt
-      if (currentStage === "recording" && canAdvanceToUploading() && !isSimulatedConversation) {
+      if (currentStage === "recording" && canAdvanceToUploading()) {
         advanceStage("uploading");
       }
     };
 
     handleStageTransitions();
-  }, [currentStage, stageData]);
+  }, [currentStage, stageData, isSimulatedConversation]);
 
   // Load audio when audioBlobURL is available
   useEffect(() => {
@@ -2524,6 +2525,9 @@ export default function AudioRecorder() {
     setAudioBlobURL(promptUrl);
     setCurrentPromptIndex(index);
     
+    // Set stage to audio_play so the prompt can play and UI shows correctly
+    advanceStage("audio_play");
+    
     // Reset audio play state for new prompt
     updateAudioPlayData({
       isPlaying: false,
@@ -2556,9 +2560,17 @@ export default function AudioRecorder() {
           setRecordingStartTime(startTime);
           setRecordingCountdown(20);
           
+          // Clear chunks for this new prompt before starting recording
+          currentPromptChunksRef.current = [];
+          audioChunksRef.current = [];
+          
           // Advance to recording stage
           advanceStage("recording");
           await startRecording();
+          
+          // Enable saving chunks AFTER startRecording (which resets it to false)
+          isSavingChunksRef.current = true;
+          
           updateRecordingData({
             isRecording: true,
             hasRecorded: false,
@@ -2953,6 +2965,12 @@ export default function AudioRecorder() {
   };
 
   const stopRecording = () => {
+    // For simulated conversation, don't allow manual stop - it's handled automatically
+    if (isSimulatedConversation) {
+      console.warn("⚠️ Manual stopRecording called for simulated conversation - ignoring (auto-advance handles this)");
+      return;
+    }
+    
     // Only stop if we're actually recording - prevent premature stops
     if (!isRecording) {
       console.warn("⚠️ stopRecording called but not currently recording, ignoring");
