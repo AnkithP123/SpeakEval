@@ -15,6 +15,9 @@ import websocketService from "../utils/websocketService";
 import { FeedbackForm } from "./FeedbackPage";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import StandardRecorder from "../components/recorders/StandardRecorder";
+import SimulatedRecorder from "../components/recorders/SimulatedRecorder";
+import DuoRecorder from "../components/recorders/DuoRecorder";
 
 export default function AudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -65,6 +68,7 @@ export default function AudioRecorder() {
   const [promptClips, setPromptClips] = useState([]); // Array of prompt clip URLs for AP Simulated Conversation
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0); // Current prompt clip being played
   const [isSimulatedConversation, setIsSimulatedConversation] = useState(false); // Track if this is a simulated conversation
+  const [configType, setConfigType] = useState("Classic"); // Track config type: "Classic", "Simulated_Conversation", "Conversation"
   const [collectedRecordings, setCollectedRecordings] = useState([]); // Store all recordings for Simulated_Conversation to upload at end
   const [recordingStartTime, setRecordingStartTime] = useState(null); // Track when current recording started for 20s auto-advance
   const [recordingCountdown, setRecordingCountdown] = useState(20); // Countdown timer for recording (20 seconds)
@@ -258,6 +262,7 @@ export default function AudioRecorder() {
     setPromptClips([]);
     setCurrentPromptIndex(0);
     setIsSimulatedConversation(false);
+    setConfigType("Classic"); // Reset to default
 
     // Reset anticheat flags for room restart
     setFullscreenViolationReported(false);
@@ -1877,6 +1882,16 @@ export default function AudioRecorder() {
 
       // Check if this is a Simulated Conversation (multiple audio URLs) - check BEFORE setting thinkingTime
       const isSimulatedConv = receivedData.configType === "Simulated_Conversation" || (audioUrls && audioUrls.length > 1);
+      const isDuoConv = receivedData.configType === "Conversation";
+      
+      // Set config type
+      if (isSimulatedConv) {
+        setConfigType("Simulated_Conversation");
+      } else if (isDuoConv) {
+        setConfigType("Conversation");
+      } else {
+        setConfigType("Classic");
+      }
       
       if (receivedData.thinkingTime && !isSimulatedConv) {
         setThinkingTime(receivedData.thinkingTime);
@@ -4008,8 +4023,126 @@ export default function AudioRecorder() {
             );
           })()}
 
-          {/* Audio Play Stage */}
-          {currentStage === "audio_play" && (
+          {/* Audio Play, Thinking, Recording, Uploading Stages - Render appropriate recorder component */}
+          {(currentStage === "audio_play" || currentStage === "thinking" || currentStage === "recording" || currentStage === "uploading") && configType === "Classic" && (
+            <StandardRecorder
+              currentStage={currentStage}
+              stageData={stageData}
+              audioPlayer={audioPlayer}
+              audioBlobURL={audioBlobURL}
+              thinkingTime={thinkingTime}
+              allowRepeat={allowRepeat}
+              recognizedText={recognizedText}
+              examLanguage={examLanguage}
+              audioURL={audioURL}
+              thinkingProgress={thinkingProgress}
+              onPlayClick={() => {
+                if (audioPlayer) {
+                  if (audioPlayer.isPaused || audioPlayer.isStopped) {
+                    if (audioPlayer.isUnloaded || !audioPlayer.isReady) {
+                      if (audioBlobURL) {
+                        audioPlayer.load(audioBlobURL, {
+                          autoplay: true,
+                          initialVolume: 1.0,
+                          onplay: () => {
+                            audioPlaybackStarted();
+                            updateAudioPlayData({ isPlaying: true });
+                          },
+                          onend: () => {
+                            audioPlaybackCompleted();
+                            updateAudioPlayData({
+                              isPlaying: false,
+                              hasPlayed: true,
+                            });
+                            setHasPlayed(true);
+                          },
+                          onerror: () => {
+                            updateAudioPlayData({
+                              isPlaying: false,
+                              playError: "Failed to load audio",
+                            });
+                          },
+                        });
+                      }
+                    } else {
+                      audioPlayer.play();
+                      audioPlaybackStarted();
+                      updateAudioPlayData({ isPlaying: true });
+                    }
+                  } else {
+                    audioPlayer.pause();
+                    updateAudioPlayData({ isPlaying: false });
+                  }
+                }
+              }}
+              onReplayClick={() => {
+                if (audioPlayer && audioBlobURL) {
+                  audioPlayer.seek(0);
+                  if (audioPlayer.isUnloaded || !audioPlayer.isReady) {
+                    audioPlayer.load(audioBlobURL, {
+                      autoplay: true,
+                      initialVolume: 1.0,
+                      onplay: () => {
+                        audioPlaybackStarted();
+                        updateAudioPlayData({ isPlaying: true });
+                      },
+                      onend: () => {
+                        audioPlaybackCompleted();
+                        updateAudioPlayData({
+                          isPlaying: false,
+                          hasPlayed: true,
+                        });
+                      },
+                      onerror: () => {
+                        updateAudioPlayData({
+                          isPlaying: false,
+                          playError: "Failed to load audio",
+                        });
+                      },
+                    });
+                  } else {
+                    audioPlayer.play();
+                    audioPlaybackStarted();
+                    updateAudioPlayData({ isPlaying: true });
+                  }
+                }
+              }}
+              onStopRecording={async () => {
+                await stopRecording();
+                updateRecordingData({
+                  isRecording: false,
+                  hasRecorded: true,
+                });
+              }}
+              formatTime={formatTime}
+            />
+          )}
+
+          {(currentStage === "audio_play" || currentStage === "recording" || currentStage === "uploading") && configType === "Simulated_Conversation" && (
+            <SimulatedRecorder
+              currentStage={currentStage}
+              stageData={stageData}
+              audioPlayer={audioPlayer}
+              promptClips={promptClips}
+              currentPromptIndex={currentPromptIndex}
+              recordingCountdown={recordingCountdown}
+              onStartClick={() => {
+                if (!isRecording && !stageData.recording.isRecording && currentStage === "audio_play") {
+                  playRecording();
+                }
+              }}
+            />
+          )}
+
+          {(currentStage === "audio_play" || currentStage === "recording" || currentStage === "uploading") && configType === "Conversation" && (
+            <DuoRecorder
+              currentStage={currentStage}
+              stageData={stageData}
+            />
+          )}
+
+          {/* Legacy stages - keeping for reference but disabled */}
+          {false && currentStage === "audio_play" && (
             <div style={{ marginTop: "20px" }}>
               <h1
                 style={{
@@ -4288,8 +4421,8 @@ export default function AudioRecorder() {
             </div>
           )}
 
-          {/* Thinking Stage */}
-          {currentStage === "thinking" && !isSimulatedConversation && (
+          {/* Thinking Stage - Now handled by StandardRecorder */}
+          {false && currentStage === "thinking" && !isSimulatedConversation && (
             <div style={{ marginTop: "20px" }}>
               <h1
                 style={{
@@ -4394,8 +4527,8 @@ export default function AudioRecorder() {
             </div>
           )}
 
-          {/* Recording Stage */}
-          {currentStage === "recording" && (
+          {/* Recording Stage - Now handled by recorder components */}
+          {false && currentStage === "recording" && (
             <div style={{ marginTop: "20px" }}>
               <h1
                 style={{
@@ -4637,8 +4770,8 @@ export default function AudioRecorder() {
             </div>
           )}
 
-          {/* Uploading Stage */}
-          {currentStage === "uploading" && (
+          {/* Uploading Stage - Now handled by recorder components */}
+          {false && currentStage === "uploading" && (
             <div style={{ marginTop: "20px" }}>
               <h1
                 style={{
