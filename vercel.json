@@ -2,5 +2,5 @@
     "rewrites": [
       { "source": "/(.*)", "destination": "/" }
     ],
-    "installCommand": "npm ci"
+    "installCommand": "npm install"
   }
