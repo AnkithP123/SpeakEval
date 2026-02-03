@@ -1026,6 +1026,11 @@ export default function AudioRecorder() {
     return () => clearInterval(interval);
   }, [currentStage, fetching, stageData.audioDownloaded]);
 
+  // Log current mode whenever it changes
+  useEffect(() => {
+    console.log(`🎯 [Mode] Current recording mode: ${configType}`);
+  }, [configType]);
+
   // Start thinking timer when thinking stage begins
   useEffect(() => {
     if (currentStage === "thinking" && thinkingTime > 0) {
@@ -1887,10 +1892,13 @@ export default function AudioRecorder() {
       // Set config type
       if (isSimulatedConv) {
         setConfigType("Simulated_Conversation");
+        console.log("🎯 [Mode] Current mode: Simulated_Conversation");
       } else if (isDuoConv) {
         setConfigType("Conversation");
+        console.log("🎯 [Mode] Current mode: Conversation (Duo)");
       } else {
         setConfigType("Classic");
+        console.log("🎯 [Mode] Current mode: Classic (Standard)");
       }
       
       if (receivedData.thinkingTime && !isSimulatedConv) {
