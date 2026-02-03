@@ -988,6 +988,11 @@ export default function AudioRecorder() {
 
   // Periodic check for state sync when stuck
   useEffect(() => {
+    // Don't run periodic checks if audio is already downloaded
+    if (stageData.audioDownloaded) {
+      return;
+    }
+    
     const checkForStuckState = () => {
       // If we're in initializing for too long without progress, force a refresh
       if (
@@ -1955,12 +1960,22 @@ export default function AudioRecorder() {
         setAudioBlobURL(audioUrls[0]);
         }
         questionIndex = receivedData.questionIndex;
+        // Mark audio as downloaded to prevent repeated calls
+        updateStageData({
+          audioDownloaded: true,
+          audioDownloadError: null,
+        });
       } else if (audioUrls && audioUrls.length > 0) {
         // Regular single question
         setIsSimulatedConversation(false);
         setPromptClips([]);
         setAudioBlobURL(audioUrls[0]);
         questionIndex = receivedData.questionIndex;
+        // Mark audio as downloaded to prevent repeated calls
+        updateStageData({
+          audioDownloaded: true,
+          audioDownloadError: null,
+        });
       } else {
         updateStageData({
           audioDownloaded: false,
