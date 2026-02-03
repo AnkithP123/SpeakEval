@@ -1869,8 +1869,14 @@ export default function AudioRecorder() {
         setPremium(true);
       }
 
-      if (receivedData.thinkingTime) {
+      // Check if this is a Simulated Conversation (multiple audio URLs) - check BEFORE setting thinkingTime
+      const isSimulatedConv = receivedData.configType === "Simulated_Conversation" || (audioUrls && audioUrls.length > 1);
+      
+      if (receivedData.thinkingTime && !isSimulatedConv) {
         setThinkingTime(receivedData.thinkingTime);
+      } else if (isSimulatedConv) {
+        // Force thinking time to 0 for simulated conversation
+        setThinkingTime(0);
       }
 
       if (receivedData.allowRepeat !== undefined) {
@@ -1939,8 +1945,8 @@ export default function AudioRecorder() {
     setInstructionTimeRemaining(null);
       }
 
-      // Check if this is a Simulated Conversation (multiple audio URLs)
-      if (receivedData.configType === "Simulated_Conversation" || (audioUrls && audioUrls.length > 1)) {
+      // Set simulated conversation state
+      if (isSimulatedConv) {
         setIsSimulatedConversation(true);
         setPromptClips(audioUrls || []);
         // Set first prompt as current audio
@@ -4250,7 +4256,7 @@ export default function AudioRecorder() {
           )}
 
           {/* Thinking Stage */}
-          {currentStage === "thinking" && (
+          {currentStage === "thinking" && !isSimulatedConversation && (
             <div style={{ marginTop: "20px" }}>
               <h1
                 style={{
