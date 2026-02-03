@@ -831,8 +831,8 @@ function RoomPanel({ roomCode, userId, config, setRoomCodes }) {
           </div>
 
           <div className="flex flex-col items-end">
-            {/* Hide "New Question" button for simulated conversations, but show "Start Room" for all */}
-            {(!roomStarted || config?.configType !== "Simulated_Conversation") && (
+            {/* Hide "New Question" button for simulated conversations */}
+            {(config?.configType !== "Simulated_Conversation" || !roomStarted) && (
               <button
                 onClick={roomStarted ? handleRestart : handleStart}
                 className={`bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg px-4 py-2 flex items-center space-x-2 hover:from-red-600 hover:to-pink-600 transition-all duration-300`}
