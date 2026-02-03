@@ -48,7 +48,7 @@ function AudioRecorderRouteWrapper() {
   return <AudioRecorder />;
 }
 
-const maintenance = true;
+const maintenance = false;
 
 function App() {
   const [gold, setgold] = React.useState(
