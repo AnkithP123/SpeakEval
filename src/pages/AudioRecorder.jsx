@@ -2104,7 +2104,9 @@ export default function AudioRecorder() {
       // Only request permissions if we don't already have them
       if (!permissionResult || !permissionResult.permissionGranted) {
         try {
+          console.log(`🔄 [startRecording] Requesting permissions...`);
           permissionResult = await requestPermissions();
+          console.log(`✅ [startRecording] Permissions granted. MediaRecorder ready: ${permissionResult.mediaRecorderReady}`);
         } catch (permError) {
           // If requestPermissions throws, handle it gracefully
           console.warn("⚠️ Permission request had an issue, but continuing:", permError);
@@ -2119,6 +2121,7 @@ export default function AudioRecorder() {
               permissionResult = { permissionGranted: false, mediaRecorderReady: false };
             }
           } else {
+            console.error(`❌ No MediaRecorder available after permission request failure`);
             permissionResult = { permissionGranted: false, mediaRecorderReady: false };
           }
         }
@@ -2689,6 +2692,48 @@ export default function AudioRecorder() {
             
             // Check MediaRecorder state before starting
             console.log(`🔍 [Prompt ${index + 1}] Before startRecording: MediaRecorder exists: ${!!readyMediaRecorderRef.current}, state: ${readyMediaRecorderRef.current?.state}, stream exists: ${!!microphoneStream}`);
+            
+            // If MediaRecorder doesn't exist but stream does, we need to create it
+            if (!readyMediaRecorderRef.current && microphoneStream) {
+              console.log(`⚠️ [Prompt ${index + 1}] MediaRecorder missing but stream exists. Creating MediaRecorder...`);
+              try {
+                // Create MediaRecorder from existing stream
+                let mimeType = "video/mp4;codecs=h264,aac";
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                  mimeType = "video/mp4";
+                  if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = "video/webm;codecs=vp8,opus";
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                      mimeType = "video/webm";
+                    }
+                  }
+                }
+                
+                const mediaRecorder = new MediaRecorder(microphoneStream, { mimeType });
+                
+                // Set up data handler
+                audioChunksRef.current = [];
+                isSavingChunksRef.current = false;
+                
+                mediaRecorder.ondataavailable = (event) => {
+                  if (isSavingChunksRef.current && event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                    currentPromptChunksRef.current.push(event.data);
+                    console.log(`📦 Chunk collected: size=${event.data.size}, total chunks: ${currentPromptChunksRef.current.length}`);
+                  } else if (event.data.size > 0) {
+                    console.log(`⚠️ Chunk received but not saving (isSavingChunksRef: ${isSavingChunksRef.current})`);
+                  }
+                };
+                
+                // Start recording
+                mediaRecorder.start(250);
+                readyMediaRecorderRef.current = mediaRecorder;
+                console.log(`✅ [Prompt ${index + 1}] MediaRecorder created and started successfully`);
+              } catch (createError) {
+                console.error(`❌ [Prompt ${index + 1}] Failed to create MediaRecorder:`, createError);
+                // Will fall through to startRecording() which will handle the error
+              }
+            }
             
             await startRecording();
             
