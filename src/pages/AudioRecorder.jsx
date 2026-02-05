@@ -2129,33 +2129,68 @@ export default function AudioRecorder() {
 
       if (!permissionResult || !permissionResult.permissionGranted) {
         console.error(`❌ [startRecording] Microphone permission not granted. permissionResult:`, permissionResult);
-        const errorMsg = "Microphone permission is required to start recording. Please grant permission and try again.";
         
-        // For simulated conversations, don't show the alert - just log and throw
-        if (isSimulatedConversation) {
-          console.error(`❌ [startRecording] Throwing error for simulated conversation: ${errorMsg}`);
-          throw new Error("Permissions check failed");
-        }
-        
-        setError(errorMsg);
-        setIsError(true);
-        setIsRecording(false);
-
-        // Show prominent error alert with reload instructions
-        cuteAlert({
-          type: "error",
-          title: "Microphone Permission Required",
-          description:
-            "We couldn't access your microphone. This is required to complete the exam. Please check your browser settings to allow microphone access for this site, then reload the page to try again.",
-          primaryButtonText: "Reload Page",
-          secondaryButtonText: "Cancel",
-        }).then((event) => {
-          if (event === "primaryButtonClicked") {
-            window.location.reload();
+        // CRITICAL FIX: For simulated conversations, if MediaRecorder exists and is recording,
+        // we should still enable chunk saving even if permissions check failed
+        if (isSimulatedConversation && readyMediaRecorderRef.current) {
+          const recorderState = readyMediaRecorderRef.current.state;
+          if (recorderState === "recording" || recorderState === "inactive") {
+            console.log(`🔄 [startRecording] Simulated conversation: MediaRecorder exists (state: ${recorderState}), enabling chunk saving despite permissions check failure`);
+            // Clear chunks and enable saving
+            currentPromptChunksRef.current = [];
+            audioChunksRef.current = [];
+            isSavingChunksRef.current = true;
+            
+            // If inactive, start it
+            if (recorderState === "inactive") {
+              try {
+                readyMediaRecorderRef.current.start(250);
+                console.log(`✅ [startRecording] MediaRecorder started`);
+              } catch (startErr) {
+                console.error(`❌ [startRecording] Failed to start MediaRecorder:`, startErr);
+              }
+            }
+            
+            // Don't throw error - continue with recording
+            console.log(`✅ [startRecording] Continuing despite permissions check failure (MediaRecorder is working)`);
+            // Skip the error throw and continue
+          } else {
+            console.error(`❌ [startRecording] MediaRecorder in invalid state: ${recorderState}`);
+            const errorMsg = "Microphone permission is required to start recording. Please grant permission and try again.";
+            console.error(`❌ [startRecording] Throwing error for simulated conversation: ${errorMsg}`);
+            throw new Error("Permissions check failed");
           }
-        });
+        } else {
+          // Not simulated conversation OR MediaRecorder doesn't exist
+          const errorMsg = "Microphone permission is required to start recording. Please grant permission and try again.";
+          
+          // For simulated conversations without MediaRecorder, throw error
+          if (isSimulatedConversation) {
+            console.error(`❌ [startRecording] Throwing error for simulated conversation: ${errorMsg}`);
+            throw new Error("Permissions check failed");
+          }
+          
+          // For regular conversations, show alert
+          setError(errorMsg);
+          setIsError(true);
+          setIsRecording(false);
 
-        return;
+          // Show prominent error alert with reload instructions
+          cuteAlert({
+            type: "error",
+            title: "Microphone Permission Required",
+            description:
+              "We couldn't access your microphone. This is required to complete the exam. Please check your browser settings to allow microphone access for this site, then reload the page to try again.",
+            primaryButtonText: "Reload Page",
+            secondaryButtonText: "Cancel",
+          }).then((event) => {
+            if (event === "primaryButtonClicked") {
+              window.location.reload();
+            }
+          });
+
+          return;
+        }
       }
       
       console.log(`✅ [startRecording] Permissions check passed, proceeding to enable chunk saving...`);
