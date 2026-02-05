@@ -1453,9 +1453,10 @@ export default function AudioRecorder() {
           }
         };
         
-        // Set up stop handler (only called on component unmount)
+        // Set up stop handler (only called on component unmount or error)
+        // We don't want to stop MediaRecorder during normal operation
         mediaRecorder.onstop = async () => {
-          console.log("MediaRecorder stopped (component unmount)");
+          console.log("⚠️ MediaRecorder stopped - this should only happen on component unmount or error");
         };
         
         // Start recording immediately, then pause it
@@ -2645,7 +2646,14 @@ export default function AudioRecorder() {
     }
   };
 
-  const playNextPrompt = async (index) => {
+  // OLD CODE - Now handled by SimulatedRecorder
+  // This function is kept for reference but should not be called for Simulated_Conversation
+  const playNextPrompt_OLD = async (index) => {
+    // Early return if this is a simulated conversation - SimulatedRecorder handles it
+    if (isSimulatedConversation) {
+      console.warn("⚠️ playNextPrompt_OLD called for simulated conversation - this should not happen");
+      return;
+    }
     console.log(`🎵 playNextPrompt called with index: ${index}, total prompts: ${promptClips.length}`);
     
     // Clear any existing timers and intervals FIRST
@@ -3291,9 +3299,11 @@ export default function AudioRecorder() {
   };
 
   const playRecording = async () => {
-    // For Simulated Conversation, start sequential playback
+    // For Simulated Conversation, SimulatedRecorder handles everything
+    // Don't call playNextPrompt here - SimulatedRecorder will handle it via onStartClick
     if (isSimulatedConversation && promptClips.length > 0) {
-      playNextPrompt(0);
+      console.log("⚠️ playRecording called for simulated conversation - SimulatedRecorder should handle this");
+      // SimulatedRecorder will handle starting via onStartClick
       return;
     }
 
@@ -4497,7 +4507,9 @@ export default function AudioRecorder() {
               questionIndex={questionIndex}
               recognizedText={recognizedText}
               examLanguage={examLanguage}
-              setUploadProgress={setUploadProgress}
+              setUploadProgress={(progress) => {
+                updateUploadingData({ uploadProgress: progress });
+              }}
               onStartClick={() => {
                 // SimulatedRecorder will handle starting internally
               }}

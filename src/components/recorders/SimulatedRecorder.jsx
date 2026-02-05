@@ -443,7 +443,9 @@ export default function SimulatedRecorder({
     try {
       // Combine all segments
       console.log("🔗 Stitching all segments together...");
-      if (setUploadProgress) setUploadProgress(10);
+      if (setUploadProgress) {
+        setUploadProgress(10);
+      }
 
       const allBlobs = [];
       for (const segment of collectedRecordings) {
@@ -458,7 +460,9 @@ export default function SimulatedRecorder({
       const combinedBlob = new Blob(allBlobs, { type: "video/mp4" });
       console.log(`✅ Combined ${allBlobs.length} segments, size: ${combinedBlob.size} bytes`);
 
-      if (setUploadProgress) setUploadProgress(30);
+      if (setUploadProgress) {
+        setUploadProgress(30);
+      }
 
       // Get upload URL
       const uploadUrlResponse = await fetch(
@@ -472,7 +476,9 @@ export default function SimulatedRecorder({
 
       const { uploadUrl } = await uploadUrlResponse.json();
 
-      if (setUploadProgress) setUploadProgress(50);
+      if (setUploadProgress) {
+        setUploadProgress(50);
+      }
 
       // Upload to S3
       const uploadResponse = await fetch(uploadUrl, {
@@ -485,7 +491,9 @@ export default function SimulatedRecorder({
         throw new Error("Failed to upload to S3");
       }
 
-      if (setUploadProgress) setUploadProgress(80);
+      if (setUploadProgress) {
+        setUploadProgress(80);
+      }
 
       // Notify server
       const uploadData = {
@@ -510,7 +518,9 @@ export default function SimulatedRecorder({
 
       const data = await serverResponse.json();
 
-      if (setUploadProgress) setUploadProgress(100);
+      if (setUploadProgress) {
+        setUploadProgress(100);
+      }
 
       updateUploadingData({
         isUploading: false,
