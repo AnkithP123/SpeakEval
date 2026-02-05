@@ -1161,8 +1161,14 @@ export default function AudioRecorder() {
   }, [currentStage, currentInstructionIndex, instructions]);
 
   // Fallback: Auto-start recording if somehow we're in recording stage without recording started
+  // BUT: Skip this for simulated conversations - they handle recording start in playNextPrompt
   useEffect(() => {
     const handleFallbackRecording = async () => {
+      // Skip fallback for simulated conversations - they handle recording differently
+      if (isSimulatedConversation) {
+        return;
+      }
+      
       if (
         currentStage === "recording" &&
         !stageData.recording.isRecording &&
@@ -1188,7 +1194,7 @@ export default function AudioRecorder() {
     };
 
     handleFallbackRecording();
-  }, [currentStage]);
+  }, [currentStage, isSimulatedConversation]);
 
   const isStreamValid = (stream) => {
     if (!stream) return false;
@@ -2070,13 +2076,21 @@ export default function AudioRecorder() {
         try {
           const tracks = microphoneStream.getTracks();
           const isValid = tracks.length > 0 && tracks.every(track => track.readyState === 'live');
-          if (isValid && readyMediaRecorderRef.current.state === "recording") {
+          const recorderState = readyMediaRecorderRef.current.state;
+          if (isValid && (recorderState === "recording" || recorderState === "inactive")) {
             // Everything is ready, just enable chunk saving
+            // Note: "inactive" is also acceptable if we're about to start
             permissionResult = { permissionGranted: true, stream: microphoneStream, mediaRecorderReady: true };
+            console.log(`✅ Permissions check passed. MediaRecorder state: ${recorderState}, stream valid: ${isValid}`);
+          } else {
+            console.warn(`⚠️ Stream or MediaRecorder check failed. Stream valid: ${isValid}, Recorder state: ${recorderState}`);
           }
         } catch (e) {
           // Stream check failed, need to request permissions again
+          console.warn("⚠️ Stream check exception:", e);
         }
+      } else {
+        console.warn(`⚠️ MediaRecorder or stream not available. MediaRecorder: ${!!readyMediaRecorderRef.current}, Stream: ${!!microphoneStream}`);
       }
 
       // Only request permissions if we don't already have them
@@ -2086,9 +2100,16 @@ export default function AudioRecorder() {
         } catch (permError) {
           // If requestPermissions throws, handle it gracefully
           console.warn("⚠️ Permission request had an issue, but continuing:", permError);
-          // Check if we have a working MediaRecorder anyway
-          if (readyMediaRecorderRef.current && readyMediaRecorderRef.current.state === "recording") {
-            permissionResult = { permissionGranted: true, stream: microphoneStream, mediaRecorderReady: true };
+          // Check if we have a working MediaRecorder anyway (even if requestPermissions failed)
+          if (readyMediaRecorderRef.current) {
+            const recorderState = readyMediaRecorderRef.current.state;
+            if (recorderState === "recording" || recorderState === "inactive") {
+              console.log(`✅ Using existing MediaRecorder despite permission request failure. State: ${recorderState}`);
+              permissionResult = { permissionGranted: true, stream: microphoneStream, mediaRecorderReady: true };
+            } else {
+              console.error(`❌ MediaRecorder exists but in invalid state: ${recorderState}`);
+              permissionResult = { permissionGranted: false, mediaRecorderReady: false };
+            }
           } else {
             permissionResult = { permissionGranted: false, mediaRecorderReady: false };
           }
@@ -2123,13 +2144,29 @@ export default function AudioRecorder() {
       // Start "recording" - just enable saving chunks (MediaRecorder already running)
       // MediaRecorder should NEVER be started/stopped here - it runs continuously from permissions
       if (readyMediaRecorderRef.current) {
-        // MediaRecorder is already running continuously from permission grant
+        const recorderState = readyMediaRecorderRef.current.state;
+        
+        // If MediaRecorder is inactive, we need to start it
+        if (recorderState === "inactive") {
+          console.log("🔄 MediaRecorder is inactive, starting it...");
+          try {
+            readyMediaRecorderRef.current.start(250); // Start with 250ms intervals
+            console.log("✅ MediaRecorder started successfully");
+          } catch (startError) {
+            console.error("❌ Failed to start MediaRecorder:", startError);
+            // Try to fall back to hook
+            console.warn("⚠️ Falling back to hook due to MediaRecorder start failure");
+            startAudioRecording();
+          }
+        }
+        
+        // MediaRecorder is running (or we just started it)
         // Just clear old chunks and start saving new ones for this recording session
         audioChunksRef.current = [];
         currentPromptChunksRef.current = []; // Clear current prompt's chunks
         isSavingChunksRef.current = true; // Enable saving chunks
         
-        console.log(`🎙️ Started saving chunks for recording. MediaRecorder state: ${readyMediaRecorderRef.current.state} (should be 'recording')`);
+        console.log(`🎙️ Started saving chunks for recording. MediaRecorder state: ${readyMediaRecorderRef.current.state}`);
         
         // Note: We don't set up onstop handler here because MediaRecorder never stops
         // It runs continuously and we just toggle chunk saving
