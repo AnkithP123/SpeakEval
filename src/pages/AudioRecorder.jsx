@@ -2129,10 +2129,12 @@ export default function AudioRecorder() {
 
       if (!permissionResult || !permissionResult.permissionGranted) {
         console.error(`❌ [startRecording] Microphone permission not granted. permissionResult:`, permissionResult);
+        console.error(`   📊 Debug: isSimulatedConversation: ${isSimulatedConversation}, MediaRecorder exists: ${!!readyMediaRecorderRef.current}`);
         
         // CRITICAL FIX: For simulated conversations, if MediaRecorder exists and is recording,
         // we should still enable chunk saving even if permissions check failed
         if (isSimulatedConversation && readyMediaRecorderRef.current) {
+          console.log(`   ✅ [startRecording] Recovery condition met!`);
           const recorderState = readyMediaRecorderRef.current.state;
           if (recorderState === "recording" || recorderState === "inactive") {
             console.log(`🔄 [startRecording] Simulated conversation: MediaRecorder exists (state: ${recorderState}), enabling chunk saving despite permissions check failure`);
@@ -2826,32 +2828,40 @@ export default function AudioRecorder() {
             console.error(`   Error details:`, error.message, error.stack);
             console.error(`   MediaRecorder state: ${readyMediaRecorderRef.current?.state}, exists: ${!!readyMediaRecorderRef.current}`);
             console.error(`   Stream exists: ${!!microphoneStream}`);
+            console.error(`   isSimulatedConversation: ${isSimulatedConversation}`);
             
             // CRITICAL FIX: If MediaRecorder exists and is recording, enable chunk saving anyway
             // The permissions check might fail incorrectly, but if MediaRecorder is working, we should use it
+            console.log(`🔄 [Prompt ${index + 1}] Starting recovery process...`);
+            console.log(`   📊 MediaRecorder exists: ${!!readyMediaRecorderRef.current}`);
+            
             if (readyMediaRecorderRef.current) {
               const recorderState = readyMediaRecorderRef.current.state;
               console.log(`🔄 [Prompt ${index + 1}] Attempting recovery. MediaRecorder state: ${recorderState}`);
               
-              if (recorderState === "recording") {
-                // MediaRecorder is already recording - just enable chunk saving
-                console.log(`✅ [Prompt ${index + 1}] MediaRecorder is recording, enabling chunk saving...`);
-                currentPromptChunksRef.current = []; // Clear chunks for this prompt
-                audioChunksRef.current = []; // Clear main chunks
-                isSavingChunksRef.current = true; // Enable saving
-                console.log(`✅ [Prompt ${index + 1}] Chunk saving enabled despite error`);
-              } else if (recorderState === "inactive") {
-                // MediaRecorder is inactive - try to start it
-                console.log(`🔄 [Prompt ${index + 1}] Attempting to start inactive MediaRecorder...`);
-                try {
-                  readyMediaRecorderRef.current.start(250);
-                  currentPromptChunksRef.current = [];
-                  audioChunksRef.current = [];
-                  isSavingChunksRef.current = true;
-                  console.log(`✅ [Prompt ${index + 1}] MediaRecorder started and chunk saving enabled`);
-                } catch (restartError) {
-                  console.error(`❌ [Prompt ${index + 1}] Failed to restart MediaRecorder:`, restartError);
+              if (recorderState === "recording" || recorderState === "inactive") {
+                // MediaRecorder exists and is either recording or can be started
+                console.log(`✅ [Prompt ${index + 1}] MediaRecorder exists (state: ${recorderState}), enabling chunk saving...`);
+                
+                // Clear chunks for this prompt
+                currentPromptChunksRef.current = [];
+                audioChunksRef.current = [];
+                console.log(`   📦 Chunks cleared`);
+                
+                // If inactive, start it
+                if (recorderState === "inactive") {
+                  try {
+                    readyMediaRecorderRef.current.start(250);
+                    console.log(`✅ [Prompt ${index + 1}] MediaRecorder started`);
+                  } catch (startErr) {
+                    console.error(`❌ [Prompt ${index + 1}] Failed to start MediaRecorder:`, startErr);
+                  }
                 }
+                
+                // CRITICAL: Enable chunk saving - this is the key fix!
+                isSavingChunksRef.current = true;
+                console.log(`✅ [Prompt ${index + 1}] Chunk saving enabled! isSavingChunksRef: ${isSavingChunksRef.current}`);
+                console.log(`   ✅ Recovery complete - chunks should now be saved`);
               } else {
                 console.warn(`⚠️ [Prompt ${index + 1}] MediaRecorder in unexpected state: ${recorderState}`);
               }
