@@ -56,6 +56,8 @@ export default function AudioRecorder() {
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const readyMediaRecorderRef = useRef(null); // MediaRecorder kept ready from permission grant
   const readyScreenRecorderRef = useRef(null); // Screen recorder kept ready
+  const allChunksRef = useRef([]); // Store all chunks from MediaRecorder (recorder components will filter)
+  // Legacy refs - will be removed as we move logic to components
   const audioChunksRef = useRef([]); // Store audio chunks for ready recorder (current recording)
   const isSavingChunksRef = useRef(false); // Flag to control whether we save chunks
   const currentPromptChunksRef = useRef([]); // Store chunks for the current prompt's response
@@ -1440,47 +1442,63 @@ export default function AudioRecorder() {
           mimeType: mimeType,
         });
         
-        // Set up data handler - only save chunks if flag is set
-        audioChunksRef.current = [];
-        isSavingChunksRef.current = false; // Start with saving disabled
+        // Set up data handler - recorder components will handle their own chunks
+        // We'll just store raw chunks here, components will filter what they need
+        allChunksRef.current = [];
         
         mediaRecorder.ondataavailable = (event) => {
-          // Only save chunks if we're actually "recording" (user wants to save)
-          // Save to both the main array and the current prompt's array
-          if (isSavingChunksRef.current && event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
-            currentPromptChunksRef.current.push(event.data);
-            console.log(`📦 Chunk collected: size=${event.data.size}, total chunks: ${currentPromptChunksRef.current.length}`);
-          } else if (event.data.size > 0) {
-            console.log(`⚠️ Chunk received but not saving (isSavingChunksRef: ${isSavingChunksRef.current})`);
+          // Always collect chunks - recorder components will manage their own arrays
+          if (event.data.size > 0) {
+            allChunksRef.current.push(event.data);
           }
         };
         
         // Set up stop handler (only called on component unmount)
-        // Note: MediaRecorder should never stop during normal operation - it runs continuously
         mediaRecorder.onstop = async () => {
-          // Only process if we have chunks saved (this should rarely happen since we keep it running)
-          if (audioChunksRef.current.length > 0 || currentPromptChunksRef.current.length > 0) {
-            const recorderMimeType = mediaRecorder.mimeType || "video/mp4";
-            // Use whichever chunks array has data
-            const chunksToUse = currentPromptChunksRef.current.length > 0 
-              ? currentPromptChunksRef.current 
-              : audioChunksRef.current;
-            const videoBlob = new Blob(chunksToUse, { type: recorderMimeType });
-            const videoUrl = URL.createObjectURL(videoBlob);
-            await handleAudioStop(videoUrl, videoBlob);
-          }
+          console.log("MediaRecorder stopped (component unmount)");
         };
         
-        // Start recording immediately - but don't save chunks yet
+        // Start recording immediately, then pause it
+        // Recorder components will resume/pause as needed
         try {
-          mediaRecorder.start(250); // Collect data every second
-          // Store the recorder only if start succeeded
+          mediaRecorder.start(250); // Collect data every 250ms
+          
+          // Check if pause is supported
+          const pauseSupported = typeof mediaRecorder.pause === 'function';
+          
+          if (pauseSupported && mediaRecorder.state === "recording") {
+            try {
+              mediaRecorder.pause();
+              console.log("✅ MediaRecorder created and paused (ready for recorder components)");
+              mediaRecorder._pauseSupported = true;
+            } catch (pauseErr) {
+              console.warn("⚠️ Could not pause MediaRecorder:", pauseErr);
+              mediaRecorder._pauseSupported = false;
+            }
+          } else {
+            console.log("⚠️ MediaRecorder pause not supported, will use flag-based approach");
+            mediaRecorder._pauseSupported = false;
+            // Use flag-based approach - don't save chunks initially
+            allChunksRef.current = [];
+            mediaRecorder._isSavingChunks = false;
+            // Store original handler
+            const originalHandler = mediaRecorder.ondataavailable;
+            // Override ondataavailable to check flag
+            mediaRecorder.ondataavailable = (event) => {
+              // Always call original handler first (for recorder components)
+              if (originalHandler) originalHandler(event);
+              // Then save to allChunksRef if flag is set
+              if (mediaRecorder._isSavingChunks && event.data.size > 0) {
+                allChunksRef.current.push(event.data);
+              }
+            };
+          }
+          
+          // Store the recorder
           readyMediaRecorderRef.current = mediaRecorder;
         } catch (startErr) {
           console.error("Error starting MediaRecorder:", startErr);
-          // If start fails, don't store the recorder - we'll fall back to hook
-          throw startErr; // Re-throw to be caught by outer catch
+          throw startErr;
         }
       } catch (err) {
         console.error("Error creating/starting continuous MediaRecorder:", err);
@@ -4368,6 +4386,8 @@ export default function AudioRecorder() {
               examLanguage={examLanguage}
               audioURL={audioURL}
               thinkingProgress={thinkingProgress}
+              mediaRecorder={readyMediaRecorderRef.current}
+              microphoneStream={microphoneStream}
               onPlayClick={() => {
                 if (audioPlayer) {
                   if (audioPlayer.isPaused || audioPlayer.isStopped) {
@@ -4458,10 +4478,28 @@ export default function AudioRecorder() {
               promptClips={promptClips}
               currentPromptIndex={currentPromptIndex}
               recordingCountdown={recordingCountdown}
+              mediaRecorder={readyMediaRecorderRef.current}
+              microphoneStream={microphoneStream}
+              advanceStage={advanceStage}
+              updateRecordingData={updateRecordingData}
+              updateAudioPlayData={updateAudioPlayData}
+              updateUploadingData={updateUploadingData}
+              setCurrentPromptIndex={setCurrentPromptIndex}
+              setRecordingCountdown={setRecordingCountdown}
+              setAudioBlobURL={setAudioBlobURL}
+              playRecordingStarted={playRecordingStarted}
+              audioPlaybackStarted={audioPlaybackStarted}
+              audioPlaybackCompleted={audioPlaybackCompleted}
+              uploadStarted={uploadStarted}
+              uploadCompleted={uploadCompleted}
+              updateStudentStatus={updateStudentStatus}
+              questionCompleted={questionCompleted}
+              questionIndex={questionIndex}
+              recognizedText={recognizedText}
+              examLanguage={examLanguage}
+              setUploadProgress={setUploadProgress}
               onStartClick={() => {
-                if (!isRecording && !stageData.recording.isRecording && currentStage === "audio_play") {
-                  playRecording();
-                }
+                // SimulatedRecorder will handle starting internally
               }}
             />
           )}
