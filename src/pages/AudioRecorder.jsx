@@ -1136,10 +1136,11 @@ export default function AudioRecorder() {
                 updateInstructionsData({ hasViewed: true });
                 setIsFullscreen(true);
                 setExamStarted(true);
-                // For Simulated_Conversation, go directly to playing prompts (which starts recording)
+                // For Simulated_Conversation, SimulatedRecorder handles everything
                 if (isSimulatedConversation && promptClips.length > 0) {
-                  // Start playing prompts immediately
-                  playNextPrompt(0);
+                  // SimulatedRecorder will handle starting via onStartClick
+                  // Just advance to audio_play stage so SimulatedRecorder can render
+                  advanceStage("audio_play");
                 } else {
                   // Regular flow: proceed to audio_play
                   advanceStage("audio_play");
@@ -2949,6 +2950,12 @@ export default function AudioRecorder() {
   };
 
   const stopRecordingForNextPrompt = async (currentIndex) => {
+    // For simulated conversations, SimulatedRecorder handles this
+    if (isSimulatedConversation) {
+      console.warn("⚠️ stopRecordingForNextPrompt called for simulated conversation - SimulatedRecorder should handle this");
+      return;
+    }
+    
     console.log(`🛑 [Prompt ${currentIndex + 1}] stopRecordingForNextPrompt called`);
     console.log(`   📊 State check: isRecording: ${isRecording}, stageData.recording.isRecording: ${stageData.recording.isRecording}`);
     console.log(`   📊 Chunks check: currentPromptChunksRef.length: ${currentPromptChunksRef.current.length}, audioChunksRef.length: ${audioChunksRef.current.length}`);
@@ -3085,8 +3092,10 @@ export default function AudioRecorder() {
       // Wait a bit to ensure all state updates are processed before moving to next prompt
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Move to next prompt
-      playNextPrompt(currentIndex + 1);
+      // Move to next prompt (only for non-simulated conversations)
+      if (!isSimulatedConversation) {
+        playNextPrompt_OLD(currentIndex + 1);
+      }
     } else {
       console.warn("⚠️ stopRecordingForNextPrompt called but not recording - moving to next prompt anyway");
       // Reset audio play state
@@ -3106,8 +3115,10 @@ export default function AudioRecorder() {
       }
       // Wait a bit before moving to next prompt
       await new Promise(resolve => setTimeout(resolve, 200));
-      // Even if not recording, try to move to next prompt
-      playNextPrompt(currentIndex + 1);
+      // Even if not recording, try to move to next prompt (only for non-simulated conversations)
+      if (!isSimulatedConversation) {
+        playNextPrompt_OLD(currentIndex + 1);
+      }
     }
   };
 
@@ -4345,10 +4356,11 @@ export default function AudioRecorder() {
                           updateInstructionsData({ hasViewed: true });
                           setIsFullscreen(true);
                           setExamStarted(true);
-                          // For Simulated_Conversation, go directly to playing prompts (which starts recording)
+                          // For Simulated_Conversation, SimulatedRecorder handles everything
                           if (isSimulatedConversation && promptClips.length > 0) {
-                            // Start playing prompts immediately
-                            playNextPrompt(0);
+                            // SimulatedRecorder will handle starting via onStartClick
+                            // Just advance to audio_play stage so SimulatedRecorder can render
+                            advanceStage("audio_play");
                           } else {
                             // Regular flow: proceed to audio_play
                             advanceStage("audio_play");
