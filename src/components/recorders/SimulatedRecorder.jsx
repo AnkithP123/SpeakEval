@@ -347,6 +347,16 @@ export default function SimulatedRecorder({
     try {
       await new Promise(resolve => setTimeout(resolve, 50));
 
+      if (!audioPlayer) {
+        console.error("❌ Audio player not available");
+        updateAudioPlayData({
+          isPlaying: false,
+          playError: "Audio player not available",
+        });
+        return;
+      }
+
+      console.log(`🎵 Loading audio for prompt ${index + 1}...`);
       audioPlayer.load(promptUrl, {
         autoplay: true,
         initialVolume: 1.0,
@@ -545,12 +555,9 @@ export default function SimulatedRecorder({
 
   // Handle start click
   const handleStartClick = () => {
-    if (onStartClick) {
-      onStartClick();
-    } else {
-      // Start playing prompts
-      playNextPrompt(0);
-    }
+    // Always start playing prompts - SimulatedRecorder handles everything
+    console.log("🎬 handleStartClick called - starting prompt playback");
+    playNextPrompt(0);
   };
 
   // Use local state for display
