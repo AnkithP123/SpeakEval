@@ -2534,10 +2534,14 @@ export default function AudioRecorder() {
   const playNextPrompt = async (index) => {
     console.log(`🎵 playNextPrompt called with index: ${index}, total prompts: ${promptClips.length}`);
     
-    // Clear any existing timer
+    // Clear any existing timers and intervals FIRST
     if (promptTimerRef.current !== null) {
       clearTimeout(promptTimerRef.current);
       promptTimerRef.current = null;
+    }
+    if (countdownIntervalRef.current !== null) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
     }
 
     if (index >= promptClips.length) {
@@ -2545,6 +2549,17 @@ export default function AudioRecorder() {
       console.log(`✅ All prompts complete. Collected ${collectedRecordings.length} recordings. Starting upload...`);
       await uploadAllRecordings();
       return;
+    }
+
+    // Stop any currently playing audio before loading next prompt
+    if (audioPlayer) {
+      try {
+        audioPlayer.stop();
+        // Wait a bit for the stop to complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (e) {
+        console.warn("Error stopping audio player:", e);
+      }
     }
 
     // Preload next prompt while we're working with current one
@@ -2563,6 +2578,16 @@ export default function AudioRecorder() {
     setAudioBlobURL(promptUrl);
     setCurrentPromptIndex(index);
     
+    // Reset recording state for new prompt
+    setRecordingStartTime(null);
+    setRecordingCountdown(20);
+    setIsRecording(false);
+    updateRecordingData({
+      isRecording: false,
+      hasRecorded: false,
+      recordingError: null,
+    });
+    
     // Set stage to audio_play so the prompt can play and UI shows correctly
     advanceStage("audio_play");
     
@@ -2574,6 +2599,9 @@ export default function AudioRecorder() {
     });
     
     try {
+      // Load the audio with a small delay to ensure state is reset
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
       audioPlayer.load(promptUrl, {
         autoplay: true,
         initialVolume: 1.0,
@@ -2584,76 +2612,114 @@ export default function AudioRecorder() {
         },
         onend: async () => {
           console.log(`✅ Prompt ${index + 1} finished playing`);
-        audioPlaybackCompleted();
-        updateAudioPlayData({
-          isPlaying: false,
-          hasPlayed: true,
-        });
-        
-        // Prompt finished, immediately start recording
-        playRecordingStarted(); // Play tone
-        try {
-          // Set start time FIRST before advancing stage, so countdown displays correctly
-          const startTime = Date.now();
-          setRecordingStartTime(startTime);
-          setRecordingCountdown(20);
-          
-          // Clear chunks for this new prompt before starting recording
-          currentPromptChunksRef.current = [];
-          audioChunksRef.current = [];
-          
-          // Advance to recording stage
-          advanceStage("recording");
-          await startRecording();
-          
-          // Enable saving chunks AFTER startRecording (which resets it to false)
-          isSavingChunksRef.current = true;
-          
-          updateRecordingData({
-            isRecording: true,
-            hasRecorded: false,
-            recordingError: null,
+          audioPlaybackCompleted();
+          updateAudioPlayData({
+            isPlaying: false,
+            hasPlayed: true,
           });
           
-          // Update countdown every 100ms for smooth UI updates
-          countdownIntervalRef.current = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - startTime) / 1000);
-            const remaining = Math.max(0, 20 - elapsed);
-            setRecordingCountdown(remaining);
-            if (remaining <= 0) {
-              clearInterval(countdownIntervalRef.current);
-            }
-          }, 100);
-          
-          // Set 20-second timer to auto-advance to next prompt
-          promptTimerRef.current = setTimeout(async () => {
-            console.log(`⏰ 20 seconds elapsed for prompt ${index + 1}, stopping recording...`);
-            if (countdownIntervalRef.current) {
-              clearInterval(countdownIntervalRef.current);
-            }
-            // 20 seconds elapsed, stop recording and move to next prompt
-            await stopRecordingForNextPrompt(index);
-          }, 20000);
-        } catch (error) {
-          // Don't show error to user - just log it and continue
-          // The MediaRecorder should already be running from permissions
-          console.warn("⚠️ Recording setup had an issue (continuing anyway):", error);
-          // Still update state to indicate we're ready
-          updateRecordingData({
-            isRecording: true,
-            hasRecorded: false,
-            recordingError: null, // Don't set error - we'll continue anyway
+          // Prompt finished, immediately start recording
+          playRecordingStarted(); // Play tone
+          try {
+            // Set start time FIRST before advancing stage, so countdown displays correctly
+            const startTime = Date.now();
+            setRecordingStartTime(startTime);
+            setRecordingCountdown(20);
+            
+            // Clear chunks for this new prompt before starting recording
+            currentPromptChunksRef.current = [];
+            audioChunksRef.current = [];
+            
+            // Advance to recording stage
+            advanceStage("recording");
+            await startRecording();
+            
+            // Enable saving chunks AFTER startRecording (which resets it to false)
+            isSavingChunksRef.current = true;
+            
+            updateRecordingData({
+              isRecording: true,
+              hasRecorded: false,
+              recordingError: null,
+            });
+            
+            // Initialize countdown immediately
+            const updateCountdown = () => {
+              const elapsed = Math.floor((Date.now() - startTime) / 1000);
+              const remaining = Math.max(0, 20 - elapsed);
+              setRecordingCountdown(remaining);
+              if (remaining <= 0) {
+                if (countdownIntervalRef.current) {
+                  clearInterval(countdownIntervalRef.current);
+                  countdownIntervalRef.current = null;
+                }
+              }
+            };
+            
+            // Update countdown immediately
+            updateCountdown();
+            
+            // Update countdown every 100ms for smooth UI updates
+            countdownIntervalRef.current = setInterval(updateCountdown, 100);
+            
+            // Set 20-second timer to auto-advance to next prompt
+            promptTimerRef.current = setTimeout(async () => {
+              console.log(`⏰ 20 seconds elapsed for prompt ${index + 1}, stopping recording...`);
+              if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+                countdownIntervalRef.current = null;
+              }
+              // 20 seconds elapsed, stop recording and move to next prompt
+              await stopRecordingForNextPrompt(index);
+            }, 20000);
+          } catch (error) {
+            // Don't show error to user - just log it and continue
+            // The MediaRecorder should already be running from permissions
+            console.warn("⚠️ Recording setup had an issue (continuing anyway):", error);
+            // Still update state to indicate we're ready
+            const startTime = Date.now();
+            setRecordingStartTime(startTime);
+            setRecordingCountdown(20);
+            
+            // Initialize countdown even if recording didn't start properly
+            const updateCountdown = () => {
+              const elapsed = Math.floor((Date.now() - startTime) / 1000);
+              const remaining = Math.max(0, 20 - elapsed);
+              setRecordingCountdown(remaining);
+              if (remaining <= 0) {
+                if (countdownIntervalRef.current) {
+                  clearInterval(countdownIntervalRef.current);
+                  countdownIntervalRef.current = null;
+                }
+              }
+            };
+            updateCountdown();
+            countdownIntervalRef.current = setInterval(updateCountdown, 100);
+            
+            updateRecordingData({
+              isRecording: true,
+              hasRecorded: false,
+              recordingError: null, // Don't set error - we'll continue anyway
+            });
+            
+            // Still set timer to move to next prompt
+            promptTimerRef.current = setTimeout(async () => {
+              if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+                countdownIntervalRef.current = null;
+              }
+              await stopRecordingForNextPrompt(index);
+            }, 20000);
+          }
+        },
+        onerror: (error) => {
+          console.error(`❌ Audio play error for prompt ${index + 1}:`, error);
+          updateAudioPlayData({
+            isPlaying: false,
+            playError: "Failed to load audio",
           });
-        }
-      },
-      onerror: (error) => {
-        console.error(`❌ Audio play error for prompt ${index + 1}:`, error);
-        updateAudioPlayData({
-          isPlaying: false,
-          playError: "Failed to load audio",
-        });
-      },
-    });
+        },
+      });
     } catch (loadError) {
       console.error(`❌ Failed to load prompt ${index + 1}:`, loadError);
       updateAudioPlayData({
@@ -2666,6 +2732,15 @@ export default function AudioRecorder() {
   const stopRecordingForNextPrompt = async (currentIndex) => {
     console.log(`🛑 stopRecordingForNextPrompt called for prompt ${currentIndex + 1}`);
     console.log(`   isRecording: ${isRecording}, stageData.recording.isRecording: ${stageData.recording.isRecording}`);
+    
+    // Stop any currently playing audio
+    if (audioPlayer) {
+      try {
+        audioPlayer.stop();
+      } catch (e) {
+        console.warn("Error stopping audio player:", e);
+      }
+    }
     
     // Stop the current recording - check both state sources
     if (isRecording || stageData.recording.isRecording) {
@@ -2770,12 +2845,11 @@ export default function AudioRecorder() {
         playError: null,
       });
       
-      // For simulated conversation, directly play next prompt (don't use audio_play stage)
-      // This prevents showing "Preparing to record..." while transitioning
-      // Move to next prompt - use setTimeout to ensure state updates are processed
-      setTimeout(() => {
-        playNextPrompt(currentIndex + 1);
-      }, 100);
+      // Wait a bit to ensure all state updates are processed before moving to next prompt
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Move to next prompt
+      playNextPrompt(currentIndex + 1);
     } else {
       console.warn("⚠️ stopRecordingForNextPrompt called but not recording - moving to next prompt anyway");
       // Reset audio play state
@@ -2784,10 +2858,19 @@ export default function AudioRecorder() {
         hasPlayed: false,
         playError: null,
       });
+      // Clear timers
+      if (promptTimerRef.current !== null) {
+        clearTimeout(promptTimerRef.current);
+        promptTimerRef.current = null;
+      }
+      if (countdownIntervalRef.current !== null) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      // Wait a bit before moving to next prompt
+      await new Promise(resolve => setTimeout(resolve, 200));
       // Even if not recording, try to move to next prompt
-      setTimeout(() => {
-        playNextPrompt(currentIndex + 1);
-      }, 100);
+      playNextPrompt(currentIndex + 1);
     }
   };
 
