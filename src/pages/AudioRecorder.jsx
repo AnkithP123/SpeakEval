@@ -1164,8 +1164,11 @@ export default function AudioRecorder() {
   // BUT: Skip this for simulated conversations - they handle recording start in playNextPrompt
   useEffect(() => {
     const handleFallbackRecording = async () => {
+      console.log(`🔍 [Fallback] Checking fallback recording. isSimulatedConversation: ${isSimulatedConversation}, currentStage: ${currentStage}, isRecording: ${stageData.recording.isRecording}`);
+      
       // Skip fallback for simulated conversations - they handle recording differently
       if (isSimulatedConversation) {
+        console.log(`⏭️ [Fallback] Skipping fallback for simulated conversation`);
         return;
       }
       
@@ -1174,6 +1177,7 @@ export default function AudioRecorder() {
         !stageData.recording.isRecording &&
         !stageData.recording.hasRecorded
       ) {
+        console.log(`🔄 [Fallback] Attempting to start recording as fallback...`);
         try {
           // Start recording as fallback
           await startRecording();
@@ -1182,8 +1186,9 @@ export default function AudioRecorder() {
             hasRecorded: false,
             recordingError: null,
           });
+          console.log(`✅ [Fallback] Recording started successfully`);
         } catch (error) {
-          console.error("❌ Fallback recording failed:", error);
+          console.error("❌ [Fallback] Fallback recording failed:", error);
           updateRecordingData({
             isRecording: false,
             hasRecorded: false,
@@ -1194,7 +1199,7 @@ export default function AudioRecorder() {
     };
 
     handleFallbackRecording();
-  }, [currentStage, isSimulatedConversation]);
+  }, [currentStage, isSimulatedConversation, stageData.recording.isRecording, stageData.recording.hasRecorded]);
 
   const isStreamValid = (stream) => {
     if (!stream) return false;
@@ -2068,6 +2073,9 @@ export default function AudioRecorder() {
     // Enable fullscreen monitoring
     setIsFullscreen(true);
 
+    console.log(`🎤 [startRecording] Starting recording process...`);
+    console.log(`   📊 Initial state: MediaRecorder exists: ${!!readyMediaRecorderRef.current}, Stream exists: ${!!microphoneStream}, isSimulatedConversation: ${isSimulatedConversation}`);
+
     try {
       // Check if we already have permissions and MediaRecorder running
       let permissionResult = null;
@@ -2117,10 +2125,16 @@ export default function AudioRecorder() {
       }
 
       if (!permissionResult || !permissionResult.permissionGranted) {
-        console.error("❌ Microphone permission not granted");
-        setError(
-          "Microphone permission is required to start recording. Please grant permission and try again."
-        );
+        console.error(`❌ [startRecording] Microphone permission not granted. permissionResult:`, permissionResult);
+        const errorMsg = "Microphone permission is required to start recording. Please grant permission and try again.";
+        
+        // For simulated conversations, don't show the alert - just log and throw
+        if (isSimulatedConversation) {
+          console.error(`❌ [startRecording] Throwing error for simulated conversation: ${errorMsg}`);
+          throw new Error("Permissions check failed");
+        }
+        
+        setError(errorMsg);
         setIsError(true);
         setIsRecording(false);
 
@@ -2140,6 +2154,8 @@ export default function AudioRecorder() {
 
         return;
       }
+      
+      console.log(`✅ [startRecording] Permissions check passed, proceeding to enable chunk saving...`);
 
       // Start "recording" - just enable saving chunks (MediaRecorder already running)
       // MediaRecorder should NEVER be started/stopped here - it runs continuously from permissions
@@ -2659,6 +2675,7 @@ export default function AudioRecorder() {
           });
           
           // Prompt finished, immediately start recording
+          console.log(`🎬 [Prompt ${index + 1}] Prompt finished, starting recording...`);
           playRecordingStarted(); // Play tone
           try {
             // Set start time FIRST before advancing stage, so countdown displays correctly
@@ -2667,18 +2684,25 @@ export default function AudioRecorder() {
             setRecordingCountdown(20);
             
             // Advance to recording stage
+            console.log(`📝 [Prompt ${index + 1}] Advancing to recording stage...`);
             advanceStage("recording");
+            
+            // Check MediaRecorder state before starting
+            console.log(`🔍 [Prompt ${index + 1}] Before startRecording: MediaRecorder exists: ${!!readyMediaRecorderRef.current}, state: ${readyMediaRecorderRef.current?.state}, stream exists: ${!!microphoneStream}`);
+            
             await startRecording();
+            
+            console.log(`✅ [Prompt ${index + 1}] startRecording() completed successfully`);
             
             // startRecording() already clears chunks and sets isSavingChunksRef.current = true
             // But ensure it's enabled (startRecording should handle this, but double-check)
             if (!isSavingChunksRef.current) {
-              console.warn("⚠️ isSavingChunksRef was false after startRecording, enabling it");
+              console.warn(`⚠️ [Prompt ${index + 1}] isSavingChunksRef was false after startRecording, enabling it`);
               isSavingChunksRef.current = true;
             }
             
             // Log chunk collection status
-            console.log(`🎙️ Recording started for prompt ${index + 1}. isSavingChunks: ${isSavingChunksRef.current}, MediaRecorder state: ${readyMediaRecorderRef.current?.state}`);
+            console.log(`🎙️ [Prompt ${index + 1}] Recording started. isSavingChunks: ${isSavingChunksRef.current}, MediaRecorder state: ${readyMediaRecorderRef.current?.state}, chunks cleared: ${currentPromptChunksRef.current.length === 0}`);
             
             updateRecordingData({
               isRecording: true,
@@ -2718,8 +2742,24 @@ export default function AudioRecorder() {
           } catch (error) {
             // Don't show error to user - just log it and continue
             // The MediaRecorder should already be running from permissions
-            console.warn("⚠️ Recording setup had an issue (continuing anyway):", error);
-            // Still update state to indicate we're ready
+            console.error(`❌ [Prompt ${index + 1}] Recording setup failed:`, error);
+            console.error(`   Error details:`, error.message, error.stack);
+            console.error(`   MediaRecorder state: ${readyMediaRecorderRef.current?.state}, exists: ${!!readyMediaRecorderRef.current}`);
+            console.error(`   Stream exists: ${!!microphoneStream}`);
+            
+            // Try to recover by checking if MediaRecorder exists but just needs to be started
+            if (readyMediaRecorderRef.current && readyMediaRecorderRef.current.state === "inactive") {
+              console.log(`🔄 [Prompt ${index + 1}] Attempting to restart inactive MediaRecorder...`);
+              try {
+                readyMediaRecorderRef.current.start(250);
+                isSavingChunksRef.current = true;
+                console.log(`✅ [Prompt ${index + 1}] MediaRecorder restarted successfully`);
+              } catch (restartError) {
+                console.error(`❌ [Prompt ${index + 1}] Failed to restart MediaRecorder:`, restartError);
+              }
+            }
+            
+            // Still update state to indicate we're ready (even if recording didn't start properly)
             const startTime = Date.now();
             setRecordingStartTime(startTime);
             setRecordingCountdown(20);
@@ -2773,8 +2813,10 @@ export default function AudioRecorder() {
   };
 
   const stopRecordingForNextPrompt = async (currentIndex) => {
-    console.log(`🛑 stopRecordingForNextPrompt called for prompt ${currentIndex + 1}`);
-    console.log(`   isRecording: ${isRecording}, stageData.recording.isRecording: ${stageData.recording.isRecording}`);
+    console.log(`🛑 [Prompt ${currentIndex + 1}] stopRecordingForNextPrompt called`);
+    console.log(`   📊 State check: isRecording: ${isRecording}, stageData.recording.isRecording: ${stageData.recording.isRecording}`);
+    console.log(`   📊 Chunks check: currentPromptChunksRef.length: ${currentPromptChunksRef.current.length}, audioChunksRef.length: ${audioChunksRef.current.length}`);
+    console.log(`   📊 MediaRecorder: exists: ${!!readyMediaRecorderRef.current}, state: ${readyMediaRecorderRef.current?.state}, isSavingChunks: ${isSavingChunksRef.current}`);
     
     // Stop any currently playing audio
     if (audioPlayer) {
