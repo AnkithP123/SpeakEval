@@ -1439,6 +1439,9 @@ export default function AudioRecorder() {
           if (isSavingChunksRef.current && event.data.size > 0) {
             audioChunksRef.current.push(event.data);
             currentPromptChunksRef.current.push(event.data);
+            console.log(`📦 Chunk collected: size=${event.data.size}, total chunks: ${currentPromptChunksRef.current.length}`);
+          } else if (event.data.size > 0) {
+            console.log(`⚠️ Chunk received but not saving (isSavingChunksRef: ${isSavingChunksRef.current})`);
           }
         };
         
@@ -2626,16 +2629,19 @@ export default function AudioRecorder() {
             setRecordingStartTime(startTime);
             setRecordingCountdown(20);
             
-            // Clear chunks for this new prompt before starting recording
-            currentPromptChunksRef.current = [];
-            audioChunksRef.current = [];
-            
             // Advance to recording stage
             advanceStage("recording");
             await startRecording();
             
-            // Enable saving chunks AFTER startRecording (which resets it to false)
-            isSavingChunksRef.current = true;
+            // startRecording() already clears chunks and sets isSavingChunksRef.current = true
+            // But ensure it's enabled (startRecording should handle this, but double-check)
+            if (!isSavingChunksRef.current) {
+              console.warn("⚠️ isSavingChunksRef was false after startRecording, enabling it");
+              isSavingChunksRef.current = true;
+            }
+            
+            // Log chunk collection status
+            console.log(`🎙️ Recording started for prompt ${index + 1}. isSavingChunks: ${isSavingChunksRef.current}, MediaRecorder state: ${readyMediaRecorderRef.current?.state}`);
             
             updateRecordingData({
               isRecording: true,
@@ -2750,19 +2756,21 @@ export default function AudioRecorder() {
       isSavingChunksRef.current = false;
       
       // Wait a bit to ensure all pending chunks are collected (MediaRecorder collects every 250ms)
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Give it more time to ensure all chunks from the last 250ms interval are collected
+      await new Promise(resolve => setTimeout(resolve, 600));
       
       // Request any final data from MediaRecorder (it's still running, just not saving)
       if (readyMediaRecorderRef.current && readyMediaRecorderRef.current.state === "recording") {
         try {
           readyMediaRecorderRef.current.requestData();
+          console.log("📥 Requested final data from MediaRecorder");
         } catch (e) {
           console.warn("Could not request final data from MediaRecorder:", e);
         }
       }
       
-      // Wait a bit more for the final data to arrive
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Wait a bit more for the final data to arrive (ondataavailable is async)
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Fetch the prompt audio as a blob
       let promptBlob = null;
@@ -2776,21 +2784,35 @@ export default function AudioRecorder() {
       }
       
       // Use the current prompt's chunks (separate storage per prompt)
-      if (currentPromptChunksRef.current.length > 0) {
+      console.log(`📊 Checking chunks for prompt ${currentIndex + 1}:`);
+      console.log(`   currentPromptChunksRef.length: ${currentPromptChunksRef.current.length}`);
+      console.log(`   audioChunksRef.length: ${audioChunksRef.current.length}`);
+      console.log(`   isSavingChunksRef: ${isSavingChunksRef.current}`);
+      
+      // Try to use currentPromptChunksRef first, fallback to audioChunksRef if empty
+      const chunksToUse = currentPromptChunksRef.current.length > 0 
+        ? currentPromptChunksRef.current 
+        : audioChunksRef.current;
+      
+      if (chunksToUse.length > 0) {
         const mimeType = readyMediaRecorderRef.current?.mimeType || "video/mp4";
-        const responseBlob = new Blob(currentPromptChunksRef.current, { type: mimeType });
+        const responseBlob = new Blob(chunksToUse, { type: mimeType });
         
-        console.log(`💾 Saved response ${currentIndex + 1}, chunks: ${currentPromptChunksRef.current.length}, size: ${responseBlob.size} bytes`);
+        console.log(`💾 Saved response ${currentIndex + 1}, chunks: ${chunksToUse.length}, size: ${responseBlob.size} bytes`);
         
         // Store both prompt and response (don't upload yet)
-        setCollectedRecordings((prev) => [
-          ...prev,
-          {
-            promptBlob: promptBlob,
-            responseBlob: responseBlob,
-            promptIndex: currentIndex,
-          },
-        ]);
+        setCollectedRecordings((prev) => {
+          const newRecordings = [
+            ...prev,
+            {
+              promptBlob: promptBlob,
+              responseBlob: responseBlob,
+              promptIndex: currentIndex,
+            },
+          ];
+          console.log(`📦 Total collected recordings: ${newRecordings.length}`);
+          return newRecordings;
+        });
       } else {
         console.warn(`⚠️ No chunks collected for prompt ${currentIndex + 1}`);
         // Still store the prompt even if no response was recorded
@@ -2909,9 +2931,17 @@ export default function AudioRecorder() {
     console.log(`📤 uploadAllRecordings called with ${collectedRecordings.length} recordings`);
     
     if (collectedRecordings.length === 0) {
-      // No recordings to upload, just advance to uploading stage
-      console.warn("⚠️ No recordings collected, but uploadAllRecordings was called");
+      // No recordings to upload - this shouldn't happen, but handle gracefully
+      console.error("❌ No recordings collected! This indicates a bug in chunk collection.");
+      console.error("   Check console logs for chunk collection issues.");
       advanceStage("uploading");
+      updateUploadingData({
+        isUploading: false,
+        uploadComplete: false,
+        uploadError: "No recordings were collected. Please try again.",
+      });
+      setError("No recordings were collected. Please try again.");
+      setIsError(true);
       return;
     }
 
@@ -2993,7 +3023,8 @@ export default function AudioRecorder() {
         recognitionLanguage: examLanguage,
       };
 
-      await fetch(
+      console.log("📤 Notifying server of upload completion...");
+      const serverResponse = await fetch(
         `https://www.server.speakeval.org/upload?token=${token}&index=0`,
         {
           method: "POST",
@@ -3004,15 +3035,36 @@ export default function AudioRecorder() {
         }
       );
 
+      if (!serverResponse.ok) {
+        const errorText = await serverResponse.text();
+        console.error("❌ Server upload notification failed:", errorText);
+        throw new Error(`Server upload notification failed: ${errorText}`);
+      }
+
+      const serverResult = await serverResponse.json();
+      console.log("✅ Server upload notification response:", serverResult);
+
       setUploadProgress(100);
 
-      // All uploads complete
-      updateUploadingData({
-        isUploading: false,
-        uploadComplete: true,
-        uploadError: null,
-        waitingForTranscription: false,
-      });
+      // For simulated conversations, we might get transcription immediately or it might be queued
+      // Check if transcription is in the response
+      if (serverResult.transcription) {
+        updateUploadingData({
+          isUploading: false,
+          uploadComplete: true,
+          uploadError: null,
+          waitingForTranscription: false,
+          transcriptionText: serverResult.transcription,
+        });
+      } else {
+        // Transcription is being processed, wait for it
+        updateUploadingData({
+          isUploading: false,
+          uploadComplete: true,
+          uploadError: null,
+          waitingForTranscription: true,
+        });
+      }
 
       uploadCompleted();
       updateStudentStatus("upload_completed");

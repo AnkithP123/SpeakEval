@@ -234,22 +234,6 @@ export default function SimulatedRecorder({
               </div>
             )}
 
-          {!stageData.recording.isRecording &&
-            !stageData.recording.hasRecorded &&
-            !stageData.audioPlay.isPlaying && (
-              <div style={{ textAlign: "center" }}>
-                <p
-                  style={{
-                    fontSize: "16px",
-                    color: COLORS.textLight,
-                    margin: "8px 0",
-                  }}
-                >
-                  Loading next prompt...
-                </p>
-              </div>
-            )}
-
           {stageData.recording.isRecording && (
             <div style={{ textAlign: "center" }}>
               <div
