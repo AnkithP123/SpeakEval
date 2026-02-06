@@ -1875,7 +1875,7 @@ const Config = ({
                                         }
                                         newInstructions[index] = {
                                           ...newInstructions[index],
-                                          displayTime: displayTime * 1000,
+                                          displayTime: displayTime,
                                         };
                                         setInstructions(newInstructions);
                                       }}
@@ -2663,7 +2663,6 @@ const Config = ({
                                     } else {
                                       toast.error(
                                         "You must have at least one question",
-                                        ``,
                                       );
                                     }
                                   }}
