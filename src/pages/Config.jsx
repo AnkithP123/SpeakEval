@@ -257,7 +257,7 @@ const Config = ({
       try {
         setIsLoadingConfigs(true);
         const res = await fetch(
-          `https://www.server.speakeval.org/getconfigs?pin=${userId}`
+          `https://www.server.speakeval.org/getconfigs?pin=${userId}`,
         );
         const parsedData = await res.json();
         setConfigs(parsedData);
@@ -284,7 +284,7 @@ const Config = ({
   const checkUserId = async (userId) => {
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/teacherpin?pin=${userId}`
+        `https://www.server.speakeval.org/teacherpin?pin=${userId}`,
       );
       const parsedData = await res.json();
 
@@ -326,7 +326,7 @@ const Config = ({
             mediaRecorderRef.current.start();
             mediaRecorderRef.current.addEventListener(
               "dataavailable",
-              handleDataAvailable
+              handleDataAvailable,
             );
             setRecording(true);
           })
@@ -367,7 +367,7 @@ const Config = ({
                   const recordedClip = URL.createObjectURL(event.data);
                   setPromptClips((prevClips) => [...prevClips, recordedClip]);
                 }
-              }
+              },
             );
             setRecordingPrompt(true);
           })
@@ -389,7 +389,7 @@ const Config = ({
 
   const handleDeleteQuestion = (index) => {
     setQuestions((prevQuestions) =>
-      prevQuestions.filter((_, i) => i !== index)
+      prevQuestions.filter((_, i) => i !== index),
     );
     toast.success("Question deleted");
   };
@@ -533,7 +533,7 @@ const Config = ({
 
   const handleDeleteCategory = (index) => {
     setCategories((prevCategories) =>
-      prevCategories.filter((_, i) => i !== index)
+      prevCategories.filter((_, i) => i !== index),
     );
   };
 
@@ -560,14 +560,14 @@ const Config = ({
       pointValues.length > 1
         ? pointValues[0] + (pointValues[0] - pointValues[1])
         : pointValues.length === 1
-        ? pointValues[0] + 1
-        : 1;
+          ? pointValues[0] + 1
+          : 1;
     setPointValues((prevPointValues) => [newPoint, ...prevPointValues]);
     setCategories((prevCategories) =>
       prevCategories.map((category) => ({
         ...category,
         descriptions: ["", ...category.descriptions],
-      }))
+      })),
     );
   };
 
@@ -578,29 +578,29 @@ const Config = ({
           (pointValues[pointValues.length - 2] -
             pointValues[pointValues.length - 1])
         : pointValues.length === 1
-        ? pointValues[0] - 1
-        : 1;
+          ? pointValues[0] - 1
+          : 1;
     setPointValues((prevPointValues) => [...prevPointValues, newPoint]);
     setCategories((prevCategories) =>
       prevCategories.map((category) => ({
         ...category,
         descriptions: [...category.descriptions, ""],
-      }))
+      })),
     );
   };
 
   const handleDeletePointValue = (index) => {
     if (pointValues.length > 1) {
       setPointValues((prevPointValues) =>
-        prevPointValues.filter((_, i) => i !== index)
+        prevPointValues.filter((_, i) => i !== index),
       );
       setCategories((prevCategories) =>
         prevCategories.map((category) => {
           const updatedDescriptions = category.descriptions.filter(
-            (_, i) => i !== index
+            (_, i) => i !== index,
           );
           return { ...category, descriptions: updatedDescriptions };
-        })
+        }),
       );
     } else {
       toast.error("You must have at least one point value");
@@ -645,7 +645,7 @@ const Config = ({
       setShowSelectiveAutofillModal(true);
       setIsLoadingConfigs(true);
       const configss = await fetch(
-        `https://www.server.speakeval.org/getconfigs?pin=${userId}`
+        `https://www.server.speakeval.org/getconfigs?pin=${userId}`,
       );
       const configsList = await configss.json();
       setSelectedConfig(configsList);
@@ -677,7 +677,7 @@ const Config = ({
             text,
             token: userId,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -755,7 +755,7 @@ const Config = ({
                   type: file.type,
                   token: userId,
                 }),
-              }
+              },
             );
             const result = await response.json();
 
@@ -845,7 +845,7 @@ const Config = ({
             questionArr: processedStrings,
             token: userId,
           }),
-        }
+        },
       );
       const result = await response.json();
       console.log("Result:", result);
@@ -870,7 +870,7 @@ const Config = ({
                 !result.mimeType
               ) {
                 console.error(
-                  `Error processing audio ${index}: Invalid audio data structure`
+                  `Error processing audio ${index}: Invalid audio data structure`,
                 );
                 return null;
               }
@@ -892,10 +892,10 @@ const Config = ({
                   uint8Array.length,
                   24000,
                   16,
-                  1
+                  1,
                 );
                 const wavData = new Uint8Array(
-                  wavHeader.length + uint8Array.length
+                  wavHeader.length + uint8Array.length,
                 );
                 wavData.set(wavHeader, 0);
                 wavData.set(uint8Array, wavHeader.length);
@@ -916,7 +916,7 @@ const Config = ({
         if (audioUrls.length > 0) {
           setQuestions((prevQuestions) => [...prevQuestions, ...audioUrls]);
           toast.success(
-            `Successfully added ${audioUrls.length} audio questions`
+            `Successfully added ${audioUrls.length} audio questions`,
           );
           closeImportModal();
         } else {
@@ -1011,7 +1011,7 @@ const Config = ({
                   return { text: inst, show: "Once at the Start of Room" };
                 }
               })
-            : [{ text: "", show: "Once at the Start of Room" }]
+            : [{ text: "", show: "Once at the Start of Room" }],
         );
       }
     } else {
@@ -1039,7 +1039,7 @@ const Config = ({
             url = question.audioUrl;
           } else if (question.audio) {
             const blob = await fetch(
-              `data:audio/wav;base64,${question.audio}`
+              `data:audio/wav;base64,${question.audio}`,
             ).then((res) => res.blob());
             url = URL.createObjectURL(blob);
           }
@@ -1062,7 +1062,7 @@ const Config = ({
     if (autofillOptions.language) {
       if (
         ["English", "Spanish", "French", "Chinese", "Japanese"].includes(
-          config.language
+          config.language,
         )
       ) {
         setSelectedLanguage(config.language);
@@ -1081,7 +1081,7 @@ const Config = ({
             url = question.audioUrl;
           } else if (question.audio) {
             const blob = await fetch(
-              `data:audio/wav;base64,${question.audio}`
+              `data:audio/wav;base64,${question.audio}`,
             ).then((res) => res.blob());
             url = URL.createObjectURL(blob);
           }
@@ -1109,10 +1109,10 @@ const Config = ({
         descriptions: [
           ...cat.descriptions,
           ...Array(
-            Math.max(0, preset.pointValues.length - cat.descriptions.length)
+            Math.max(0, preset.pointValues.length - cat.descriptions.length),
           ).fill(""),
         ],
-      }))
+      })),
     );
     setShowPresetRubricsModal(false);
     toast.success(`Applied ${presetName} rubric`);
@@ -1134,7 +1134,7 @@ const Config = ({
       toast.error(
         `Question ${
           questionIndex + 1
-        }: Invalid file type. Only audio files are allowed.`
+        }: Invalid file type. Only audio files are allowed.`,
       );
       return false;
     }
@@ -1143,7 +1143,7 @@ const Config = ({
       toast.error(
         `Question ${
           questionIndex + 1
-        }: File is too large. Maximum size is ${MAX_SIZE_MB}MB.`
+        }: File is too large. Maximum size is ${MAX_SIZE_MB}MB.`,
       );
       return false;
     }
@@ -1205,7 +1205,7 @@ const Config = ({
             console.error("Error fetching audio:", err);
             return true;
           }
-        })
+        }),
       );
 
       if (allFilesAreValid.includes(false)) {
@@ -1218,13 +1218,13 @@ const Config = ({
 
         const updateResponse = await fetch(
           `https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&rubric=${encodeURIComponent(
-            rubricString
+            rubricString,
           )}&limit=${maxTime}&language=${language}&configType=${configType}&instructions=${encodeURIComponent(
-            instructionsString
+            instructionsString,
           )}`,
           {
             method: "POST",
-          }
+          },
         );
 
         const updateResult = await updateResponse.json();
@@ -1248,7 +1248,7 @@ const Config = ({
             `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}`,
             {
               method: "GET",
-            }
+            },
           );
 
           if (!uploadUrlResponse.ok) {
@@ -1280,7 +1280,7 @@ const Config = ({
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({ uploaded: true }),
-            }
+            },
           );
 
           const questionResult = await questionResponse.json();
@@ -1292,7 +1292,7 @@ const Config = ({
                   configType === "Simulated_Conversation"
                     ? "prompt"
                     : "question"
-                } ${i + 1}`
+                } ${i + 1}`,
             );
           }
 
@@ -1305,13 +1305,13 @@ const Config = ({
         console.log("Registering new configuration...");
         const configResponse = await fetch(
           `https://www.server.speakeval.org/createconfig?pin=${userId}&id=${id}&rubric=${encodeURIComponent(
-            rubricString
+            rubricString,
           )}&limit=${maxTime}&language=${language}&configType=${configType}&instructions=${encodeURIComponent(
-            instructionsString
+            instructionsString,
           )}`,
           {
             method: "POST",
-          }
+          },
         );
 
         const configResult = await configResponse.json();
@@ -1344,7 +1344,7 @@ const Config = ({
             `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}`,
             {
               method: "GET",
-            }
+            },
           );
 
           if (!uploadUrlResponse.ok) {
@@ -1376,7 +1376,7 @@ const Config = ({
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({ uploaded: true }),
-            }
+            },
           );
 
           const questionResult = await questionResponse.json();
@@ -1388,7 +1388,7 @@ const Config = ({
                   configType === "Simulated_Conversation"
                     ? "prompt"
                     : "question"
-                } ${i + 1}`
+                } ${i + 1}`,
             );
           }
 
@@ -1459,7 +1459,7 @@ const Config = ({
                             )}
                             <span className="relative z-10">{config.name}</span>
                           </button>
-                        ) : null
+                        ) : null,
                       )}
                     </div>
                   ) : (
@@ -1586,7 +1586,7 @@ const Config = ({
                               handleConfigTypeChange(type.key);
                             } else {
                               toast.info(
-                                "This feature is still in development."
+                                "This feature is still in development.",
                               );
                             }
                           }}
@@ -1595,8 +1595,8 @@ const Config = ({
                             configType === type.key
                               ? "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/20 text-white"
                               : isEnabled
-                              ? "text-gray-400 hover:bg-white/10"
-                              : "text-gray-500 opacity-60 cursor-not-allowed"
+                                ? "text-gray-400 hover:bg-white/10"
+                                : "text-gray-500 opacity-60 cursor-not-allowed"
                           }`}
                         >
                           {type.label}
@@ -1724,7 +1724,7 @@ const Config = ({
                                       content,
                                       delta,
                                       source,
-                                      editor
+                                      editor,
                                     ) =>
                                       handleInstructionTextChange(index, {
                                         target: { value: content },
@@ -1875,7 +1875,7 @@ const Config = ({
                                         }
                                         newInstructions[index] = {
                                           ...newInstructions[index],
-                                          displayTime: displayTime,
+                                          displayTime: displayTime * 1000,
                                         };
                                         setInstructions(newInstructions);
                                       }}
@@ -2123,7 +2123,7 @@ const Config = ({
                                       onChange={(e) =>
                                         handleCategoryNameChange(
                                           categoryIndex,
-                                          e
+                                          e,
                                         )
                                       }
                                       placeholder="Category Name"
@@ -2143,7 +2143,7 @@ const Config = ({
                                         handleCategoryDescriptionChange(
                                           categoryIndex,
                                           pointIndex,
-                                          e
+                                          e,
                                         )
                                       }
                                       placeholder={`Description for ${pointValues[pointIndex]} points`}
@@ -2257,8 +2257,8 @@ const Config = ({
                         isUploading
                           ? "bg-gray-600 cursor-not-allowed"
                           : hoverButton
-                          ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
-                          : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
+                            ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
+                            : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
                       }`}
                     >
                       <span className="relative z-10">
@@ -2267,8 +2267,8 @@ const Config = ({
                             ? "Updating..."
                             : "Uploading..."
                           : isUpdate
-                          ? "Update"
-                          : "Register Question Set"}
+                            ? "Update"
+                            : "Register Question Set"}
                       </span>
                     </button>
                   </div>
@@ -2657,12 +2657,13 @@ const Config = ({
                                     if (processedStrings.length > 1) {
                                       setProcessedStrings(
                                         processedStrings.filter(
-                                          (_, i) => i !== index
-                                        )
+                                          (_, i) => i !== index,
+                                        ),
                                       );
                                     } else {
                                       toast.error(
-                                        "You must have at least one question"
+                                        "You must have at least one question",
+                                        ``,
                                       );
                                     }
                                   }}
