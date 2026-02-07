@@ -246,54 +246,6 @@ const Config = ({
     },
   };
 
-  const [layoutMode, setLayoutMode] = useState("scroll");
-  const [activeTile, setActiveTile] = useState(0);
-
-  const layoutOptions = [
-    { key: "scroll", label: "Scroll Layout" },
-    { key: "tile", label: "Tile Layout" },
-  ];
-
-  const tiles = [
-    { key: "setup", label: "Question Set + Type" },
-    { key: "instructions", label: "Instructions + Recording" },
-    { key: "rubric", label: "Rubric" },
-    { key: "settings", label: "Additional Settings" },
-  ];
-
-  const isTileLayout = layoutMode === "tile";
-
-  const handleLayoutChange = (mode) => {
-    setLayoutMode(mode);
-    if (mode === "tile") {
-      setActiveTile(0);
-    }
-  };
-
-  const handleNextTile = () => {
-    setActiveTile((prev) => Math.min(prev + 1, tiles.length - 1));
-  };
-
-  const handlePrevTile = () => {
-    setActiveTile((prev) => Math.max(prev - 1, 0));
-  };
-
-  const renderExamplesCard = (title) => (
-    <Card color="gray" className="mt-6">
-      <h3 className="text-xl font-semibold text-white mb-3">{title}</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[1, 2, 3].map((item) => (
-          <div
-            key={item}
-            className="h-32 rounded-lg bg-black/20 border border-gray-500/30 flex items-center justify-center text-gray-400"
-          >
-            Image Placeholder
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-
   const navigate = useNavigate();
   const mediaRecorderRef = useRef(null);
 
@@ -1569,32 +1521,13 @@ const Config = ({
 
             {selected && (
               <>
-                {/* Layout Toggle */}
-                <div className="flex justify-center mb-6">
-                  <div className="flex w-full max-w-md bg-black/30 rounded-full p-1 border border-gray-500/30">
-                    {layoutOptions.map((option) => (
-                      <button
-                        key={option.key}
-                        onClick={() => handleLayoutChange(option.key)}
-                        className={`flex-1 px-4 py-2 text-sm font-semibold rounded-full transition-all duration-300 ${
-                          layoutMode === option.key
-                            ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/20"
-                            : "text-gray-400 hover:bg-white/10"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {isUpdate ? (
                   <></>
                 ) : (
                   <div className="flex justify-center mb-6">
                     <button
                       onClick={handleSelectiveAutofillClick}
-                      className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 shadow-lg shadow-yellow-500/30"
+                      className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 shadow-lg shadow-yellow-500/30 hover:shadow-yellow-500/50 font-medium flex items-center space-x-2"
                     >
                       <svg
                         className="w-5 h-5"
@@ -1613,180 +1546,138 @@ const Config = ({
                     </button>
                   </div>
                 )}
-
-                {isTileLayout && (
-                  <div className="flex flex-col items-center gap-4 mb-6">
-                    <div className="flex items-center justify-center gap-3 text-gray-300">
-                      <span className="text-sm uppercase tracking-widest">
-                        {tiles[activeTile].label}
-                      </span>
-                      <span className="text-xs bg-black/30 px-3 py-1 rounded-full border border-gray-500/30">
-                        Step {activeTile + 1} of {tiles.length}
-                      </span>
+                {isUpdate ? (
+                  <></>
+                ) : (
+                  <Card color="pink">
+                    <h2 className="text-2xl font-bold text-white mb-4">
+                      Question Set Name
+                    </h2>
+                    <div className="space-y-4">
+                      <div>
+                        <input
+                          type="text"
+                          value={id}
+                          onChange={(e) => setId(e.target.value)}
+                          className="w-full bg-black/30 border border-pink-500/30 rounded p-2 text-white"
+                          maxLength={30}
+                          placeholder="Enter Name for Set"
+                          disabled={isUpdate}
+                        />
+                      </div>
                     </div>
-                    <div className="flex w-full max-w-md justify-between">
-                      <button
-                        onClick={handlePrevTile}
-                        disabled={activeTile === 0}
-                        className={`px-4 py-2 rounded-lg text-white transition-colors ${
-                          activeTile === 0
-                            ? "bg-gray-600 cursor-not-allowed"
-                            : "bg-gray-700 hover:bg-gray-600"
-                        }`}
-                      >
-                        Back
-                      </button>
-                      <button
-                        onClick={handleNextTile}
-                        disabled={activeTile === tiles.length - 1}
-                        className={`px-4 py-2 rounded-lg text-white transition-colors ${
-                          activeTile === tiles.length - 1
-                            ? "bg-gray-600 cursor-not-allowed"
-                            : "bg-cyan-600 hover:bg-cyan-500"
-                        }`}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
+                  </Card>
                 )}
 
-                {!isTileLayout && (
-                  <>
-                    {isUpdate ? (
-                      <></>
-                    ) : (
-                      <Card color="pink">
-                        <h2 className="text-2xl font-bold text-white mb-4">
-                          Question Set Name
+                {/* Sleek Config Type Selector Card */}
+                <Card color="gray">
+                  <h2 className="text-2xl font-bold text-white mb-4 text-center">
+                    Select Config Type
+                  </h2>
+                  <div className="flex w-full max-w-2xl mx-auto bg-black/30 rounded-lg p-1 border border-gray-500/30">
+                    {configTypes.map((type, index) => {
+                      const isEnabled = index === 0 || index === 2;
+
+                      return (
+                        <button
+                          key={type.key}
+                          onClick={() => {
+                            if (isEnabled) {
+                              handleConfigTypeChange(type.key);
+                            } else {
+                              toast.info(
+                                "This feature is still in development.",
+                              );
+                            }
+                          }}
+                          // Conditionally apply classes for enabled/disabled states
+                          className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
+                            configType === type.key
+                              ? "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/20 text-white"
+                              : isEnabled
+                                ? "text-gray-400 hover:bg-white/10"
+                                : "text-gray-500 opacity-60 cursor-not-allowed"
+                          }`}
+                        >
+                          {type.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Card>
+
+                {/* Instructions Card (Conditional) */}
+                {
+                  <Card
+                    color="green"
+                    className={
+                      isInfoTooltipVisible
+                        ? "relative z-50 overflow-visible"
+                        : "relative"
+                    }
+                  >
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center space-x-2">
+                        <h2 className="text-2xl font-bold text-white">
+                          Instructions
                         </h2>
-                        <div className="space-y-4">
-                          <div>
-                            <input
-                              type="text"
-                              value={id}
-                              onChange={(e) => setId(e.target.value)}
-                              className="w-full bg-black/30 border border-pink-500/30 rounded p-2 text-white"
-                              maxLength={30}
-                              placeholder="Enter Name for Set"
-                              disabled={isUpdate}
-                            />
-                          </div>
-                        </div>
-                      </Card>
-                    )}
-
-                    {/* Sleek Config Type Selector Card */}
-                    <Card color="gray">
-                      <h2 className="text-2xl font-bold text-white mb-4 text-center">
-                        Select Config Type
-                      </h2>
-                      <div className="flex w-full max-w-2xl mx-auto bg-black/30 rounded-lg p-1 border border-gray-500/30">
-                        {configTypes.map((type, index) => {
-                          const isEnabled = index === 0 || index === 2;
-
-                          return (
-                            <button
-                              key={type.key}
-                              onClick={() => {
-                                if (isEnabled) {
-                                  handleConfigTypeChange(type.key);
-                                } else {
-                                  toast.info(
-                                    "This feature is still in development.",
-                                  );
-                                }
-                              }}
-                              className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
-                                configType === type.key
-                                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/20 text-white"
-                                  : isEnabled
-                                    ? "text-gray-400 hover:bg-white/10"
-                                    : "text-gray-500 opacity-60 cursor-not-allowed"
-                              }`}
-                            >
-                              {type.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </Card>
-
-                    {/* Instructions Card */}
-                    {
-                      <Card
-                        color="green"
-                        className={
-                          isInfoTooltipVisible
-                            ? "relative z-50 overflow-visible"
-                            : "relative"
-                        }
-                      >
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="flex items-center space-x-2">
-                            <h2 className="text-2xl font-bold text-white">
-                              Instructions
-                            </h2>
-                            <div
-                              className="relative group"
-                              onMouseEnter={() => setIsInfoTooltipVisible(true)}
-                              onMouseLeave={() =>
-                                setIsInfoTooltipVisible(false)
-                              }
-                            >
-                              <FaInfoCircle className="text-green-300 cursor-help" />
-                              <div
-                                className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
+                        <div
+                          className="relative group"
+                          onMouseEnter={() => setIsInfoTooltipVisible(true)}
+                          onMouseLeave={() => setIsInfoTooltipVisible(false)}
+                        >
+                          <FaInfoCircle className="text-green-300 cursor-help" />
+                          <div
+                            className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
                                opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
                                transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
-                              >
-                                <p className="text-slate-200 text-sm mb-3 z-100">
-                                  Enable this to provide students with
-                                  instructions before they start the test. The
-                                  instructions will appear on the screen before
-                                  the first question.
-                                </p>
-                                <img
-                                  src="https://placehold.co/600x400/1e293b/94a3b8?text=Image+Placeholder"
-                                  alt="Instructions Example"
-                                  className="rounded-md w-full"
-                                />
-                                <div
-                                  className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
+                          >
+                            <p className="text-slate-200 text-sm mb-3 z-100">
+                              Enable this to provide students with instructions
+                              before they start the test. The instructions will
+                              appear on the screen before the first question.
+                            </p>
+                            <img
+                              src="https://placehold.co/600x400/1e293b/94a3b8?text=Image+Placeholder"
+                              alt="Instructions Example"
+                              className="rounded-md w-full"
+                            />
+                            <div
+                              className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
                                    border-x-8 border-x-transparent
                                    border-t-8 border-t-slate-800"
-                                ></div>
-                              </div>
-                            </div>
+                            ></div>
                           </div>
                         </div>
-                        {
-                          <div className="space-y-4">
-                            {instructions.map((instruction, index) => {
-                              const isUneditable =
-                                configType === "Simulated_Conversation" &&
-                                instruction &&
-                                instruction.isFramework &&
-                                !instruction.isEditable;
+                      </div>
+                    </div>
+                    {
+                      <div className="space-y-4">
+                        {instructions.map((instruction, index) => {
+                          const isUneditable =
+                            configType === "Simulated_Conversation" &&
+                            instruction &&
+                            instruction.isFramework &&
+                            !instruction.isEditable;
 
-                              return (
-                                <div
-                                  key={index}
-                                  className={`bg-black/20 border border-green-500/30 rounded-lg p-4 space-y-3 ${
-                                    isUneditable ? "opacity-75" : ""
-                                  }`}
-                                >
-                                  <div className="flex items-start space-x-3">
-                                    <label className="text-white w-28 pt-2 flex-shrink-0">
-                                      Instruction {index + 1}
-                                      {isUneditable && (
-                                        <span className="block text-xs text-gray-400 mt-1">
-                                          (Framework - Read Only)
-                                        </span>
-                                      )}
-                                    </label>
-                                    <div className="w-full">
-                                      <style>{`
+                          return (
+                            <div
+                              key={index}
+                              className={`bg-black/20 border border-green-500/30 rounded-lg p-4 space-y-3 ${
+                                isUneditable ? "opacity-75" : ""
+                              }`}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <label className="text-white w-28 pt-2 flex-shrink-0">
+                                  Instruction {index + 1}
+                                  {isUneditable && (
+                                    <span className="block text-xs text-gray-400 mt-1">
+                                      (Framework - Read Only)
+                                    </span>
+                                  )}
+                                </label>
+                                <div className="w-full">
+                                  <style>{`
                                   .ql-container {
                                     background-color: rgba(0, 0, 0, 0.3) !important;
                                     border-color: rgba(34, 197, 94, 0.3) !important;
@@ -1825,1393 +1716,563 @@ const Config = ({
                                     color: white;
                                   }
                                 `}</style>
-                                      <ReactQuill
-                                        key={`quill-${configType}-${index}`}
-                                        theme="snow"
-                                        value={instruction.text || ""}
-                                        onChange={(
-                                          content,
-                                          delta,
-                                          source,
-                                          editor,
-                                        ) =>
-                                          handleInstructionTextChange(index, {
-                                            target: { value: content },
-                                          })
-                                        }
-                                        readOnly={isUneditable}
-                                        modules={{
-                                          toolbar: isUneditable
-                                            ? false
-                                            : [
-                                                [
-                                                  {
-                                                    font: [
-                                                      "roboto",
-                                                      "arial",
-                                                      "times-new-roman",
-                                                      "sans-serif",
-                                                      "serif",
-                                                      "georgia",
-                                                      "comic-sans-ms",
-                                                      "courier-new",
-                                                      "helvetica",
-                                                      "lucida",
-                                                      "tahoma",
-                                                      "trebuchet-ms",
-                                                      "verdana",
-                                                      "impact",
-                                                    ],
-                                                  },
-                                                  { size: [] },
+                                  <ReactQuill
+                                    key={`quill-${configType}-${index}`}
+                                    theme="snow"
+                                    value={instruction.text || ""}
+                                    onChange={(
+                                      content,
+                                      delta,
+                                      source,
+                                      editor,
+                                    ) =>
+                                      handleInstructionTextChange(index, {
+                                        target: { value: content },
+                                      })
+                                    }
+                                    readOnly={isUneditable}
+                                    modules={{
+                                      toolbar: isUneditable
+                                        ? false
+                                        : [
+                                            [
+                                              {
+                                                font: [
+                                                  "roboto",
+                                                  "arial",
+                                                  "times-new-roman",
+                                                  "sans-serif",
+                                                  "serif",
+                                                  "georgia",
+                                                  "comic-sans-ms",
+                                                  "courier-new",
+                                                  "helvetica",
+                                                  "lucida",
+                                                  "tahoma",
+                                                  "trebuchet-ms",
+                                                  "verdana",
+                                                  "impact",
                                                 ],
-                                                [
-                                                  "bold",
-                                                  "italic",
-                                                  "underline",
-                                                  "strike",
-                                                ],
-                                                [
-                                                  { color: [] },
-                                                  { background: [] },
-                                                ],
-                                                [
-                                                  { script: "sub" },
-                                                  { script: "super" },
-                                                ],
-                                                ["blockquote", "code-block"],
-                                                [
-                                                  { list: "ordered" },
-                                                  { list: "bullet" },
-                                                ],
-                                                [
-                                                  { indent: "-1" },
-                                                  { indent: "+1" },
-                                                  { align: [] },
-                                                ],
-                                                ["link", "image"],
-                                                ["clean"],
-                                              ],
-                                        }}
-                                        formats={[
-                                          "font",
-                                          "size",
-                                          "bold",
-                                          "italic",
-                                          "underline",
-                                          "strike",
-                                          "color",
-                                          "background",
-                                          "script",
-                                          "blockquote",
-                                          "code-block",
-                                          "list",
-                                          "bullet",
-                                          "indent",
-                                          "align",
-                                          "link",
-                                          "image",
-                                        ]}
-                                        placeholder="Enter instructions for the student..."
-                                        style={{ minHeight: "75px" }}
-                                      />
-                                    </div>
-                                    {!isUneditable && (
-                                      <button
-                                        onClick={() =>
-                                          handleDeleteInstruction(index)
-                                        }
-                                        className="text-red-400 hover:text-red-300 transition-colors p-2 flex-shrink-0"
-                                        title="Delete Instruction"
-                                      >
-                                        <FaTimes />
-                                      </button>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center justify-end space-x-2 border-t border-green-500/20 pt-3">
+                                              },
+                                              { size: [] },
+                                            ],
+                                            [
+                                              "bold",
+                                              "italic",
+                                              "underline",
+                                              "strike",
+                                            ],
+                                            [{ color: [] }, { background: [] }],
+                                            [
+                                              { script: "sub" },
+                                              { script: "super" },
+                                            ],
+                                            ["blockquote", "code-block"],
+                                            [
+                                              { list: "ordered" },
+                                              { list: "bullet" },
+                                            ],
+                                            [
+                                              { indent: "-1" },
+                                              { indent: "+1" },
+                                              { align: [] },
+                                            ],
+                                            ["link", "image"],
+                                            ["clean"],
+                                          ],
+                                    }}
+                                    formats={[
+                                      "font",
+                                      "size",
+                                      "bold",
+                                      "italic",
+                                      "underline",
+                                      "strike",
+                                      "color",
+                                      "background",
+                                      "script",
+                                      "blockquote",
+                                      "code-block",
+                                      "list",
+                                      "bullet",
+                                      "indent",
+                                      "align",
+                                      "link",
+                                      "image",
+                                    ]}
+                                    placeholder="Enter instructions for the student..."
+                                    style={{ minHeight: "75px" }}
+                                  />
+                                </div>
+                                {!isUneditable && (
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteInstruction(index)
+                                    }
+                                    className="text-red-400 hover:text-red-300 transition-colors p-2 flex-shrink-0"
+                                    title="Delete Instruction"
+                                  >
+                                    <FaTimes />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-end space-x-2 border-t border-green-500/20 pt-3">
+                                <label
+                                  htmlFor={`show-options-${index}`}
+                                  className="text-sm text-gray-300"
+                                >
+                                  Show:
+                                </label>
+                                <select
+                                  id={`show-options-${index}`}
+                                  value={instruction.show}
+                                  onChange={(e) =>
+                                    handleInstructionShowChange(index, e)
+                                  }
+                                  disabled={isUneditable}
+                                  className={`bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
+                                    isUneditable
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                  }`}
+                                >
+                                  <option value="Once at the Start of Room">
+                                    Before Question
+                                  </option>
+                                  <option value="Always">
+                                    Always on the Left
+                                  </option>
+                                  <option value="Question Prompt">
+                                    Question Prompt
+                                  </option>
+                                </select>
+                                {instruction.show ===
+                                  "Once at the Start of Room" && (
+                                  <div className="flex items-center space-x-2">
                                     <label
-                                      htmlFor={`show-options-${index}`}
+                                      htmlFor={`display-time-${index}`}
                                       className="text-sm text-gray-300"
                                     >
-                                      Show:
+                                      Display Time (seconds, optional):
                                     </label>
-                                    <select
-                                      id={`show-options-${index}`}
-                                      value={instruction.show}
-                                      onChange={(e) =>
-                                        handleInstructionShowChange(index, e)
-                                      }
+                                    <input
+                                      id={`display-time-${index}`}
+                                      type="number"
+                                      value={instruction.displayTime || ""}
+                                      placeholder="Optional"
+                                      onChange={(e) => {
+                                        const newInstructions = [
+                                          ...instructions,
+                                        ];
+                                        const value = e.target.value.trim();
+                                        let displayTime = undefined;
+                                        if (value !== "") {
+                                          const parsed = parseInt(value, 10);
+                                          // Only set displayTime if it's a valid positive number
+                                          if (!isNaN(parsed) && parsed > 0) {
+                                            displayTime = parsed;
+                                          }
+                                        }
+                                        newInstructions[index] = {
+                                          ...newInstructions[index],
+                                          displayTime: displayTime,
+                                        };
+                                        setInstructions(newInstructions);
+                                      }}
                                       disabled={isUneditable}
-                                      className={`bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
+                                      min="1"
+                                      className={`w-20 bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
                                         isUneditable
                                           ? "opacity-50 cursor-not-allowed"
                                           : ""
                                       }`}
-                                    >
-                                      <option value="Once at the Start of Room">
-                                        Before Question
-                                      </option>
-                                      <option value="Always">
-                                        Always on the Left
-                                      </option>
-                                      <option value="Question Prompt">
-                                        Question Prompt
-                                      </option>
-                                    </select>
-                                    {instruction.show ===
-                                      "Once at the Start of Room" && (
-                                      <div className="flex items-center space-x-2">
-                                        <label
-                                          htmlFor={`display-time-${index}`}
-                                          className="text-sm text-gray-300"
-                                        >
-                                          Display Time (seconds, optional):
-                                        </label>
-                                        <input
-                                          id={`display-time-${index}`}
-                                          type="number"
-                                          value={instruction.displayTime || ""}
-                                          placeholder="Optional"
-                                          onChange={(e) => {
-                                            const newInstructions = [
-                                              ...instructions,
-                                            ];
-                                            const value = e.target.value.trim();
-                                            let displayTime = undefined;
-                                            if (value !== "") {
-                                              const parsed = parseInt(
-                                                value,
-                                                10,
-                                              );
-                                              // Only set displayTime if it's a valid positive number
-                                              if (
-                                                !isNaN(parsed) &&
-                                                parsed > 0
-                                              ) {
-                                                displayTime = parsed;
-                                              }
-                                            }
-                                            newInstructions[index] = {
-                                              ...newInstructions[index],
-                                              displayTime: displayTime,
-                                            };
-                                            setInstructions(newInstructions);
-                                          }}
-                                          disabled={isUneditable}
-                                          min="1"
-                                          className={`w-20 bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
-                                            isUneditable
-                                              ? "opacity-50 cursor-not-allowed"
-                                              : ""
-                                          }`}
-                                        />
-                                      </div>
-                                    )}
+                                    />
                                   </div>
-                                </div>
-                              );
-                            })}
-                            <div className="pt-2">
-                              <button
-                                onClick={handleAddInstruction}
-                                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center"
-                              >
-                                <FaPlus className="mr-2" /> Add Instruction
-                              </button>
-                            </div>
-                          </div>
-                        }
-                      </Card>
-                    }
-
-                    {/* Record Questions Card (Conditional) */}
-                    {configType === "Simulated_Conversation" ? (
-                      <Card color="cyan">
-                        <h2 className="text-2xl font-bold text-white mb-4">
-                          Record Conversation Prompts
-                        </h2>
-                        <p className="text-gray-300 text-sm mb-6">
-                          Record audio prompts that will play sequentially.
-                          Students will respond after each prompt.
-                        </p>
-                        <div className="space-y-6">
-                          {/* Linear Prompt Clips Display */}
-                          <div className="overflow-x-auto pb-4">
-                            <div className="flex items-center gap-4 min-w-max">
-                              {promptClips.map((clip, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center gap-4"
-                                >
-                                  {/* Audio Clip */}
-                                  <div className="flex flex-col items-center gap-2">
-                                    <div className="bg-black/30 p-3 rounded-lg border border-cyan-500/30">
-                                      <audio
-                                        controls
-                                        src={clip}
-                                        style={{
-                                          backgroundColor: "transparent",
-                                          border: "none",
-                                          filter: "invert(1)",
-                                          width: "200px",
-                                        }}
-                                      />
-                                    </div>
-                                    <button
-                                      onClick={() =>
-                                        handleDeletePromptClip(index)
-                                      }
-                                      className="text-red-400 hover:text-red-300 transition-colors text-sm"
-                                    >
-                                      Delete
-                                    </button>
-                                  </div>
-                                  {/* Connecting Line */}
-                                  <div className="flex items-center">
-                                    <div className="w-12 h-0.5 bg-cyan-500/50"></div>
-                                    <div className="w-0 h-0 border-l-4 border-l-cyan-500/50 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
-                                  </div>
-                                </div>
-                              ))}
-                              {/* Record Button at the End */}
-                              <div className="flex flex-col items-center gap-2">
-                                <button
-                                  onClick={handleTogglePromptRecording}
-                                  className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg text-white transition-all duration-300 ${
-                                    recordingPrompt
-                                      ? "bg-red-500 hover:bg-red-600"
-                                      : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-                                  }`}
-                                >
-                                  {recordingPrompt ? (
-                                    <FaStop className="mr-2" />
-                                  ) : (
-                                    <FaMicrophone className="mr-2" />
-                                  )}
-                                  <span>
-                                    {recordingPrompt
-                                      ? "Stop Recording"
-                                      : "Record Prompt"}
-                                  </span>
-                                </button>
+                                )}
                               </div>
                             </div>
-                          </div>
+                          );
+                        })}
+                        <div className="pt-2">
+                          <button
+                            onClick={handleAddInstruction}
+                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center"
+                          >
+                            <FaPlus className="mr-2" /> Add Instruction
+                          </button>
                         </div>
-                      </Card>
-                    ) : (
-                      <Card color="cyan">
-                        <h2 className="text-2xl font-bold text-white mb-4">
-                          Record Questions
-                        </h2>
-                        <button
-                          onClick={handleImportClick}
-                          className="fixed top-4 right-6 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
-                        >
-                          Import
-                        </button>
-                        <div className="space-y-4">
-                          <div className="flex justify-center">
+                      </div>
+                    }
+                  </Card>
+                }
+
+                {/* Record Questions Card (Conditional) */}
+                {configType === "Simulated_Conversation" ? (
+                  <Card color="cyan">
+                    <h2 className="text-2xl font-bold text-white mb-4">
+                      Record Conversation Prompts
+                    </h2>
+                    <p className="text-gray-300 text-sm mb-6">
+                      Record audio prompts that will play sequentially. Students
+                      will respond after each prompt.
+                    </p>
+                    <div className="space-y-6">
+                      {/* Linear Prompt Clips Display */}
+                      <div className="overflow-x-auto pb-4">
+                        <div className="flex items-center gap-4 min-w-max">
+                          {promptClips.map((clip, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-4"
+                            >
+                              {/* Audio Clip */}
+                              <div className="flex flex-col items-center gap-2">
+                                <div className="bg-black/30 p-3 rounded-lg border border-cyan-500/30">
+                                  <audio
+                                    controls
+                                    src={clip}
+                                    style={{
+                                      backgroundColor: "transparent",
+                                      border: "none",
+                                      filter: "invert(1)",
+                                      width: "200px",
+                                    }}
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => handleDeletePromptClip(index)}
+                                  className="text-red-400 hover:text-red-300 transition-colors text-sm"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                              {/* Connecting Line */}
+                              <div className="flex items-center">
+                                <div className="w-12 h-0.5 bg-cyan-500/50"></div>
+                                <div className="w-0 h-0 border-l-4 border-l-cyan-500/50 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                              </div>
+                            </div>
+                          ))}
+                          {/* Record Button at the End */}
+                          <div className="flex flex-col items-center gap-2">
                             <button
-                              onClick={handleToggleRecording}
-                              className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white transition-all duration-300 ${
-                                recording
+                              onClick={handleTogglePromptRecording}
+                              className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg text-white transition-all duration-300 ${
+                                recordingPrompt
                                   ? "bg-red-500 hover:bg-red-600"
                                   : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
                               }`}
                             >
-                              {recording ? (
+                              {recordingPrompt ? (
                                 <FaStop className="mr-2" />
                               ) : (
                                 <FaMicrophone className="mr-2" />
                               )}
                               <span>
-                                {recording
+                                {recordingPrompt
                                   ? "Stop Recording"
-                                  : "Start Recording"}
+                                  : "Record Prompt"}
                               </span>
                             </button>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            {questions.map((question, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30"
-                              >
-                                <audio
-                                  controls
-                                  src={question}
-                                  className="mr-2"
-                                  style={{
-                                    backgroundColor: "transparent",
-                                    border: "none",
-                                    filter: "invert(1)",
-                                  }}
-                                />
-                                <button
-                                  onClick={() => handleDeleteQuestion(index)}
-                                  className="text-red-400 hover:text-red-300 transition-colors p-2"
-                                >
-                                  <FaTimes />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
                         </div>
-                      </Card>
-                    )}
-
-                    {/* Create Rubric Card (Conditional) */}
-                    {
-                      <Card color="purple">
-                        <div className="flex justify-between items-center mb-4">
-                          <h2 className="text-2xl font-bold text-white">
-                            Create Rubric
-                          </h2>
-                          <button
-                            onClick={handlePresetRubricsClick}
-                            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center space-x-2"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                              />
-                            </svg>
-                            <span>Preset Rubrics</span>
-                          </button>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="flex space-x-4">
-                            <button
-                              onClick={handleAddPointValueToStart}
-                              className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
-                            >
-                              <FaPlus className="mr-2" /> Add Point Value
-                            </button>
-                            <button
-                              onClick={handleAddPointValueToEnd}
-                              className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
-                            >
-                              <FaPlus className="mr-2" /> Add Point Value
-                            </button>
-                          </div>
-                          <div className="overflow-x-auto">
-                            <table className="w-full border-collapse">
-                              <thead>
-                                <tr>
-                                  <th className="text-white text-left p-2 border-b border-purple-500/30">
-                                    Category
-                                  </th>
-                                  {pointValues.map((value, index) => (
-                                    <DraggableColumn
-                                      key={index}
-                                      index={index}
-                                      value={value}
-                                      moveColumn={moveColumn}
-                                      handlePointValueChange={
-                                        handlePointValueChange
-                                      }
-                                      handleDeletePointValue={
-                                        handleDeletePointValue
-                                      }
-                                    />
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {categories.map((category, categoryIndex) => (
-                                  <tr key={categoryIndex}>
-                                    <td className="p-2 border-b border-purple-500/30">
-                                      <div className="flex items-center space-x-2">
-                                        <button
-                                          onClick={() =>
-                                            handleDeleteCategory(categoryIndex)
-                                          }
-                                          className="text-red-400 hover:text-red-300 transition-colors"
-                                        >
-                                          <FaTimes size={12} />
-                                        </button>
-                                        <input
-                                          type="text"
-                                          value={category.name}
-                                          onChange={(e) =>
-                                            handleCategoryNameChange(
-                                              categoryIndex,
-                                              e,
-                                            )
-                                          }
-                                          placeholder="Category Name"
-                                          className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
-                                        />
-                                      </div>
-                                    </td>
-                                    {pointValues.map((_, pointIndex) => (
-                                      <td
-                                        key={pointIndex}
-                                        className="p-2 border-b border-purple-500/30"
-                                      >
-                                        <input
-                                          type="text"
-                                          value={
-                                            category.descriptions[pointIndex]
-                                          }
-                                          onChange={(e) =>
-                                            handleCategoryDescriptionChange(
-                                              categoryIndex,
-                                              pointIndex,
-                                              e,
-                                            )
-                                          }
-                                          placeholder={`Description for ${pointValues[pointIndex]} points`}
-                                          className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
-                                        />
-                                      </td>
-                                    ))}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                          <button
-                            onClick={handleAddCategory}
-                            className="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
-                          >
-                            <FaPlus className="mr-2" /> Add Category
-                          </button>
-                        </div>
-                      </Card>
-                    }
-
-                    {/* Additional Settings Card (Conditional) */}
-                    {
-                      <Card color="blue">
-                        <h2 className="text-2xl font-bold text-white mb-4">
-                          Additional Settings
-                        </h2>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-white mb-2">
-                              Answer Time Limit (seconds)
-                            </label>
-                            <input
-                              type="number"
-                              value={maxTime}
-                              onChange={(e) => setMaxTime(e.target.value)}
-                              className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
-                              placeholder={`Enter time limit, recommended: ${
-                                configType === "Classic" ? 30 : 180
-                              }`}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-white mb-2">
-                              Language
-                            </label>
-                            <select
-                              value={selectedLanguage}
-                              onChange={(e) =>
-                                setSelectedLanguage(e.target.value)
-                              }
-                              className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
-                            >
-                              <option value="">Select Language</option>
-                              <option value="English">English</option>
-                              <option value="Spanish">Spanish</option>
-                              <option value="French">French</option>
-                              <option value="Chinese">Chinese</option>
-                              <option value="Japanese">Japanese</option>
-                              <option value="Other">Other</option>
-                            </select>
-                          </div>
-                          {selectedLanguage === "Other" && (
-                            <div>
-                              <label className="block text-white mb-2">
-                                Specify Language
-                              </label>
-                              <input
-                                type="text"
-                                value={otherLanguage}
-                                onChange={(e) =>
-                                  setOtherLanguage(e.target.value)
-                                }
-                                className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
-                                placeholder="Enter language"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </Card>
-                    }
-
-                    <Card color="pink">
-                      <h2 className="text-2xl font-bold text-white mb-4">
-                        {isUpdate
-                          ? "Update Configuration"
-                          : "Register Question Set"}
-                      </h2>
-                      <div className="space-y-4">
-                        {isUploading && (
-                          <div className="mb-4">
-                            <div className="flex justify-between mb-1">
-                              <span className="text-white">
-                                {isUpdate
-                                  ? "Updating configuration..."
-                                  : "Uploading questions..."}
-                              </span>
-                              <span className="text-white">
-                                {uploadProgress}%
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-full h-2.5">
-                              <div
-                                className="bg-gradient-to-r from-pink-500 to-purple-600 h-2.5 rounded-full"
-                                style={{ width: `${uploadProgress}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card color="cyan">
+                    <h2 className="text-2xl font-bold text-white mb-4">
+                      Record Questions
+                    </h2>
+                    <button
+                      onClick={handleImportClick}
+                      className="fixed top-4 right-6 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                    >
+                      Import
+                    </button>
+                    <div className="space-y-4">
+                      <div className="flex justify-center">
                         <button
-                          onClick={handleRegisterConfig}
-                          onMouseEnter={() => setHoverButton(true)}
-                          onMouseLeave={() => setHoverButton(false)}
-                          disabled={isUploading}
-                          className={`w-full relative overflow-hidden text-white text-base rounded-md px-5 py-3 transition-all duration-300 ${
-                            isUploading
-                              ? "bg-gray-600 cursor-not-allowed"
-                              : hoverButton
-                                ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
-                                : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
+                          onClick={handleToggleRecording}
+                          className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white transition-all duration-300 ${
+                            recording
+                              ? "bg-red-500 hover:bg-red-600"
+                              : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
                           }`}
                         >
-                          <span className="relative z-10">
-                            {isUploading
-                              ? isUpdate
-                                ? "Updating..."
-                                : "Uploading..."
-                              : isUpdate
-                                ? "Update"
-                                : "Register Question Set"}
+                          {recording ? (
+                            <FaStop className="mr-2" />
+                          ) : (
+                            <FaMicrophone className="mr-2" />
+                          )}
+                          <span>
+                            {recording ? "Stop Recording" : "Start Recording"}
                           </span>
                         </button>
                       </div>
-                    </Card>
-                  </>
+                      <div className="flex flex-wrap gap-2">
+                        {questions.map((question, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30"
+                          >
+                            <audio
+                              controls
+                              src={question}
+                              className="mr-2"
+                              style={{
+                                backgroundColor: "transparent",
+                                border: "none",
+                                filter: "invert(1)",
+                              }}
+                            />
+                            <button
+                              onClick={() => handleDeleteQuestion(index)}
+                              className="text-red-400 hover:text-red-300 transition-colors p-2"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Card>
                 )}
 
-                {isTileLayout && (
-                  <>
-                    {activeTile === 0 && (
-                      <>
-                        {isUpdate ? (
-                          <></>
-                        ) : (
-                          <Card color="pink">
-                            <h2 className="text-2xl font-bold text-white mb-4">
-                              Question Set Name
-                            </h2>
-                            <div className="space-y-4">
-                              <div>
-                                <input
-                                  type="text"
-                                  value={id}
-                                  onChange={(e) => setId(e.target.value)}
-                                  className="w-full bg-black/30 border border-pink-500/30 rounded p-2 text-white"
-                                  maxLength={30}
-                                  placeholder="Enter Name for Set"
-                                  disabled={isUpdate}
+                {/* Create Rubric Card (Conditional) */}
+                {
+                  <Card color="purple">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-bold text-white">
+                        Create Rubric
+                      </h2>
+                      <button
+                        onClick={handlePresetRubricsClick}
+                        className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center space-x-2"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                          />
+                        </svg>
+                        <span>Preset Rubrics</span>
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex space-x-4">
+                        <button
+                          onClick={handleAddPointValueToStart}
+                          className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
+                        >
+                          <FaPlus className="mr-2" /> Add Point Value
+                        </button>
+                        <button
+                          onClick={handleAddPointValueToEnd}
+                          className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
+                        >
+                          <FaPlus className="mr-2" /> Add Point Value
+                        </button>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr>
+                              <th className="text-white text-left p-2 border-b border-purple-500/30">
+                                Category
+                              </th>
+                              {pointValues.map((value, index) => (
+                                <DraggableColumn
+                                  key={index}
+                                  index={index}
+                                  value={value}
+                                  moveColumn={moveColumn}
+                                  handlePointValueChange={
+                                    handlePointValueChange
+                                  }
+                                  handleDeletePointValue={
+                                    handleDeletePointValue
+                                  }
                                 />
-                              </div>
-                            </div>
-                          </Card>
-                        )}
-
-                        {/* Sleek Config Type Selector Card */}
-                        <Card color="gray">
-                          <h2 className="text-2xl font-bold text-white mb-4 text-center">
-                            Select Config Type
-                          </h2>
-                          <div className="flex w-full max-w-2xl mx-auto bg-black/30 rounded-lg p-1 border border-gray-500/30">
-                            {configTypes.map((type, index) => {
-                              const isEnabled = index === 0 || index === 2;
-
-                              return (
-                                <button
-                                  key={type.key}
-                                  onClick={() => {
-                                    if (isEnabled) {
-                                      handleConfigTypeChange(type.key);
-                                    } else {
-                                      toast.info(
-                                        "This feature is still in development.",
-                                      );
-                                    }
-                                  }}
-                                  className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
-                                    configType === type.key
-                                      ? "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/20 text-white"
-                                      : isEnabled
-                                        ? "text-gray-400 hover:bg-white/10"
-                                        : "text-gray-500 opacity-60 cursor-not-allowed"
-                                  }`}
-                                >
-                                  {type.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </Card>
-
-                        {renderExamplesCard(
-                          "Question Set Name & Type Examples",
-                        )}
-                      </>
-                    )}
-
-                    {activeTile === 1 && (
-                      <>
-                        {/* Instructions Card (Conditional) */}
-                        {
-                          <Card
-                            color="green"
-                            className={
-                              isInfoTooltipVisible
-                                ? "relative z-50 overflow-visible"
-                                : "relative"
-                            }
-                          >
-                            <div className="flex justify-between items-center mb-4">
-                              <div className="flex items-center space-x-2">
-                                <h2 className="text-2xl font-bold text-white">
-                                  Instructions
-                                </h2>
-                                <div
-                                  className="relative group"
-                                  onMouseEnter={() =>
-                                    setIsInfoTooltipVisible(true)
-                                  }
-                                  onMouseLeave={() =>
-                                    setIsInfoTooltipVisible(false)
-                                  }
-                                >
-                                  <FaInfoCircle className="text-green-300 cursor-help" />
-                                  <div
-                                    className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
-                               opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
-                               transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
-                                  >
-                                    <p className="text-slate-200 text-sm mb-3 z-100">
-                                      Enable this to provide students with
-                                      instructions before they start the test.
-                                      The instructions will appear on the screen
-                                      before the first question.
-                                    </p>
-                                    <img
-                                      src="https://placehold.co/600x400/1e293b/94a3b8?text=Image+Placeholder"
-                                      alt="Instructions Example"
-                                      className="rounded-md w-full"
-                                    />
-                                    <div
-                                      className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
-                                   border-x-8 border-x-transparent
-                                   border-t-8 border-t-slate-800"
-                                    ></div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            {
-                              <div className="space-y-4">
-                                {instructions.map((instruction, index) => {
-                                  const isUneditable =
-                                    configType === "Simulated_Conversation" &&
-                                    instruction &&
-                                    instruction.isFramework &&
-                                    !instruction.isEditable;
-
-                                  return (
-                                    <div
-                                      key={index}
-                                      className={`bg-black/20 border border-green-500/30 rounded-lg p-4 space-y-3 ${
-                                        isUneditable ? "opacity-75" : ""
-                                      }`}
-                                    >
-                                      <div className="flex items-start space-x-3">
-                                        <label className="text-white w-28 pt-2 flex-shrink-0">
-                                          Instruction {index + 1}
-                                          {isUneditable && (
-                                            <span className="block text-xs text-gray-400 mt-1">
-                                              (Framework - Read Only)
-                                            </span>
-                                          )}
-                                        </label>
-                                        <div className="w-full">
-                                          <style>{`
-                                  .ql-container {
-                                    background-color: rgba(0, 0, 0, 0.3) !important;
-                                    border-color: rgba(34, 197, 94, 0.3) !important;
-                                    color: white !important;
-                                    border-radius: 0.375rem;
-                                  }
-                                  .ql-toolbar {
-                                    background-color: rgba(0, 0, 0, 0.4) !important;
-                                    border-color: rgba(34, 197, 94, 0.3) !important;
-                                    border-top-left-radius: 0.375rem;
-                                    border-top-right-radius: 0.375rem;
-                                  }
-                                  .ql-editor {
-                                    background-color: rgba(0, 0, 0, 0.3) !important;
-                                    color: white !important;
-                                    min-height: 75px;
-                                  }
-                                  .ql-editor.ql-blank::before {
-                                    color: rgba(255, 255, 255, 0.5) !important;
-                                    font-style: italic;
-                                  }
-                                  .ql-toolbar .ql-stroke {
-                                    stroke: white;
-                                  }
-                                  .ql-toolbar .ql-fill {
-                                    fill: white;
-                                  }
-                                  .ql-toolbar .ql-picker-label {
-                                    color: white;
-                                  }
-                                  .ql-picker-options {
-                                    background-color: rgba(0, 0, 0, 0.9) !important;
-                                    border-color: rgba(34, 197, 94, 0.3) !important;
-                                  }
-                                  .ql-picker-item {
-                                    color: white;
-                                  }
-                                `}</style>
-                                          <ReactQuill
-                                            key={`quill-${configType}-${index}`}
-                                            theme="snow"
-                                            value={instruction.text || ""}
-                                            onChange={(
-                                              content,
-                                              delta,
-                                              source,
-                                              editor,
-                                            ) =>
-                                              handleInstructionTextChange(
-                                                index,
-                                                {
-                                                  target: { value: content },
-                                                },
-                                              )
-                                            }
-                                            readOnly={isUneditable}
-                                            modules={{
-                                              toolbar: isUneditable
-                                                ? false
-                                                : [
-                                                    [
-                                                      {
-                                                        font: [
-                                                          "roboto",
-                                                          "arial",
-                                                          "times-new-roman",
-                                                          "sans-serif",
-                                                          "serif",
-                                                          "georgia",
-                                                          "comic-sans-ms",
-                                                          "courier-new",
-                                                          "helvetica",
-                                                          "lucida",
-                                                          "tahoma",
-                                                          "trebuchet-ms",
-                                                          "verdana",
-                                                          "impact",
-                                                        ],
-                                                      },
-                                                      { size: [] },
-                                                    ],
-                                                    [
-                                                      "bold",
-                                                      "italic",
-                                                      "underline",
-                                                      "strike",
-                                                    ],
-                                                    [
-                                                      { color: [] },
-                                                      { background: [] },
-                                                    ],
-                                                    [
-                                                      { script: "sub" },
-                                                      { script: "super" },
-                                                    ],
-                                                    [
-                                                      "blockquote",
-                                                      "code-block",
-                                                    ],
-                                                    [
-                                                      { list: "ordered" },
-                                                      { list: "bullet" },
-                                                    ],
-                                                    [
-                                                      { indent: "-1" },
-                                                      { indent: "+1" },
-                                                      { align: [] },
-                                                    ],
-                                                    ["link", "image"],
-                                                    ["clean"],
-                                                  ],
-                                            }}
-                                            formats={[
-                                              "font",
-                                              "size",
-                                              "bold",
-                                              "italic",
-                                              "underline",
-                                              "strike",
-                                              "color",
-                                              "background",
-                                              "script",
-                                              "blockquote",
-                                              "code-block",
-                                              "list",
-                                              "bullet",
-                                              "indent",
-                                              "align",
-                                              "link",
-                                              "image",
-                                            ]}
-                                            placeholder="Enter instructions for the student..."
-                                            style={{ minHeight: "75px" }}
-                                          />
-                                        </div>
-                                        {!isUneditable && (
-                                          <button
-                                            onClick={() =>
-                                              handleDeleteInstruction(index)
-                                            }
-                                            className="text-red-400 hover:text-red-300 transition-colors p-2 flex-shrink-0"
-                                            title="Delete Instruction"
-                                          >
-                                            <FaTimes />
-                                          </button>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center justify-end space-x-2 border-t border-green-500/20 pt-3">
-                                        <label
-                                          htmlFor={`show-options-${index}`}
-                                          className="text-sm text-gray-300"
-                                        >
-                                          Show:
-                                        </label>
-                                        <select
-                                          id={`show-options-${index}`}
-                                          value={instruction.show}
-                                          onChange={(e) =>
-                                            handleInstructionShowChange(
-                                              index,
-                                              e,
-                                            )
-                                          }
-                                          disabled={isUneditable}
-                                          className={`bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
-                                            isUneditable
-                                              ? "opacity-50 cursor-not-allowed"
-                                              : ""
-                                          }`}
-                                        >
-                                          <option value="Once at the Start of Room">
-                                            Before Question
-                                          </option>
-                                          <option value="Always">
-                                            Always on the Left
-                                          </option>
-                                          <option value="Question Prompt">
-                                            Question Prompt
-                                          </option>
-                                        </select>
-                                        {instruction.show ===
-                                          "Once at the Start of Room" && (
-                                          <div className="flex items-center space-x-2">
-                                            <label
-                                              htmlFor={`display-time-${index}`}
-                                              className="text-sm text-gray-300"
-                                            >
-                                              Display Time (seconds, optional):
-                                            </label>
-                                            <input
-                                              id={`display-time-${index}`}
-                                              type="number"
-                                              value={
-                                                instruction.displayTime || ""
-                                              }
-                                              placeholder="Optional"
-                                              onChange={(e) => {
-                                                const newInstructions = [
-                                                  ...instructions,
-                                                ];
-                                                const value =
-                                                  e.target.value.trim();
-                                                let displayTime = undefined;
-                                                if (value !== "") {
-                                                  const parsed = parseInt(
-                                                    value,
-                                                    10,
-                                                  );
-                                                  // Only set displayTime if it's a valid positive number
-                                                  if (
-                                                    !isNaN(parsed) &&
-                                                    parsed > 0
-                                                  ) {
-                                                    displayTime = parsed;
-                                                  }
-                                                }
-                                                newInstructions[index] = {
-                                                  ...newInstructions[index],
-                                                  displayTime: displayTime,
-                                                };
-                                                setInstructions(
-                                                  newInstructions,
-                                                );
-                                              }}
-                                              disabled={isUneditable}
-                                              min="1"
-                                              className={`w-20 bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
-                                                isUneditable
-                                                  ? "opacity-50 cursor-not-allowed"
-                                                  : ""
-                                              }`}
-                                            />
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                                <div className="pt-2">
-                                  <button
-                                    onClick={handleAddInstruction}
-                                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center"
-                                  >
-                                    <FaPlus className="mr-2" /> Add Instruction
-                                  </button>
-                                </div>
-                              </div>
-                            }
-                          </Card>
-                        }
-
-                        {/* Record Questions Card (Conditional) */}
-                        {configType === "Simulated_Conversation" ? (
-                          <Card color="cyan">
-                            <h2 className="text-2xl font-bold text-white mb-4">
-                              Record Conversation Prompts
-                            </h2>
-                            <p className="text-gray-300 text-sm mb-6">
-                              Record audio prompts that will play sequentially.
-                              Students will respond after each prompt.
-                            </p>
-                            <div className="space-y-6">
-                              {/* Linear Prompt Clips Display */}
-                              <div className="overflow-x-auto pb-4">
-                                <div className="flex items-center gap-4 min-w-max">
-                                  {promptClips.map((clip, index) => (
-                                    <div
-                                      key={index}
-                                      className="flex items-center gap-4"
-                                    >
-                                      {/* Audio Clip */}
-                                      <div className="flex flex-col items-center gap-2">
-                                        <div className="bg-black/30 p-3 rounded-lg border border-cyan-500/30">
-                                          <audio
-                                            controls
-                                            src={clip}
-                                            style={{
-                                              backgroundColor: "transparent",
-                                              border: "none",
-                                              filter: "invert(1)",
-                                              width: "200px",
-                                            }}
-                                          />
-                                        </div>
-                                        <button
-                                          onClick={() =>
-                                            handleDeletePromptClip(index)
-                                          }
-                                          className="text-red-400 hover:text-red-300 transition-colors text-sm"
-                                        >
-                                          Delete
-                                        </button>
-                                      </div>
-                                      {/* Connecting Line */}
-                                      <div className="flex items-center">
-                                        <div className="w-12 h-0.5 bg-cyan-500/50"></div>
-                                        <div className="w-0 h-0 border-l-4 border-l-cyan-500/50 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                  {/* Record Button at the End */}
-                                  <div className="flex flex-col items-center gap-2">
-                                    <button
-                                      onClick={handleTogglePromptRecording}
-                                      className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg text-white transition-all duration-300 ${
-                                        recordingPrompt
-                                          ? "bg-red-500 hover:bg-red-600"
-                                          : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-                                      }`}
-                                    >
-                                      {recordingPrompt ? (
-                                        <FaStop className="mr-2" />
-                                      ) : (
-                                        <FaMicrophone className="mr-2" />
-                                      )}
-                                      <span>
-                                        {recordingPrompt
-                                          ? "Stop Recording"
-                                          : "Record Prompt"}
-                                      </span>
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </Card>
-                        ) : (
-                          <Card color="cyan">
-                            <h2 className="text-2xl font-bold text-white mb-4">
-                              Record Questions
-                            </h2>
-                            <button
-                              onClick={handleImportClick}
-                              className="fixed top-4 right-6 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
-                            >
-                              Import
-                            </button>
-                            <div className="space-y-4">
-                              <div className="flex justify-center">
-                                <button
-                                  onClick={handleToggleRecording}
-                                  className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white transition-all duration-300 ${
-                                    recording
-                                      ? "bg-red-500 hover:bg-red-600"
-                                      : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-                                  }`}
-                                >
-                                  {recording ? (
-                                    <FaStop className="mr-2" />
-                                  ) : (
-                                    <FaMicrophone className="mr-2" />
-                                  )}
-                                  <span>
-                                    {recording
-                                      ? "Stop Recording"
-                                      : "Start Recording"}
-                                  </span>
-                                </button>
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                {questions.map((question, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex items-center bg-black/30 p-3 rounded-lg border border-cyan-500/30"
-                                  >
-                                    <audio
-                                      controls
-                                      src={question}
-                                      className="mr-2"
-                                      style={{
-                                        backgroundColor: "transparent",
-                                        border: "none",
-                                        filter: "invert(1)",
-                                      }}
-                                    />
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {categories.map((category, categoryIndex) => (
+                              <tr key={categoryIndex}>
+                                <td className="p-2 border-b border-purple-500/30">
+                                  <div className="flex items-center space-x-2">
                                     <button
                                       onClick={() =>
-                                        handleDeleteQuestion(index)
+                                        handleDeleteCategory(categoryIndex)
                                       }
-                                      className="text-red-400 hover:text-red-300 transition-colors p-2"
+                                      className="text-red-400 hover:text-red-300 transition-colors"
                                     >
-                                      <FaTimes />
+                                      <FaTimes size={12} />
                                     </button>
+                                    <input
+                                      type="text"
+                                      value={category.name}
+                                      onChange={(e) =>
+                                        handleCategoryNameChange(
+                                          categoryIndex,
+                                          e,
+                                        )
+                                      }
+                                      placeholder="Category Name"
+                                      className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
+                                    />
                                   </div>
+                                </td>
+                                {pointValues.map((_, pointIndex) => (
+                                  <td
+                                    key={pointIndex}
+                                    className="p-2 border-b border-purple-500/30"
+                                  >
+                                    <input
+                                      type="text"
+                                      value={category.descriptions[pointIndex]}
+                                      onChange={(e) =>
+                                        handleCategoryDescriptionChange(
+                                          categoryIndex,
+                                          pointIndex,
+                                          e,
+                                        )
+                                      }
+                                      placeholder={`Description for ${pointValues[pointIndex]} points`}
+                                      className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
+                                    />
+                                  </td>
                                 ))}
-                              </div>
-                            </div>
-                          </Card>
-                        )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <button
+                        onClick={handleAddCategory}
+                        className="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
+                      >
+                        <FaPlus className="mr-2" /> Add Category
+                      </button>
+                    </div>
+                  </Card>
+                }
 
-                        {renderExamplesCard(
-                          "Instructions & Recording Examples",
-                        )}
-                      </>
-                    )}
+                {/* Additional Settings Card (Conditional) */}
+                {
+                  <Card color="blue">
+                    <h2 className="text-2xl font-bold text-white mb-4">
+                      Additional Settings
+                    </h2>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-white mb-2">
+                          Answer Time Limit (seconds)
+                        </label>
+                        <input
+                          type="number"
+                          value={maxTime}
+                          onChange={(e) => setMaxTime(e.target.value)}
+                          className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
+                          placeholder={`Enter time limit, recommended: ${
+                            configType === "Classic" ? 30 : 180
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-white mb-2">
+                          Language
+                        </label>
+                        <select
+                          value={selectedLanguage}
+                          onChange={(e) => setSelectedLanguage(e.target.value)}
+                          className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
+                        >
+                          <option value="">Select Language</option>
+                          <option value="English">English</option>
+                          <option value="Spanish">Spanish</option>
+                          <option value="French">French</option>
+                          <option value="Chinese">Chinese</option>
+                          <option value="Japanese">Japanese</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      {selectedLanguage === "Other" && (
+                        <div>
+                          <label className="block text-white mb-2">
+                            Specify Language
+                          </label>
+                          <input
+                            type="text"
+                            value={otherLanguage}
+                            onChange={(e) => setOtherLanguage(e.target.value)}
+                            className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
+                            placeholder="Enter language"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                }
 
-                    {activeTile === 2 && (
-                      <>
-                        {/* Create Rubric Card (Conditional) */}
-                        {
-                          <Card color="purple">
-                            <div className="flex justify-between items-center mb-4">
-                              <h2 className="text-2xl font-bold text-white">
-                                Create Rubric
-                              </h2>
-                              <button
-                                onClick={handlePresetRubricsClick}
-                                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center space-x-2"
-                              >
-                                <svg
-                                  className="w-4 h-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                                  />
-                                </svg>
-                                <span>Preset Rubrics</span>
-                              </button>
-                            </div>
-                            <div className="space-y-4">
-                              <div className="flex space-x-4">
-                                <button
-                                  onClick={handleAddPointValueToStart}
-                                  className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
-                                >
-                                  <FaPlus className="mr-2" /> Add Point Value
-                                </button>
-                                <button
-                                  onClick={handleAddPointValueToEnd}
-                                  className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
-                                >
-                                  <FaPlus className="mr-2" /> Add Point Value
-                                </button>
-                              </div>
-                              <div className="overflow-x-auto">
-                                <table className="w-full border-collapse">
-                                  <thead>
-                                    <tr>
-                                      <th className="text-white text-left p-2 border-b border-purple-500/30">
-                                        Category
-                                      </th>
-                                      {pointValues.map((value, index) => (
-                                        <DraggableColumn
-                                          key={index}
-                                          index={index}
-                                          value={value}
-                                          moveColumn={moveColumn}
-                                          handlePointValueChange={
-                                            handlePointValueChange
-                                          }
-                                          handleDeletePointValue={
-                                            handleDeletePointValue
-                                          }
-                                        />
-                                      ))}
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {categories.map(
-                                      (category, categoryIndex) => (
-                                        <tr key={categoryIndex}>
-                                          <td className="p-2 border-b border-purple-500/30">
-                                            <div className="flex items-center space-x-2">
-                                              <button
-                                                onClick={() =>
-                                                  handleDeleteCategory(
-                                                    categoryIndex,
-                                                  )
-                                                }
-                                                className="text-red-400 hover:text-red-300 transition-colors"
-                                              >
-                                                <FaTimes size={12} />
-                                              </button>
-                                              <input
-                                                type="text"
-                                                value={category.name}
-                                                onChange={(e) =>
-                                                  handleCategoryNameChange(
-                                                    categoryIndex,
-                                                    e,
-                                                  )
-                                                }
-                                                placeholder="Category Name"
-                                                className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
-                                              />
-                                            </div>
-                                          </td>
-                                          {pointValues.map((_, pointIndex) => (
-                                            <td
-                                              key={pointIndex}
-                                              className="p-2 border-b border-purple-500/30"
-                                            >
-                                              <input
-                                                type="text"
-                                                value={
-                                                  category.descriptions[
-                                                    pointIndex
-                                                  ]
-                                                }
-                                                onChange={(e) =>
-                                                  handleCategoryDescriptionChange(
-                                                    categoryIndex,
-                                                    pointIndex,
-                                                    e,
-                                                  )
-                                                }
-                                                placeholder={`Description for ${pointValues[pointIndex]} points`}
-                                                className="w-full bg-black/30 border border-purple-500/30 rounded p-2 text-white"
-                                              />
-                                            </td>
-                                          ))}
-                                        </tr>
-                                      ),
-                                    )}
-                                  </tbody>
-                                </table>
-                              </div>
-                              <button
-                                onClick={handleAddCategory}
-                                className="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
-                              >
-                                <FaPlus className="mr-2" /> Add Category
-                              </button>
-                            </div>
-                          </Card>
-                        }
-
-                        {renderExamplesCard("Rubric Examples")}
-                      </>
-                    )}
-
-                    {activeTile === 3 && (
-                      <>
-                        {/* Additional Settings Card (Conditional) */}
-                        {
-                          <Card color="blue">
-                            <h2 className="text-2xl font-bold text-white mb-4">
-                              Additional Settings
-                            </h2>
-                            <div className="space-y-4">
-                              <div>
-                                <label className="block text-white mb-2">
-                                  Answer Time Limit (seconds)
-                                </label>
-                                <input
-                                  type="number"
-                                  value={maxTime}
-                                  onChange={(e) => setMaxTime(e.target.value)}
-                                  className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
-                                  placeholder={`Enter time limit, recommended: ${
-                                    configType === "Classic" ? 30 : 180
-                                  }`}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-white mb-2">
-                                  Language
-                                </label>
-                                <select
-                                  value={selectedLanguage}
-                                  onChange={(e) =>
-                                    setSelectedLanguage(e.target.value)
-                                  }
-                                  className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
-                                >
-                                  <option value="">Select Language</option>
-                                  <option value="English">English</option>
-                                  <option value="Spanish">Spanish</option>
-                                  <option value="French">French</option>
-                                  <option value="Chinese">Chinese</option>
-                                  <option value="Japanese">Japanese</option>
-                                  <option value="Other">Other</option>
-                                </select>
-                              </div>
-                              {selectedLanguage === "Other" && (
-                                <div>
-                                  <label className="block text-white mb-2">
-                                    Specify Language
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={otherLanguage}
-                                    onChange={(e) =>
-                                      setOtherLanguage(e.target.value)
-                                    }
-                                    className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
-                                    placeholder="Enter language"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </Card>
-                        }
-
-                        {renderExamplesCard("Additional Settings Examples")}
-
-                        <Card color="pink">
-                          <h2 className="text-2xl font-bold text-white mb-4">
+                <Card color="pink">
+                  <h2 className="text-2xl font-bold text-white mb-4">
+                    {isUpdate
+                      ? "Update Configuration"
+                      : "Register Question Set"}
+                  </h2>
+                  <div className="space-y-4">
+                    {isUploading && (
+                      <div className="mb-4">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-white">
                             {isUpdate
-                              ? "Update Configuration"
-                              : "Register Question Set"}
-                          </h2>
-                          <div className="space-y-4">
-                            {isUploading && (
-                              <div className="mb-4">
-                                <div className="flex justify-between mb-1">
-                                  <span className="text-white">
-                                    {isUpdate
-                                      ? "Updating configuration..."
-                                      : "Uploading questions..."}
-                                  </span>
-                                  <span className="text-white">
-                                    {uploadProgress}%
-                                  </span>
-                                </div>
-                                <div className="w-full bg-gray-700 rounded-full h-2.5">
-                                  <div
-                                    className="bg-gradient-to-r from-pink-500 to-purple-600 h-2.5 rounded-full"
-                                    style={{ width: `${uploadProgress}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                            )}
-                            <button
-                              onClick={handleRegisterConfig}
-                              onMouseEnter={() => setHoverButton(true)}
-                              onMouseLeave={() => setHoverButton(false)}
-                              disabled={isUploading}
-                              className={`w-full relative overflow-hidden text-white text-base rounded-md px-5 py-3 transition-all duration-300 ${
-                                isUploading
-                                  ? "bg-gray-600 cursor-not-allowed"
-                                  : hoverButton
-                                    ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
-                                    : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
-                              }`}
-                            >
-                              <span className="relative z-10">
-                                {isUploading
-                                  ? isUpdate
-                                    ? "Updating..."
-                                    : "Uploading..."
-                                  : isUpdate
-                                    ? "Update"
-                                    : "Register Question Set"}
-                              </span>
-                            </button>
-                          </div>
-                        </Card>
-                      </>
+                              ? "Updating configuration..."
+                              : "Uploading questions..."}
+                          </span>
+                          <span className="text-white">{uploadProgress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2.5">
+                          <div
+                            className="bg-gradient-to-r from-pink-500 to-purple-600 h-2.5 rounded-full"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                      </div>
                     )}
-                  </>
-                )}
+                    <button
+                      onClick={handleRegisterConfig}
+                      onMouseEnter={() => setHoverButton(true)}
+                      onMouseLeave={() => setHoverButton(false)}
+                      disabled={isUploading}
+                      className={`w-full relative overflow-hidden text-white text-base rounded-md px-5 py-3 transition-all duration-300 ${
+                        isUploading
+                          ? "bg-gray-600 cursor-not-allowed"
+                          : hoverButton
+                            ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
+                            : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
+                      }`}
+                    >
+                      <span className="relative z-10">
+                        {isUploading
+                          ? isUpdate
+                            ? "Updating..."
+                            : "Uploading..."
+                          : isUpdate
+                            ? "Update"
+                            : "Register Question Set"}
+                      </span>
+                    </button>
+                  </div>
+                </Card>
               </>
             )}
 
