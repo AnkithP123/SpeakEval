@@ -2012,31 +2012,33 @@ const Config = ({
                   </Card>
                 ) : (
                   <Card color="cyan">
-                    <h2 className="text-2xl font-bold text-white mb-4">
-                      Record Questions
-                    </h2>
-                    <div
-                      className="relative group flex items-center gap-2"
-                      onMouseEnter={() => setIsInfoTooltipVisible(true)}
-                      onMouseLeave={() => setIsInfoTooltipVisible(false)}
-                    >
-                      <FaInfoCircle className="text-green-300 cursor-help" />
+                    <div className="flex items-center gap-2 mb-4">
+                      <h2 className="text-2xl font-bold text-white">
+                        Record Questions
+                      </h2>
                       <div
-                        className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
-       opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
-       transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
+                        className="relative group"
+                        onMouseEnter={() => setIsInfoTooltipVisible(true)}
+                        onMouseLeave={() => setIsInfoTooltipVisible(false)}
                       >
-                        <p className="text-slate-200 text-sm mb-3 z-100">
-                          Record audio questions that students will answer. The
-                          questions will play one at a time, and students will
-                          respond after each question. You can record questions
-                          in any order and delete them if needed.
-                        </p>
+                        <FaInfoCircle className="text-green-300 cursor-help" />
                         <div
-                          className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
-           border-x-8 border-x-transparent
-           border-t-8 border-t-slate-800"
-                        ></div>
+                          className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
+                   opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
+                   transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
+                        >
+                          <p className="text-slate-200 text-sm mb-3 z-100">
+                            Record audio questions that students will answer.
+                            The questions will play one at a time, and students
+                            will respond after each question. You can record
+                            questions in any order and delete them if needed.
+                          </p>
+                          <div
+                            className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
+                     border-x-8 border-x-transparent
+                     border-t-8 border-t-slate-800"
+                          ></div>
+                        </div>
                       </div>
                     </div>
                     <button
@@ -2098,35 +2100,40 @@ const Config = ({
                 {
                   <Card color="purple">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-2xl font-bold text-white">
-                        Create Rubric
-                      </h2>
-                      <div
-                        className="relative group flex items-center gap-2"
-                        onMouseEnter={() => setIsInfoTooltipVisible(true)}
-                        onMouseLeave={() => setIsInfoTooltipVisible(false)}
-                      >
-                        <FaInfoCircle className="text-green-300 cursor-help" />
+                      {/* Group the title and info icon together */}
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-2xl font-bold text-white">
+                          Create Rubric
+                        </h2>
                         <div
-                          className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
-       opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
-       transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
+                          className="relative group"
+                          onMouseEnter={() => setIsInfoTooltipVisible(true)}
+                          onMouseLeave={() => setIsInfoTooltipVisible(false)}
                         >
-                          <p className="text-slate-200 text-sm mb-3 z-100">
-                            [Optional] Create a custom rubric which the AI
-                            Grading will reference to grade the student respones
-                            if desired. Add categories and point values, then
-                            provide the requirements to achieve the point value
-                            within each category. You may also reorder point
-                            values by dragging the columns.
-                          </p>
+                          <FaInfoCircle className="text-green-300 cursor-help" />
                           <div
-                            className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
-           border-x-8 border-x-transparent
-           border-t-8 border-t-slate-800"
-                          ></div>
+                            className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
+                     opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
+                     transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
+                          >
+                            <p className="text-slate-200 text-sm mb-3 z-100">
+                              [Optional] Create a custom rubric which the AI
+                              Grading will reference to grade the student
+                              respones if desired. Add categories and point
+                              values, then provide the requirements to achieve
+                              the point value within each category. You may also
+                              reorder point values by dragging the columns.
+                            </p>
+                            <div
+                              className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
+                       border-x-8 border-x-transparent
+                       border-t-8 border-t-slate-800"
+                            ></div>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Preset Rubrics button stays on the right */}
                       <button
                         onClick={handlePresetRubricsClick}
                         className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center space-x-2"
