@@ -66,7 +66,8 @@ export default function AudioRecorder() {
   const [instructions, setInstructions] = useState([]); // Array of instruction objects with {text, show, displayTime}
   const [instructionsCollapsed, setInstructionsCollapsed] = useState(false); // Collapse state for side panel
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0); // Current instruction index for "Before Question"
-  const [instructionTimeRemaining, setInstructionTimeRemaining] = useState(null); // Time remaining for current instruction
+  const [instructionTimeRemaining, setInstructionTimeRemaining] =
+    useState(null); // Time remaining for current instruction
   const [promptClips, setPromptClips] = useState([]); // Array of prompt clip URLs for AP Simulated Conversation
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0); // Current prompt clip being played
   const [isSimulatedConversation, setIsSimulatedConversation] = useState(false); // Track if this is a simulated conversation
@@ -134,11 +135,11 @@ export default function AudioRecorder() {
     },
 
     // Stage: 'audio_play'
-      audioPlay: {
-        hasPlayed: false,
-        isPlaying: false,
-        playError: null,
-      },
+    audioPlay: {
+      hasPlayed: false,
+      isPlaying: false,
+      playError: null,
+    },
 
     // Stage: 'thinking'
     thinking: {
@@ -350,13 +351,17 @@ export default function AudioRecorder() {
 
   const canAdvanceToInstructions = () => {
     const setup = stageData.setup;
-    return setup.microphonePermission && setup.mediaRecorderReady && setup.fullscreenEnabled;
+    return (
+      setup.microphonePermission &&
+      setup.mediaRecorderReady &&
+      setup.fullscreenEnabled
+    );
   };
 
   const canAdvanceToAudioPlay = () => {
     // If there are instructions to show, they must be viewed first
     const instructionsToShow = instructions.filter(
-      (inst) => inst.show === "Once at the Start of Room"
+      (inst) => inst.show === "Once at the Start of Room",
     );
     if (instructionsToShow.length > 0) {
       return stageData.instructions.hasViewed;
@@ -699,7 +704,7 @@ export default function AudioRecorder() {
           payload.code === "invalid_token"
         ) {
           toast.error(
-            "Room no longer exists or your session has expired. Please rejoin."
+            "Room no longer exists or your session has expired. Please rejoin.",
           );
           setTimeout(() => {
             navigate("/join");
@@ -798,7 +803,7 @@ export default function AudioRecorder() {
     if (isSimulatedConversation) {
       return;
     }
-    
+
     const handleStageTransitions = async () => {
       // Don't auto-advance from setup - user must click "Continue to Question"
       // Don't auto-advance from instructions - user must click "Understood"
@@ -879,7 +884,7 @@ export default function AudioRecorder() {
     if (!audioPlayer.isUnloaded) {
       audioPlayer.stop();
     }
-    
+
     // Load the audio when URL is available
     audioPlayer.load(audioBlobURL, {
       autoplay: false,
@@ -935,7 +940,11 @@ export default function AudioRecorder() {
   // Also watch for isReady state change in case onload doesn't fire
   useEffect(() => {
     if (audioPlayer && audioBlobURL) {
-      if (audioPlayer.isReady && !stageData.audioDownloaded && !stageData.audioDownloadError) {
+      if (
+        audioPlayer.isReady &&
+        !stageData.audioDownloaded &&
+        !stageData.audioDownloadError
+      ) {
         // Audio is ready but we haven't marked it as downloaded yet
         updateStageData({
           audioDownloaded: true,
@@ -950,7 +959,13 @@ export default function AudioRecorder() {
         });
       }
     }
-  }, [audioPlayer?.isReady, audioPlayer?.error, audioBlobURL, stageData.audioDownloaded, stageData.audioDownloadError]);
+  }, [
+    audioPlayer?.isReady,
+    audioPlayer?.error,
+    audioBlobURL,
+    stageData.audioDownloaded,
+    stageData.audioDownloadError,
+  ]);
 
   // Sync audio player state with stageData - this effect watches for state changes
   useEffect(() => {
@@ -963,7 +978,13 @@ export default function AudioRecorder() {
     if (audioPlayer.error && !stageData.audioPlay.playError) {
       updateAudioPlayData({ playError: audioPlayer.error });
     }
-  }, [audioPlayer?.isPlaying, audioPlayer?.error, audioPlayer?.isStopped, stageData.audioPlay.isPlaying, stageData.audioPlay.playError]);
+  }, [
+    audioPlayer?.isPlaying,
+    audioPlayer?.error,
+    audioPlayer?.isStopped,
+    stageData.audioPlay.isPlaying,
+    stageData.audioPlay.playError,
+  ]);
 
   // Start audio download when component mounts
   useEffect(() => {
@@ -999,7 +1020,7 @@ export default function AudioRecorder() {
     if (stageData.audioDownloaded) {
       return;
     }
-    
+
     const checkForStuckState = () => {
       // If we're in initializing for too long without progress, force a refresh
       if (
@@ -1101,33 +1122,36 @@ export default function AudioRecorder() {
     }
 
     const beforeQuestionInstructions = instructions.filter(
-      (inst) => inst.show === "Once at the Start of Room"
+      (inst) => inst.show === "Once at the Start of Room",
     );
 
     if (beforeQuestionInstructions.length === 0) {
       return;
     }
 
-    const currentInstruction = beforeQuestionInstructions[currentInstructionIndex];
-    
+    const currentInstruction =
+      beforeQuestionInstructions[currentInstructionIndex];
+
     // If current instruction has displayTime (explicitly set and positive), start timer
-    if (currentInstruction && 
-        currentInstruction.displayTime !== undefined && 
-        currentInstruction.displayTime !== null && 
-        currentInstruction.displayTime > 0) {
-      setInstructionTimeRemaining(currentInstruction.displayTime/10);
-      
+    if (
+      currentInstruction &&
+      currentInstruction.displayTime !== undefined &&
+      currentInstruction.displayTime !== null &&
+      currentInstruction.displayTime > 0
+    ) {
+      setInstructionTimeRemaining(currentInstruction.displayTime);
+
       const timer = setInterval(() => {
         setInstructionTimeRemaining((prev) => {
           if (prev === null || prev <= 1) {
             clearInterval(timer);
-            
+
             // Use functional update to get latest state
             setCurrentInstructionIndex((currentIdx) => {
               const beforeQuestionInsts = instructions.filter(
-                (inst) => inst.show === "Once at the Start of Room"
+                (inst) => inst.show === "Once at the Start of Room",
               );
-              
+
               // Move to next instruction or advance stage
               if (currentIdx < beforeQuestionInsts.length - 1) {
                 return currentIdx + 1;
@@ -1167,20 +1191,26 @@ export default function AudioRecorder() {
   // BUT: Skip this for simulated conversations - they handle recording start in playNextPrompt
   useEffect(() => {
     const handleFallbackRecording = async () => {
-      console.log(`🔍 [Fallback] Checking fallback recording. isSimulatedConversation: ${isSimulatedConversation}, currentStage: ${currentStage}, isRecording: ${stageData.recording.isRecording}`);
-      
+      console.log(
+        `🔍 [Fallback] Checking fallback recording. isSimulatedConversation: ${isSimulatedConversation}, currentStage: ${currentStage}, isRecording: ${stageData.recording.isRecording}`,
+      );
+
       // Skip fallback for simulated conversations - they handle recording differently
       if (isSimulatedConversation) {
-        console.log(`⏭️ [Fallback] Skipping fallback for simulated conversation`);
+        console.log(
+          `⏭️ [Fallback] Skipping fallback for simulated conversation`,
+        );
         return;
       }
-      
+
       if (
         currentStage === "recording" &&
         !stageData.recording.isRecording &&
         !stageData.recording.hasRecorded
       ) {
-        console.log(`🔄 [Fallback] Attempting to start recording as fallback...`);
+        console.log(
+          `🔄 [Fallback] Attempting to start recording as fallback...`,
+        );
         try {
           // Start recording as fallback
           await startRecording();
@@ -1202,7 +1232,12 @@ export default function AudioRecorder() {
     };
 
     handleFallbackRecording();
-  }, [currentStage, isSimulatedConversation, stageData.recording.isRecording, stageData.recording.hasRecorded]);
+  }, [
+    currentStage,
+    isSimulatedConversation,
+    stageData.recording.isRecording,
+    stageData.recording.hasRecorded,
+  ]);
 
   const isStreamValid = (stream) => {
     if (!stream) return false;
@@ -1383,13 +1418,15 @@ export default function AudioRecorder() {
 
   const requestPermissions = async () => {
     try {
-        // Check if we already have a valid microphone stream (kept alive)
+      // Check if we already have a valid microphone stream (kept alive)
       if (microphoneStream) {
         // Check if stream is valid without throwing
         let streamValid = false;
         try {
           const tracks = microphoneStream.getTracks();
-          streamValid = tracks.length > 0 && tracks.every(track => track.readyState === 'live');
+          streamValid =
+            tracks.length > 0 &&
+            tracks.every((track) => track.readyState === "live");
         } catch (e) {
           // Stream check failed, will request new permissions
           streamValid = false;
@@ -1397,12 +1434,17 @@ export default function AudioRecorder() {
 
         if (streamValid) {
           // Check if MediaRecorder is also ready
-          const mediaRecorderReady = readyMediaRecorderRef.current !== null && 
-                                     readyMediaRecorderRef.current.state === "recording";
+          const mediaRecorderReady =
+            readyMediaRecorderRef.current !== null &&
+            readyMediaRecorderRef.current.state === "recording";
           setHasPermissions(true);
           setError(null); // Clear any errors
           setIsError(false);
-          return { permissionGranted: true, stream: microphoneStream, mediaRecorderReady };
+          return {
+            permissionGranted: true,
+            stream: microphoneStream,
+            mediaRecorderReady,
+          };
         }
       }
 
@@ -1422,7 +1464,7 @@ export default function AudioRecorder() {
       // Store the microphone stream for later reuse - KEEP IT ALIVE
       // Don't stop the tracks - we'll reuse this stream for all recordings
       setMicrophoneStream(stream);
-      
+
       // Create ONE MediaRecorder and start it immediately
       // We'll record continuously but only save chunks when actually "recording"
       // Record both audio and video from the stream
@@ -1438,47 +1480,53 @@ export default function AudioRecorder() {
             }
           }
         }
-        
+
         const mediaRecorder = new MediaRecorder(stream, {
           mimeType: mimeType,
         });
-        
+
         // Set up data handler - recorder components will handle their own chunks
         // We'll just store raw chunks here, components will filter what they need
         allChunksRef.current = [];
-        
+
         mediaRecorder.ondataavailable = (event) => {
           // Always collect chunks - recorder components will manage their own arrays
           if (event.data.size > 0) {
             allChunksRef.current.push(event.data);
           }
         };
-        
+
         // Set up stop handler (only called on component unmount or error)
         // We don't want to stop MediaRecorder during normal operation
         mediaRecorder.onstop = async () => {
-          console.log("⚠️ MediaRecorder stopped - this should only happen on component unmount or error");
+          console.log(
+            "⚠️ MediaRecorder stopped - this should only happen on component unmount or error",
+          );
         };
-        
+
         // Start recording immediately, then pause it
         // Recorder components will resume/pause as needed
         try {
           mediaRecorder.start(250); // Collect data every 250ms
-          
+
           // Check if pause is supported
-          const pauseSupported = typeof mediaRecorder.pause === 'function';
-          
+          const pauseSupported = typeof mediaRecorder.pause === "function";
+
           if (pauseSupported && mediaRecorder.state === "recording") {
             try {
               mediaRecorder.pause();
-              console.log("✅ MediaRecorder created and paused (ready for recorder components)");
+              console.log(
+                "✅ MediaRecorder created and paused (ready for recorder components)",
+              );
               mediaRecorder._pauseSupported = true;
             } catch (pauseErr) {
               console.warn("⚠️ Could not pause MediaRecorder:", pauseErr);
               mediaRecorder._pauseSupported = false;
             }
           } else {
-            console.log("⚠️ MediaRecorder pause not supported, will use flag-based approach");
+            console.log(
+              "⚠️ MediaRecorder pause not supported, will use flag-based approach",
+            );
             mediaRecorder._pauseSupported = false;
             // Use flag-based approach - don't save chunks initially
             allChunksRef.current = [];
@@ -1495,7 +1543,7 @@ export default function AudioRecorder() {
               }
             };
           }
-          
+
           // Store the recorder
           readyMediaRecorderRef.current = mediaRecorder;
         } catch (startErr) {
@@ -1509,15 +1557,19 @@ export default function AudioRecorder() {
         readyMediaRecorderRef.current = null;
         // Return failure - MediaRecorder is required
         setHasPermissions(true); // Permissions granted, but MediaRecorder failed
-        setError("MediaRecorder failed to start. Please try again or refresh the page.");
+        setError(
+          "MediaRecorder failed to start. Please try again or refresh the page.",
+        );
         setIsError(true);
         return { permissionGranted: true, stream, mediaRecorderReady: false };
       }
-      
+
       // Monitor stream for permission revocation
       stream.getAudioTracks().forEach((track) => {
         track.onended = () => {
-          console.warn("⚠️ Microphone track ended - permission may have been revoked");
+          console.warn(
+            "⚠️ Microphone track ended - permission may have been revoked",
+          );
           // Clean up
           if (readyMediaRecorderRef.current) {
             readyMediaRecorderRef.current.stop();
@@ -1527,7 +1579,7 @@ export default function AudioRecorder() {
           setHasPermissions(false);
         };
       });
-      
+
       setHasPermissions(true);
       setError(null); // Clear error when permissions are granted
       setIsError(false);
@@ -1535,7 +1587,7 @@ export default function AudioRecorder() {
     } catch (err) {
       console.error("Error requesting microphone permission:", err);
       setError(
-        "Microphone and camera access is required first. Click here to try again."
+        "Microphone and camera access is required first. Click here to try again.",
       );
       setIsError(true);
       return { permissionGranted: false, mediaRecorderReady: false };
@@ -1613,7 +1665,7 @@ export default function AudioRecorder() {
           // If not the entire screen, stop the stream and ask again
           tracks.forEach((track) => track.stop());
           setError(
-            "Please select your entire screen, not just a window or tab."
+            "Please select your entire screen, not just a window or tab.",
           );
           setIsError(true);
           return { permissionGranted: false };
@@ -1633,7 +1685,7 @@ export default function AudioRecorder() {
     return () => {
       // Stop saving chunks
       isSavingChunksRef.current = false;
-      
+
       // Stop the MediaRecorder (only time we actually stop it)
       if (readyMediaRecorderRef.current) {
         const recorder = readyMediaRecorderRef.current;
@@ -1642,7 +1694,7 @@ export default function AudioRecorder() {
         }
         readyMediaRecorderRef.current = null;
       }
-      
+
       // Clean up microphone stream
       if (microphoneStream) {
         microphoneStream.getTracks().forEach((track) => track.stop());
@@ -1806,12 +1858,12 @@ export default function AudioRecorder() {
       document.removeEventListener(
         "fullscreenchange",
         onFullscreenChange,
-        true
+        true,
       );
       document.removeEventListener(
         "visibilitychange",
         onVisibilityChange,
-        true
+        true,
       );
       document.removeEventListener("keydown", preventKeyShortcuts, true);
       document.removeEventListener("contextmenu", preventContextMenu, true);
@@ -1886,7 +1938,7 @@ export default function AudioRecorder() {
 
     try {
       const response = await fetch(
-        `https://www.server.speakeval.org/receiveaudio?token=${token}&number=1`
+        `https://www.server.speakeval.org/receiveaudio?token=${token}&number=1`,
       );
 
       const receivedData = await response.json();
@@ -1895,7 +1947,7 @@ export default function AudioRecorder() {
         // Check if recording already exists
         if (receivedData.code === "RECORDING_EXISTS") {
           setError(
-            "You have already completed this question. Please wait for the next question or for your teacher to restart the room."
+            "You have already completed this question. Please wait for the next question or for your teacher to restart the room.",
           );
           setIsError(false); // This is not an error, just informational
           updateStageData({
@@ -1920,9 +1972,11 @@ export default function AudioRecorder() {
       }
 
       // Check if this is a Simulated Conversation (multiple audio URLs) - check BEFORE setting thinkingTime
-      const isSimulatedConv = receivedData.configType === "Simulated_Conversation" || (audioUrls && audioUrls.length > 1);
+      const isSimulatedConv =
+        receivedData.configType === "Simulated_Conversation" ||
+        (audioUrls && audioUrls.length > 1);
       const isDuoConv = receivedData.configType === "Conversation";
-      
+
       // Set config type
       if (isSimulatedConv) {
         setConfigType("Simulated_Conversation");
@@ -1934,7 +1988,7 @@ export default function AudioRecorder() {
         setConfigType("Classic");
         console.log("🎯 [Mode] Current mode: Classic (Standard)");
       }
-      
+
       if (receivedData.thinkingTime && !isSimulatedConv) {
         setThinkingTime(receivedData.thinkingTime);
       } else if (isSimulatedConv) {
@@ -1976,7 +2030,7 @@ export default function AudioRecorder() {
           // 1. As a string with format: "true|i_i|true|i_i|{...}|i_i|{...}"
           // 2. As an array of objects
           let parsedInstructions = [];
-          
+
           if (typeof receivedData.instructions === "string") {
             const parts = receivedData.instructions.split("|i_i|");
             if (parts.length >= 3) {
@@ -1994,18 +2048,18 @@ export default function AudioRecorder() {
           } else if (Array.isArray(receivedData.instructions)) {
             parsedInstructions = receivedData.instructions;
           }
-          
+
           setInstructions(parsedInstructions);
         } catch (err) {
           console.error("Error parsing instructions:", err);
           setInstructions([]);
-    setCurrentInstructionIndex(0);
-    setInstructionTimeRemaining(null);
+          setCurrentInstructionIndex(0);
+          setInstructionTimeRemaining(null);
         }
       } else {
         setInstructions([]);
-    setCurrentInstructionIndex(0);
-    setInstructionTimeRemaining(null);
+        setCurrentInstructionIndex(0);
+        setInstructionTimeRemaining(null);
       }
 
       // Set simulated conversation state
@@ -2013,8 +2067,8 @@ export default function AudioRecorder() {
         setIsSimulatedConversation(true);
         setPromptClips(audioUrls || []);
         // Set first prompt as current audio
-      if (audioUrls && audioUrls.length > 0) {
-        setAudioBlobURL(audioUrls[0]);
+        if (audioUrls && audioUrls.length > 0) {
+          setAudioBlobURL(audioUrls[0]);
         }
         questionIndex = receivedData.questionIndex;
         // Mark audio as downloaded to prevent repeated calls
@@ -2036,7 +2090,10 @@ export default function AudioRecorder() {
       } else {
         updateStageData({
           audioDownloaded: false,
-          audioDownloadError: "No questions received" + receivedData.error ? receivedData.error : "",
+          audioDownloadError:
+            "No questions received" + receivedData.error
+              ? receivedData.error
+              : "",
         });
       }
 
@@ -2044,7 +2101,7 @@ export default function AudioRecorder() {
     } catch (err) {
       console.error("Error fetching audio:", err);
       setError(
-        "An error occurred while fetching the audio. Try reloading the page."
+        "An error occurred while fetching the audio. Try reloading the page.",
       );
       setIsError(true);
       updateStageData({
@@ -2063,7 +2120,7 @@ export default function AudioRecorder() {
       } catch (err) {
         console.error("Error fetching audio:", err);
         setError(
-          "An error occurred while fetching the audio. Try reloading the page."
+          "An error occurred while fetching the audio. Try reloading the page.",
         );
         setIsError(true);
       }
@@ -2094,7 +2151,9 @@ export default function AudioRecorder() {
     setIsFullscreen(true);
 
     console.log(`🎤 [startRecording] Starting recording process...`);
-    console.log(`   📊 Initial state: MediaRecorder exists: ${!!readyMediaRecorderRef.current}, Stream exists: ${!!microphoneStream}, isSimulatedConversation: ${isSimulatedConversation}`);
+    console.log(
+      `   📊 Initial state: MediaRecorder exists: ${!!readyMediaRecorderRef.current}, Stream exists: ${!!microphoneStream}, isSimulatedConversation: ${isSimulatedConversation}`,
+    );
 
     try {
       // Check if we already have permissions and MediaRecorder running
@@ -2103,22 +2162,37 @@ export default function AudioRecorder() {
         // Check if stream is still valid
         try {
           const tracks = microphoneStream.getTracks();
-          const isValid = tracks.length > 0 && tracks.every(track => track.readyState === 'live');
+          const isValid =
+            tracks.length > 0 &&
+            tracks.every((track) => track.readyState === "live");
           const recorderState = readyMediaRecorderRef.current.state;
-          if (isValid && (recorderState === "recording" || recorderState === "inactive")) {
+          if (
+            isValid &&
+            (recorderState === "recording" || recorderState === "inactive")
+          ) {
             // Everything is ready, just enable chunk saving
             // Note: "inactive" is also acceptable if we're about to start
-            permissionResult = { permissionGranted: true, stream: microphoneStream, mediaRecorderReady: true };
-            console.log(`✅ Permissions check passed. MediaRecorder state: ${recorderState}, stream valid: ${isValid}`);
+            permissionResult = {
+              permissionGranted: true,
+              stream: microphoneStream,
+              mediaRecorderReady: true,
+            };
+            console.log(
+              `✅ Permissions check passed. MediaRecorder state: ${recorderState}, stream valid: ${isValid}`,
+            );
           } else {
-            console.warn(`⚠️ Stream or MediaRecorder check failed. Stream valid: ${isValid}, Recorder state: ${recorderState}`);
+            console.warn(
+              `⚠️ Stream or MediaRecorder check failed. Stream valid: ${isValid}, Recorder state: ${recorderState}`,
+            );
           }
         } catch (e) {
           // Stream check failed, need to request permissions again
           console.warn("⚠️ Stream check exception:", e);
         }
       } else {
-        console.warn(`⚠️ MediaRecorder or stream not available. MediaRecorder: ${!!readyMediaRecorderRef.current}, Stream: ${!!microphoneStream}`);
+        console.warn(
+          `⚠️ MediaRecorder or stream not available. MediaRecorder: ${!!readyMediaRecorderRef.current}, Stream: ${!!microphoneStream}`,
+        );
       }
 
       // Only request permissions if we don't already have them
@@ -2126,72 +2200,113 @@ export default function AudioRecorder() {
         try {
           console.log(`🔄 [startRecording] Requesting permissions...`);
           permissionResult = await requestPermissions();
-          console.log(`✅ [startRecording] Permissions granted. MediaRecorder ready: ${permissionResult.mediaRecorderReady}`);
+          console.log(
+            `✅ [startRecording] Permissions granted. MediaRecorder ready: ${permissionResult.mediaRecorderReady}`,
+          );
         } catch (permError) {
           // If requestPermissions throws, handle it gracefully
-          console.warn("⚠️ Permission request had an issue, but continuing:", permError);
+          console.warn(
+            "⚠️ Permission request had an issue, but continuing:",
+            permError,
+          );
           // Check if we have a working MediaRecorder anyway (even if requestPermissions failed)
           if (readyMediaRecorderRef.current) {
             const recorderState = readyMediaRecorderRef.current.state;
             if (recorderState === "recording" || recorderState === "inactive") {
-              console.log(`✅ Using existing MediaRecorder despite permission request failure. State: ${recorderState}`);
-              permissionResult = { permissionGranted: true, stream: microphoneStream, mediaRecorderReady: true };
+              console.log(
+                `✅ Using existing MediaRecorder despite permission request failure. State: ${recorderState}`,
+              );
+              permissionResult = {
+                permissionGranted: true,
+                stream: microphoneStream,
+                mediaRecorderReady: true,
+              };
             } else {
-              console.error(`❌ MediaRecorder exists but in invalid state: ${recorderState}`);
-              permissionResult = { permissionGranted: false, mediaRecorderReady: false };
+              console.error(
+                `❌ MediaRecorder exists but in invalid state: ${recorderState}`,
+              );
+              permissionResult = {
+                permissionGranted: false,
+                mediaRecorderReady: false,
+              };
             }
           } else {
-            console.error(`❌ No MediaRecorder available after permission request failure`);
-            permissionResult = { permissionGranted: false, mediaRecorderReady: false };
+            console.error(
+              `❌ No MediaRecorder available after permission request failure`,
+            );
+            permissionResult = {
+              permissionGranted: false,
+              mediaRecorderReady: false,
+            };
           }
         }
       }
 
       if (!permissionResult || !permissionResult.permissionGranted) {
-        console.error(`❌ [startRecording] Microphone permission not granted. permissionResult:`, permissionResult);
-        console.error(`   📊 Debug: isSimulatedConversation: ${isSimulatedConversation}, MediaRecorder exists: ${!!readyMediaRecorderRef.current}`);
-        
+        console.error(
+          `❌ [startRecording] Microphone permission not granted. permissionResult:`,
+          permissionResult,
+        );
+        console.error(
+          `   📊 Debug: isSimulatedConversation: ${isSimulatedConversation}, MediaRecorder exists: ${!!readyMediaRecorderRef.current}`,
+        );
+
         // CRITICAL FIX: For simulated conversations, if MediaRecorder exists and is recording,
         // we should still enable chunk saving even if permissions check failed
         if (isSimulatedConversation && readyMediaRecorderRef.current) {
           console.log(`   ✅ [startRecording] Recovery condition met!`);
           const recorderState = readyMediaRecorderRef.current.state;
           if (recorderState === "recording" || recorderState === "inactive") {
-            console.log(`🔄 [startRecording] Simulated conversation: MediaRecorder exists (state: ${recorderState}), enabling chunk saving despite permissions check failure`);
+            console.log(
+              `🔄 [startRecording] Simulated conversation: MediaRecorder exists (state: ${recorderState}), enabling chunk saving despite permissions check failure`,
+            );
             // Clear chunks and enable saving
             currentPromptChunksRef.current = [];
             audioChunksRef.current = [];
             isSavingChunksRef.current = true;
-            
+
             // If inactive, start it
             if (recorderState === "inactive") {
               try {
                 readyMediaRecorderRef.current.start(250);
                 console.log(`✅ [startRecording] MediaRecorder started`);
               } catch (startErr) {
-                console.error(`❌ [startRecording] Failed to start MediaRecorder:`, startErr);
+                console.error(
+                  `❌ [startRecording] Failed to start MediaRecorder:`,
+                  startErr,
+                );
               }
             }
-            
+
             // Don't throw error - continue with recording
-            console.log(`✅ [startRecording] Continuing despite permissions check failure (MediaRecorder is working)`);
+            console.log(
+              `✅ [startRecording] Continuing despite permissions check failure (MediaRecorder is working)`,
+            );
             // Skip the error throw and continue
           } else {
-            console.error(`❌ [startRecording] MediaRecorder in invalid state: ${recorderState}`);
-            const errorMsg = "Microphone permission is required to start recording. Please grant permission and try again.";
-            console.error(`❌ [startRecording] Throwing error for simulated conversation: ${errorMsg}`);
+            console.error(
+              `❌ [startRecording] MediaRecorder in invalid state: ${recorderState}`,
+            );
+            const errorMsg =
+              "Microphone permission is required to start recording. Please grant permission and try again.";
+            console.error(
+              `❌ [startRecording] Throwing error for simulated conversation: ${errorMsg}`,
+            );
             throw new Error("Permissions check failed");
           }
         } else {
           // Not simulated conversation OR MediaRecorder doesn't exist
-          const errorMsg = "Microphone permission is required to start recording. Please grant permission and try again.";
-          
+          const errorMsg =
+            "Microphone permission is required to start recording. Please grant permission and try again.";
+
           // For simulated conversations without MediaRecorder, throw error
           if (isSimulatedConversation) {
-            console.error(`❌ [startRecording] Throwing error for simulated conversation: ${errorMsg}`);
+            console.error(
+              `❌ [startRecording] Throwing error for simulated conversation: ${errorMsg}`,
+            );
             throw new Error("Permissions check failed");
           }
-          
+
           // For regular conversations, show alert
           setError(errorMsg);
           setIsError(true);
@@ -2214,14 +2329,16 @@ export default function AudioRecorder() {
           return;
         }
       }
-      
-      console.log(`✅ [startRecording] Permissions check passed, proceeding to enable chunk saving...`);
+
+      console.log(
+        `✅ [startRecording] Permissions check passed, proceeding to enable chunk saving...`,
+      );
 
       // Start "recording" - just enable saving chunks (MediaRecorder already running)
       // MediaRecorder should NEVER be started/stopped here - it runs continuously from permissions
       if (readyMediaRecorderRef.current) {
         const recorderState = readyMediaRecorderRef.current.state;
-        
+
         // If MediaRecorder is inactive, we need to start it
         if (recorderState === "inactive") {
           console.log("🔄 MediaRecorder is inactive, starting it...");
@@ -2231,19 +2348,23 @@ export default function AudioRecorder() {
           } catch (startError) {
             console.error("❌ Failed to start MediaRecorder:", startError);
             // Try to fall back to hook
-            console.warn("⚠️ Falling back to hook due to MediaRecorder start failure");
+            console.warn(
+              "⚠️ Falling back to hook due to MediaRecorder start failure",
+            );
             startAudioRecording();
           }
         }
-        
+
         // MediaRecorder is running (or we just started it)
         // Just clear old chunks and start saving new ones for this recording session
         audioChunksRef.current = [];
         currentPromptChunksRef.current = []; // Clear current prompt's chunks
         isSavingChunksRef.current = true; // Enable saving chunks
-        
-        console.log(`🎙️ Started saving chunks for recording. MediaRecorder state: ${readyMediaRecorderRef.current.state}`);
-        
+
+        console.log(
+          `🎙️ Started saving chunks for recording. MediaRecorder state: ${readyMediaRecorderRef.current.state}`,
+        );
+
         // Note: We don't set up onstop handler here because MediaRecorder never stops
         // It runs continuously and we just toggle chunk saving
       } else {
@@ -2299,7 +2420,7 @@ export default function AudioRecorder() {
                   !finishedRecording)
               ) {
                 setError(
-                  "Reaching time limit. Please finish your response in the next 5 seconds. "
+                  "Reaching time limit. Please finish your response in the next 5 seconds. ",
                 );
                 setIsError(true);
               }
@@ -2311,7 +2432,7 @@ export default function AudioRecorder() {
                 "Reaching time limit. Please finish your response in the next 5 seconds. "
               ) {
                 setError(
-                  "You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
+                  "You reached the time limit and your audio was stopped and uploaded automatically. It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.",
                 );
                 setIsError(false);
               }
@@ -2329,7 +2450,7 @@ export default function AudioRecorder() {
     } catch (err) {
       console.error("Error starting recording:", err);
       setError(
-        "An error occurred while starting the recording. Please try again. Perhaps reload the page."
+        "An error occurred while starting the recording. Please try again. Perhaps reload the page.",
       );
       setIsError(true);
     }
@@ -2340,7 +2461,7 @@ export default function AudioRecorder() {
       try {
         const token = tokenManager.getStudentToken();
         const response = await fetch(
-          `https://www.server.speakeval.org/started_playing_audio?token=${token}&time=${currentTime}`
+          `https://www.server.speakeval.org/started_playing_audio?token=${token}&time=${currentTime}`,
         );
         const data = await response.json();
         if (data.message) {
@@ -2369,7 +2490,7 @@ export default function AudioRecorder() {
     setIsFullscreen(false);
 
     setError(
-      "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
+      "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.",
     );
     setIsError(false);
     setFinishedRecording(true);
@@ -2394,7 +2515,7 @@ export default function AudioRecorder() {
         `https://www.server.speakeval.org/get-recording-upload-url?token=${token}`,
         {
           method: "GET",
-        }
+        },
       );
 
       if (!uploadUrlResponse.ok) {
@@ -2403,7 +2524,7 @@ export default function AudioRecorder() {
         // Check if recording already exists
         if (errorData.code === "RECORDING_EXISTS") {
           setError(
-            "You have already completed this question. Please wait for the next question or for your teacher to restart the room."
+            "You have already completed this question. Please wait for the next question or for your teacher to restart the room.",
           );
           setIsError(false); // This is not an error, just informational
           setFinishedRecording(true);
@@ -2439,7 +2560,7 @@ export default function AudioRecorder() {
               uploadResponse.type === "opaque"
             ) {
               console.warn(
-                "CORS error detected, falling back to server upload"
+                "CORS error detected, falling back to server upload",
               );
               throw new Error("CORS_ERROR");
             }
@@ -2462,12 +2583,12 @@ export default function AudioRecorder() {
           // Inform user and wait with capped exponential backoff
           const delay = Math.min(
             baseDelayMs * Math.pow(2, attempt - 1),
-            maxDelayMs
+            maxDelayMs,
           );
           setError(
             `Upload failed, retrying in ${Math.round(
-              delay / 1000
-            )} seconds (attempt ${attempt}/${maxAttempts})...`
+              delay / 1000,
+            )} seconds (attempt ${attempt}/${maxAttempts})...`,
           );
           setIsError(false);
           await new Promise((resolve) => setTimeout(resolve, delay));
@@ -2498,7 +2619,7 @@ export default function AudioRecorder() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(uploadData),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -2518,7 +2639,7 @@ export default function AudioRecorder() {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify(retryUploadData),
-            }
+            },
           );
           if (retryResponse.ok) {
             setFinishedRecording(true);
@@ -2581,7 +2702,7 @@ export default function AudioRecorder() {
             {
               method: "POST",
               body: formData,
-            }
+            },
           );
 
           if (fallbackResponse.ok) {
@@ -2640,7 +2761,7 @@ export default function AudioRecorder() {
         {
           method: "POST",
           body: formData,
-        }
+        },
       );
     } catch (err) {
       console.error("Error uploading screen recording:", err);
@@ -2652,11 +2773,15 @@ export default function AudioRecorder() {
   const playNextPrompt_OLD = async (index) => {
     // Early return if this is a simulated conversation - SimulatedRecorder handles it
     if (isSimulatedConversation) {
-      console.warn("⚠️ playNextPrompt_OLD called for simulated conversation - this should not happen");
+      console.warn(
+        "⚠️ playNextPrompt_OLD called for simulated conversation - this should not happen",
+      );
       return;
     }
-    console.log(`🎵 playNextPrompt called with index: ${index}, total prompts: ${promptClips.length}`);
-    
+    console.log(
+      `🎵 playNextPrompt called with index: ${index}, total prompts: ${promptClips.length}`,
+    );
+
     // Clear any existing timers and intervals FIRST
     if (promptTimerRef.current !== null) {
       clearTimeout(promptTimerRef.current);
@@ -2669,7 +2794,9 @@ export default function AudioRecorder() {
 
     if (index >= promptClips.length) {
       // All prompts and recordings done, upload all recordings
-      console.log(`✅ All prompts complete. Collected ${collectedRecordings.length} recordings. Starting upload...`);
+      console.log(
+        `✅ All prompts complete. Collected ${collectedRecordings.length} recordings. Starting upload...`,
+      );
       await uploadAllRecordings();
       return;
     }
@@ -2679,7 +2806,7 @@ export default function AudioRecorder() {
       try {
         audioPlayer.stop();
         // Wait a bit for the stop to complete
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (e) {
         console.warn("Error stopping audio player:", e);
       }
@@ -2697,10 +2824,10 @@ export default function AudioRecorder() {
     // Load and play the current prompt
     const promptUrl = promptClips[index];
     console.log(`📻 Loading prompt ${index + 1}: ${promptUrl}`);
-    
+
     setAudioBlobURL(promptUrl);
     setCurrentPromptIndex(index);
-    
+
     // Reset recording state for new prompt
     setRecordingStartTime(null);
     setRecordingCountdown(20);
@@ -2710,21 +2837,21 @@ export default function AudioRecorder() {
       hasRecorded: false,
       recordingError: null,
     });
-    
+
     // Set stage to audio_play so the prompt can play and UI shows correctly
     advanceStage("audio_play");
-    
+
     // Reset audio play state for new prompt
     updateAudioPlayData({
       isPlaying: false,
       hasPlayed: false,
       playError: null,
     });
-    
+
     try {
       // Load the audio with a small delay to ensure state is reset
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       audioPlayer.load(promptUrl, {
         autoplay: true,
         initialVolume: 1.0,
@@ -2740,26 +2867,34 @@ export default function AudioRecorder() {
             isPlaying: false,
             hasPlayed: true,
           });
-          
+
           // Prompt finished, immediately start recording
-          console.log(`🎬 [Prompt ${index + 1}] Prompt finished, starting recording...`);
+          console.log(
+            `🎬 [Prompt ${index + 1}] Prompt finished, starting recording...`,
+          );
           playRecordingStarted(); // Play tone
           try {
             // Set start time FIRST before advancing stage, so countdown displays correctly
             const startTime = Date.now();
             setRecordingStartTime(startTime);
             setRecordingCountdown(20);
-            
+
             // Advance to recording stage
-            console.log(`📝 [Prompt ${index + 1}] Advancing to recording stage...`);
+            console.log(
+              `📝 [Prompt ${index + 1}] Advancing to recording stage...`,
+            );
             advanceStage("recording");
-            
+
             // Check MediaRecorder state before starting
-            console.log(`🔍 [Prompt ${index + 1}] Before startRecording: MediaRecorder exists: ${!!readyMediaRecorderRef.current}, state: ${readyMediaRecorderRef.current?.state}, stream exists: ${!!microphoneStream}`);
-            
+            console.log(
+              `🔍 [Prompt ${index + 1}] Before startRecording: MediaRecorder exists: ${!!readyMediaRecorderRef.current}, state: ${readyMediaRecorderRef.current?.state}, stream exists: ${!!microphoneStream}`,
+            );
+
             // If MediaRecorder doesn't exist but stream does, we need to create it
             if (!readyMediaRecorderRef.current && microphoneStream) {
-              console.log(`⚠️ [Prompt ${index + 1}] MediaRecorder missing but stream exists. Creating MediaRecorder...`);
+              console.log(
+                `⚠️ [Prompt ${index + 1}] MediaRecorder missing but stream exists. Creating MediaRecorder...`,
+              );
               try {
                 // Create MediaRecorder from existing stream
                 let mimeType = "video/mp4;codecs=h264,aac";
@@ -2772,53 +2907,70 @@ export default function AudioRecorder() {
                     }
                   }
                 }
-                
-                const mediaRecorder = new MediaRecorder(microphoneStream, { mimeType });
-                
+
+                const mediaRecorder = new MediaRecorder(microphoneStream, {
+                  mimeType,
+                });
+
                 // Set up data handler
                 audioChunksRef.current = [];
                 isSavingChunksRef.current = false;
-                
+
                 mediaRecorder.ondataavailable = (event) => {
                   if (isSavingChunksRef.current && event.data.size > 0) {
                     audioChunksRef.current.push(event.data);
                     currentPromptChunksRef.current.push(event.data);
-                    console.log(`📦 Chunk collected: size=${event.data.size}, total chunks: ${currentPromptChunksRef.current.length}`);
+                    console.log(
+                      `📦 Chunk collected: size=${event.data.size}, total chunks: ${currentPromptChunksRef.current.length}`,
+                    );
                   } else if (event.data.size > 0) {
-                    console.log(`⚠️ Chunk received but not saving (isSavingChunksRef: ${isSavingChunksRef.current})`);
+                    console.log(
+                      `⚠️ Chunk received but not saving (isSavingChunksRef: ${isSavingChunksRef.current})`,
+                    );
                   }
                 };
-                
+
                 // Start recording
                 mediaRecorder.start(250);
                 readyMediaRecorderRef.current = mediaRecorder;
-                console.log(`✅ [Prompt ${index + 1}] MediaRecorder created and started successfully`);
+                console.log(
+                  `✅ [Prompt ${index + 1}] MediaRecorder created and started successfully`,
+                );
               } catch (createError) {
-                console.error(`❌ [Prompt ${index + 1}] Failed to create MediaRecorder:`, createError);
+                console.error(
+                  `❌ [Prompt ${index + 1}] Failed to create MediaRecorder:`,
+                  createError,
+                );
                 // Will fall through to startRecording() which will handle the error
               }
             }
-            
+
             await startRecording();
-            
-            console.log(`✅ [Prompt ${index + 1}] startRecording() completed successfully`);
-            
+
+            console.log(
+              `✅ [Prompt ${index + 1}] startRecording() completed successfully`,
+            );
+
             // startRecording() already clears chunks and sets isSavingChunksRef.current = true
             // But ensure it's enabled (startRecording should handle this, but double-check)
             if (!isSavingChunksRef.current) {
-              console.warn(`⚠️ [Prompt ${index + 1}] isSavingChunksRef was false after startRecording, enabling it`);
+              console.warn(
+                `⚠️ [Prompt ${index + 1}] isSavingChunksRef was false after startRecording, enabling it`,
+              );
               isSavingChunksRef.current = true;
             }
-            
+
             // Log chunk collection status
-            console.log(`🎙️ [Prompt ${index + 1}] Recording started. isSavingChunks: ${isSavingChunksRef.current}, MediaRecorder state: ${readyMediaRecorderRef.current?.state}, chunks cleared: ${currentPromptChunksRef.current.length === 0}`);
-            
+            console.log(
+              `🎙️ [Prompt ${index + 1}] Recording started. isSavingChunks: ${isSavingChunksRef.current}, MediaRecorder state: ${readyMediaRecorderRef.current?.state}, chunks cleared: ${currentPromptChunksRef.current.length === 0}`,
+            );
+
             updateRecordingData({
               isRecording: true,
               hasRecorded: false,
               recordingError: null,
             });
-            
+
             // Initialize countdown immediately
             const updateCountdown = () => {
               const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -2831,16 +2983,18 @@ export default function AudioRecorder() {
                 }
               }
             };
-            
+
             // Update countdown immediately
             updateCountdown();
-            
+
             // Update countdown every 100ms for smooth UI updates
             countdownIntervalRef.current = setInterval(updateCountdown, 100);
-            
+
             // Set 20-second timer to auto-advance to next prompt
             promptTimerRef.current = setTimeout(async () => {
-              console.log(`⏰ 20 seconds elapsed for prompt ${index + 1}, stopping recording...`);
+              console.log(
+                `⏰ 20 seconds elapsed for prompt ${index + 1}, stopping recording...`,
+              );
               if (countdownIntervalRef.current) {
                 clearInterval(countdownIntervalRef.current);
                 countdownIntervalRef.current = null;
@@ -2851,56 +3005,87 @@ export default function AudioRecorder() {
           } catch (error) {
             // Don't show error to user - just log it and continue
             // The MediaRecorder should already be running from permissions
-            console.error(`❌ [Prompt ${index + 1}] Recording setup failed:`, error);
+            console.error(
+              `❌ [Prompt ${index + 1}] Recording setup failed:`,
+              error,
+            );
             console.error(`   Error details:`, error.message, error.stack);
-            console.error(`   MediaRecorder state: ${readyMediaRecorderRef.current?.state}, exists: ${!!readyMediaRecorderRef.current}`);
+            console.error(
+              `   MediaRecorder state: ${readyMediaRecorderRef.current?.state}, exists: ${!!readyMediaRecorderRef.current}`,
+            );
             console.error(`   Stream exists: ${!!microphoneStream}`);
-            console.error(`   isSimulatedConversation: ${isSimulatedConversation}`);
-            
+            console.error(
+              `   isSimulatedConversation: ${isSimulatedConversation}`,
+            );
+
             // CRITICAL FIX: If MediaRecorder exists and is recording, enable chunk saving anyway
             // The permissions check might fail incorrectly, but if MediaRecorder is working, we should use it
-            console.log(`🔄 [Prompt ${index + 1}] Starting recovery process...`);
-            console.log(`   📊 MediaRecorder exists: ${!!readyMediaRecorderRef.current}`);
-            
+            console.log(
+              `🔄 [Prompt ${index + 1}] Starting recovery process...`,
+            );
+            console.log(
+              `   📊 MediaRecorder exists: ${!!readyMediaRecorderRef.current}`,
+            );
+
             if (readyMediaRecorderRef.current) {
               const recorderState = readyMediaRecorderRef.current.state;
-              console.log(`🔄 [Prompt ${index + 1}] Attempting recovery. MediaRecorder state: ${recorderState}`);
-              
-              if (recorderState === "recording" || recorderState === "inactive") {
+              console.log(
+                `🔄 [Prompt ${index + 1}] Attempting recovery. MediaRecorder state: ${recorderState}`,
+              );
+
+              if (
+                recorderState === "recording" ||
+                recorderState === "inactive"
+              ) {
                 // MediaRecorder exists and is either recording or can be started
-                console.log(`✅ [Prompt ${index + 1}] MediaRecorder exists (state: ${recorderState}), enabling chunk saving...`);
-                
+                console.log(
+                  `✅ [Prompt ${index + 1}] MediaRecorder exists (state: ${recorderState}), enabling chunk saving...`,
+                );
+
                 // Clear chunks for this prompt
                 currentPromptChunksRef.current = [];
                 audioChunksRef.current = [];
                 console.log(`   📦 Chunks cleared`);
-                
+
                 // If inactive, start it
                 if (recorderState === "inactive") {
                   try {
                     readyMediaRecorderRef.current.start(250);
-                    console.log(`✅ [Prompt ${index + 1}] MediaRecorder started`);
+                    console.log(
+                      `✅ [Prompt ${index + 1}] MediaRecorder started`,
+                    );
                   } catch (startErr) {
-                    console.error(`❌ [Prompt ${index + 1}] Failed to start MediaRecorder:`, startErr);
+                    console.error(
+                      `❌ [Prompt ${index + 1}] Failed to start MediaRecorder:`,
+                      startErr,
+                    );
                   }
                 }
-                
+
                 // CRITICAL: Enable chunk saving - this is the key fix!
                 isSavingChunksRef.current = true;
-                console.log(`✅ [Prompt ${index + 1}] Chunk saving enabled! isSavingChunksRef: ${isSavingChunksRef.current}`);
-                console.log(`   ✅ Recovery complete - chunks should now be saved`);
+                console.log(
+                  `✅ [Prompt ${index + 1}] Chunk saving enabled! isSavingChunksRef: ${isSavingChunksRef.current}`,
+                );
+                console.log(
+                  `   ✅ Recovery complete - chunks should now be saved`,
+                );
               } else {
-                console.warn(`⚠️ [Prompt ${index + 1}] MediaRecorder in unexpected state: ${recorderState}`);
+                console.warn(
+                  `⚠️ [Prompt ${index + 1}] MediaRecorder in unexpected state: ${recorderState}`,
+                );
               }
             } else {
-              console.error(`❌ [Prompt ${index + 1}] No MediaRecorder available for recovery`);
+              console.error(
+                `❌ [Prompt ${index + 1}] No MediaRecorder available for recovery`,
+              );
             }
-            
+
             // Still update state to indicate we're ready (even if recording didn't start properly)
             const startTime = Date.now();
             setRecordingStartTime(startTime);
             setRecordingCountdown(20);
-            
+
             // Initialize countdown even if recording didn't start properly
             const updateCountdown = () => {
               const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -2915,13 +3100,13 @@ export default function AudioRecorder() {
             };
             updateCountdown();
             countdownIntervalRef.current = setInterval(updateCountdown, 100);
-            
+
             updateRecordingData({
               isRecording: true,
               hasRecorded: false,
               recordingError: null, // Don't set error - we'll continue anyway
             });
-            
+
             // Still set timer to move to next prompt
             promptTimerRef.current = setTimeout(async () => {
               if (countdownIntervalRef.current) {
@@ -2952,15 +3137,25 @@ export default function AudioRecorder() {
   const stopRecordingForNextPrompt = async (currentIndex) => {
     // For simulated conversations, SimulatedRecorder handles this
     if (isSimulatedConversation) {
-      console.warn("⚠️ stopRecordingForNextPrompt called for simulated conversation - SimulatedRecorder should handle this");
+      console.warn(
+        "⚠️ stopRecordingForNextPrompt called for simulated conversation - SimulatedRecorder should handle this",
+      );
       return;
     }
-    
-    console.log(`🛑 [Prompt ${currentIndex + 1}] stopRecordingForNextPrompt called`);
-    console.log(`   📊 State check: isRecording: ${isRecording}, stageData.recording.isRecording: ${stageData.recording.isRecording}`);
-    console.log(`   📊 Chunks check: currentPromptChunksRef.length: ${currentPromptChunksRef.current.length}, audioChunksRef.length: ${audioChunksRef.current.length}`);
-    console.log(`   📊 MediaRecorder: exists: ${!!readyMediaRecorderRef.current}, state: ${readyMediaRecorderRef.current?.state}, isSavingChunks: ${isSavingChunksRef.current}`);
-    
+
+    console.log(
+      `🛑 [Prompt ${currentIndex + 1}] stopRecordingForNextPrompt called`,
+    );
+    console.log(
+      `   📊 State check: isRecording: ${isRecording}, stageData.recording.isRecording: ${stageData.recording.isRecording}`,
+    );
+    console.log(
+      `   📊 Chunks check: currentPromptChunksRef.length: ${currentPromptChunksRef.current.length}, audioChunksRef.length: ${audioChunksRef.current.length}`,
+    );
+    console.log(
+      `   📊 MediaRecorder: exists: ${!!readyMediaRecorderRef.current}, state: ${readyMediaRecorderRef.current?.state}, isSavingChunks: ${isSavingChunksRef.current}`,
+    );
+
     // Stop any currently playing audio
     if (audioPlayer) {
       try {
@@ -2969,20 +3164,25 @@ export default function AudioRecorder() {
         console.warn("Error stopping audio player:", e);
       }
     }
-    
+
     // Stop the current recording - check both state sources
     if (isRecording || stageData.recording.isRecording) {
-      console.log(`🛑 Stopping recording for prompt ${currentIndex + 1} after 20 seconds`);
-      
+      console.log(
+        `🛑 Stopping recording for prompt ${currentIndex + 1} after 20 seconds`,
+      );
+
       // Stop saving chunks (MediaRecorder keeps running continuously)
       isSavingChunksRef.current = false;
-      
+
       // Wait a bit to ensure all pending chunks are collected (MediaRecorder collects every 250ms)
       // Give it more time to ensure all chunks from the last 250ms interval are collected
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
       // Request any final data from MediaRecorder (it's still running, just not saving)
-      if (readyMediaRecorderRef.current && readyMediaRecorderRef.current.state === "recording") {
+      if (
+        readyMediaRecorderRef.current &&
+        readyMediaRecorderRef.current.state === "recording"
+      ) {
         try {
           readyMediaRecorderRef.current.requestData();
           console.log("📥 Requested final data from MediaRecorder");
@@ -2990,38 +3190,48 @@ export default function AudioRecorder() {
           console.warn("Could not request final data from MediaRecorder:", e);
         }
       }
-      
+
       // Wait a bit more for the final data to arrive (ondataavailable is async)
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       // Fetch the prompt audio as a blob
       let promptBlob = null;
       try {
         const promptUrl = promptClips[currentIndex];
         const promptResponse = await fetch(promptUrl);
         promptBlob = await promptResponse.blob();
-        console.log(`📥 Fetched prompt ${currentIndex + 1} audio, size: ${promptBlob.size} bytes`);
+        console.log(
+          `📥 Fetched prompt ${currentIndex + 1} audio, size: ${promptBlob.size} bytes`,
+        );
       } catch (error) {
-        console.error(`❌ Failed to fetch prompt ${currentIndex + 1} audio:`, error);
+        console.error(
+          `❌ Failed to fetch prompt ${currentIndex + 1} audio:`,
+          error,
+        );
       }
-      
+
       // Use the current prompt's chunks (separate storage per prompt)
       console.log(`📊 Checking chunks for prompt ${currentIndex + 1}:`);
-      console.log(`   currentPromptChunksRef.length: ${currentPromptChunksRef.current.length}`);
+      console.log(
+        `   currentPromptChunksRef.length: ${currentPromptChunksRef.current.length}`,
+      );
       console.log(`   audioChunksRef.length: ${audioChunksRef.current.length}`);
       console.log(`   isSavingChunksRef: ${isSavingChunksRef.current}`);
-      
+
       // Try to use currentPromptChunksRef first, fallback to audioChunksRef if empty
-      const chunksToUse = currentPromptChunksRef.current.length > 0 
-        ? currentPromptChunksRef.current 
-        : audioChunksRef.current;
-      
+      const chunksToUse =
+        currentPromptChunksRef.current.length > 0
+          ? currentPromptChunksRef.current
+          : audioChunksRef.current;
+
       if (chunksToUse.length > 0) {
         const mimeType = readyMediaRecorderRef.current?.mimeType || "video/mp4";
         const responseBlob = new Blob(chunksToUse, { type: mimeType });
-        
-        console.log(`💾 Saved response ${currentIndex + 1}, chunks: ${chunksToUse.length}, size: ${responseBlob.size} bytes`);
-        
+
+        console.log(
+          `💾 Saved response ${currentIndex + 1}, chunks: ${chunksToUse.length}, size: ${responseBlob.size} bytes`,
+        );
+
         // Store both prompt and response (don't upload yet)
         setCollectedRecordings((prev) => {
           const newRecordings = [
@@ -3049,14 +3259,14 @@ export default function AudioRecorder() {
           ]);
         }
       }
-      
+
       // Clear chunks for next recording (but MediaRecorder keeps running)
       audioChunksRef.current = [];
       currentPromptChunksRef.current = [];
-      
+
       // Stop speech recognition
       stopSpeechRecognition();
-      
+
       // Update recording state but DON'T set hasRecorded to true yet (we'll do that at the end)
       setIsRecording(false);
       updateRecordingData({
@@ -3066,7 +3276,7 @@ export default function AudioRecorder() {
       });
       setRecordingStartTime(null);
       setRecordingCountdown(20); // Reset countdown
-      
+
       // Clear the timers
       if (promptTimerRef.current !== null) {
         clearTimeout(promptTimerRef.current);
@@ -3076,28 +3286,32 @@ export default function AudioRecorder() {
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
       }
-      
+
       // Re-enable saving chunks for next recording
       isSavingChunksRef.current = true;
-      
-      console.log(`▶️ Moving to next prompt: ${currentIndex + 2} of ${promptClips.length}`);
-      
+
+      console.log(
+        `▶️ Moving to next prompt: ${currentIndex + 2} of ${promptClips.length}`,
+      );
+
       // Reset audio play state for the next prompt
       updateAudioPlayData({
         isPlaying: false,
         hasPlayed: false,
         playError: null,
       });
-      
+
       // Wait a bit to ensure all state updates are processed before moving to next prompt
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
       // Move to next prompt (only for non-simulated conversations)
       if (!isSimulatedConversation) {
         playNextPrompt_OLD(currentIndex + 1);
       }
     } else {
-      console.warn("⚠️ stopRecordingForNextPrompt called but not recording - moving to next prompt anyway");
+      console.warn(
+        "⚠️ stopRecordingForNextPrompt called but not recording - moving to next prompt anyway",
+      );
       // Reset audio play state
       updateAudioPlayData({
         isPlaying: false,
@@ -3114,7 +3328,7 @@ export default function AudioRecorder() {
         countdownIntervalRef.current = null;
       }
       // Wait a bit before moving to next prompt
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       // Even if not recording, try to move to next prompt (only for non-simulated conversations)
       if (!isSimulatedConversation) {
         playNextPrompt_OLD(currentIndex + 1);
@@ -3124,13 +3338,15 @@ export default function AudioRecorder() {
 
   // Combine all prompt+response segments into one final recording
   const combineAllSegments = async (segments) => {
-    console.log(`🔗 Combining ${segments.length} segments into one recording...`);
-    
+    console.log(
+      `🔗 Combining ${segments.length} segments into one recording...`,
+    );
+
     // For now, we'll combine the segments by creating a new blob that contains all segments
     // Since proper video concatenation requires re-encoding (complex), we'll use a simpler approach:
     // Combine all the blobs in order (prompt + response for each segment)
     const allBlobs = [];
-    
+
     for (const segment of segments) {
       if (segment.promptBlob) {
         allBlobs.push(segment.promptBlob);
@@ -3139,26 +3355,32 @@ export default function AudioRecorder() {
         allBlobs.push(segment.responseBlob);
       }
     }
-    
+
     if (allBlobs.length === 0) {
       throw new Error("No segments to combine");
     }
-    
+
     // For proper video/audio concatenation, we'd need FFmpeg.wasm or similar
     // For now, we'll create a combined blob (this may not work perfectly for video, but it's a start)
     // The backend can handle proper concatenation if needed
     const combinedBlob = new Blob(allBlobs, { type: "video/mp4" });
-    
-    console.log(`✅ Combined ${allBlobs.length} segments into one blob, size: ${combinedBlob.size} bytes`);
+
+    console.log(
+      `✅ Combined ${allBlobs.length} segments into one blob, size: ${combinedBlob.size} bytes`,
+    );
     return combinedBlob;
   };
 
   const uploadAllRecordings = async () => {
-    console.log(`📤 uploadAllRecordings called with ${collectedRecordings.length} recordings`);
-    
+    console.log(
+      `📤 uploadAllRecordings called with ${collectedRecordings.length} recordings`,
+    );
+
     if (collectedRecordings.length === 0) {
       // No recordings to upload - this shouldn't happen, but handle gracefully
-      console.error("❌ No recordings collected! This indicates a bug in chunk collection.");
+      console.error(
+        "❌ No recordings collected! This indicates a bug in chunk collection.",
+      );
       console.error("   Check console logs for chunk collection issues.");
       advanceStage("uploading");
       updateUploadingData({
@@ -3181,7 +3403,7 @@ export default function AudioRecorder() {
     });
 
     setError(
-      "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue."
+      "Processing... It may take anywhere from 10 seconds to a few minutes to process your audio depending on how many other students are ahead in the queue.",
     );
     setIsError(false);
     setFinishedRecording(true);
@@ -3206,17 +3428,17 @@ export default function AudioRecorder() {
       // Combine all segments (prompt + response pairs) into one final recording
       console.log("🔗 Stitching all segments together...");
       setUploadProgress(10); // Show progress
-      
+
       const combinedBlob = await combineAllSegments(collectedRecordings);
-      
+
       setUploadProgress(30);
-      
+
       // Get upload URL for the combined recording (use index 0 since it's a single combined file)
       const uploadUrlResponse = await fetch(
         `https://www.server.speakeval.org/get-recording-upload-url?token=${token}&index=0`,
         {
           method: "GET",
-        }
+        },
       );
 
       if (!uploadUrlResponse.ok) {
@@ -3258,7 +3480,7 @@ export default function AudioRecorder() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(uploadData),
-        }
+        },
       );
 
       if (!serverResponse.ok) {
@@ -3313,7 +3535,9 @@ export default function AudioRecorder() {
     // For Simulated Conversation, SimulatedRecorder handles everything
     // Don't call playNextPrompt here - SimulatedRecorder will handle it via onStartClick
     if (isSimulatedConversation && promptClips.length > 0) {
-      console.log("⚠️ playRecording called for simulated conversation - SimulatedRecorder should handle this");
+      console.log(
+        "⚠️ playRecording called for simulated conversation - SimulatedRecorder should handle this",
+      );
       // SimulatedRecorder will handle starting via onStartClick
       return;
     }
@@ -3338,8 +3562,8 @@ export default function AudioRecorder() {
         },
         onend: () => {
           audioPlaybackCompleted();
-      updateAudioPlayData({
-        isPlaying: false,
+          updateAudioPlayData({
+            isPlaying: false,
             hasPlayed: true,
           });
           setHasPlayed(true);
@@ -3368,13 +3592,17 @@ export default function AudioRecorder() {
   const stopRecording = () => {
     // For simulated conversation, don't allow manual stop - it's handled automatically
     if (isSimulatedConversation) {
-      console.warn("⚠️ Manual stopRecording called for simulated conversation - ignoring (auto-advance handles this)");
+      console.warn(
+        "⚠️ Manual stopRecording called for simulated conversation - ignoring (auto-advance handles this)",
+      );
       return;
     }
-    
+
     // Only stop if we're actually recording - prevent premature stops
     if (!isRecording) {
-      console.warn("⚠️ stopRecording called but not currently recording, ignoring");
+      console.warn(
+        "⚠️ stopRecording called but not currently recording, ignoring",
+      );
       return;
     }
 
@@ -3390,26 +3618,26 @@ export default function AudioRecorder() {
 
     // Stop saving chunks (but MediaRecorder keeps running)
     isSavingChunksRef.current = false;
-    
+
     // Process the saved chunks immediately
     if (readyMediaRecorderRef.current && audioChunksRef.current.length > 0) {
       // Create blob from saved chunks (video with audio)
       const mimeType = readyMediaRecorderRef.current.mimeType || "video/mp4";
       const videoBlob = new Blob(audioChunksRef.current, { type: mimeType });
       const videoUrl = URL.createObjectURL(videoBlob);
-      
+
       // Process the recording
-      handleAudioStop(videoUrl, videoBlob).catch(err => {
+      handleAudioStop(videoUrl, videoBlob).catch((err) => {
         console.error("Error processing video stop:", err);
       });
-      
+
       // Clear chunks for next recording
       audioChunksRef.current = [];
     } else {
       // Fallback to hook only if ready recorder doesn't exist
-    stopAudioRecording();
+      stopAudioRecording();
     }
-    
+
     // Stop screen recording
     stopScreenRecording();
 
@@ -3464,7 +3692,7 @@ export default function AudioRecorder() {
       {
         autoClose: 5000,
         position: "top-center",
-      }
+      },
     );
   };
 
@@ -3506,7 +3734,7 @@ export default function AudioRecorder() {
         {/* Side Panel for "Always" Instructions */}
         {(() => {
           const alwaysInstructions = instructions.filter(
-            (inst) => inst.show === "Always"
+            (inst) => inst.show === "Always",
           );
 
           if (alwaysInstructions.length === 0) return null;
@@ -3578,7 +3806,6 @@ export default function AudioRecorder() {
                   pointerEvents: instructionsCollapsed ? "none" : "auto",
                 }}
               >
-
                 {/* Instructions Title */}
                 <h2
                   style={{
@@ -3658,588 +3885,212 @@ export default function AudioRecorder() {
             flexDirection: "column",
             height: "100%",
             width: "100%",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "20px",
-          minHeight: "100vh",
-        }}
-      >
-        {/* Hide timer for Simulated_Conversation */}
-        {!isSimulatedConversation && (
-          <div
-            style={{
-              position: "absolute",
-              top: "80px",
-              fontSize: "48px",
-              fontWeight: "bold",
-              color:
-                displayTime !== "xx:xx" && remainingTime > 0 && remainingTime <= 5
-                  ? "red"
-                  : "#374151",
-            }}
-          >
-            {displayTime}
-          </div>
-        )}
-
-        {/* Stage-based content */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "white",
-            padding: "40px",
-            borderRadius: "24px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-            width: "90%",
-            maxWidth: "700px",
-            textAlign: "center",
-            transform: "translateY(10%)",
-            minHeight: "400px", // Make it taller to support all stages
+            padding: "20px",
+            minHeight: "100vh",
           }}
         >
-          {/* Stage content */}
-          {currentStage === "initializing" && (
-            <div style={{ marginTop: "16px" }}>
-              <h1
-                style={{
-                  fontSize: "32px",
-                  fontWeight: "700",
-                  color: "#374151",
-                  marginBottom: "16px",
-                }}
-              >
-                {stageData.audioDownloaded
-                  ? "Downloaded Exam"
-                  : "Downloading Exam..."}
-              </h1>
+          {/* Hide timer for Simulated_Conversation */}
+          {!isSimulatedConversation && (
+            <div
+              style={{
+                position: "absolute",
+                top: "80px",
+                fontSize: "48px",
+                fontWeight: "bold",
+                color:
+                  displayTime !== "xx:xx" &&
+                  remainingTime > 0 &&
+                  remainingTime <= 5
+                    ? "red"
+                    : "#374151",
+              }}
+            >
+              {displayTime}
+            </div>
+          )}
 
-              {/* Download Animation with Custom Images */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  marginBottom: "16px",
-                }}
-              >
-                {/* Fixed Content Container - This won't move */}
+          {/* Stage-based content */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "white",
+              padding: "40px",
+              borderRadius: "24px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+              width: "90%",
+              maxWidth: "700px",
+              textAlign: "center",
+              transform: "translateY(10%)",
+              minHeight: "400px", // Make it taller to support all stages
+            }}
+          >
+            {/* Stage content */}
+            {currentStage === "initializing" && (
+              <div style={{ marginTop: "16px" }}>
+                <h1
+                  style={{
+                    fontSize: "32px",
+                    fontWeight: "700",
+                    color: "#374151",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {stageData.audioDownloaded
+                    ? "Downloaded Exam"
+                    : "Downloading Exam..."}
+                </h1>
+
+                {/* Download Animation with Custom Images */}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    minHeight: "160px", // Reserve space for content + button
+                    marginBottom: "16px",
                   }}
                 >
-                  {/* Image Container */}
+                  {/* Fixed Content Container - This won't move */}
                   <div
                     style={{
-                      marginBottom: "16px",
                       display: "flex",
+                      flexDirection: "column",
                       alignItems: "center",
-                      justifyContent: "center",
+                      minHeight: "160px", // Reserve space for content + button
                     }}
                   >
-                    {!stageData.audioDownloaded ? (
-                      <img
-                        src="/download-load.gif"
-                        alt="Downloading exam"
-                        style={{
-                          width: "120px",
-                          height: "120px",
-                          objectFit: "contain",
-                        }}
-                      />
-                    ) : (
-                      <img
-                        src="/download-done.png"
-                        alt="Download complete"
-                        style={{
-                          width: "120px",
-                          height: "120px",
-                          objectFit: "contain",
-                        }}
-                      />
-                    )}
-                  </div>
-
-                  {/* Error Message */}
-                  {stageData.audioDownloadError && (
-                    <p
+                    {/* Image Container */}
+                    <div
                       style={{
-                        fontSize: "14px",
-                        color: "#EF4444",
-                        margin: "8px 0 0 0",
-                        textAlign: "center",
+                        marginBottom: "16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
-                      {stageData.audioDownloadError}
-                    </p>
-                  )}
-
-                  {/* Continue Button - always takes up space, just invisible when not needed */}
-                  <div
-                    style={{
-                      height: "44px", // Fixed height for button + margin
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity:
-                        stageData.audioDownloaded &&
-                        !stageData.audioDownloadError
-                          ? 1
-                          : 0,
-                      transition: "opacity 0.3s ease",
-                    }}
-                  >
-                    {stageData.audioDownloaded &&
-                      !stageData.audioDownloadError && (
-                        <button
-                          onClick={async () => {
-                            // Check if we can skip setup for room restart
-                            const canSkipSetup = await canSkipSetupForRestart();
-
-                            if (canSkipSetup) {
-                              // Update setup data with current permissions
-                              const permissions =
-                                await checkCurrentPermissions();
-                              updateSetup({
-                                microphonePermission:
-                                  permissions.microphonePermission,
-                                fullscreenEnabled:
-                                  permissions.fullscreenEnabled,
-                              });
-
-                              // Check if we need to show instructions
-                              const instructionsToShow = instructions.filter(
-                                (inst) => inst.show === "Once at the Start of Room"
-                              );
-                              if (instructionsToShow.length > 0) {
-                                advanceStage("instructions");
-                              } else {
-                                // No instructions, go directly to audio play
-                              setIsFullscreen(true);
-                              setExamStarted(true);
-                              advanceStage("audio_play");
-                              }
-                            } else {
-                              advanceStage("setup");
-                            }
-                          }}
+                      {!stageData.audioDownloaded ? (
+                        <img
+                          src="/download-load.gif"
+                          alt="Downloading exam"
                           style={{
-                            padding: "10px 24px",
-                            fontSize: "15px",
-                            fontWeight: "600",
-                            color: "white",
-                            backgroundColor: "#10B981",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            transition: "background-color 0.3s ease",
-                            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                            width: "120px",
+                            height: "120px",
+                            objectFit: "contain",
                           }}
-                          onMouseOver={(e) =>
-                            (e.target.style.backgroundColor = "#059669")
-                          }
-                          onMouseOut={(e) =>
-                            (e.target.style.backgroundColor = "#10B981")
-                          }
-                        >
-                          Continue
-                        </button>
+                        />
+                      ) : (
+                        <img
+                          src="/download-done.png"
+                          alt="Download complete"
+                          style={{
+                            width: "120px",
+                            height: "120px",
+                            objectFit: "contain",
+                          }}
+                        />
                       )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+                    </div>
 
-          {/* Setup Stage */}
-          {currentStage === "setup" && (
-            <div style={{ marginTop: "20px" }}>
-              <h1
-                style={{
-                  fontSize: "32px",
-                  fontWeight: "700",
-                  color: "#374151",
-                  marginBottom: "20px",
-                }}
-              >
-                Exam Setup
-              </h1>
-              <p
-                style={{
-                  fontSize: "16px",
-                  color: "#6B7280",
-                  marginBottom: "24px",
-                }}
-              >
-                Please complete the following setup steps before starting your
-                exam:
-              </p>
-
-              {/* Setup Checklist with Reserved Button Space */}
-              <div
-                style={{
-                  maxWidth: "500px",
-                  margin: "0 auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  minHeight: "200px", // Reserve space for checklist + button
-                }}
-              >
-                {/* Checklist Items */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                    flex: 1,
-                  }}
-                >
-                  {/* Microphone Permission */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "16px",
-                      backgroundColor: "#F9FAFB",
-                      borderRadius: "8px",
-                      border: "1px solid #E5E7EB",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                      }}
-                    >
-                      <div
+                    {/* Error Message */}
+                    {stageData.audioDownloadError && (
+                      <p
                         style={{
-                          width: "20px",
-                          height: "20px",
-                          borderRadius: "50%",
-                          backgroundColor: stageData.setup.microphonePermission && stageData.setup.mediaRecorderReady
-                            ? "#10B981"
-                            : stageData.setup.microphonePermission && !stageData.setup.mediaRecorderReady
-                            ? "#EF4444"
-                            : setupLoading.microphone
-                            ? "#3B82F6"
-                            : "#D1D5DB",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          fontSize: "14px",
+                          color: "#EF4444",
+                          margin: "8px 0 0 0",
+                          textAlign: "center",
                         }}
                       >
-                        {stageData.setup.microphonePermission && stageData.setup.mediaRecorderReady && (
-                          <span
+                        {stageData.audioDownloadError}
+                      </p>
+                    )}
+
+                    {/* Continue Button - always takes up space, just invisible when not needed */}
+                    <div
+                      style={{
+                        height: "44px", // Fixed height for button + margin
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        opacity:
+                          stageData.audioDownloaded &&
+                          !stageData.audioDownloadError
+                            ? 1
+                            : 0,
+                        transition: "opacity 0.3s ease",
+                      }}
+                    >
+                      {stageData.audioDownloaded &&
+                        !stageData.audioDownloadError && (
+                          <button
+                            onClick={async () => {
+                              // Check if we can skip setup for room restart
+                              const canSkipSetup =
+                                await canSkipSetupForRestart();
+
+                              if (canSkipSetup) {
+                                // Update setup data with current permissions
+                                const permissions =
+                                  await checkCurrentPermissions();
+                                updateSetup({
+                                  microphonePermission:
+                                    permissions.microphonePermission,
+                                  fullscreenEnabled:
+                                    permissions.fullscreenEnabled,
+                                });
+
+                                // Check if we need to show instructions
+                                const instructionsToShow = instructions.filter(
+                                  (inst) =>
+                                    inst.show === "Once at the Start of Room",
+                                );
+                                if (instructionsToShow.length > 0) {
+                                  advanceStage("instructions");
+                                } else {
+                                  // No instructions, go directly to audio play
+                                  setIsFullscreen(true);
+                                  setExamStarted(true);
+                                  advanceStage("audio_play");
+                                }
+                              } else {
+                                advanceStage("setup");
+                              }
+                            }}
                             style={{
+                              padding: "10px 24px",
+                              fontSize: "15px",
+                              fontWeight: "600",
                               color: "white",
-                              fontSize: "12px",
-                              fontWeight: "bold",
+                              backgroundColor: "#10B981",
+                              border: "none",
+                              borderRadius: "6px",
+                              cursor: "pointer",
+                              transition: "background-color 0.3s ease",
+                              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
                             }}
-                          >
-                            ✓
-                          </span>
-                        )}
-                        {stageData.setup.microphonePermission && !stageData.setup.mediaRecorderReady && (
-                          <span
-                            style={{
-                              color: "white",
-                              fontSize: "12px",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            ✕
-                          </span>
-                        )}
-                        {setupLoading.microphone && (
-                          <div
-                            style={{
-                              width: "12px",
-                              height: "12px",
-                              border: "2px solid transparent",
-                              borderTop: "2px solid white",
-                              borderRadius: "50%",
-                              animation: "spin 1s linear infinite",
-                            }}
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <p
-                          style={{
-                            fontSize: "16px",
-                            fontWeight: "500",
-                            color: "#374151",
-                            margin: "0 0 2px 0",
-                          }}
-                        >
-                          Microphone/Camera Permission
-                        </p>
-                        <p
-                          style={{
-                            fontSize: "14px",
-                            color: "#6B7280",
-                            margin: "0",
-                          }}
-                        >
-                          Allow microphone access for recording
-                        </p>
-                      </div>
-                    </div>
-                    {(!stageData.setup.microphonePermission || !stageData.setup.mediaRecorderReady) && (
-                      <button
-                        onClick={async () => {
-                          setSetupLoading((prev) => ({
-                            ...prev,
-                            microphone: true,
-                          }));
-                          const perms = await requestPermissions();
-                          if (perms.permissionGranted) {
-                            updateSetup({ 
-                              microphonePermission: true,
-                              mediaRecorderReady: perms.mediaRecorderReady !== false
-                            });
-                            if (!perms.mediaRecorderReady) {
-                              setError("MediaRecorder failed to start. Please refresh the page and try again.");
-                              setIsError(true);
-                            } else {
-                              setError(null);
-                              setIsError(false);
+                            onMouseOver={(e) =>
+                              (e.target.style.backgroundColor = "#059669")
                             }
-                          }
-                          setSetupLoading((prev) => ({
-                            ...prev,
-                            microphone: false,
-                          }));
-                        }}
-                        style={{
-                          padding: "8px 16px",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          color: "white",
-                          backgroundColor: "#3B82F6",
-                          border: "none",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          transition: "background-color 0.2s ease",
-                        }}
-                        onMouseOver={(e) =>
-                          (e.target.style.backgroundColor = "#2563EB")
-                        }
-                        onMouseOut={(e) =>
-                          (e.target.style.backgroundColor = "#3B82F6")
-                        }
-                      >
-                          {stageData.setup.microphonePermission && !stageData.setup.mediaRecorderReady
-                            ? "Try Again"
-                            : "Grant Access"}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Fullscreen Mode */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "16px",
-                      backgroundColor: "#F9FAFB",
-                      borderRadius: "8px",
-                      border: "1px solid #E5E7EB",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          borderRadius: "50%",
-                          backgroundColor: stageData.setup.fullscreenEnabled
-                            ? "#10B981"
-                            : setupLoading.fullscreen
-                            ? "#3B82F6"
-                            : "#D1D5DB",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {stageData.setup.fullscreenEnabled && (
-                          <span
-                            style={{
-                              color: "white",
-                              fontSize: "12px",
-                              fontWeight: "bold",
-                            }}
+                            onMouseOut={(e) =>
+                              (e.target.style.backgroundColor = "#10B981")
+                            }
                           >
-                            ✓
-                          </span>
+                            Continue
+                          </button>
                         )}
-                        {setupLoading.fullscreen && (
-                          <div
-                            style={{
-                              width: "12px",
-                              height: "12px",
-                              border: "2px solid transparent",
-                              borderTop: "2px solid white",
-                              borderRadius: "50%",
-                              animation: "spin 1s linear infinite",
-                            }}
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <p
-                          style={{
-                            fontSize: "16px",
-                            fontWeight: "500",
-                            color: "#374151",
-                            margin: "0 0 2px 0",
-                          }}
-                        >
-                          Fullscreen Mode
-                        </p>
-                        <p
-                          style={{
-                            fontSize: "14px",
-                            color: "#6B7280",
-                            margin: "0",
-                          }}
-                        >
-                          Enter fullscreen for exam security
-                        </p>
-                      </div>
                     </div>
-                    {!stageData.setup.fullscreenEnabled && (
-                      <button
-                        onClick={async () => {
-                          setSetupLoading((prev) => ({
-                            ...prev,
-                            fullscreen: true,
-                          }));
-                          setIsFullscreen(true); // Enable fullscreen monitoring
-                          enterFullscreen();
-                          updateSetup({ fullscreenEnabled: true });
-                          setSetupLoading((prev) => ({
-                            ...prev,
-                            fullscreen: false,
-                          }));
-                        }}
-                        style={{
-                          padding: "8px 16px",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          color: "white",
-                          backgroundColor: "#3B82F6",
-                          border: "none",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          transition: "background-color 0.2s ease",
-                        }}
-                        onMouseOver={(e) =>
-                          (e.target.style.backgroundColor = "#2563EB")
-                        }
-                        onMouseOut={(e) =>
-                          (e.target.style.backgroundColor = "#3B82F6")
-                        }
-                      >
-                        Enter Fullscreen
-                      </button>
-                    )}
                   </div>
-                </div>
-
-                {/* Continue Button - always takes up space, just invisible when not needed */}
-                <div
-                  style={{
-                    height: "80px", // Increased height for button + margin
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: canAdvanceToInstructions() ? 1 : 0,
-                    transition: "opacity 0.3s ease",
-                  }}
-                >
-                  {canAdvanceToInstructions() && (() => {
-                    const instructionsToShow = instructions.filter(
-                      (inst) => inst.show === "Once at the Start of Room"
-                    );
-                    const hasInstructions = instructionsToShow.length > 0;
-                    
-                    return (
-                    <button
-                      onClick={() => {
-                          if (hasInstructions) {
-                            advanceStage("instructions");
-                          } else {
-                            // No instructions, go directly to audio_play
-                            setIsFullscreen(true);
-                            setExamStarted(true);
-                        advanceStage("audio_play");
-                          }
-                      }}
-                      style={{
-                        padding: "12px 32px",
-                        fontSize: "16px",
-                        fontWeight: "600",
-                        color: "white",
-                        backgroundColor: "#10B981",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        transition: "background-color 0.3s ease",
-                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                      }}
-                      onMouseOver={(e) =>
-                        (e.target.style.backgroundColor = "#059669")
-                      }
-                      onMouseOut={(e) =>
-                        (e.target.style.backgroundColor = "#10B981")
-                      }
-                    >
-                        {hasInstructions ? "Continue to Instructions" : "Continue to Question"}
-                    </button>
-                    );
-                  })()}
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Instructions Stage */}
-          {currentStage === "instructions" && (() => {
-            const beforeQuestionInstructions = instructions.filter(
-              (inst) => inst.show === "Once at the Start of Room"
-            );
-            
-            if (beforeQuestionInstructions.length === 0) {
-              return null;
-            }
-
-            const currentInstruction = beforeQuestionInstructions[currentInstructionIndex];
-            // Only show timer if displayTime is explicitly set and is a positive number
-            const hasDisplayTime = currentInstruction && 
-                                   currentInstruction.displayTime !== undefined && 
-                                   currentInstruction.displayTime !== null && 
-                                   currentInstruction.displayTime > 0;
-            const isLastInstruction = currentInstructionIndex === beforeQuestionInstructions.length - 1;
-
-            return (
-              <div style={{ marginTop: "20px", width: "100%" }}>
+            {/* Setup Stage */}
+            {currentStage === "setup" && (
+              <div style={{ marginTop: "20px" }}>
                 <h1
                   style={{
                     fontSize: "32px",
@@ -4248,7 +4099,7 @@ export default function AudioRecorder() {
                     marginBottom: "20px",
                   }}
                 >
-                  Instructions {beforeQuestionInstructions.length > 1 ? `(${currentInstructionIndex + 1} of ${beforeQuestionInstructions.length})` : ""}
+                  Exam Setup
                 </h1>
                 <p
                   style={{
@@ -4257,30 +4108,432 @@ export default function AudioRecorder() {
                     marginBottom: "24px",
                   }}
                 >
-                  Please read the following instructions carefully before proceeding:
+                  Please complete the following setup steps before starting your
+                  exam:
                 </p>
 
-                {/* Instructions Display - Show only current instruction */}
+                {/* Setup Checklist with Reserved Button Space */}
                 <div
                   style={{
-                    maxWidth: "600px",
+                    maxWidth: "500px",
                     margin: "0 auto",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "20px",
-                    marginBottom: "32px",
+                    minHeight: "200px", // Reserve space for checklist + button
                   }}
                 >
+                  {/* Checklist Items */}
                   <div
                     style={{
-                      backgroundColor: "#F9FAFB",
-                      border: "1px solid #E5E7EB",
-                      borderRadius: "12px",
-                      padding: "24px",
-                      textAlign: "left",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                      flex: 1,
                     }}
                   >
-                    <style>{`
+                    {/* Microphone Permission */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "16px",
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: "8px",
+                        border: "1px solid #E5E7EB",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "20px",
+                            height: "20px",
+                            borderRadius: "50%",
+                            backgroundColor:
+                              stageData.setup.microphonePermission &&
+                              stageData.setup.mediaRecorderReady
+                                ? "#10B981"
+                                : stageData.setup.microphonePermission &&
+                                    !stageData.setup.mediaRecorderReady
+                                  ? "#EF4444"
+                                  : setupLoading.microphone
+                                    ? "#3B82F6"
+                                    : "#D1D5DB",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {stageData.setup.microphonePermission &&
+                            stageData.setup.mediaRecorderReady && (
+                              <span
+                                style={{
+                                  color: "white",
+                                  fontSize: "12px",
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                ✓
+                              </span>
+                            )}
+                          {stageData.setup.microphonePermission &&
+                            !stageData.setup.mediaRecorderReady && (
+                              <span
+                                style={{
+                                  color: "white",
+                                  fontSize: "12px",
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                ✕
+                              </span>
+                            )}
+                          {setupLoading.microphone && (
+                            <div
+                              style={{
+                                width: "12px",
+                                height: "12px",
+                                border: "2px solid transparent",
+                                borderTop: "2px solid white",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                              }}
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <p
+                            style={{
+                              fontSize: "16px",
+                              fontWeight: "500",
+                              color: "#374151",
+                              margin: "0 0 2px 0",
+                            }}
+                          >
+                            Microphone/Camera Permission
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "14px",
+                              color: "#6B7280",
+                              margin: "0",
+                            }}
+                          >
+                            Allow microphone access for recording
+                          </p>
+                        </div>
+                      </div>
+                      {(!stageData.setup.microphonePermission ||
+                        !stageData.setup.mediaRecorderReady) && (
+                        <button
+                          onClick={async () => {
+                            setSetupLoading((prev) => ({
+                              ...prev,
+                              microphone: true,
+                            }));
+                            const perms = await requestPermissions();
+                            if (perms.permissionGranted) {
+                              updateSetup({
+                                microphonePermission: true,
+                                mediaRecorderReady:
+                                  perms.mediaRecorderReady !== false,
+                              });
+                              if (!perms.mediaRecorderReady) {
+                                setError(
+                                  "MediaRecorder failed to start. Please refresh the page and try again.",
+                                );
+                                setIsError(true);
+                              } else {
+                                setError(null);
+                                setIsError(false);
+                              }
+                            }
+                            setSetupLoading((prev) => ({
+                              ...prev,
+                              microphone: false,
+                            }));
+                          }}
+                          style={{
+                            padding: "8px 16px",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            color: "white",
+                            backgroundColor: "#3B82F6",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            transition: "background-color 0.2s ease",
+                          }}
+                          onMouseOver={(e) =>
+                            (e.target.style.backgroundColor = "#2563EB")
+                          }
+                          onMouseOut={(e) =>
+                            (e.target.style.backgroundColor = "#3B82F6")
+                          }
+                        >
+                          {stageData.setup.microphonePermission &&
+                          !stageData.setup.mediaRecorderReady
+                            ? "Try Again"
+                            : "Grant Access"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Fullscreen Mode */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "16px",
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: "8px",
+                        border: "1px solid #E5E7EB",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "20px",
+                            height: "20px",
+                            borderRadius: "50%",
+                            backgroundColor: stageData.setup.fullscreenEnabled
+                              ? "#10B981"
+                              : setupLoading.fullscreen
+                                ? "#3B82F6"
+                                : "#D1D5DB",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {stageData.setup.fullscreenEnabled && (
+                            <span
+                              style={{
+                                color: "white",
+                                fontSize: "12px",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              ✓
+                            </span>
+                          )}
+                          {setupLoading.fullscreen && (
+                            <div
+                              style={{
+                                width: "12px",
+                                height: "12px",
+                                border: "2px solid transparent",
+                                borderTop: "2px solid white",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                              }}
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <p
+                            style={{
+                              fontSize: "16px",
+                              fontWeight: "500",
+                              color: "#374151",
+                              margin: "0 0 2px 0",
+                            }}
+                          >
+                            Fullscreen Mode
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "14px",
+                              color: "#6B7280",
+                              margin: "0",
+                            }}
+                          >
+                            Enter fullscreen for exam security
+                          </p>
+                        </div>
+                      </div>
+                      {!stageData.setup.fullscreenEnabled && (
+                        <button
+                          onClick={async () => {
+                            setSetupLoading((prev) => ({
+                              ...prev,
+                              fullscreen: true,
+                            }));
+                            setIsFullscreen(true); // Enable fullscreen monitoring
+                            enterFullscreen();
+                            updateSetup({ fullscreenEnabled: true });
+                            setSetupLoading((prev) => ({
+                              ...prev,
+                              fullscreen: false,
+                            }));
+                          }}
+                          style={{
+                            padding: "8px 16px",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            color: "white",
+                            backgroundColor: "#3B82F6",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            transition: "background-color 0.2s ease",
+                          }}
+                          onMouseOver={(e) =>
+                            (e.target.style.backgroundColor = "#2563EB")
+                          }
+                          onMouseOut={(e) =>
+                            (e.target.style.backgroundColor = "#3B82F6")
+                          }
+                        >
+                          Enter Fullscreen
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Continue Button - always takes up space, just invisible when not needed */}
+                  <div
+                    style={{
+                      height: "80px", // Increased height for button + margin
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: canAdvanceToInstructions() ? 1 : 0,
+                      transition: "opacity 0.3s ease",
+                    }}
+                  >
+                    {canAdvanceToInstructions() &&
+                      (() => {
+                        const instructionsToShow = instructions.filter(
+                          (inst) => inst.show === "Once at the Start of Room",
+                        );
+                        const hasInstructions = instructionsToShow.length > 0;
+
+                        return (
+                          <button
+                            onClick={() => {
+                              if (hasInstructions) {
+                                advanceStage("instructions");
+                              } else {
+                                // No instructions, go directly to audio_play
+                                setIsFullscreen(true);
+                                setExamStarted(true);
+                                advanceStage("audio_play");
+                              }
+                            }}
+                            style={{
+                              padding: "12px 32px",
+                              fontSize: "16px",
+                              fontWeight: "600",
+                              color: "white",
+                              backgroundColor: "#10B981",
+                              border: "none",
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              transition: "background-color 0.3s ease",
+                              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                            }}
+                            onMouseOver={(e) =>
+                              (e.target.style.backgroundColor = "#059669")
+                            }
+                            onMouseOut={(e) =>
+                              (e.target.style.backgroundColor = "#10B981")
+                            }
+                          >
+                            {hasInstructions
+                              ? "Continue to Instructions"
+                              : "Continue to Question"}
+                          </button>
+                        );
+                      })()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Instructions Stage */}
+            {currentStage === "instructions" &&
+              (() => {
+                const beforeQuestionInstructions = instructions.filter(
+                  (inst) => inst.show === "Once at the Start of Room",
+                );
+
+                if (beforeQuestionInstructions.length === 0) {
+                  return null;
+                }
+
+                const currentInstruction =
+                  beforeQuestionInstructions[currentInstructionIndex];
+                // Only show timer if displayTime is explicitly set and is a positive number
+                const hasDisplayTime =
+                  currentInstruction &&
+                  currentInstruction.displayTime !== undefined &&
+                  currentInstruction.displayTime !== null &&
+                  currentInstruction.displayTime > 0;
+                const isLastInstruction =
+                  currentInstructionIndex ===
+                  beforeQuestionInstructions.length - 1;
+
+                return (
+                  <div style={{ marginTop: "20px", width: "100%" }}>
+                    <h1
+                      style={{
+                        fontSize: "32px",
+                        fontWeight: "700",
+                        color: "#374151",
+                        marginBottom: "20px",
+                      }}
+                    >
+                      Instructions{" "}
+                      {beforeQuestionInstructions.length > 1
+                        ? `(${currentInstructionIndex + 1} of ${beforeQuestionInstructions.length})`
+                        : ""}
+                    </h1>
+                    <p
+                      style={{
+                        fontSize: "16px",
+                        color: "#6B7280",
+                        marginBottom: "24px",
+                      }}
+                    >
+                      Please read the following instructions carefully before
+                      proceeding:
+                    </p>
+
+                    {/* Instructions Display - Show only current instruction */}
+                    <div
+                      style={{
+                        maxWidth: "600px",
+                        margin: "0 auto",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "20px",
+                        marginBottom: "32px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          backgroundColor: "#F9FAFB",
+                          border: "1px solid #E5E7EB",
+                          borderRadius: "12px",
+                          padding: "24px",
+                          textAlign: "left",
+                        }}
+                      >
+                        <style>{`
                       .instruction-quill-current .ql-container.ql-snow {
                         border: none !important;
                         font-size: 16px;
@@ -4294,127 +4547,175 @@ export default function AudioRecorder() {
                         display: none;
                       }
                     `}</style>
-                    <div className="instruction-quill-current">
-                      <ReactQuill
-                        theme="snow"
-                        value={currentInstruction?.text || ""}
-                        readOnly={true}
-                        modules={{ toolbar: false }}
-                        style={{ border: "none" }}
-                      />
-                </div>
-              </div>
-                </div>
+                        <div className="instruction-quill-current">
+                          <ReactQuill
+                            theme="snow"
+                            value={currentInstruction?.text || ""}
+                            readOnly={true}
+                            modules={{ toolbar: false }}
+                            style={{ border: "none" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Timer or Understood Button */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "16px",
-                    marginTop: "24px",
-                  }}
-                >
-                  {hasDisplayTime && instructionTimeRemaining !== null && (
+                    {/* Timer or Understood Button */}
                     <div
                       style={{
-                        fontSize: "24px",
-                        fontWeight: "600",
-                        color: "#374151",
-                        padding: "12px 24px",
-                        backgroundColor: "#F3F4F6",
-                        borderRadius: "8px",
-                        minWidth: "100px",
-                        textAlign: "center",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "16px",
+                        marginTop: "24px",
                       }}
                     >
-                      {instructionTimeRemaining}s
-            </div>
-          )}
-                  
-                  {!hasDisplayTime && (
-                    <>
-                      {isLastInstruction && isSimulatedConversation && (
-                        <p
+                      {hasDisplayTime && instructionTimeRemaining !== null && (
+                        <div
                           style={{
-                            fontSize: "14px",
-                            color: "#6B7280",
-                            fontStyle: "italic",
-                            marginBottom: "8px",
+                            fontSize: "24px",
+                            fontWeight: "600",
+                            color: "#374151",
+                            padding: "12px 24px",
+                            backgroundColor: "#F3F4F6",
+                            borderRadius: "8px",
+                            minWidth: "100px",
+                            textAlign: "center",
                           }}
                         >
-                          Audio playing will start immediately after you click "Understood"
-                        </p>
+                          {instructionTimeRemaining}s
+                        </div>
                       )}
-                      <button
-                        onClick={() => {
-                          // Move to next instruction or advance stage
-                          if (!isLastInstruction) {
-                            setCurrentInstructionIndex(currentInstructionIndex + 1);
-                        } else {
-                          updateInstructionsData({ hasViewed: true });
-                          setIsFullscreen(true);
-                          setExamStarted(true);
-                          // For Simulated_Conversation, SimulatedRecorder handles everything
-                          if (isSimulatedConversation && promptClips.length > 0) {
-                            // SimulatedRecorder will handle starting via onStartClick
-                            // Just advance to audio_play stage so SimulatedRecorder can render
-                            advanceStage("audio_play");
-                          } else {
-                            // Regular flow: proceed to audio_play
-                            advanceStage("audio_play");
-                          }
-                        }
-                        }}
-                        style={{
-                          padding: "12px 32px",
-                          fontSize: "16px",
-                          fontWeight: "600",
-                          color: "white",
-                          backgroundColor: "#10B981",
-                          border: "none",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          transition: "background-color 0.3s ease",
-                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                        }}
-                        onMouseOver={(e) =>
-                          (e.target.style.backgroundColor = "#059669")
-                        }
-                        onMouseOut={(e) =>
-                          (e.target.style.backgroundColor = "#10B981")
-                        }
-                      >
-                        {isLastInstruction ? "Understood" : "Next"}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
 
-          {/* Audio Play, Thinking, Recording, Uploading Stages - Render appropriate recorder component */}
-          {(currentStage === "audio_play" || currentStage === "thinking" || currentStage === "recording" || currentStage === "uploading") && configType === "Classic" && (
-            <StandardRecorder
-              currentStage={currentStage}
-              stageData={stageData}
-              audioPlayer={audioPlayer}
-              audioBlobURL={audioBlobURL}
-              thinkingTime={thinkingTime}
-              allowRepeat={allowRepeat}
-              recognizedText={recognizedText}
-              examLanguage={examLanguage}
-              audioURL={audioURL}
-              thinkingProgress={thinkingProgress}
-              mediaRecorder={readyMediaRecorderRef.current}
-              microphoneStream={microphoneStream}
-              onPlayClick={() => {
-                if (audioPlayer) {
-                  if (audioPlayer.isPaused || audioPlayer.isStopped) {
-                    if (audioPlayer.isUnloaded || !audioPlayer.isReady) {
-                      if (audioBlobURL) {
+                      {!hasDisplayTime && (
+                        <>
+                          {isLastInstruction && isSimulatedConversation && (
+                            <p
+                              style={{
+                                fontSize: "14px",
+                                color: "#6B7280",
+                                fontStyle: "italic",
+                                marginBottom: "8px",
+                              }}
+                            >
+                              Audio playing will start immediately after you
+                              click "Understood"
+                            </p>
+                          )}
+                          <button
+                            onClick={() => {
+                              // Move to next instruction or advance stage
+                              if (!isLastInstruction) {
+                                setCurrentInstructionIndex(
+                                  currentInstructionIndex + 1,
+                                );
+                              } else {
+                                updateInstructionsData({ hasViewed: true });
+                                setIsFullscreen(true);
+                                setExamStarted(true);
+                                // For Simulated_Conversation, SimulatedRecorder handles everything
+                                if (
+                                  isSimulatedConversation &&
+                                  promptClips.length > 0
+                                ) {
+                                  // SimulatedRecorder will handle starting via onStartClick
+                                  // Just advance to audio_play stage so SimulatedRecorder can render
+                                  advanceStage("audio_play");
+                                } else {
+                                  // Regular flow: proceed to audio_play
+                                  advanceStage("audio_play");
+                                }
+                              }
+                            }}
+                            style={{
+                              padding: "12px 32px",
+                              fontSize: "16px",
+                              fontWeight: "600",
+                              color: "white",
+                              backgroundColor: "#10B981",
+                              border: "none",
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              transition: "background-color 0.3s ease",
+                              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                            }}
+                            onMouseOver={(e) =>
+                              (e.target.style.backgroundColor = "#059669")
+                            }
+                            onMouseOut={(e) =>
+                              (e.target.style.backgroundColor = "#10B981")
+                            }
+                          >
+                            {isLastInstruction ? "Understood" : "Next"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+            {/* Audio Play, Thinking, Recording, Uploading Stages - Render appropriate recorder component */}
+            {(currentStage === "audio_play" ||
+              currentStage === "thinking" ||
+              currentStage === "recording" ||
+              currentStage === "uploading") &&
+              configType === "Classic" && (
+                <StandardRecorder
+                  currentStage={currentStage}
+                  stageData={stageData}
+                  audioPlayer={audioPlayer}
+                  audioBlobURL={audioBlobURL}
+                  thinkingTime={thinkingTime}
+                  allowRepeat={allowRepeat}
+                  recognizedText={recognizedText}
+                  examLanguage={examLanguage}
+                  audioURL={audioURL}
+                  thinkingProgress={thinkingProgress}
+                  mediaRecorder={readyMediaRecorderRef.current}
+                  microphoneStream={microphoneStream}
+                  onPlayClick={() => {
+                    if (audioPlayer) {
+                      if (audioPlayer.isPaused || audioPlayer.isStopped) {
+                        if (audioPlayer.isUnloaded || !audioPlayer.isReady) {
+                          if (audioBlobURL) {
+                            audioPlayer.load(audioBlobURL, {
+                              autoplay: true,
+                              initialVolume: 1.0,
+                              onplay: () => {
+                                audioPlaybackStarted();
+                                updateAudioPlayData({ isPlaying: true });
+                              },
+                              onend: () => {
+                                audioPlaybackCompleted();
+                                updateAudioPlayData({
+                                  isPlaying: false,
+                                  hasPlayed: true,
+                                });
+                                setHasPlayed(true);
+                              },
+                              onerror: () => {
+                                updateAudioPlayData({
+                                  isPlaying: false,
+                                  playError: "Failed to load audio",
+                                });
+                              },
+                            });
+                          }
+                        } else {
+                          audioPlayer.play();
+                          audioPlaybackStarted();
+                          updateAudioPlayData({ isPlaying: true });
+                        }
+                      } else {
+                        audioPlayer.pause();
+                        updateAudioPlayData({ isPlaying: false });
+                      }
+                    }
+                  }}
+                  onReplayClick={() => {
+                    if (audioPlayer && audioBlobURL) {
+                      audioPlayer.seek(0);
+                      if (audioPlayer.isUnloaded || !audioPlayer.isReady) {
                         audioPlayer.load(audioBlobURL, {
                           autoplay: true,
                           initialVolume: 1.0,
@@ -4428,7 +4729,6 @@ export default function AudioRecorder() {
                               isPlaying: false,
                               hasPlayed: true,
                             });
-                            setHasPlayed(true);
                           },
                           onerror: () => {
                             updateAudioPlayData({
@@ -4437,938 +4737,947 @@ export default function AudioRecorder() {
                             });
                           },
                         });
-                      }
-                    } else {
-                      audioPlayer.play();
-                      audioPlaybackStarted();
-                      updateAudioPlayData({ isPlaying: true });
-                    }
-                  } else {
-                    audioPlayer.pause();
-                    updateAudioPlayData({ isPlaying: false });
-                  }
-                }
-              }}
-              onReplayClick={() => {
-                if (audioPlayer && audioBlobURL) {
-                  audioPlayer.seek(0);
-                  if (audioPlayer.isUnloaded || !audioPlayer.isReady) {
-                    audioPlayer.load(audioBlobURL, {
-                      autoplay: true,
-                      initialVolume: 1.0,
-                      onplay: () => {
+                      } else {
+                        audioPlayer.play();
                         audioPlaybackStarted();
                         updateAudioPlayData({ isPlaying: true });
-                      },
-                      onend: () => {
-                        audioPlaybackCompleted();
-                        updateAudioPlayData({
-                          isPlaying: false,
-                          hasPlayed: true,
-                        });
-                      },
-                      onerror: () => {
-                        updateAudioPlayData({
-                          isPlaying: false,
-                          playError: "Failed to load audio",
-                        });
-                      },
+                      }
+                    }
+                  }}
+                  onStopRecording={async () => {
+                    await stopRecording();
+                    updateRecordingData({
+                      isRecording: false,
+                      hasRecorded: true,
                     });
-                  } else {
-                    audioPlayer.play();
-                    audioPlaybackStarted();
-                    updateAudioPlayData({ isPlaying: true });
-                  }
-                }
-              }}
-              onStopRecording={async () => {
-                await stopRecording();
-                updateRecordingData({
-                  isRecording: false,
-                  hasRecorded: true,
-                });
-              }}
-              formatTime={formatTime}
-            />
-          )}
+                  }}
+                  formatTime={formatTime}
+                />
+              )}
 
-          {(currentStage === "audio_play" || currentStage === "recording" || currentStage === "uploading") && configType === "Simulated_Conversation" && (
-            <SimulatedRecorder
-              currentStage={currentStage}
-              stageData={stageData}
-              audioPlayer={audioPlayer}
-              promptClips={promptClips}
-              currentPromptIndex={currentPromptIndex}
-              recordingCountdown={recordingCountdown}
-              mediaRecorder={readyMediaRecorderRef.current}
-              microphoneStream={microphoneStream}
-              advanceStage={advanceStage}
-              updateRecordingData={updateRecordingData}
-              updateAudioPlayData={updateAudioPlayData}
-              updateUploadingData={updateUploadingData}
-              setCurrentPromptIndex={setCurrentPromptIndex}
-              setRecordingCountdown={setRecordingCountdown}
-              setAudioBlobURL={setAudioBlobURL}
-              playRecordingStarted={playRecordingStarted}
-              audioPlaybackStarted={audioPlaybackStarted}
-              audioPlaybackCompleted={audioPlaybackCompleted}
-              uploadStarted={uploadStarted}
-              uploadCompleted={uploadCompleted}
-              updateStudentStatus={updateStudentStatus}
-              questionCompleted={questionCompleted}
-              questionIndex={questionIndex}
-              recognizedText={recognizedText}
-              examLanguage={examLanguage}
-              setUploadProgress={(progress) => {
-                updateUploadingData({ uploadProgress: progress });
-              }}
-              onStartClick={() => {
-                // SimulatedRecorder will handle starting internally
-              }}
-            />
-          )}
+            {(currentStage === "audio_play" ||
+              currentStage === "recording" ||
+              currentStage === "uploading") &&
+              configType === "Simulated_Conversation" && (
+                <SimulatedRecorder
+                  currentStage={currentStage}
+                  stageData={stageData}
+                  audioPlayer={audioPlayer}
+                  promptClips={promptClips}
+                  currentPromptIndex={currentPromptIndex}
+                  recordingCountdown={recordingCountdown}
+                  mediaRecorder={readyMediaRecorderRef.current}
+                  microphoneStream={microphoneStream}
+                  advanceStage={advanceStage}
+                  updateRecordingData={updateRecordingData}
+                  updateAudioPlayData={updateAudioPlayData}
+                  updateUploadingData={updateUploadingData}
+                  setCurrentPromptIndex={setCurrentPromptIndex}
+                  setRecordingCountdown={setRecordingCountdown}
+                  setAudioBlobURL={setAudioBlobURL}
+                  playRecordingStarted={playRecordingStarted}
+                  audioPlaybackStarted={audioPlaybackStarted}
+                  audioPlaybackCompleted={audioPlaybackCompleted}
+                  uploadStarted={uploadStarted}
+                  uploadCompleted={uploadCompleted}
+                  updateStudentStatus={updateStudentStatus}
+                  questionCompleted={questionCompleted}
+                  questionIndex={questionIndex}
+                  recognizedText={recognizedText}
+                  examLanguage={examLanguage}
+                  setUploadProgress={(progress) => {
+                    updateUploadingData({ uploadProgress: progress });
+                  }}
+                  onStartClick={() => {
+                    // SimulatedRecorder will handle starting internally
+                  }}
+                />
+              )}
 
-          {(currentStage === "audio_play" || currentStage === "recording" || currentStage === "uploading") && configType === "Conversation" && (
-            <DuoRecorder
-              currentStage={currentStage}
-              stageData={stageData}
-            />
-          )}
+            {(currentStage === "audio_play" ||
+              currentStage === "recording" ||
+              currentStage === "uploading") &&
+              configType === "Conversation" && (
+                <DuoRecorder
+                  currentStage={currentStage}
+                  stageData={stageData}
+                />
+              )}
 
-          {/* Legacy stages - keeping for reference but disabled */}
-          {false && currentStage === "audio_play" && (
-            <div style={{ marginTop: "20px" }}>
-              <h1
-                style={{
-                  fontSize: "32px",
-                  fontWeight: "700",
-                  color: "#374151",
-                  marginBottom: "20px",
-                }}
-              >
-                {isSimulatedConversation ? "Conversation Prompts" : "Listen to Question"}
-              </h1>
-              <p
-                style={{
-                  fontSize: "16px",
-                  color: "#6B7280",
-                  marginBottom: "24px",
-                }}
-              >
-                {isSimulatedConversation 
-                  ? "Click the microphone to start. Prompts will play sequentially, then recording will begin automatically."
-                  : "Please listen to the question carefully before recording your response."}
-              </p>
-
-              {/* Audio Player */}
-              <div
-                style={{
-                  maxWidth: "500px",
-                  margin: "0 auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "20px",
-                }}
-              >
-                {/* Audio Controls */}
-                <div
+            {/* Legacy stages - keeping for reference but disabled */}
+            {false && currentStage === "audio_play" && (
+              <div style={{ marginTop: "20px" }}>
+                <h1
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "16px",
+                    fontSize: "32px",
+                    fontWeight: "700",
+                    color: "#374151",
                     marginBottom: "20px",
                   }}
                 >
-                  {isSimulatedConversation ? (
-                  <PulseButton
-                      onClick={() => {
-                        if (!isRecording && !stageData.recording.isRecording && currentStage === "audio_play") {
-                          playRecording();
-                        }
-                      }}
-                      style={{
-                        width: "80px",
-                        height: "80px",
-                        borderRadius: "50%",
-                        backgroundColor: isRecording || stageData.recording.isRecording || currentStage === "recording" 
-                          ? "#dc2626" // Red when recording
-                          : stageData.audioPlay.isPlaying 
-                            ? "#6B7280" // Gray when audio is playing
-                            : "#6B7280", // Gray by default
-                        border: "none",
-                        cursor: isRecording || stageData.recording.isRecording || currentStage === "recording" ? "not-allowed" : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "background-color 0.3s",
-                        animation: isRecording || stageData.recording.isRecording || currentStage === "recording" ? `${animation}` : "none",
-                      }}
-                    >
-                      <Mic size={32} color="white" fill="white" />
-                    </PulseButton>
-                  ) : (
-                    <PulseButton
-                      onClick={() => {
-                        if (audioPlayer) {
-                          if (audioPlayer.isPaused || audioPlayer.isStopped) {
-                            // If audio is not loaded or ready, load it first
-                            if (audioPlayer.isUnloaded || !audioPlayer.isReady) {
-                              if (audioBlobURL) {
-                                audioPlayer.load(audioBlobURL, {
-                                  autoplay: true,
-                                  initialVolume: 1.0,
-                                  onplay: () => {
-                            audioPlaybackStarted();
-                                    updateAudioPlayData({ isPlaying: true });
-                                  },
-                                  onend: () => {
-                                    audioPlaybackCompleted();
-                                    updateAudioPlayData({
-                                      isPlaying: false,
-                                      hasPlayed: true,
-                                    });
-                                    setHasPlayed(true);
-                                  },
-                                  onerror: () => {
-                          updateAudioPlayData({
-                            isPlaying: false,
-                                      playError: "Failed to load audio",
-                                    });
-                                  },
-                          });
-                        }
-                      } else {
-                              // Audio is ready, just play it
+                  {isSimulatedConversation
+                    ? "Conversation Prompts"
+                    : "Listen to Question"}
+                </h1>
+                <p
+                  style={{
+                    fontSize: "16px",
+                    color: "#6B7280",
+                    marginBottom: "24px",
+                  }}
+                >
+                  {isSimulatedConversation
+                    ? "Click the microphone to start. Prompts will play sequentially, then recording will begin automatically."
+                    : "Please listen to the question carefully before recording your response."}
+                </p>
+
+                {/* Audio Player */}
+                <div
+                  style={{
+                    maxWidth: "500px",
+                    margin: "0 auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "20px",
+                  }}
+                >
+                  {/* Audio Controls */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "16px",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    {isSimulatedConversation ? (
+                      <PulseButton
+                        onClick={() => {
+                          if (
+                            !isRecording &&
+                            !stageData.recording.isRecording &&
+                            currentStage === "audio_play"
+                          ) {
+                            playRecording();
+                          }
+                        }}
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          borderRadius: "50%",
+                          backgroundColor:
+                            isRecording ||
+                            stageData.recording.isRecording ||
+                            currentStage === "recording"
+                              ? "#dc2626" // Red when recording
+                              : stageData.audioPlay.isPlaying
+                                ? "#6B7280" // Gray when audio is playing
+                                : "#6B7280", // Gray by default
+                          border: "none",
+                          cursor:
+                            isRecording ||
+                            stageData.recording.isRecording ||
+                            currentStage === "recording"
+                              ? "not-allowed"
+                              : "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "background-color 0.3s",
+                          animation:
+                            isRecording ||
+                            stageData.recording.isRecording ||
+                            currentStage === "recording"
+                              ? `${animation}`
+                              : "none",
+                        }}
+                      >
+                        <Mic size={32} color="white" fill="white" />
+                      </PulseButton>
+                    ) : (
+                      <PulseButton
+                        onClick={() => {
+                          if (audioPlayer) {
+                            if (audioPlayer.isPaused || audioPlayer.isStopped) {
+                              // If audio is not loaded or ready, load it first
+                              if (
+                                audioPlayer.isUnloaded ||
+                                !audioPlayer.isReady
+                              ) {
+                                if (audioBlobURL) {
+                                  audioPlayer.load(audioBlobURL, {
+                                    autoplay: true,
+                                    initialVolume: 1.0,
+                                    onplay: () => {
+                                      audioPlaybackStarted();
+                                      updateAudioPlayData({ isPlaying: true });
+                                    },
+                                    onend: () => {
+                                      audioPlaybackCompleted();
+                                      updateAudioPlayData({
+                                        isPlaying: false,
+                                        hasPlayed: true,
+                                      });
+                                      setHasPlayed(true);
+                                    },
+                                    onerror: () => {
+                                      updateAudioPlayData({
+                                        isPlaying: false,
+                                        playError: "Failed to load audio",
+                                      });
+                                    },
+                                  });
+                                }
+                              } else {
+                                // Audio is ready, just play it
+                                audioPlayer.play();
+                                audioPlaybackStarted();
+                                updateAudioPlayData({ isPlaying: true });
+                              }
+                            } else {
+                              // Audio is playing, pause it
+                              audioPlayer.pause();
+                              updateAudioPlayData({ isPlaying: false });
+                            }
+                          }
+                        }}
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          borderRadius: "50%",
+                          backgroundColor: "#28a745",
+                          border: "none",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "background-color 0.3s",
+                          animation: "none",
+                        }}
+                      >
+                        <Play size={24} color="white" fill="white" />
+                      </PulseButton>
+                    )}
+
+                    {stageData.audioPlay.hasPlayed && (
+                      <button
+                        onClick={() => {
+                          if (audioPlayer && audioBlobURL) {
+                            // Reset to beginning and play
+                            audioPlayer.seek(0);
+                            if (
+                              audioPlayer.isUnloaded ||
+                              !audioPlayer.isReady
+                            ) {
+                              // Reload if needed
+                              audioPlayer.load(audioBlobURL, {
+                                autoplay: true,
+                                initialVolume: 1.0,
+                                onplay: () => {
+                                  audioPlaybackStarted();
+                                  updateAudioPlayData({ isPlaying: true });
+                                },
+                                onend: () => {
+                                  audioPlaybackCompleted();
+                                  updateAudioPlayData({
+                                    isPlaying: false,
+                                    hasPlayed: true,
+                                  });
+                                },
+                                onerror: () => {
+                                  updateAudioPlayData({
+                                    isPlaying: false,
+                                    playError: "Failed to load audio",
+                                  });
+                                },
+                              });
+                            } else {
                               audioPlayer.play();
                               audioPlaybackStarted();
                               updateAudioPlayData({ isPlaying: true });
                             }
-                          } else {
-                            // Audio is playing, pause it
-                            audioPlayer.pause();
-                            updateAudioPlayData({ isPlaying: false });
                           }
-                      }
-                    }}
+                        }}
+                        style={{
+                          padding: "8px 16px",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "#3B82F6",
+                          backgroundColor: "transparent",
+                          border: "2px solid #3B82F6",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseOver={(e) => {
+                          e.target.style.backgroundColor = "#3B82F6";
+                          e.target.style.color = "white";
+                        }}
+                        onMouseOut={(e) => {
+                          e.target.style.backgroundColor = "transparent";
+                          e.target.style.color = "#3B82F6";
+                        }}
+                      >
+                        Replay
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Status Message */}
+                  <div style={{ textAlign: "center" }}>
+                    {isSimulatedConversation && promptClips.length > 0 && (
+                      <p
+                        style={{
+                          fontSize: "16px",
+                          color: "#6B7280",
+                          margin: "8px 0",
+                        }}
+                      >
+                        Prompt {currentPromptIndex + 1} of {promptClips.length}
+                      </p>
+                    )}
+
+                    {(audioPlayer?.isPlaying ||
+                      stageData.audioPlay.isPlaying) && (
+                      <p
+                        style={{
+                          fontSize: "24px",
+                          color: "#10B981",
+                          fontWeight: "700",
+                          margin: "4px 0",
+                        }}
+                      >
+                        {isSimulatedConversation
+                          ? "Playing prompt..."
+                          : "Playing..."}
+                      </p>
+                    )}
+
+                    {audioPlayer?.isLoading && (
+                      <p
+                        style={{
+                          fontSize: "16px",
+                          color: "#6B7280",
+                          margin: "8px 0",
+                        }}
+                      >
+                        Loading audio...
+                      </p>
+                    )}
+
+                    {(audioPlayer?.error || stageData.audioPlay.playError) && (
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#EF4444",
+                          margin: "8px 0",
+                        }}
+                      >
+                        {audioPlayer?.error || stageData.audioPlay.playError}
+                      </p>
+                    )}
+
+                    {stageData.audioPlay.hasPlayed &&
+                      !stageData.audioPlay.playError &&
+                      !audioPlayer?.error &&
+                      !(
+                        audioPlayer?.isPlaying || stageData.audioPlay.isPlaying
+                      ) &&
+                      !isSimulatedConversation && (
+                        <p
+                          style={{
+                            fontSize: "16px",
+                            color: "#10B981",
+                            fontWeight: "500",
+                            margin: "8px 0",
+                          }}
+                        >
+                          ✓ Question played successfully
+                        </p>
+                      )}
+
+                    {isSimulatedConversation &&
+                      (isRecording || stageData.recording.isRecording) && (
+                        <p
+                          style={{
+                            fontSize: "20px",
+                            color: "#dc2626",
+                            fontWeight: "700",
+                            margin: "8px 0",
+                          }}
+                        >
+                          Recording...
+                        </p>
+                      )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Thinking Stage - Now handled by StandardRecorder */}
+            {false &&
+              currentStage === "thinking" &&
+              !isSimulatedConversation && (
+                <div style={{ marginTop: "20px" }}>
+                  <h1
                     style={{
-                      width: "80px",
-                      height: "80px",
-                      borderRadius: "50%",
-                        backgroundColor: "#28a745",
-                      border: "none",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      transition: "background-color 0.3s",
-                        animation: "none",
+                      fontSize: "32px",
+                      fontWeight: "700",
+                      color: "#374151",
+                      marginBottom: "20px",
                     }}
                   >
-                    <Play size={24} color="white" fill="white" />
-                  </PulseButton>
-                  )}
+                    Thinking Time
+                  </h1>
+                  <p
+                    style={{
+                      fontSize: "16px",
+                      color: "#6B7280",
+                      marginBottom: "32px",
+                    }}
+                  >
+                    Take a moment to think about your response before recording
+                    begins.
+                  </p>
 
-                  {stageData.audioPlay.hasPlayed && (
-                    <button
-                      onClick={() => {
-                        if (audioPlayer && audioBlobURL) {
-                          // Reset to beginning and play
-                          audioPlayer.seek(0);
-                          if (audioPlayer.isUnloaded || !audioPlayer.isReady) {
-                            // Reload if needed
-                            audioPlayer.load(audioBlobURL, {
-                              autoplay: true,
-                              initialVolume: 1.0,
-                              onplay: () => {
-                                audioPlaybackStarted();
-                                updateAudioPlayData({ isPlaying: true });
-                              },
-                              onend: () => {
-                                audioPlaybackCompleted();
-                            updateAudioPlayData({
-                                  isPlaying: false,
-                                  hasPlayed: true,
-                                });
-                              },
-                              onerror: () => {
-                            updateAudioPlayData({
-                              isPlaying: false,
-                                  playError: "Failed to load audio",
-                                });
-                              },
-                            });
-                          } else {
-                            audioPlayer.play();
-                            audioPlaybackStarted();
-                            updateAudioPlayData({ isPlaying: true });
-                          }
-                        }
-                      }}
+                  {/* Countdown Display */}
+                  <div
+                    style={{
+                      textAlign: "center",
+                      marginBottom: "32px",
+                    }}
+                  >
+                    <div
                       style={{
-                        padding: "8px 16px",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        color: "#3B82F6",
-                        backgroundColor: "transparent",
-                        border: "2px solid #3B82F6",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                      onMouseOver={(e) => {
-                        e.target.style.backgroundColor = "#3B82F6";
-                        e.target.style.color = "white";
-                      }}
-                      onMouseOut={(e) => {
-                        e.target.style.backgroundColor = "transparent";
-                        e.target.style.color = "#3B82F6";
+                        fontSize: "48px",
+                        fontWeight: "bold",
+                        color: "#EF4444",
+                        marginBottom: "16px",
                       }}
                     >
-                      Replay
-                    </button>
-                  )}
-                </div>
-
-                {/* Status Message */}
-                <div style={{ textAlign: "center" }}>
-                  {isSimulatedConversation && promptClips.length > 0 && (
+                      {stageData.thinking.thinkingTimeRemaining}
+                    </div>
                     <p
                       style={{
                         fontSize: "16px",
                         color: "#6B7280",
+                        margin: "0",
+                      }}
+                    >
+                      seconds remaining
+                    </p>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div
+                    style={{
+                      width: "100%",
+                      maxWidth: "400px",
+                      margin: "0 auto",
+                      position: "relative",
+                    }}
+                  >
+                    {/* Background Bar */}
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "8px",
+                        backgroundColor: "#FEE2E2",
+                        borderRadius: "4px",
+                        position: "relative",
+                      }}
+                    >
+                      {/* Progress Bar - shrinks from both sides */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: `${(1 - thinkingProgress) * 50}%`,
+                          right: `${(1 - thinkingProgress) * 50}%`,
+                          height: "100%",
+                          backgroundColor: "#EF4444",
+                          borderRadius: "4px",
+                          transition: "none", // Remove transition for smooth animation
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  <div
+                    style={{
+                      marginTop: "24px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6B7280",
+                        margin: "0",
+                      }}
+                    >
+                      Recording will start automatically when the timer reaches
+                      zero. Begin speaking when you see a red dot.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+            {/* Recording Stage - Now handled by recorder components */}
+            {false && currentStage === "recording" && (
+              <div style={{ marginTop: "20px" }}>
+                <h1
+                  style={{
+                    fontSize: "32px",
+                    fontWeight: "700",
+                    color: "#374151",
+                    marginBottom: "20px",
+                  }}
+                >
+                  {isSimulatedConversation
+                    ? "Recording Your Response"
+                    : "Recording Your Response"}
+                </h1>
+
+                {/* Show prompt info for Simulated_Conversation */}
+                {isSimulatedConversation && promptClips.length > 0 && (
+                  <div style={{ textAlign: "center", marginBottom: "20px" }}>
+                    <p
+                      style={{
+                        fontSize: "18px",
+                        color: "#6B7280",
+                        fontWeight: "500",
                         margin: "8px 0",
                       }}
                     >
                       Prompt {currentPromptIndex + 1} of {promptClips.length}
                     </p>
-                  )}
-
-                  {(audioPlayer?.isPlaying || stageData.audioPlay.isPlaying) && (
-                    <p
-                      style={{
-                        fontSize: "24px",
-                        color: "#10B981",
-                        fontWeight: "700",
-                        margin: "4px 0",
-                      }}
-                    >
-                      {isSimulatedConversation ? "Playing prompt..." : "Playing..."}
-                    </p>
-                  )}
-
-                  {audioPlayer?.isLoading && (
-                    <p
-                      style={{
-                        fontSize: "16px",
-                        color: "#6B7280",
-                        margin: "8px 0",
-                      }}
-                    >
-                      Loading audio...
-                    </p>
-                  )}
-
-                  {(audioPlayer?.error || stageData.audioPlay.playError) && (
-                    <p
-                      style={{
-                        fontSize: "14px",
-                        color: "#EF4444",
-                        margin: "8px 0",
-                      }}
-                    >
-                      {audioPlayer?.error || stageData.audioPlay.playError}
-                    </p>
-                  )}
-
-                  {stageData.audioPlay.hasPlayed &&
-                    !stageData.audioPlay.playError &&
-                    !audioPlayer?.error &&
-                    !(audioPlayer?.isPlaying || stageData.audioPlay.isPlaying) &&
-                    !isSimulatedConversation && (
+                    {recordingStartTime && (
                       <p
                         style={{
-                          fontSize: "16px",
-                          color: "#10B981",
-                          fontWeight: "500",
+                          fontSize: "24px",
+                          color: "#dc2626",
+                          fontWeight: "700",
                           margin: "8px 0",
                         }}
                       >
-                        ✓ Question played successfully
+                        {recordingCountdown}s remaining
                       </p>
                     )}
-
-                  {isSimulatedConversation && (isRecording || stageData.recording.isRecording) && (
-                    <p
-                      style={{
-                        fontSize: "20px",
-                        color: "#dc2626",
-                        fontWeight: "700",
-                        margin: "8px 0",
-                      }}
-                    >
-                      Recording...
-                      </p>
-                    )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Thinking Stage - Now handled by StandardRecorder */}
-          {false && currentStage === "thinking" && !isSimulatedConversation && (
-            <div style={{ marginTop: "20px" }}>
-              <h1
-                style={{
-                  fontSize: "32px",
-                  fontWeight: "700",
-                  color: "#374151",
-                  marginBottom: "20px",
-                }}
-              >
-                Thinking Time
-              </h1>
-              <p
-                style={{
-                  fontSize: "16px",
-                  color: "#6B7280",
-                  marginBottom: "32px",
-                }}
-              >
-                Take a moment to think about your response before recording
-                begins.
-              </p>
-
-              {/* Countdown Display */}
-              <div
-                style={{
-                  textAlign: "center",
-                  marginBottom: "32px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "48px",
-                    fontWeight: "bold",
-                    color: "#EF4444",
-                    marginBottom: "16px",
-                  }}
-                >
-                  {stageData.thinking.thinkingTimeRemaining}
-                </div>
-                <p
-                  style={{
-                    fontSize: "16px",
-                    color: "#6B7280",
-                    margin: "0",
-                  }}
-                >
-                  seconds remaining
-                </p>
-              </div>
-
-              {/* Progress Bar */}
-              <div
-                style={{
-                  width: "100%",
-                  maxWidth: "400px",
-                  margin: "0 auto",
-                  position: "relative",
-                }}
-              >
-                {/* Background Bar */}
-                <div
-                  style={{
-                    width: "100%",
-                    height: "8px",
-                    backgroundColor: "#FEE2E2",
-                    borderRadius: "4px",
-                    position: "relative",
-                  }}
-                >
-                  {/* Progress Bar - shrinks from both sides */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: `${(1 - thinkingProgress) * 50}%`,
-                      right: `${(1 - thinkingProgress) * 50}%`,
-                      height: "100%",
-                      backgroundColor: "#EF4444",
-                      borderRadius: "4px",
-                      transition: "none", // Remove transition for smooth animation
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Instructions */}
-              <div
-                style={{
-                  marginTop: "24px",
-                  textAlign: "center",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#6B7280",
-                    margin: "0",
-                  }}
-                >
-                  Recording will start automatically when the timer reaches zero. Begin speaking when you see a red dot.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Recording Stage - Now handled by recorder components */}
-          {false && currentStage === "recording" && (
-            <div style={{ marginTop: "20px" }}>
-              <h1
-                style={{
-                  fontSize: "32px",
-                  fontWeight: "700",
-                  color: "#374151",
-                  marginBottom: "20px",
-                }}
-              >
-                {isSimulatedConversation ? "Recording Your Response" : "Recording Your Response"}
-              </h1>
-
-              {/* Show prompt info for Simulated_Conversation */}
-              {isSimulatedConversation && promptClips.length > 0 && (
-                <div style={{ textAlign: "center", marginBottom: "20px" }}>
-                  <p
-                    style={{
-                      fontSize: "18px",
-                      color: "#6B7280",
-                      fontWeight: "500",
-                      margin: "8px 0",
-                    }}
-                  >
-                    Prompt {currentPromptIndex + 1} of {promptClips.length}
-                  </p>
-                  {recordingStartTime && (
-                    <p
-                      style={{
-                        fontSize: "24px",
-                        color: "#dc2626",
-                        fontWeight: "700",
-                        margin: "8px 0",
-                      }}
-                    >
-                      {recordingCountdown}s remaining
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Recording Button */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "20px",
-                }}
-              >
-                {/* Show gray microphone when audio is playing (prompt) for simulated conversation */}
-                {isSimulatedConversation && 
-                  stageData.audioPlay.isPlaying && 
-                  !stageData.recording.isRecording && (
-                  <div style={{ textAlign: "center" }}>
-                    <div
-                      style={{
-                        width: "80px",
-                        height: "80px",
-                        borderRadius: "50%",
-                        backgroundColor: "#6B7280", // Gray
-                        border: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        margin: "0 auto",
-                        transition: "background-color 0.3s",
-                      }}
-                    >
-                      <Mic size={32} color="white" fill="white" />
-                    </div>
-                    <p
-                      style={{
-                        fontSize: "16px",
-                        color: "#6B7280",
-                        margin: "16px 0 8px 0",
-                        fontWeight: "500",
-                      }}
-                    >
-                      Playing prompt...
-                    </p>
                   </div>
                 )}
 
-                {!stageData.recording.isRecording &&
-                  !stageData.recording.hasRecorded &&
-                  !stageData.audioPlay.isPlaying && ( // Don't show "Preparing to record" if audio is playing (next prompt)
-                    <div style={{ textAlign: "center" }}>
-                      <p
-                        style={{
-                          fontSize: "16px",
-                          color: "#6B7280",
-                          margin: "8px 0",
-                        }}
-                      >
-                        {isSimulatedConversation ? "Loading next prompt..." : "Preparing to record..."}
-                      </p>
-                    </div>
-                  )}
-
-                {stageData.recording.isRecording && !isSimulatedConversation && (
-                  // <PulseButton
-                  //   onClick={() => {
-                  //     stopRecording();
-                  //     updateRecordingData({
-                  //       isRecording: false,
-                  //       hasRecorded: true,
-                  //     });
-                  //   }}
-                  //   style={recordStyle}
-                  // />
-                <button
-                    onClick={() => {
-                      stopRecording();
-                      updateRecordingData({
-                        isRecording: false,
-                        hasRecorded: true,
-                      });
-                    }}
-                  style={{
-                    width: "120px",
-                    height: "48px",
-                    backgroundColor: "#dc2626", // tailwind red-600
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "18px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-                    transition: "background 0.2s",
-                  }}
-                >
-                  Stop
-                </button>
-                )}
-
-                {stageData.recording.isRecording && isSimulatedConversation && (
-                  <div style={{ textAlign: "center" }}>
-                    <div
-                      style={{
-                        width: "80px",
-                        height: "80px",
-                        borderRadius: "50%",
-                        backgroundColor: "#dc2626", // Red when recording
-                        border: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        margin: "0 auto",
-                        animation: `${animation}`,
-                        transition: "background-color 0.3s",
-                      }}
-                    >
-                      <Mic size={32} color="white" fill="white" />
-                    </div>
-                    <p
-                      style={{
-                        fontSize: "20px",
-                        color: "#dc2626",
-                        fontWeight: "700",
-                        margin: "16px 0 8px 0",
-                      }}
-                    >
-                      Recording...
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "14px",
-                        color: "#6B7280",
-                        margin: "8px 0",
-                      }}
-                    >
-                      Recording will stop automatically after 20 seconds
-                    </p>
-                  </div>
-                )}
-
-                {stageData.recording.hasRecorded &&
-                  !stageData.recording.isRecording &&
-                  !isSimulatedConversation && ( // Don't show for simulated conversation - we handle it differently
-                    <div style={{ textAlign: "center" }}>
-                      <p
-                        style={{
-                          fontSize: "16px",
-                          color: "#10B981",
-                          fontWeight: "500",
-                          margin: "8px 0",
-                        }}
-                      >
-                        ✓ Recording completed successfully
-                      </p>
-                      {recognizedText && examLanguage && (
-                        <div
-                          style={{
-                            backgroundColor: "#F0F9FF",
-                            border: "1px solid #0EA5E9",
-                            borderRadius: "12px",
-                            padding: "16px",
-                            marginTop: "16px",
-                            maxWidth: "500px",
-                            margin: "16px auto 0 auto",
-                          }}
-                        >
-                          <h4
-                            style={{
-                              fontSize: "16px",
-                              fontWeight: "600",
-                              color: "#0F172A",
-                              margin: "0 0 8px 0",
-                            }}
-                          >
-                            Speech Recognition Results
-                          </h4>
-                          <p
-                            style={{
-                              fontSize: "14px",
-                              color: "#374151",
-                              lineHeight: "1.5",
-                              margin: "0",
-                              fontStyle: "italic",
-                            }}
-                          >
-                            "{recognizedText}"
-                          </p>
-                          <p
-                            style={{
-                              fontSize: "12px",
-                              color: "#6B7280",
-                              margin: "8px 0 0 0",
-                            }}
-                          >
-                            Detected in: {examLanguage}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-              </div>
-            </div>
-          )}
-
-          {/* Uploading Stage - Now handled by recorder components */}
-          {false && currentStage === "uploading" && (
-            <div style={{ marginTop: "20px" }}>
-              <h1
-                style={{
-                  fontSize: "32px",
-                  fontWeight: "700",
-                  color: "#374151",
-                  marginBottom: "20px",
-                }}
-              >
-                {stageData.uploading.waitingForTranscription
-                  ? "Waiting for Transcription"
-                  : stageData.uploading.uploadComplete
-                  ? "Upload Complete"
-                  : "Uploading Response"}
-              </h1>
-              <p
-                style={{
-                  fontSize: "16px",
-                  color: "#6B7280",
-                  marginBottom: "24px",
-                }}
-              >
-                {stageData.uploading.waitingForTranscription
-                  ? "Your response has been uploaded successfully. We're now waiting for the transcription to be processed..."
-                  : stageData.uploading.uploadComplete
-                  ? "Your response has been uploaded and transcribed successfully."
-                  : "Please wait while we upload your recording..."}
-              </p>
-
-              {/* Transcription Results */}
-              {stageData.uploading.uploadComplete &&
-                stageData.uploading.transcriptionText && (
-                  <div
-                    style={{
-                      backgroundColor: "#F0F9FF",
-                      border: "1px solid #0EA5E9",
-                      borderRadius: "12px",
-                      padding: "20px",
-                      marginBottom: "24px",
-                      maxWidth: "500px",
-                      margin: "0 auto 24px auto",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          borderRadius: "50%",
-                          backgroundColor: "#10B981",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "white",
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          ✓
-                        </span>
-                      </div>
-                      <h3
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: "600",
-                          color: "#0F172A",
-                          margin: "0",
-                        }}
-                      >
-                        Tentative Transcription
-                      </h3>
-                    </div>
-                    <p
-                      style={{
-                        fontSize: "16px",
-                        color: "#374151",
-                        lineHeight: "1.5",
-                        margin: "0 0 16px 0",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      "{stageData.uploading.transcriptionText}"
-                    </p>
-
-                    {/* Relisten Button and Disclaimer */}
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px",
-                        marginTop: "12px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "12px",
-                          color: "#6B7280",
-                          fontStyle: "italic",
-                        }}
-                      >
-                        This is an AI-generated transcription and may not be
-                        100% accurate
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-              {/* Upload Animation with Custom Images */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  marginBottom: "16px",
-                }}
-              >
-                {/* Fixed Content Container - This won't move */}
+                {/* Recording Button */}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    minHeight: "160px", // Reserve space for content + button
+                    gap: "20px",
                   }}
                 >
-                  {/* Image Container */}
-                  <div
-                    style={{
-                      marginBottom: "16px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {stageData.uploading.uploadComplete ||
-                    stageData.uploading.waitingForTranscription ? (
-                      <img
-                        src="/upload-done.png"
-                        alt="Upload complete"
-                        style={{
-                          width: "120px",
-                          height: "120px",
-                          objectFit: "contain",
-                        }}
-                      />
-                    ) : (
-                      <img
-                        src="/upload-load.gif"
-                        alt="Uploading response"
-                        style={{
-                          width: "120px",
-                          height: "120px",
-                          objectFit: "contain",
-                        }}
-                      />
+                  {/* Show gray microphone when audio is playing (prompt) for simulated conversation */}
+                  {isSimulatedConversation &&
+                    stageData.audioPlay.isPlaying &&
+                    !stageData.recording.isRecording && (
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            width: "80px",
+                            height: "80px",
+                            borderRadius: "50%",
+                            backgroundColor: "#6B7280", // Gray
+                            border: "none",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            margin: "0 auto",
+                            transition: "background-color 0.3s",
+                          }}
+                        >
+                          <Mic size={32} color="white" fill="white" />
+                        </div>
+                        <p
+                          style={{
+                            fontSize: "16px",
+                            color: "#6B7280",
+                            margin: "16px 0 8px 0",
+                            fontWeight: "500",
+                          }}
+                        >
+                          Playing prompt...
+                        </p>
+                      </div>
                     )}
-                  </div>
 
-                  {/* Error Message */}
-                  {stageData.uploading.uploadError && (
-                    <p
+                  {!stageData.recording.isRecording &&
+                    !stageData.recording.hasRecorded &&
+                    !stageData.audioPlay.isPlaying && ( // Don't show "Preparing to record" if audio is playing (next prompt)
+                      <div style={{ textAlign: "center" }}>
+                        <p
+                          style={{
+                            fontSize: "16px",
+                            color: "#6B7280",
+                            margin: "8px 0",
+                          }}
+                        >
+                          {isSimulatedConversation
+                            ? "Loading next prompt..."
+                            : "Preparing to record..."}
+                        </p>
+                      </div>
+                    )}
+
+                  {stageData.recording.isRecording &&
+                    !isSimulatedConversation && (
+                      // <PulseButton
+                      //   onClick={() => {
+                      //     stopRecording();
+                      //     updateRecordingData({
+                      //       isRecording: false,
+                      //       hasRecorded: true,
+                      //     });
+                      //   }}
+                      //   style={recordStyle}
+                      // />
+                      <button
+                        onClick={() => {
+                          stopRecording();
+                          updateRecordingData({
+                            isRecording: false,
+                            hasRecorded: true,
+                          });
+                        }}
+                        style={{
+                          width: "120px",
+                          height: "48px",
+                          backgroundColor: "#dc2626", // tailwind red-600
+                          color: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontSize: "18px",
+                          fontWeight: "600",
+                          cursor: "pointer",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+                          transition: "background 0.2s",
+                        }}
+                      >
+                        Stop
+                      </button>
+                    )}
+
+                  {stageData.recording.isRecording &&
+                    isSimulatedConversation && (
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            width: "80px",
+                            height: "80px",
+                            borderRadius: "50%",
+                            backgroundColor: "#dc2626", // Red when recording
+                            border: "none",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            margin: "0 auto",
+                            animation: `${animation}`,
+                            transition: "background-color 0.3s",
+                          }}
+                        >
+                          <Mic size={32} color="white" fill="white" />
+                        </div>
+                        <p
+                          style={{
+                            fontSize: "20px",
+                            color: "#dc2626",
+                            fontWeight: "700",
+                            margin: "16px 0 8px 0",
+                          }}
+                        >
+                          Recording...
+                        </p>
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            color: "#6B7280",
+                            margin: "8px 0",
+                          }}
+                        >
+                          Recording will stop automatically after 20 seconds
+                        </p>
+                      </div>
+                    )}
+
+                  {stageData.recording.hasRecorded &&
+                    !stageData.recording.isRecording &&
+                    !isSimulatedConversation && ( // Don't show for simulated conversation - we handle it differently
+                      <div style={{ textAlign: "center" }}>
+                        <p
+                          style={{
+                            fontSize: "16px",
+                            color: "#10B981",
+                            fontWeight: "500",
+                            margin: "8px 0",
+                          }}
+                        >
+                          ✓ Recording completed successfully
+                        </p>
+                        {recognizedText && examLanguage && (
+                          <div
+                            style={{
+                              backgroundColor: "#F0F9FF",
+                              border: "1px solid #0EA5E9",
+                              borderRadius: "12px",
+                              padding: "16px",
+                              marginTop: "16px",
+                              maxWidth: "500px",
+                              margin: "16px auto 0 auto",
+                            }}
+                          >
+                            <h4
+                              style={{
+                                fontSize: "16px",
+                                fontWeight: "600",
+                                color: "#0F172A",
+                                margin: "0 0 8px 0",
+                              }}
+                            >
+                              Speech Recognition Results
+                            </h4>
+                            <p
+                              style={{
+                                fontSize: "14px",
+                                color: "#374151",
+                                lineHeight: "1.5",
+                                margin: "0",
+                                fontStyle: "italic",
+                              }}
+                            >
+                              "{recognizedText}"
+                            </p>
+                            <p
+                              style={{
+                                fontSize: "12px",
+                                color: "#6B7280",
+                                margin: "8px 0 0 0",
+                              }}
+                            >
+                              Detected in: {examLanguage}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                </div>
+              </div>
+            )}
+
+            {/* Uploading Stage - Now handled by recorder components */}
+            {false && currentStage === "uploading" && (
+              <div style={{ marginTop: "20px" }}>
+                <h1
+                  style={{
+                    fontSize: "32px",
+                    fontWeight: "700",
+                    color: "#374151",
+                    marginBottom: "20px",
+                  }}
+                >
+                  {stageData.uploading.waitingForTranscription
+                    ? "Waiting for Transcription"
+                    : stageData.uploading.uploadComplete
+                      ? "Upload Complete"
+                      : "Uploading Response"}
+                </h1>
+                <p
+                  style={{
+                    fontSize: "16px",
+                    color: "#6B7280",
+                    marginBottom: "24px",
+                  }}
+                >
+                  {stageData.uploading.waitingForTranscription
+                    ? "Your response has been uploaded successfully. We're now waiting for the transcription to be processed..."
+                    : stageData.uploading.uploadComplete
+                      ? "Your response has been uploaded and transcribed successfully."
+                      : "Please wait while we upload your recording..."}
+                </p>
+
+                {/* Transcription Results */}
+                {stageData.uploading.uploadComplete &&
+                  stageData.uploading.transcriptionText && (
+                    <div
                       style={{
-                        fontSize: "14px",
-                        color: "#EF4444",
-                        margin: "8px 0 0 0",
-                        textAlign: "center",
+                        backgroundColor: "#F0F9FF",
+                        border: "1px solid #0EA5E9",
+                        borderRadius: "12px",
+                        padding: "20px",
+                        marginBottom: "24px",
+                        maxWidth: "500px",
+                        margin: "0 auto 24px auto",
                       }}
                     >
-                      {stageData.uploading.uploadError}
-                    </p>
-                  )}
-
-                  {/* Success Message */}
-                  {stageData.uploading.uploadComplete &&
-                    !stageData.uploading.uploadError && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "20px",
+                            height: "20px",
+                            borderRadius: "50%",
+                            backgroundColor: "#10B981",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: "white",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            ✓
+                          </span>
+                        </div>
+                        <h3
+                          style={{
+                            fontSize: "18px",
+                            fontWeight: "600",
+                            color: "#0F172A",
+                            margin: "0",
+                          }}
+                        >
+                          Tentative Transcription
+                        </h3>
+                      </div>
                       <p
                         style={{
                           fontSize: "16px",
-                          color: "#10B981",
-                          fontWeight: "500",
+                          color: "#374151",
+                          lineHeight: "1.5",
+                          margin: "0 0 16px 0",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        "{stageData.uploading.transcriptionText}"
+                      </p>
+
+                      {/* Relisten Button and Disclaimer */}
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                          marginTop: "12px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: "#6B7280",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          This is an AI-generated transcription and may not be
+                          100% accurate
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                {/* Upload Animation with Custom Images */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {/* Fixed Content Container - This won't move */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      minHeight: "160px", // Reserve space for content + button
+                    }}
+                  >
+                    {/* Image Container */}
+                    <div
+                      style={{
+                        marginBottom: "16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {stageData.uploading.uploadComplete ||
+                      stageData.uploading.waitingForTranscription ? (
+                        <img
+                          src="/upload-done.png"
+                          alt="Upload complete"
+                          style={{
+                            width: "120px",
+                            height: "120px",
+                            objectFit: "contain",
+                          }}
+                        />
+                      ) : (
+                        <img
+                          src="/upload-load.gif"
+                          alt="Uploading response"
+                          style={{
+                            width: "120px",
+                            height: "120px",
+                            objectFit: "contain",
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    {/* Error Message */}
+                    {stageData.uploading.uploadError && (
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#EF4444",
                           margin: "8px 0 0 0",
                           textAlign: "center",
                         }}
                       >
-                        ✓ Upload and transcription completed
+                        {stageData.uploading.uploadError}
                       </p>
                     )}
+
+                    {/* Success Message */}
+                    {stageData.uploading.uploadComplete &&
+                      !stageData.uploading.uploadError && (
+                        <p
+                          style={{
+                            fontSize: "16px",
+                            color: "#10B981",
+                            fontWeight: "500",
+                            margin: "8px 0 0 0",
+                            textAlign: "center",
+                          }}
+                        >
+                          ✓ Upload and transcription completed
+                        </p>
+                      )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -5385,7 +5694,8 @@ export default function AudioRecorder() {
             border: "none",
             borderRadius: "9999px",
             padding: "12px 20px",
-            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
+            boxShadow:
+              "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
             cursor: "pointer",
             fontWeight: 700,
           }}
@@ -5420,8 +5730,17 @@ export default function AudioRecorder() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <h3 style={{ color: "white", fontWeight: 700, fontSize: "18px" }}>Share Your Feedback</h3>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "8px",
+              }}
+            >
+              <h3 style={{ color: "white", fontWeight: 700, fontSize: "18px" }}>
+                Share Your Feedback
+              </h3>
               <button
                 onClick={() => setShowFeedbackModal(false)}
                 style={{
@@ -5437,7 +5756,10 @@ export default function AudioRecorder() {
               </button>
             </div>
             <div>
-              <FeedbackForm compact={true} onSubmitted={() => setShowFeedbackModal(false)} />
+              <FeedbackForm
+                compact={true}
+                onSubmitted={() => setShowFeedbackModal(false)}
+              />
             </div>
           </div>
         </div>

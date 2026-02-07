@@ -2747,9 +2747,14 @@ const Config = ({
                     {/* Image Grid */}
                     <div className="grid grid-cols-3 gap-4">
                       {[
-                        { src: "/examples/example1.png", label: "Example 1" },
-                        { src: "/examples/example2.png", label: "Example 2" },
-                        { src: "/examples/example3.png", label: "Example 3" },
+                        {
+                          src: "/examples/Instructions_AlwaysShow.png",
+                          label: "Always Show Instructions",
+                        },
+                        {
+                          src: "/examples/Instructions_BeforeQuestion.png",
+                          label: "Before Question Instructions",
+                        },
                       ].map((image, index) => (
                         <div key={index} className="space-y-2">
                           <button
