@@ -1643,13 +1643,13 @@ const Config = ({
            border-t-8 border-t-slate-800"
                             ></div>
                           </div>
-                          <button
-                            onClick={handleImportClick}
-                            className="px-2 py-1 text-xs bg-green-300 text-slate-900 rounded hover:bg-green-400 transition-colors font-medium"
-                          >
-                            Examples
-                          </button>
                         </div>
+                        <button
+                          onClick={handleImportClick}
+                          className="px-2 py-1 text-xs bg-green-300 text-slate-900 rounded hover:bg-green-400 transition-colors font-medium"
+                        >
+                          Examples
+                        </button>
                       </div>
                     </div>
                     {
