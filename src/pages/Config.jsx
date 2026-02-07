@@ -115,6 +115,16 @@ const Config = ({
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExamplesModal, setShowExamplesModal] = useState(false);
   const [zoomedImage, setZoomedImage] = useState(null); //for examples modal
+  const [exampleImages, setExampleImages] = useState([
+    {
+      src: "/examples/Instructions_AlwaysShow.png",
+      label: "Always Show Instructions",
+    },
+    {
+      src: "/examples/Instructions_BeforeQuestion.png",
+      label: "Before Question Instructions",
+    },
+  ]);
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [configs, setConfigs] = useState([]);
@@ -2718,9 +2728,10 @@ const Config = ({
               </div>
             )}
 
+            {/* Examples Modal */}
             {showExamplesModal && (
               <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-                <div className="relative overflow-hidden bg-black/60 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-md shadow-xl w-full max-w-2xl mx-auto">
+                <div className="relative overflow-hidden bg-black/60 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-md shadow-xl w-full max-w-4xl mx-auto">
                   <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none" />
                   <div className="relative z-10">
                     {/* Header */}
@@ -2745,17 +2756,16 @@ const Config = ({
                     </p>
 
                     {/* Image Grid */}
-                    <div className="grid grid-cols-3 gap-4">
-                      {[
-                        {
-                          src: "/examples/Instructions_AlwaysShow.png",
-                          label: "Always Show Instructions",
-                        },
-                        {
-                          src: "/examples/Instructions_BeforeQuestion.png",
-                          label: "Before Question Instructions",
-                        },
-                      ].map((image, index) => (
+                    <div
+                      className={`grid gap-4 ${
+                        exampleImages.length === 1
+                          ? "grid-cols-1 max-w-md mx-auto"
+                          : exampleImages.length === 2
+                            ? "grid-cols-2 max-w-2xl mx-auto"
+                            : "grid-cols-3"
+                      }`}
+                    >
+                      {exampleImages.map((image, index) => (
                         <div key={index} className="space-y-2">
                           <button
                             onClick={() => setZoomedImage(image.src)}
