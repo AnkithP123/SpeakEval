@@ -2011,7 +2011,14 @@ const Config = ({
                     </div>
                   </Card>
                 ) : (
-                  <Card color="cyan">
+                  <Card
+                    color="cyan"
+                    className={
+                      isInfoTooltipVisible
+                        ? "relative z-50 overflow-visible"
+                        : "relative"
+                    }
+                  >
                     <div className="flex items-center gap-2 mb-4">
                       <h2 className="text-2xl font-bold text-white">
                         Record Questions
@@ -2098,7 +2105,14 @@ const Config = ({
 
                 {/* Create Rubric Card (Conditional) */}
                 {
-                  <Card color="purple">
+                  <Card
+                    color="purple"
+                    className={
+                      isInfoTooltipVisible
+                        ? "relative z-50 overflow-visible"
+                        : "relative"
+                    }
+                  >
                     <div className="flex justify-between items-center mb-4">
                       {/* Group the title and info icon together */}
                       <div className="flex items-center gap-2">
