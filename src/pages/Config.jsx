@@ -1622,15 +1622,15 @@ const Config = ({
                           Instructions
                         </h2>
                         <div
-                          className="relative group"
+                          className="relative group flex items-center gap-2"
                           onMouseEnter={() => setIsInfoTooltipVisible(true)}
                           onMouseLeave={() => setIsInfoTooltipVisible(false)}
                         >
                           <FaInfoCircle className="text-green-300 cursor-help" />
                           <div
                             className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
-                               opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
-                               transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
+       opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
+       transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
                           >
                             <p className="text-slate-200 text-sm mb-3 z-100">
                               Enable this to provide students with instructions
@@ -1639,13 +1639,13 @@ const Config = ({
                             </p>
                             <div
                               className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
-                                   border-x-8 border-x-transparent
-                                   border-t-8 border-t-slate-800"
+           border-x-8 border-x-transparent
+           border-t-8 border-t-slate-800"
                             ></div>
                           </div>
                           <button
                             onClick={handleImportClick}
-                            className="fixed top-4 left-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                            className="px-2 py-1 text-xs bg-green-300 text-slate-900 rounded hover:bg-green-400 transition-colors font-medium"
                           >
                             Examples
                           </button>
