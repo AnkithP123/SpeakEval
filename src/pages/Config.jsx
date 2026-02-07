@@ -2116,7 +2116,7 @@ const Config = ({
                      opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
                      transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
                           >
-                            <p className="text-slate-200 text-sm mb-3 z-100">
+                            <p className="text-slate-200 text-sm mb-3 z-600">
                               [Optional] Create a custom rubric which the AI
                               Grading will reference to grade the student
                               respones if desired. Add categories and point
