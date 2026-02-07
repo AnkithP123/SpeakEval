@@ -1637,17 +1637,18 @@ const Config = ({
                               before they start the test. The instructions will
                               appear on the screen before the first question.
                             </p>
-                            <img
-                              src="https://placehold.co/600x400/1e293b/94a3b8?text=Image+Placeholder"
-                              alt="Instructions Example"
-                              className="rounded-md w-full"
-                            />
                             <div
                               className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
                                    border-x-8 border-x-transparent
                                    border-t-8 border-t-slate-800"
                             ></div>
                           </div>
+                          <button
+                            onClick={handleImportClick}
+                            className="fixed top-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                          >
+                            Examples
+                          </button>
                         </div>
                       </div>
                     </div>
