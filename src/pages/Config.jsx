@@ -113,6 +113,8 @@ const Config = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showExamplesModal, setShowExamplesModal] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState(null); //for examples modal
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [configs, setConfigs] = useState([]);
@@ -662,6 +664,10 @@ const Config = ({
 
   const handleImportClick = () => {
     setShowImportModal(true);
+  };
+
+  const handleExamplesClick = () => {
+    setShowExamplesModal(true);
   };
 
   // New function for handling direct text (using upload_text endpoint)
@@ -1645,7 +1651,7 @@ const Config = ({
                           </div>
                         </div>
                         <button
-                          onClick={handleImportClick}
+                          onClick={handleExamplesClick}
                           className="px-2 py-1 text-xs bg-green-300 text-slate-900 rounded hover:bg-green-400 transition-colors font-medium"
                         >
                           Examples
@@ -2709,6 +2715,98 @@ const Config = ({
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {showExamplesModal && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+                <div className="relative overflow-hidden bg-black/60 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-md shadow-xl w-full max-w-2xl mx-auto">
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none" />
+                  <div className="relative z-10">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+                        Examples
+                      </h2>
+                      <button
+                        onClick={() => {
+                          setShowExamplesModal(false);
+                          setZoomedImage(null);
+                        }}
+                        className="text-gray-400 hover:text-white transition-colors"
+                      >
+                        <FaTimes size={20} />
+                      </button>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-gray-400 text-sm mb-6">
+                      Click on any image to view it in full size.
+                    </p>
+
+                    {/* Image Grid */}
+                    <div className="grid grid-cols-3 gap-4">
+                      {[
+                        { src: "/examples/example1.png", label: "Example 1" },
+                        { src: "/examples/example2.png", label: "Example 2" },
+                        { src: "/examples/example3.png", label: "Example 3" },
+                      ].map((image, index) => (
+                        <div key={index} className="space-y-2">
+                          <button
+                            onClick={() => setZoomedImage(image.src)}
+                            className="w-full aspect-video bg-black/30 border border-cyan-500/30 rounded-lg overflow-hidden 
+                           hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/20 transition-all duration-300 group"
+                          >
+                            <img
+                              src={image.src}
+                              alt={image.label}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </button>
+                          <p className="text-gray-300 text-sm text-center font-medium">
+                            {image.label}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Close Button */}
+                    <div className="flex justify-center mt-6">
+                      <button
+                        onClick={() => setShowExamplesModal(false)}
+                        className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Zoomed Image Overlay */}
+                {zoomedImage && (
+                  <div
+                    className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md z-[60] cursor-zoom-out"
+                    onClick={() => setZoomedImage(null)}
+                  >
+                    <div className="relative max-w-[90vw] max-h-[90vh]">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setZoomedImage(null);
+                        }}
+                        className="absolute -top-10 right-0 text-gray-300 hover:text-white transition-colors"
+                      >
+                        <FaTimes size={24} />
+                      </button>
+                      <img
+                        src={zoomedImage}
+                        alt="Zoomed example"
+                        className="max-w-full max-h-[85vh] object-contain rounded-lg border border-cyan-500/30 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
