@@ -1645,7 +1645,7 @@ const Config = ({
                           </div>
                           <button
                             onClick={handleImportClick}
-                            className="fixed top-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                            className="fixed top-4 left-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
                           >
                             Examples
                           </button>
