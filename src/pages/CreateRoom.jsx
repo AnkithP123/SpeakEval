@@ -27,6 +27,7 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
   const [emailEnding, setEmailEnding] = useState("");
   const [hoverButton, setHoverButton] = useState(false);
   const [isLoadingConfigs, setIsLoadingConfigs] = useState(false);
+  const [isSimulatedConversation, setIsSimulatedConversation] = useState(false);
 
   useEffect(() => {
     const fetchConfigs = async () => {
@@ -113,9 +114,15 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
       );
       const parsedData = await res.json();
       if (parsedData.valid) {
-        setTimeLimit(
-          configs.find((c) => c.name === config.name)?.timeLimit || 30
-        );
+        const selectedConfig = configs.find((c) => c.name === config.name);
+        setTimeLimit(selectedConfig?.timeLimit || 30);
+        // Check if this is a Simulated_Conversation config
+        const isSimulated = selectedConfig?.configType === "Simulated_Conversation";
+        setIsSimulatedConversation(isSimulated);
+        // Set thinking time to 0 for simulated conversation
+        if (isSimulated) {
+          setThinkingTime(0);
+        }
         setIsConfigEntered(true);
       } else {
         toast.error(
@@ -133,8 +140,10 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
     time =
       Math.floor(Math.random() * 5) + 1 + time.toString().slice(-7) + "001";
     try {
+      // For Simulated_Conversation, always send thinkingTime as 0
+      const finalThinkingTime = isSimulatedConversation ? 0 : thinkingTime;
       const res = await fetch(
-        `https://www.server.speakeval.org/create_room?pin=${userId}&config=${config.name}&timeLimit=${timeLimit}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&shuffle=${shuffleQuestions}&google=${requireGoogleSignIn}&ending=${emailEnding}`
+        `https://www.server.speakeval.org/create_room?pin=${userId}&config=${config.name}&timeLimit=${timeLimit}&thinkingTime=${finalThinkingTime}&canRelisten=${canRelisten}&shuffle=${shuffleQuestions}&google=${requireGoogleSignIn}&ending=${emailEnding}`
       );
       const parsedData = await res.json();
       if (parsedData.code === 400) {
@@ -177,7 +186,16 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                                 ? "bg-cyan-900/50 text-cyan-300 border-cyan-500"
                                 : "bg-black/30 text-cyan-300 hover:bg-cyan-900/50 border-cyan-500/30"
                             }`}
-                            onClick={() => setConfig(configuration)}
+                            onClick={() => {
+                              setConfig(configuration);
+                              // Check if this is a Simulated_Conversation config
+                              const isSimulated = configuration?.configType === "Simulated_Conversation";
+                              setIsSimulatedConversation(isSimulated);
+                              // Set thinking time to 0 for simulated conversation
+                              if (isSimulated) {
+                                setThinkingTime(0);
+                              }
+                            }}
                           >
                             {configuration.name}
                           </div>
@@ -255,36 +273,38 @@ function CreateRoom({ initialUserId = "", set, setUltimate, getPin }) {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center text-white">
-                      Thinking Time (s)
-                      <div className="relative ml-2">
-                        <FaInfoCircle
-                          className="text-cyan-400 cursor-help"
-                          onMouseEnter={() => setHoveredInfo("thinkingTime")}
-                          onMouseLeave={() => setHoveredInfo(null)}
-                        />
-                        {hoveredInfo === "thinkingTime" && (
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
-                            Time allowed for thinking before answering
-                          </div>
-                        )}
+                  {!isSimulatedConversation && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-white">
+                        Thinking Time (s)
+                        <div className="relative ml-2">
+                          <FaInfoCircle
+                            className="text-cyan-400 cursor-help"
+                            onMouseEnter={() => setHoveredInfo("thinkingTime")}
+                            onMouseLeave={() => setHoveredInfo(null)}
+                          />
+                          {hoveredInfo === "thinkingTime" && (
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-2 bg-black/80 text-white text-sm rounded-md w-48 z-10 border border-cyan-500/30 backdrop-blur-md">
+                              Time allowed for thinking before answering
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      <input
+                        type="text"
+                        value={thinkingTime}
+                        onChange={(e) => {
+                          const value =
+                            e.target.value === "" ? "" : Number(e.target.value);
+                          setThinkingTime(value);
+                        }}
+                        onBlur={() => {
+                          if (thinkingTime === "") setThinkingTime(0);
+                        }}
+                        className="w-24 px-3 py-2 bg-black/30 border border-cyan-500/30 rounded-lg text-white text-right focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                      />
                     </div>
-                    <input
-                      type="text"
-                      value={thinkingTime}
-                      onChange={(e) => {
-                        const value =
-                          e.target.value === "" ? "" : Number(e.target.value);
-                        setThinkingTime(value);
-                      }}
-                      onBlur={() => {
-                        if (thinkingTime === "") setThinkingTime(0);
-                      }}
-                      className="w-24 px-3 py-2 bg-black/30 border border-cyan-500/30 rounded-lg text-white text-right focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                    />
-                  </div>
+                  )}
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-white">

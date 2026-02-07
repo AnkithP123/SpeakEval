@@ -113,6 +113,18 @@ const Config = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showExamplesModal, setShowExamplesModal] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState(null); //for examples modal
+  const [exampleImages, setExampleImages] = useState([
+    {
+      src: "/examples/Instructions_AlwaysShow.png",
+      label: "Always Show Instructions",
+    },
+    {
+      src: "/examples/Instructions_BeforeQuestion.png",
+      label: "Before Question Instructions",
+    },
+  ]);
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [configs, setConfigs] = useState([]);
@@ -257,7 +269,7 @@ const Config = ({
       try {
         setIsLoadingConfigs(true);
         const res = await fetch(
-          `https://www.server.speakeval.org/getconfigs?pin=${userId}`
+          `https://www.server.speakeval.org/getconfigs?pin=${userId}`,
         );
         const parsedData = await res.json();
         setConfigs(parsedData);
@@ -284,7 +296,7 @@ const Config = ({
   const checkUserId = async (userId) => {
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/teacherpin?pin=${userId}`
+        `https://www.server.speakeval.org/teacherpin?pin=${userId}`,
       );
       const parsedData = await res.json();
 
@@ -326,7 +338,7 @@ const Config = ({
             mediaRecorderRef.current.start();
             mediaRecorderRef.current.addEventListener(
               "dataavailable",
-              handleDataAvailable
+              handleDataAvailable,
             );
             setRecording(true);
           })
@@ -367,7 +379,7 @@ const Config = ({
                   const recordedClip = URL.createObjectURL(event.data);
                   setPromptClips((prevClips) => [...prevClips, recordedClip]);
                 }
-              }
+              },
             );
             setRecordingPrompt(true);
           })
@@ -389,7 +401,7 @@ const Config = ({
 
   const handleDeleteQuestion = (index) => {
     setQuestions((prevQuestions) =>
-      prevQuestions.filter((_, i) => i !== index)
+      prevQuestions.filter((_, i) => i !== index),
     );
     toast.success("Question deleted");
   };
@@ -533,7 +545,7 @@ const Config = ({
 
   const handleDeleteCategory = (index) => {
     setCategories((prevCategories) =>
-      prevCategories.filter((_, i) => i !== index)
+      prevCategories.filter((_, i) => i !== index),
     );
   };
 
@@ -560,14 +572,14 @@ const Config = ({
       pointValues.length > 1
         ? pointValues[0] + (pointValues[0] - pointValues[1])
         : pointValues.length === 1
-        ? pointValues[0] + 1
-        : 1;
+          ? pointValues[0] + 1
+          : 1;
     setPointValues((prevPointValues) => [newPoint, ...prevPointValues]);
     setCategories((prevCategories) =>
       prevCategories.map((category) => ({
         ...category,
         descriptions: ["", ...category.descriptions],
-      }))
+      })),
     );
   };
 
@@ -578,29 +590,29 @@ const Config = ({
           (pointValues[pointValues.length - 2] -
             pointValues[pointValues.length - 1])
         : pointValues.length === 1
-        ? pointValues[0] - 1
-        : 1;
+          ? pointValues[0] - 1
+          : 1;
     setPointValues((prevPointValues) => [...prevPointValues, newPoint]);
     setCategories((prevCategories) =>
       prevCategories.map((category) => ({
         ...category,
         descriptions: [...category.descriptions, ""],
-      }))
+      })),
     );
   };
 
   const handleDeletePointValue = (index) => {
     if (pointValues.length > 1) {
       setPointValues((prevPointValues) =>
-        prevPointValues.filter((_, i) => i !== index)
+        prevPointValues.filter((_, i) => i !== index),
       );
       setCategories((prevCategories) =>
         prevCategories.map((category) => {
           const updatedDescriptions = category.descriptions.filter(
-            (_, i) => i !== index
+            (_, i) => i !== index,
           );
           return { ...category, descriptions: updatedDescriptions };
-        })
+        }),
       );
     } else {
       toast.error("You must have at least one point value");
@@ -645,7 +657,7 @@ const Config = ({
       setShowSelectiveAutofillModal(true);
       setIsLoadingConfigs(true);
       const configss = await fetch(
-        `https://www.server.speakeval.org/getconfigs?pin=${userId}`
+        `https://www.server.speakeval.org/getconfigs?pin=${userId}`,
       );
       const configsList = await configss.json();
       setSelectedConfig(configsList);
@@ -664,6 +676,24 @@ const Config = ({
     setShowImportModal(true);
   };
 
+  const handleExamplesClick = (tile = 0) => {
+    setShowExamplesModal(true);
+    if (tile === 0) {
+      setExampleImages([
+        {
+          src: "/examples/Instructions_AlwaysShow.png",
+          label: "Always Show Instructions",
+        },
+        {
+          src: "/examples/Instructions_BeforeQuestion.png",
+          label: "Before Question Instructions",
+        },
+      ]);
+    } else if (tile === 1) {
+      setExampleImages([]);
+    }
+  };
+
   // New function for handling direct text (using upload_text endpoint)
   const handleTextImport = async (text) => {
     setIsUploading(true);
@@ -677,7 +707,7 @@ const Config = ({
             text,
             token: userId,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -755,7 +785,7 @@ const Config = ({
                   type: file.type,
                   token: userId,
                 }),
-              }
+              },
             );
             const result = await response.json();
 
@@ -845,7 +875,7 @@ const Config = ({
             questionArr: processedStrings,
             token: userId,
           }),
-        }
+        },
       );
       const result = await response.json();
       console.log("Result:", result);
@@ -870,7 +900,7 @@ const Config = ({
                 !result.mimeType
               ) {
                 console.error(
-                  `Error processing audio ${index}: Invalid audio data structure`
+                  `Error processing audio ${index}: Invalid audio data structure`,
                 );
                 return null;
               }
@@ -892,10 +922,10 @@ const Config = ({
                   uint8Array.length,
                   24000,
                   16,
-                  1
+                  1,
                 );
                 const wavData = new Uint8Array(
-                  wavHeader.length + uint8Array.length
+                  wavHeader.length + uint8Array.length,
                 );
                 wavData.set(wavHeader, 0);
                 wavData.set(uint8Array, wavHeader.length);
@@ -916,7 +946,7 @@ const Config = ({
         if (audioUrls.length > 0) {
           setQuestions((prevQuestions) => [...prevQuestions, ...audioUrls]);
           toast.success(
-            `Successfully added ${audioUrls.length} audio questions`
+            `Successfully added ${audioUrls.length} audio questions`,
           );
           closeImportModal();
         } else {
@@ -1011,7 +1041,7 @@ const Config = ({
                   return { text: inst, show: "Once at the Start of Room" };
                 }
               })
-            : [{ text: "", show: "Once at the Start of Room" }]
+            : [{ text: "", show: "Once at the Start of Room" }],
         );
       }
     } else {
@@ -1039,7 +1069,7 @@ const Config = ({
             url = question.audioUrl;
           } else if (question.audio) {
             const blob = await fetch(
-              `data:audio/wav;base64,${question.audio}`
+              `data:audio/wav;base64,${question.audio}`,
             ).then((res) => res.blob());
             url = URL.createObjectURL(blob);
           }
@@ -1062,7 +1092,7 @@ const Config = ({
     if (autofillOptions.language) {
       if (
         ["English", "Spanish", "French", "Chinese", "Japanese"].includes(
-          config.language
+          config.language,
         )
       ) {
         setSelectedLanguage(config.language);
@@ -1081,7 +1111,7 @@ const Config = ({
             url = question.audioUrl;
           } else if (question.audio) {
             const blob = await fetch(
-              `data:audio/wav;base64,${question.audio}`
+              `data:audio/wav;base64,${question.audio}`,
             ).then((res) => res.blob());
             url = URL.createObjectURL(blob);
           }
@@ -1109,10 +1139,10 @@ const Config = ({
         descriptions: [
           ...cat.descriptions,
           ...Array(
-            Math.max(0, preset.pointValues.length - cat.descriptions.length)
+            Math.max(0, preset.pointValues.length - cat.descriptions.length),
           ).fill(""),
         ],
-      }))
+      })),
     );
     setShowPresetRubricsModal(false);
     toast.success(`Applied ${presetName} rubric`);
@@ -1134,7 +1164,7 @@ const Config = ({
       toast.error(
         `Question ${
           questionIndex + 1
-        }: Invalid file type. Only audio files are allowed.`
+        }: Invalid file type. Only audio files are allowed.`,
       );
       return false;
     }
@@ -1143,7 +1173,7 @@ const Config = ({
       toast.error(
         `Question ${
           questionIndex + 1
-        }: File is too large. Maximum size is ${MAX_SIZE_MB}MB.`
+        }: File is too large. Maximum size is ${MAX_SIZE_MB}MB.`,
       );
       return false;
     }
@@ -1205,7 +1235,7 @@ const Config = ({
             console.error("Error fetching audio:", err);
             return true;
           }
-        })
+        }),
       );
 
       if (allFilesAreValid.includes(false)) {
@@ -1218,13 +1248,13 @@ const Config = ({
 
         const updateResponse = await fetch(
           `https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&rubric=${encodeURIComponent(
-            rubricString
+            rubricString,
           )}&limit=${maxTime}&language=${language}&configType=${configType}&instructions=${encodeURIComponent(
-            instructionsString
+            instructionsString,
           )}`,
           {
             method: "POST",
-          }
+          },
         );
 
         const updateResult = await updateResponse.json();
@@ -1248,7 +1278,7 @@ const Config = ({
             `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}`,
             {
               method: "GET",
-            }
+            },
           );
 
           if (!uploadUrlResponse.ok) {
@@ -1280,7 +1310,7 @@ const Config = ({
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({ uploaded: true }),
-            }
+            },
           );
 
           const questionResult = await questionResponse.json();
@@ -1292,7 +1322,7 @@ const Config = ({
                   configType === "Simulated_Conversation"
                     ? "prompt"
                     : "question"
-                } ${i + 1}`
+                } ${i + 1}`,
             );
           }
 
@@ -1305,13 +1335,13 @@ const Config = ({
         console.log("Registering new configuration...");
         const configResponse = await fetch(
           `https://www.server.speakeval.org/createconfig?pin=${userId}&id=${id}&rubric=${encodeURIComponent(
-            rubricString
+            rubricString,
           )}&limit=${maxTime}&language=${language}&configType=${configType}&instructions=${encodeURIComponent(
-            instructionsString
+            instructionsString,
           )}`,
           {
             method: "POST",
-          }
+          },
         );
 
         const configResult = await configResponse.json();
@@ -1344,7 +1374,7 @@ const Config = ({
             `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}`,
             {
               method: "GET",
-            }
+            },
           );
 
           if (!uploadUrlResponse.ok) {
@@ -1376,7 +1406,7 @@ const Config = ({
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({ uploaded: true }),
-            }
+            },
           );
 
           const questionResult = await questionResponse.json();
@@ -1388,7 +1418,7 @@ const Config = ({
                   configType === "Simulated_Conversation"
                     ? "prompt"
                     : "question"
-                } ${i + 1}`
+                } ${i + 1}`,
             );
           }
 
@@ -1459,7 +1489,7 @@ const Config = ({
                             )}
                             <span className="relative z-10">{config.name}</span>
                           </button>
-                        ) : null
+                        ) : null,
                       )}
                     </div>
                   ) : (
@@ -1586,7 +1616,7 @@ const Config = ({
                               handleConfigTypeChange(type.key);
                             } else {
                               toast.info(
-                                "This feature is still in development."
+                                "This feature is still in development.",
                               );
                             }
                           }}
@@ -1595,8 +1625,8 @@ const Config = ({
                             configType === type.key
                               ? "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/20 text-white"
                               : isEnabled
-                              ? "text-gray-400 hover:bg-white/10"
-                              : "text-gray-500 opacity-60 cursor-not-allowed"
+                                ? "text-gray-400 hover:bg-white/10"
+                                : "text-gray-500 opacity-60 cursor-not-allowed"
                           }`}
                         >
                           {type.label}
@@ -1622,33 +1652,34 @@ const Config = ({
                           Instructions
                         </h2>
                         <div
-                          className="relative group"
+                          className="relative group flex items-center gap-2"
                           onMouseEnter={() => setIsInfoTooltipVisible(true)}
                           onMouseLeave={() => setIsInfoTooltipVisible(false)}
                         >
                           <FaInfoCircle className="text-green-300 cursor-help" />
                           <div
                             className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
-                               opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
-                               transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
+       opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
+       transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
                           >
                             <p className="text-slate-200 text-sm mb-3 z-100">
                               Enable this to provide students with instructions
                               before they start the test. The instructions will
                               appear on the screen before the first question.
                             </p>
-                            <img
-                              src="https://placehold.co/600x400/1e293b/94a3b8?text=Image+Placeholder"
-                              alt="Instructions Example"
-                              className="rounded-md w-full"
-                            />
                             <div
                               className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
-                                   border-x-8 border-x-transparent
-                                   border-t-8 border-t-slate-800"
+           border-x-8 border-x-transparent
+           border-t-8 border-t-slate-800"
                             ></div>
                           </div>
                         </div>
+                        <button
+                          onClick={handleExamplesClick}
+                          className="px-2 py-1 text-xs bg-green-300 text-slate-900 rounded hover:bg-green-400 transition-colors font-medium"
+                        >
+                          Examples
+                        </button>
                       </div>
                     </div>
                     {
@@ -1724,7 +1755,7 @@ const Config = ({
                                       content,
                                       delta,
                                       source,
-                                      editor
+                                      editor,
                                     ) =>
                                       handleInstructionTextChange(index, {
                                         target: { value: content },
@@ -1980,10 +2011,43 @@ const Config = ({
                     </div>
                   </Card>
                 ) : (
-                  <Card color="cyan">
-                    <h2 className="text-2xl font-bold text-white mb-4">
-                      Record Questions
-                    </h2>
+                  <Card
+                    color="cyan"
+                    className={
+                      isInfoTooltipVisible
+                        ? "relative z-50 overflow-visible"
+                        : "relative"
+                    }
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <h2 className="text-2xl font-bold text-white">
+                        Record Questions
+                      </h2>
+                      <div
+                        className="relative group"
+                        onMouseEnter={() => setIsInfoTooltipVisible(true)}
+                        onMouseLeave={() => setIsInfoTooltipVisible(false)}
+                      >
+                        <FaInfoCircle className="text-green-300 cursor-help" />
+                        <div
+                          className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
+                   opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
+                   transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
+                        >
+                          <p className="text-slate-200 text-sm mb-3 z-600">
+                            Record audio questions that students will answer.
+                            The questions will play one at a time, and students
+                            will respond after each question. You can record
+                            questions in any order and delete them if needed.
+                          </p>
+                          <div
+                            className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
+                     border-x-8 border-x-transparent
+                     border-t-8 border-t-slate-800"
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
                     <button
                       onClick={handleImportClick}
                       className="fixed top-4 right-6 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
@@ -2041,11 +2105,49 @@ const Config = ({
 
                 {/* Create Rubric Card (Conditional) */}
                 {
-                  <Card color="purple">
+                  <Card
+                    color="purple"
+                    className={
+                      isInfoTooltipVisible
+                        ? "relative z-50 overflow-visible"
+                        : "relative"
+                    }
+                  >
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-2xl font-bold text-white">
-                        Create Rubric
-                      </h2>
+                      {/* Group the title and info icon together */}
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-2xl font-bold text-white">
+                          Create Rubric
+                        </h2>
+                        <div
+                          className="relative group"
+                          onMouseEnter={() => setIsInfoTooltipVisible(true)}
+                          onMouseLeave={() => setIsInfoTooltipVisible(false)}
+                        >
+                          <FaInfoCircle className="text-green-300 cursor-help" />
+                          <div
+                            className="absolute bottom-full mb-2 w-72 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg 
+                     opacity-0 group-hover:opacity-100 transition-opacity duration-300 invisible group-hover:visible
+                     transform -translate-x-1/2 left-1/2 pointer-events-none z-500"
+                          >
+                            <p className="text-slate-200 text-sm mb-3 z-600">
+                              [Optional] Create a custom rubric which the AI
+                              Grading will reference to grade the student
+                              respones if desired. Add categories and point
+                              values, then provide the requirements to achieve
+                              the point value within each category. You may also
+                              reorder point values by dragging the columns.
+                            </p>
+                            <div
+                              className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
+                       border-x-8 border-x-transparent
+                       border-t-8 border-t-slate-800"
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Preset Rubrics button stays on the right */}
                       <button
                         onClick={handlePresetRubricsClick}
                         className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center space-x-2"
@@ -2123,7 +2225,7 @@ const Config = ({
                                       onChange={(e) =>
                                         handleCategoryNameChange(
                                           categoryIndex,
-                                          e
+                                          e,
                                         )
                                       }
                                       placeholder="Category Name"
@@ -2143,7 +2245,7 @@ const Config = ({
                                         handleCategoryDescriptionChange(
                                           categoryIndex,
                                           pointIndex,
-                                          e
+                                          e,
                                         )
                                       }
                                       placeholder={`Description for ${pointValues[pointIndex]} points`}
@@ -2257,8 +2359,8 @@ const Config = ({
                         isUploading
                           ? "bg-gray-600 cursor-not-allowed"
                           : hoverButton
-                          ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
-                          : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
+                            ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
+                            : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
                       }`}
                     >
                       <span className="relative z-10">
@@ -2267,8 +2369,8 @@ const Config = ({
                             ? "Updating..."
                             : "Uploading..."
                           : isUpdate
-                          ? "Update"
-                          : "Register Question Set"}
+                            ? "Update"
+                            : "Register Question Set"}
                       </span>
                     </button>
                   </div>
@@ -2657,12 +2759,12 @@ const Config = ({
                                     if (processedStrings.length > 1) {
                                       setProcessedStrings(
                                         processedStrings.filter(
-                                          (_, i) => i !== index
-                                        )
+                                          (_, i) => i !== index,
+                                        ),
                                       );
                                     } else {
                                       toast.error(
-                                        "You must have at least one question"
+                                        "You must have at least one question",
                                       );
                                     }
                                   }}
@@ -2708,6 +2810,103 @@ const Config = ({
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Examples Modal */}
+            {showExamplesModal && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+                <div className="relative overflow-hidden bg-black/60 p-8 rounded-2xl border border-cyan-500/30 backdrop-blur-md shadow-xl w-full max-w-4xl mx-auto">
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 pointer-events-none" />
+                  <div className="relative z-10">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+                        Examples
+                      </h2>
+                      <button
+                        onClick={() => {
+                          setShowExamplesModal(false);
+                          setZoomedImage(null);
+                        }}
+                        className="text-gray-400 hover:text-white transition-colors"
+                      >
+                        <FaTimes size={20} />
+                      </button>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-gray-400 text-sm mb-6">
+                      Click on any image to view it in full size.
+                    </p>
+
+                    {/* Image Grid */}
+                    <div
+                      className={`grid gap-4 ${
+                        exampleImages.length === 1
+                          ? "grid-cols-1 max-w-md mx-auto"
+                          : exampleImages.length === 2
+                            ? "grid-cols-2 max-w-2xl mx-auto"
+                            : "grid-cols-3"
+                      }`}
+                    >
+                      {exampleImages.map((image, index) => (
+                        <div key={index} className="space-y-2">
+                          <button
+                            onClick={() => setZoomedImage(image.src)}
+                            className="w-full aspect-video bg-black/30 border border-cyan-500/30 rounded-lg overflow-hidden 
+                           hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/20 transition-all duration-300 group"
+                          >
+                            <img
+                              src={image.src}
+                              alt={image.label}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </button>
+                          <p className="text-gray-300 text-sm text-center font-medium">
+                            {image.label}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Close Button */}
+                    <div className="flex justify-center mt-6">
+                      <button
+                        onClick={() => setShowExamplesModal(false)}
+                        className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Zoomed Image Overlay */}
+                {zoomedImage && (
+                  <div
+                    className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md z-[60] cursor-zoom-out"
+                    onClick={() => setZoomedImage(null)}
+                  >
+                    <div className="relative max-w-[90vw] max-h-[90vh]">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setZoomedImage(null);
+                        }}
+                        className="absolute -top-10 right-0 text-gray-300 hover:text-white transition-colors"
+                      >
+                        <FaTimes size={24} />
+                      </button>
+                      <img
+                        src={zoomedImage}
+                        alt="Zoomed example"
+                        className="max-w-full max-h-[85vh] object-contain rounded-lg border border-cyan-500/30 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
