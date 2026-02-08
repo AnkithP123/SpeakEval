@@ -39,6 +39,8 @@ import Test from "./pages/practiceExams-GradingPage.jsx";
 import PracticeExams from "./pages/PracticeExams";
 import PracticeExamSubmissions from "./pages/PracticeExamSubmissions";
 import PracticeExamResponses from "./pages/PracticeExamResponses";
+import CoTeacherSettings from "./pages/CoTeacherSettings";
+import AccountSelection from "./pages/AccountSelection";
 import ClassroomApp from "./classroom/ClassroomApp";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -192,6 +194,8 @@ function App() {
             path="/grade-bot"
             element={<GradeBotCreator getPin={getPin} />}
           />
+          <Route path="/co-teacher-settings" element={<CoTeacherSettings />} />
+          <Route path="/account-selection" element={<AccountSelection />} />
           <Route path="/classroom/*" element={<ClassroomApp />} />
           <Route path="*" element={<Maintainence />} />
         </Route>

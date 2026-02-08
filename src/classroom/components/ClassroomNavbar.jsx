@@ -278,6 +278,13 @@ const ClassroomNavbar = () => {
                         <FaGraduationCap className="w-4 h-4 mr-2" />
                         Practice Exams
                       </button>
+                      <button
+                        onClick={() => navigate('/co-teacher-settings')}
+                        className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200 flex items-center"
+                      >
+                        <FaUser className="w-4 h-4 mr-2" />
+                        Co-Teacher Settings
+                      </button>
                       <div className="border-t border-cyan-500/30 my-1"></div>
                       <button
                         onClick={handleLogout}

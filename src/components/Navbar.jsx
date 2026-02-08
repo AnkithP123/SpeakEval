@@ -234,6 +234,14 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
                         >
                           Practice Exams
                         </button>
+                        <button
+                          onClick={() =>
+                            (window.location.href = "/co-teacher-settings")
+                          }
+                          className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
+                        >
+                          Co-Teacher Settings
+                        </button>
                       </div>
                     )}
                   </div>
