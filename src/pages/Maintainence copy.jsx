@@ -33,8 +33,8 @@ const MaintenancePage = () => {
         <div style={styles.downtimeSection}>
           <FaClock style={styles.downtimeIcon} />
           <span style={styles.downtimeText}>
-            Estimated downtime:{"1h"}
-            <span style={styles.downtimeUnknown}>Unkown</span>
+            Estimated downtime:{" "}
+            <span style={styles.downtimeUnknown}>1h</span>
           </span>
         </div>
         <div style={styles.optionsContainer}>
