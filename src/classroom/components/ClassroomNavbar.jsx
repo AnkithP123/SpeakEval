@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaHome, FaPlus, FaUsers, FaGraduationCap, FaSignOutAlt, FaUser, FaCog } from 'react-icons/fa';
 import { cookieUtils } from '../../utils/cookieUtils';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ClassroomNavbar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hoverButton, setHoverButton] = useState(false);
   const [user, setUser] = useState(null);
+  const { isCoTeacher } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef(null);
@@ -278,13 +280,15 @@ const ClassroomNavbar = () => {
                         <FaGraduationCap className="w-4 h-4 mr-2" />
                         Practice Exams
                       </button>
-                      <button
-                        onClick={() => navigate('/co-teacher-settings')}
-                        className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200 flex items-center"
-                      >
-                        <FaUser className="w-4 h-4 mr-2" />
-                        Co-Teacher Settings
-                      </button>
+                      {!isCoTeacher && (
+                        <button
+                          onClick={() => navigate('/co-teacher-settings')}
+                          className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200 flex items-center"
+                        >
+                          <FaUser className="w-4 h-4 mr-2" />
+                          Co-Teacher Settings
+                        </button>
+                      )}
                       <div className="border-t border-cyan-500/30 my-1"></div>
                       <button
                         onClick={handleLogout}

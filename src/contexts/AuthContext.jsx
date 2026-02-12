@@ -155,6 +155,7 @@ export const AuthProvider = ({ children }) => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCoTeacher, setIsCoTeacher] = useState(false);
   const verificationInProgress = useRef(false);
 
   // Update storage when token changes
@@ -182,6 +183,7 @@ export const AuthProvider = ({ children }) => {
       
       if (!token) {
         setIsAuthenticated(false);
+        setIsCoTeacher(false);
         setIsLoading(false);
         return;
       }
@@ -192,6 +194,7 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
         setUsername(null);
         setIsAuthenticated(false);
+        setIsCoTeacher(false);
         setIsLoading(false);
         clearVerificationCache();
         return;
@@ -205,6 +208,7 @@ export const AuthProvider = ({ children }) => {
         if (cached.result.username) {
           setUsername(cached.result.username);
         }
+        setIsCoTeacher(!!cached.result.isCoTeacher);
         setIsLoading(false);
         return;
       }
@@ -222,12 +226,15 @@ export const AuthProvider = ({ children }) => {
           setToken(null);
           setUsername(null);
           setIsAuthenticated(false);
+          setIsCoTeacher(false);
           clearVerificationCache();
         } else {
           // Token is valid - cache the result
+          const isCoTeacherVal = !!data.decoded?.isCoTeacher;
           const cacheResult = {
             isValid: true,
             username: data.decoded?.username,
+            isCoTeacher: isCoTeacherVal,
           };
           setVerificationCache(token, cacheResult);
           
@@ -235,6 +242,7 @@ export const AuthProvider = ({ children }) => {
           if (data.decoded?.username) {
             setUsername(data.decoded.username);
           }
+          setIsCoTeacher(isCoTeacherVal);
         }
       } catch (error) {
         console.error('Token verification failed:', error);
@@ -249,11 +257,14 @@ export const AuthProvider = ({ children }) => {
             if (decoded.username) {
               setUsername(decoded.username);
             }
+            setIsCoTeacher(!!decoded.isCoTeacher);
           } else {
             setIsAuthenticated(false);
+            setIsCoTeacher(false);
           }
         } catch (decodeError) {
           setIsAuthenticated(false);
+          setIsCoTeacher(false);
         }
       } finally {
         setIsLoading(false);
@@ -270,6 +281,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUsername(null);
     setIsAuthenticated(false);
+    setIsCoTeacher(false);
     clearVerificationCache();
     
     // Clear all localStorage items related to authentication
@@ -317,6 +329,7 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
         setUsername(null);
         setIsAuthenticated(false);
+        setIsCoTeacher(false);
         clearVerificationCache();
       }
     };
@@ -335,11 +348,12 @@ export const AuthProvider = ({ children }) => {
       username,
       isAuthenticated,
       isLoading,
+      isCoTeacher,
       setToken,
       setUsername,
       logout,
     }),
-    [token, username, isAuthenticated, isLoading]
+    [token, username, isAuthenticated, isLoading, isCoTeacher]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
