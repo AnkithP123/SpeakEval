@@ -39,8 +39,11 @@ import Test from "./pages/practiceExams-GradingPage.jsx";
 import PracticeExams from "./pages/PracticeExams";
 import PracticeExamSubmissions from "./pages/PracticeExamSubmissions";
 import PracticeExamResponses from "./pages/PracticeExamResponses";
+import CoTeacherSettings from "./pages/CoTeacherSettings";
+import AccountSelection from "./pages/AccountSelection";
 import ClassroomApp from "./classroom/ClassroomApp";
 import { AuthProvider } from "./contexts/AuthContext";
+import TeacherProtectedRoute from "./components/TeacherProtectedRoute";
 
 function AudioRecorderRouteWrapper() {
   // AudioRecorder now uses token system from localStorage
@@ -94,11 +97,13 @@ function App() {
           <Route
             path="/create-room"
             element={
-              <CreateRoom
-                set={setGold}
-                setUltimate={setUltimate}
-                getPin={getPin}
-              />
+              <TeacherProtectedRoute>
+                <CreateRoom
+                  set={setGold}
+                  setUltimate={setUltimate}
+                  getPin={getPin}
+                />
+              </TeacherProtectedRoute>
             }
           />
           <Route path="/join-room" element={<JoinRoom rooms={[]} />} />
@@ -106,37 +111,43 @@ function App() {
           <Route
             path="/teacher-portal"
             element={
-              <TeacherPortalRouter
-                set={setGold}
-                setUltimate={setUltimate}
-                getPin={getPin}
-              />
+              <TeacherProtectedRoute>
+                <TeacherPortalRouter
+                  set={setGold}
+                  setUltimate={setUltimate}
+                  getPin={getPin}
+                />
+              </TeacherProtectedRoute>
             }
           />
           <Route
             path="/configure"
             element={
-              <Config
-                isUpdate={false}
-                set={setGold}
-                setUltimate={setUltimate}
-                getPin={getPin}
-                subscribed={gold || ultimate}
-                setSubscribed={setGold}
-              />
+              <TeacherProtectedRoute>
+                <Config
+                  isUpdate={false}
+                  set={setGold}
+                  setUltimate={setUltimate}
+                  getPin={getPin}
+                  subscribed={gold || ultimate}
+                  setSubscribed={setGold}
+                />
+              </TeacherProtectedRoute>
             }
           />
           <Route
             path="/update"
             element={
-              <Config
-                isUpdate={true}
-                set={setGold}
-                setUltimate={setUltimate}
-                getPin={getPin}
-                subscribed={gold || ultimate}
-                setSubscribed={setGold}
-              />
+              <TeacherProtectedRoute>
+                <Config
+                  isUpdate={true}
+                  set={setGold}
+                  setUltimate={setUltimate}
+                  getPin={getPin}
+                  subscribed={gold || ultimate}
+                  setSubscribed={setGold}
+                />
+              </TeacherProtectedRoute>
             }
           />
           <Route path="/feedback" element={<FeedbackPage />} />
@@ -172,26 +183,58 @@ function App() {
           <Route path="/teacher-verify" element={<TeacherVerifyPage />} />
           <Route
             path="/create-practice"
-            element={<CreatePractice getPin={getPin} />}
+            element={
+              <TeacherProtectedRoute>
+                <CreatePractice getPin={getPin} />
+              </TeacherProtectedRoute>
+            }
           />
           <Route path="/practice" element={<Practice />} />
           <Route path="/practice-exam" element={<PracticeExam />} />
-          <Route path="/practice-exams" element={<PracticeExams />} />
+          <Route
+            path="/practice-exams"
+            element={
+              <TeacherProtectedRoute>
+                <PracticeExams />
+              </TeacherProtectedRoute>
+            }
+          />
           <Route
             path="/practice-exam-submissions/:examCode"
-            element={<PracticeExamSubmissions />}
+            element={
+              <TeacherProtectedRoute>
+                <PracticeExamSubmissions />
+              </TeacherProtectedRoute>
+            }
           />
           <Route
             path="/practice-exam-responses/:examCode/:studentName"
-            element={<PracticeExamResponses />}
+            element={
+              <TeacherProtectedRoute>
+                <PracticeExamResponses />
+              </TeacherProtectedRoute>
+            }
           />
           <Route path="/profile" element={<ProfileCard />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/grade-bot"
-            element={<GradeBotCreator getPin={getPin} />}
+            element={
+              <TeacherProtectedRoute>
+                <GradeBotCreator getPin={getPin} />
+              </TeacherProtectedRoute>
+            }
           />
+          <Route
+            path="/co-teacher-settings"
+            element={
+              <TeacherProtectedRoute>
+                <CoTeacherSettings />
+              </TeacherProtectedRoute>
+            }
+          />
+          <Route path="/account-selection" element={<AccountSelection />} />
           <Route path="/classroom/*" element={<ClassroomApp />} />
           <Route path="*" element={<Maintainence />} />
         </Route>

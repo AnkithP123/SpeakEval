@@ -63,7 +63,8 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
     setName(username);
   }, [username]);
 
-  const { token, username: authUsername, logout: authLogout } = useAuth();
+  const { token, username: authUsername, isCoTeacher, userType, logout: authLogout } = useAuth();
+  const isTeacher = userType === 'teacher';
   
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -220,20 +221,34 @@ function Navbar({ setVar, setVar2, setVar3, setVar4 }) {
                         >
                           Logout
                         </button>
-                        <button
-                          onClick={() => (window.location.href = "/update")}
-                          className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
-                        >
-                          Manage Sets
-                        </button>
-                        <button
-                          onClick={() =>
-                            (window.location.href = "/practice-exams")
-                          }
-                          className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
-                        >
-                          Practice Exams
-                        </button>
+                        {isTeacher && (
+                          <>
+                            <button
+                              onClick={() => (window.location.href = "/update")}
+                              className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
+                            >
+                              Manage Sets
+                            </button>
+                            <button
+                              onClick={() =>
+                                (window.location.href = "/practice-exams")
+                              }
+                              className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
+                            >
+                              Practice Exams
+                            </button>
+                            {!isCoTeacher && (
+                              <button
+                                onClick={() =>
+                                  (window.location.href = "/co-teacher-settings")
+                                }
+                                className="block px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-900/50 w-full text-left transition-colors duration-200"
+                              >
+                                Co-Teacher Settings
+                              </button>
+                            )}
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

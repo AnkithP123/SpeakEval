@@ -34,9 +34,23 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
     // Wait for auth to finish loading
     if (authLoading) return;
 
-    // If authenticated, redirect to intended page
+    // If authenticated, redirect to account selection (for teachers) or intended page
     if (isAuthenticated && token) {
-      navigate(redirect || "/");
+      // Check if user is a student (they go to classroom)
+      const classroomUser = localStorage.getItem('classroom_user');
+      if (classroomUser) {
+        try {
+          const user = JSON.parse(classroomUser);
+          if (user.userType === 'student') {
+            navigate(redirect || "/classroom");
+            return;
+          }
+        } catch (e) {
+          // Continue to account selection if parsing fails
+        }
+      }
+      // Teachers go to account selection
+      navigate(redirect || "/account-selection");
     }
   }, [navigate, redirect, isAuthenticated, authLoading, token]);
 
@@ -103,11 +117,19 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
           localStorage.setItem("token", data.token);
           navigate("/classroom");
         } else {
-          // Teacher - go to main site
-          navigate(redirect || "/");
+          // Check if account selection is required
+          if (data.requiresAccountSelection) {
+            navigate("/account-selection", { 
+              state: { 
+                accounts: data.accounts,
+                token: data.token 
+              } 
+            });
+          } else {
+            navigate(redirect || "/");
+            toast.success("Successfully signed in with Google!");
+          }
         }
-        
-        toast.success("Successfully signed in with Google!");
       } else {
         if (data.redirect) {
           navigate("/" + data.redirect);
@@ -188,11 +210,19 @@ function LoginPageContent({ set, setUltimate, setUsername, setPin }) {
           }));
           navigate("/classroom");
         } else {
-          // Teacher - go to main site
-          navigate(redirect || "/");
+          // Check if account selection is required
+          if (data.requiresAccountSelection) {
+            navigate("/account-selection", { 
+              state: { 
+                accounts: data.accounts,
+                token: data.token 
+              } 
+            });
+          } else {
+            navigate(redirect || "/");
+            toast.success(`Welcome back, ${data.username}!`);
+          }
         }
-        
-        toast.success(`Welcome back, ${data.username}!`);
       }
     } catch (err) {
       console.error("Login Error:", err);

@@ -18,6 +18,7 @@ import {
   FaChevronUp,
 } from "react-icons/fa";
 import urlCache from "../utils/urlCache";
+import questionAudioCache from "../utils/questionAudioCache";
 
 function TeacherPortalRoom({ initialRoomCode, pin }) {
   const { token } = useAuth();
@@ -195,6 +196,8 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
       const totalRequests = questionCodes.length * 2;
 
       const allResults = [];
+      const allQuestionAudioUrls = {}; // Collect questionAudioUrls from all responses
+      
       for (let i = 0; i < questionCodes.length; i++) {
         const questionCode = questionCodes[i];
         try {
@@ -217,6 +220,11 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           }
           if (("" + questionCode).slice(-3) === "001") {
             setInfo(dataResponseJson.info || {});
+          }
+          
+          // Collect questionAudioUrls from this response (merge into master object)
+          if (dataResponseJson.questionAudioUrls && typeof dataResponseJson.questionAudioUrls === 'object') {
+            Object.assign(allQuestionAudioUrls, dataResponseJson.questionAudioUrls);
           }
           // if (!config.name) {
           //   console.log("Fetching config for question:", dataResponseJson);
@@ -267,6 +275,11 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
             cheaters: [],
           });
         }
+      }
+
+      // Initialize question audio cache with all collected URLs (once after all requests)
+      if (Object.keys(allQuestionAudioUrls).length > 0) {
+        questionAudioCache.initialize(allQuestionAudioUrls);
       }
 
       // Step 3: Build the complete data store
@@ -1476,7 +1489,10 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                                       question={responseData.questionText}
                                       questionBase64={responseData.question}
                                       questionAudioUrl={
-                                        responseData.questionAudioUrl
+                                        // Try new system: look up by questionId
+                                        responseData.questionId 
+                                          ? questionAudioCache.getUrl(responseData.questionId)
+                                          : responseData.questionAudioUrl // Fallback to old system
                                       }
                                       index={responseData.index}
                                       name={participant.name}
@@ -1545,7 +1561,12 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
                             audio={participant.audio}
                             question={participant.questionText}
                             questionBase64={participant.question}
-                            questionAudioUrl={participant.questionAudioUrl}
+                            questionAudioUrl={
+                              // Try new system: look up by questionId
+                              participant.questionId 
+                                ? questionAudioCache.getUrl(participant.questionId)
+                                : participant.questionAudioUrl // Fallback to old system
+                            }
                             index={participant.index}
                             name={participant.name || "Unknown"}
                             code={question.questionCode}
