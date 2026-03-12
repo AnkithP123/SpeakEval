@@ -3,13 +3,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useClassroom } from '../hooks/useClassroom.jsx';
 import { useToast } from '../hooks/useToast.jsx';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaArrowLeft, FaPlus, FaUsers, FaClipboardList, FaCalendar, FaCode, FaGraduationCap, FaPlay, FaEye, FaEdit, FaClock } from 'react-icons/fa';
+import { cuteAlert } from "cute-alert";
+import { FaArrowLeft, FaPlus, FaUsers, FaClipboardList, FaCalendar, FaCode, FaGraduationCap, FaPlay, FaEye, FaEdit, FaClock, FaTrash } from 'react-icons/fa';
 
 const ClassDetail = () => {
   const { token: authToken } = useAuth();
   const { classId } = useParams();
   const navigate = useNavigate();
-  const { getClass, deleteClass } = useClassroom();
+  const { getClass, deleteClass, deleteAssignment } = useClassroom();
   const { showSuccess, showError } = useToast();
   
   const [classData, setClassData] = useState(null);
@@ -75,6 +76,30 @@ const ClassDetail = () => {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
+    });
+  };
+
+  const handleDeleteAssignment = (assignmentId, title) => {
+    cuteAlert({
+      type: "question",
+      title: "Delete Assignment?",
+      description: `Are you sure you want to delete "${title}"? This action cannot be undone.`,
+      primaryButtonText: "Yes, Delete",
+      secondaryButtonText: "Cancel",
+    }).then(async (result) => {
+      if (result === "primaryButtonClicked") {
+        try {
+          await deleteAssignment(classId, assignmentId);
+          setClassData(prev => ({
+            ...prev,
+            assignments: prev.assignments?.filter(a => a.id !== assignmentId) || []
+          }));
+          showSuccess('Assignment deleted successfully');
+        } catch (error) {
+          console.error('Failed to delete assignment', error);
+          showError('Failed to delete assignment');
+        }
+      }
     });
   };
 
@@ -294,14 +319,23 @@ const ClassDetail = () => {
                                 <FaEye className="w-4 h-4" />
                               </Link>
                             )}
-                  {isTeacher && (
+                            {isTeacher && (
                               <Link
                                 to={`/classroom/${classId}/assignments/${assignment.id}/grade`}
                                 className="p-2 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-all duration-300"
                               >
                                 <FaEdit className="w-4 h-4" />
                               </Link>
-          )}
+                            )}
+                            {isTeacher && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAssignment(assignment.id, assignment.title)}
+                                className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all duration-300"
+                              >
+                                <FaTrash className="w-4 h-4" />
+                              </button>
+                            )}
         </div>
       </div>
 
