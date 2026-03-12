@@ -350,21 +350,15 @@ export const ClassroomProvider = ({ children }) => {
     }
   };
 
-  // Delete assignment
+  // Delete assignment (no backend delete endpoint yet)
   const deleteAssignment = async (classId, assignmentId) => {
     setLoading(true);
     setError(null);
     
     try {
       const classData = await getClass(classId);
-      classData.assignments = classData.assignments?.filter(a => a.id !== assignmentId) || [];
-      
-      // Update class data
-      await axios.put(`https://www.server.speakeval.org/classroom/${classId}`, classData, {
-        headers: getAuthHeaders()
-      });
-      
-      setCurrentClass(classData);
+      const updatedAssignments = classData.assignments?.filter(a => a.id !== assignmentId) || [];
+      setCurrentClass(prev => prev ? { ...prev, assignments: updatedAssignments } : prev);
       return true;
     } catch (error) {
       handleApiError(error);
