@@ -1285,7 +1285,7 @@ const Config = ({
             throw new Error("Failed to get upload URL");
           }
 
-          const { url, fields } = await uploadUrlResponse.json();
+          const { url, questionId, fields } = await uploadUrlResponse.json();
           const formData = new FormData();
           Object.entries(fields).forEach(([key, value]) => {
             formData.append(key, value);
@@ -1303,7 +1303,7 @@ const Config = ({
           }
 
           const questionResponse = await fetch(
-            `https://www.server.speakeval.org/uploadquestion?pin=${userId}&id=${id}&index=${i}&language=${language}`,
+            `https://www.server.speakeval.org/uploadquestion?pin=${userId}&id=${id}&index=${i}&questionId=${questionId}&language=${language}`,
             {
               method: "POST",
               headers: {
@@ -1381,7 +1381,7 @@ const Config = ({
             throw new Error("Failed to get upload URL");
           }
 
-          const { url, fields } = await uploadUrlResponse.json();
+          const { url, questionId, fields } = await uploadUrlResponse.json();
           const formDatass = new FormData();
           Object.entries(fields).forEach(([key, value]) => {
             formDatass.append(key, value);
@@ -1399,7 +1399,7 @@ const Config = ({
           }
 
           const questionResponse = await fetch(
-            `https://www.server.speakeval.org/uploadquestion?pin=${userId}&id=${id}&index=${i}&language=${language}`,
+            `https://www.server.speakeval.org/uploadquestion?pin=${userId}&id=${id}&index=${i}&questionId=${questionId}&language=${language}`,
             {
               method: "POST",
               headers: {

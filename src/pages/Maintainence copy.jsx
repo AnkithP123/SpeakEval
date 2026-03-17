@@ -15,15 +15,14 @@ const MaintenancePage = () => {
           <h2 style={styles.message}>We're working to restore service!</h2>
         </div>
         <p style={styles.subtext}>
-          We've identified the issue and are actively implementing a fix.
-          Service should be restored shortly. Thank you for your patience.
+          Service Paused due to Github being down, should be back shortly. Thank you for your patience.
         </p>
         <div style={styles.statusSection}>
           <div style={styles.statusLabel}>Current Status</div>
           <div style={styles.statusHighlight}>
             <FaHeartbeat style={styles.statusHighlightIcon} />
             <span>
-              Implementing fix
+              Waiting...
               <span style={styles.ellipsis}>...</span>
             </span>
           </div>
@@ -35,7 +34,7 @@ const MaintenancePage = () => {
           <FaClock style={styles.downtimeIcon} />
           <span style={styles.downtimeText}>
             Estimated downtime:{" "}
-            <span style={styles.downtimeUnknown}>Unkown</span>
+            <span style={styles.downtimeUnknown}>1h</span>
           </span>
         </div>
         <div style={styles.optionsContainer}>

@@ -356,15 +356,21 @@ export const ClassroomProvider = ({ children }) => {
     setError(null);
     
     try {
-      const classData = await getClass(classId);
-      classData.assignments = classData.assignments?.filter(a => a.id !== assignmentId) || [];
-      
-      // Update class data
-      await axios.put(`https://www.server.speakeval.org/classroom/${classId}`, classData, {
-        headers: getAuthHeaders()
-      });
-      
-      setCurrentClass(classData);
+      await axios.delete(
+        `https://www.server.speakeval.org/api/classes/${classId}/assignments/${assignmentId}`,
+        { headers: getAuthHeaders() }
+      );
+
+      // Update local state to reflect deletion
+      setCurrentClass(prev =>
+        prev
+          ? {
+              ...prev,
+              assignments: prev.assignments?.filter(a => a.id !== assignmentId) || [],
+            }
+          : prev
+      );
+
       return true;
     } catch (error) {
       handleApiError(error);
