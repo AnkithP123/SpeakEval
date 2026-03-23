@@ -33,7 +33,8 @@ const UnifiedPracticeExam = () => {
             questions: assignment.questions || [],
             timeLimit: assignment.timeLimit || 60,
             thinkingTime: assignment.thinkingTime || 10,
-            questionOrder: assignment.questionOrder || "up_to_students"
+            questionOrder: assignment.questionOrder || "up_to_students",
+            forceTranscriptionsOff: assignment.forceTranscriptionsOff || false
           });
         } else {
           if (!tokenManager.isAuthenticated()) {
