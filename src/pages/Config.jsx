@@ -59,9 +59,8 @@ const DraggableColumn = ({
   return (
     <th
       ref={ref}
-      className={`text-white text-center p-2 border-b border-purple-500/30 ${
-        isDragging ? "opacity-50" : ""
-      }`}
+      className={`text-white text-center p-2 border-b border-purple-500/30 ${isDragging ? "opacity-50" : ""
+        }`}
       style={{ cursor: "move" }}
     >
       <div className="flex items-center justify-center space-x-2">
@@ -587,8 +586,8 @@ const Config = ({
     const newPoint =
       pointValues.length > 1
         ? pointValues[pointValues.length - 1] -
-          (pointValues[pointValues.length - 2] -
-            pointValues[pointValues.length - 1])
+        (pointValues[pointValues.length - 2] -
+          pointValues[pointValues.length - 1])
         : pointValues.length === 1
           ? pointValues[0] - 1
           : 1;
@@ -1030,18 +1029,18 @@ const Config = ({
         setInstructions(
           loadedInstructions.length > 0
             ? loadedInstructions.map((inst) => {
-                console.log("Inst:", inst);
-                try {
-                  // Try to parse as JSON (if it's a stringified object)
-                  const parsed = JSON.parse(inst);
-                  return typeof parsed === "object" && parsed !== null
-                    ? parsed
-                    : { text: inst, show: "Once at the Start of Room" };
-                } catch (e) {
-                  // If not JSON, treat as plain text
-                  return { text: inst, show: "Once at the Start of Room" };
-                }
-              })
+              console.log("Inst:", inst);
+              try {
+                // Try to parse as JSON (if it's a stringified object)
+                const parsed = JSON.parse(inst);
+                return typeof parsed === "object" && parsed !== null
+                  ? parsed
+                  : { text: inst, show: "Once at the Start of Room" };
+              } catch (e) {
+                // If not JSON, treat as plain text
+                return { text: inst, show: "Once at the Start of Room" };
+              }
+            })
             : [{ text: "", show: "Once at the Start of Room" }],
         );
       }
@@ -1168,8 +1167,7 @@ const Config = ({
     console.log("Blob type:", blob.type);
     if (!allowedTypes.includes(blob.type)) {
       toast.error(
-        `Question ${
-          questionIndex + 1
+        `Question ${questionIndex + 1
         }: Invalid file type. Only audio files are allowed.`,
       );
       return false;
@@ -1177,8 +1175,7 @@ const Config = ({
 
     if (blob.size > maxSizeBytes) {
       toast.error(
-        `Question ${
-          questionIndex + 1
+        `Question ${questionIndex + 1
         }: File is too large. Maximum size is ${MAX_SIZE_MB}MB.`,
       );
       return false;
@@ -1233,9 +1230,9 @@ const Config = ({
       const filesToValidate =
         configType === "Simulated_Conversation" ? promptClips : questions;
       const allFilesAreValid = await Promise.all(
-        filesToValidate.map(async (fileUrl, i) => {
+        filesToValidate.map(async (fileObj, i) => {
           try {
-            const blob = await fetch(fileUrl).then((res) => res.blob());
+            const blob = await fetch(fileObj.url || fileObj).then((res) => res.blob());
             return validateAudioBlob(blob, i, maxFileSizeBytes);
           } catch (err) {
             console.error("Error fetching audio:", err);
@@ -1251,7 +1248,7 @@ const Config = ({
 
       if (isUpdate) {
         toast.success("Updating configuration...");
-        
+
         const filesToUpload = configType === "Simulated_Conversation" ? promptClips : questions;
         const questionIdsArr = filesToUpload.map(q => q.id);
 
@@ -1284,6 +1281,7 @@ const Config = ({
 
           const res = await fetch(fileObj.url);
           const blob = await res.blob();
+
 
           const uploadUrlResponse = await fetch(
             `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}&questionId=${fileObj.id}`,
@@ -1329,9 +1327,8 @@ const Config = ({
           if (!questionResponse.ok || questionResult.error) {
             throw new Error(
               questionResult.error ||
-                `Failed to upload ${
-                  configType === "Simulated_Conversation" ? "prompt" : "question"
-                } ${i + 1}`,
+              `Failed to upload ${configType === "Simulated_Conversation" ? "prompt" : "question"
+              } ${i + 1}`,
             );
           }
 
@@ -1343,9 +1340,18 @@ const Config = ({
         setIsConfigRegistered(true);
       } else {
         console.log("Registering new configuration...");
-        
+
         const filesToUpload = configType === "Simulated_Conversation" ? promptClips : questions;
         const questionIdsArr = filesToUpload.map(q => q.id);
+
+        const testResponse = await fetch(
+          `https://www.server.speakeval.org/test`,
+          {
+            method: "GET",
+          },
+        );
+        const testResult = await testResponse.json();
+        console.log("Test response:", testResult);
 
         const configResponse = await fetch(
           `https://www.server.speakeval.org/createconfig?pin=${userId}&id=${id}&rubric=${encodeURIComponent(
@@ -1430,9 +1436,8 @@ const Config = ({
           if (!questionResponse.ok || questionResult.error) {
             throw new Error(
               questionResult.error ||
-                `Failed to upload ${
-                  configType === "Simulated_Conversation" ? "prompt" : "question"
-                } ${i + 1}`,
+              `Failed to upload ${configType === "Simulated_Conversation" ? "prompt" : "question"
+              } ${i + 1}`,
             );
           }
 
@@ -1491,11 +1496,10 @@ const Config = ({
                             onClick={() => handleConfigClick(config, false)}
                             onMouseEnter={() => setHoverIndex(index)}
                             onMouseLeave={() => setHoverIndex(null)}
-                            className={`relative overflow-hidden px-4 py-2 rounded-full transition-all duration-300 ${
-                              hoverIndex === index
-                                ? "bg-gradient-to-r from-cyan-500/20 to-purple-500/20 shadow-lg shadow-cyan-500/30"
-                                : "bg-black/30"
-                            } border border-cyan-500/30 text-white hover:border-cyan-400/50`}
+                            className={`relative overflow-hidden px-4 py-2 rounded-full transition-all duration-300 ${hoverIndex === index
+                              ? "bg-gradient-to-r from-cyan-500/20 to-purple-500/20 shadow-lg shadow-cyan-500/30"
+                              : "bg-black/30"
+                              } border border-cyan-500/30 text-white hover:border-cyan-400/50`}
                           >
                             {hoverIndex === index && (
                               <div className="absolute inset-0 overflow-hidden">
@@ -1636,13 +1640,12 @@ const Config = ({
                             }
                           }}
                           // Conditionally apply classes for enabled/disabled states
-                          className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
-                            configType === type.key
-                              ? "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/20 text-white"
-                              : isEnabled
-                                ? "text-gray-400 hover:bg-white/10"
-                                : "text-gray-500 opacity-60 cursor-not-allowed"
-                          }`}
+                          className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${configType === type.key
+                            ? "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/20 text-white"
+                            : isEnabled
+                              ? "text-gray-400 hover:bg-white/10"
+                              : "text-gray-500 opacity-60 cursor-not-allowed"
+                            }`}
                         >
                           {type.label}
                         </button>
@@ -1709,9 +1712,8 @@ const Config = ({
                           return (
                             <div
                               key={index}
-                              className={`bg-black/20 border border-green-500/30 rounded-lg p-4 space-y-3 ${
-                                isUneditable ? "opacity-75" : ""
-                              }`}
+                              className={`bg-black/20 border border-green-500/30 rounded-lg p-4 space-y-3 ${isUneditable ? "opacity-75" : ""
+                                }`}
                             >
                               <div className="flex items-start space-x-3">
                                 <label className="text-white w-28 pt-2 flex-shrink-0">
@@ -1781,51 +1783,51 @@ const Config = ({
                                       toolbar: isUneditable
                                         ? false
                                         : [
-                                            [
-                                              {
-                                                font: [
-                                                  "roboto",
-                                                  "arial",
-                                                  "times-new-roman",
-                                                  "sans-serif",
-                                                  "serif",
-                                                  "georgia",
-                                                  "comic-sans-ms",
-                                                  "courier-new",
-                                                  "helvetica",
-                                                  "lucida",
-                                                  "tahoma",
-                                                  "trebuchet-ms",
-                                                  "verdana",
-                                                  "impact",
-                                                ],
-                                              },
-                                              { size: [] },
-                                            ],
-                                            [
-                                              "bold",
-                                              "italic",
-                                              "underline",
-                                              "strike",
-                                            ],
-                                            [{ color: [] }, { background: [] }],
-                                            [
-                                              { script: "sub" },
-                                              { script: "super" },
-                                            ],
-                                            ["blockquote", "code-block"],
-                                            [
-                                              { list: "ordered" },
-                                              { list: "bullet" },
-                                            ],
-                                            [
-                                              { indent: "-1" },
-                                              { indent: "+1" },
-                                              { align: [] },
-                                            ],
-                                            ["link", "image"],
-                                            ["clean"],
+                                          [
+                                            {
+                                              font: [
+                                                "roboto",
+                                                "arial",
+                                                "times-new-roman",
+                                                "sans-serif",
+                                                "serif",
+                                                "georgia",
+                                                "comic-sans-ms",
+                                                "courier-new",
+                                                "helvetica",
+                                                "lucida",
+                                                "tahoma",
+                                                "trebuchet-ms",
+                                                "verdana",
+                                                "impact",
+                                              ],
+                                            },
+                                            { size: [] },
                                           ],
+                                          [
+                                            "bold",
+                                            "italic",
+                                            "underline",
+                                            "strike",
+                                          ],
+                                          [{ color: [] }, { background: [] }],
+                                          [
+                                            { script: "sub" },
+                                            { script: "super" },
+                                          ],
+                                          ["blockquote", "code-block"],
+                                          [
+                                            { list: "ordered" },
+                                            { list: "bullet" },
+                                          ],
+                                          [
+                                            { indent: "-1" },
+                                            { indent: "+1" },
+                                            { align: [] },
+                                          ],
+                                          ["link", "image"],
+                                          ["clean"],
+                                        ],
                                     }}
                                     formats={[
                                       "font",
@@ -1876,11 +1878,10 @@ const Config = ({
                                     handleInstructionShowChange(index, e)
                                   }
                                   disabled={isUneditable}
-                                  className={`bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
-                                    isUneditable
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : ""
-                                  }`}
+                                  className={`bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${isUneditable
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                    }`}
                                 >
                                   <option value="Once at the Start of Room">
                                     Before Question
@@ -1894,47 +1895,46 @@ const Config = ({
                                 </select>
                                 {instruction.show ===
                                   "Once at the Start of Room" && (
-                                  <div className="flex items-center space-x-2">
-                                    <label
-                                      htmlFor={`display-time-${index}`}
-                                      className="text-sm text-gray-300"
-                                    >
-                                      Display Time (seconds, optional):
-                                    </label>
-                                    <input
-                                      id={`display-time-${index}`}
-                                      type="number"
-                                      value={instruction.displayTime || ""}
-                                      placeholder="Optional"
-                                      onChange={(e) => {
-                                        const newInstructions = [
-                                          ...instructions,
-                                        ];
-                                        const value = e.target.value.trim();
-                                        let displayTime = undefined;
-                                        if (value !== "") {
-                                          const parsed = parseInt(value, 10);
-                                          // Only set displayTime if it's a valid positive number
-                                          if (!isNaN(parsed) && parsed > 0) {
-                                            displayTime = parsed;
+                                    <div className="flex items-center space-x-2">
+                                      <label
+                                        htmlFor={`display-time-${index}`}
+                                        className="text-sm text-gray-300"
+                                      >
+                                        Display Time (seconds, optional):
+                                      </label>
+                                      <input
+                                        id={`display-time-${index}`}
+                                        type="number"
+                                        value={instruction.displayTime || ""}
+                                        placeholder="Optional"
+                                        onChange={(e) => {
+                                          const newInstructions = [
+                                            ...instructions,
+                                          ];
+                                          const value = e.target.value.trim();
+                                          let displayTime = undefined;
+                                          if (value !== "") {
+                                            const parsed = parseInt(value, 10);
+                                            // Only set displayTime if it's a valid positive number
+                                            if (!isNaN(parsed) && parsed > 0) {
+                                              displayTime = parsed;
+                                            }
                                           }
-                                        }
-                                        newInstructions[index] = {
-                                          ...newInstructions[index],
-                                          displayTime: displayTime,
-                                        };
-                                        setInstructions(newInstructions);
-                                      }}
-                                      disabled={isUneditable}
-                                      min="1"
-                                      className={`w-20 bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${
-                                        isUneditable
+                                          newInstructions[index] = {
+                                            ...newInstructions[index],
+                                            displayTime: displayTime,
+                                          };
+                                          setInstructions(newInstructions);
+                                        }}
+                                        disabled={isUneditable}
+                                        min="1"
+                                        className={`w-20 bg-gray-800/50 border border-green-500/30 rounded py-1 px-2 text-white text-sm focus:ring-green-500 focus:border-green-500 ${isUneditable
                                           ? "opacity-50 cursor-not-allowed"
                                           : ""
-                                      }`}
-                                    />
-                                  </div>
-                                )}
+                                          }`}
+                                      />
+                                    </div>
+                                  )}
                               </div>
                             </div>
                           );
@@ -2003,11 +2003,10 @@ const Config = ({
                           <div className="flex flex-col items-center gap-2">
                             <button
                               onClick={handleTogglePromptRecording}
-                              className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg text-white transition-all duration-300 ${
-                                recordingPrompt
-                                  ? "bg-red-500 hover:bg-red-600"
-                                  : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-                              }`}
+                              className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg text-white transition-all duration-300 ${recordingPrompt
+                                ? "bg-red-500 hover:bg-red-600"
+                                : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                                }`}
                             >
                               {recordingPrompt ? (
                                 <FaStop className="mr-2" />
@@ -2073,11 +2072,10 @@ const Config = ({
                       <div className="flex justify-center">
                         <button
                           onClick={handleToggleRecording}
-                          className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white transition-all duration-300 ${
-                            recording
-                              ? "bg-red-500 hover:bg-red-600"
-                              : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-                          }`}
+                          className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white transition-all duration-300 ${recording
+                            ? "bg-red-500 hover:bg-red-600"
+                            : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                            }`}
                         >
                           {recording ? (
                             <FaStop className="mr-2" />
@@ -2299,9 +2297,8 @@ const Config = ({
                           value={maxTime}
                           onChange={(e) => setMaxTime(e.target.value)}
                           className="w-full bg-black/30 border border-blue-500/30 rounded p-2 text-white"
-                          placeholder={`Enter time limit, recommended: ${
-                            configType === "Classic" ? 30 : 180
-                          }`}
+                          placeholder={`Enter time limit, recommended: ${configType === "Classic" ? 30 : 180
+                            }`}
                         />
                       </div>
                       <div>
@@ -2370,13 +2367,12 @@ const Config = ({
                       onMouseEnter={() => setHoverButton(true)}
                       onMouseLeave={() => setHoverButton(false)}
                       disabled={isUploading}
-                      className={`w-full relative overflow-hidden text-white text-base rounded-md px-5 py-3 transition-all duration-300 ${
-                        isUploading
-                          ? "bg-gray-600 cursor-not-allowed"
-                          : hoverButton
-                            ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
-                            : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
-                      }`}
+                      className={`w-full relative overflow-hidden text-white text-base rounded-md px-5 py-3 transition-all duration-300 ${isUploading
+                        ? "bg-gray-600 cursor-not-allowed"
+                        : hoverButton
+                          ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
+                          : "bg-gradient-to-r from-pink-600/50 to-purple-700/50"
+                        }`}
                     >
                       <span className="relative z-10">
                         {isUploading
@@ -2618,11 +2614,10 @@ const Config = ({
                       !processedStrings && (
                         <div className="space-y-4">
                           <div
-                            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
-                              dragActive
-                                ? "border-cyan-400 bg-cyan-500/10"
-                                : "border-gray-500 hover:border-cyan-500"
-                            }`}
+                            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${dragActive
+                              ? "border-cyan-400 bg-cyan-500/10"
+                              : "border-gray-500 hover:border-cyan-500"
+                              }`}
                             onDragEnter={handleDrag}
                             onDragLeave={handleDrag}
                             onDragOver={handleDrag}
@@ -2812,11 +2807,10 @@ const Config = ({
                           <button
                             onClick={handleConfirmStrings}
                             disabled={isConfirming}
-                            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
-                              isConfirming
-                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                : "bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
-                            }`}
+                            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${isConfirming
+                              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                              : "bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
+                              }`}
                           >
                             Confirm Changes
                           </button>
@@ -2857,13 +2851,12 @@ const Config = ({
 
                     {/* Image Grid */}
                     <div
-                      className={`grid gap-4 ${
-                        exampleImages.length === 1
-                          ? "grid-cols-1 max-w-md mx-auto"
-                          : exampleImages.length === 2
-                            ? "grid-cols-2 max-w-2xl mx-auto"
-                            : "grid-cols-3"
-                      }`}
+                      className={`grid gap-4 ${exampleImages.length === 1
+                        ? "grid-cols-1 max-w-md mx-auto"
+                        : exampleImages.length === 2
+                          ? "grid-cols-2 max-w-2xl mx-auto"
+                          : "grid-cols-3"
+                        }`}
                     >
                       {exampleImages.map((image, index) => (
                         <div key={index} className="space-y-2">

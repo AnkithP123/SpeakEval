@@ -15,6 +15,8 @@ function CreatePractice({ getPin }) {
   const [practiceCode, setPracticeCode] = useState("");
   const [thinkingTime, setThinkingTime] = useState(5);
   const [canRelisten, setCanRelisten] = useState(true);
+  const [forceTranscriptionsOff, setForceTranscriptionsOff] = useState(false);
+  const [questionOrder, setQuestionOrder] = useState("up_to_students");
   const [responseTime, setResponseTime] = useState(0);
   const [timeLimit, setTimeLimit] = useState(0);
   const [hoveredInfo, setHoveredInfo] = useState(null);
@@ -53,7 +55,7 @@ function CreatePractice({ getPin }) {
 
     try {
       const res = await fetch(
-        `https://www.server.speakeval.org/create_practice?pin=${userId}&config=${selectedConfig}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&timeLimit=${timeLimit}`
+        `https://www.server.speakeval.org/create_practice?pin=${userId}&config=${selectedConfig}&thinkingTime=${thinkingTime}&canRelisten=${canRelisten}&timeLimit=${timeLimit}&forceTranscriptionsOff=${forceTranscriptionsOff}&questionOrder=${questionOrder}`
       );
       const data = await res.json();
 
@@ -181,6 +183,54 @@ function CreatePractice({ getPin }) {
                     thinking time
                   </div>
                 )}
+                <div className="flex items-center justify-between mt-4">
+                  <label className="text-lg font-semibold flex items-center">
+                    Force Transcriptions Off
+                    <FaInfoCircle
+                      className="ml-2 text-blue-500 cursor-help"
+                      onMouseEnter={() => setHoveredInfo("forceTranscriptionsOff")}
+                      onMouseLeave={() => setHoveredInfo(null)}
+                    />
+                  </label>
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={forceTranscriptionsOff}
+                      onChange={(e) => setForceTranscriptionsOff(e.target.checked)}
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                </div>
+                {hoveredInfo === "forceTranscriptionsOff" && (
+                  <div className="mt-2 p-2 bg-gray-800 rounded-lg text-sm">
+                    Prevent students from viewing transcriptions regardless of their local setting.
+                  </div>
+                )}
+                
+                <div className="mt-4">
+                  <label className="block text-lg font-semibold mb-2 flex items-center">
+                    Question Execution Sequence
+                    <FaInfoCircle
+                      className="ml-2 text-blue-500 cursor-help"
+                      onMouseEnter={() => setHoveredInfo("questionOrder")}
+                      onMouseLeave={() => setHoveredInfo(null)}
+                    />
+                  </label>
+                  <select
+                    value={questionOrder}
+                    onChange={(e) => setQuestionOrder(e.target.value)}
+                    className="input"
+                  >
+                    <option value="up_to_students">Up to Students</option>
+                    <option value="in_order">In Order</option>
+                    <option value="random">Randomized</option>
+                  </select>
+                  {hoveredInfo === "questionOrder" && (
+                    <div className="mt-2 p-2 bg-gray-800 rounded-lg text-sm">
+                      Force students to answer questions in sequential order, randomly shuffled order, or let them choose themselves.
+                    </div>
+                  )}
+                </div>
               </>
             )}
 

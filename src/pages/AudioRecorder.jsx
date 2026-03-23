@@ -3439,9 +3439,11 @@ export default function AudioRecorder() {
 
       setUploadProgress(30);
 
-      // Get upload URL for the combined recording (use index 0 since it's a single combined file)
+      // Get upload URL for the combined recording
       const uploadUrlResponse = await fetch(
-        `https://www.server.speakeval.org/get-recording-upload-url?token=${token}&index=0`,
+        `https://www.server.speakeval.org/get-recording-upload-url?token=${token}${
+          currentQuestionId ? `&questionId=${currentQuestionId}` : "&index=0"
+        }`,
         {
           method: "GET",
         },
@@ -3479,7 +3481,9 @@ export default function AudioRecorder() {
 
       console.log("📤 Notifying server of upload completion...");
       const serverResponse = await fetch(
-        `https://www.server.speakeval.org/upload?token=${token}&index=0`,
+        `https://www.server.speakeval.org/upload?token=${token}${
+          currentQuestionId ? `&questionId=${currentQuestionId}` : "&index=0"
+        }`,
         {
           method: "POST",
           headers: {

@@ -36,9 +36,26 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
   const countdownRef = useRef(0)
 
   useEffect(() => {
-    // Set initial display time to max time limit
-    if (examData && examData.timeLimit) {
-      setDisplayTime(formatTime(examData.timeLimit))
+    if (examData) {
+      // Check if transcriptions were explicitly stripped globally
+      const transcriptionsExist = examData.questions?.some(q => q.transcription !== undefined);
+      setShowTranscriptions(transcriptionsExist);
+
+      // Pre-evaluate teacher layout restrictions
+      const qOrder = examData.questionOrder || "up_to_students";
+      if (qOrder === "in_order") {
+        setRandomizeQuestions(false);
+        setRandomizationChosen(true);
+      } else if (qOrder === "random") {
+        setRandomizeQuestions(true);
+        setRandomSeed(Math.random());
+        setRandomizationChosen(true);
+      }
+      
+      // Set initial display time to max time limit
+      if (examData.timeLimit) {
+        setDisplayTime(formatTime(examData.timeLimit))
+      }
     }
     
     return () => {
@@ -273,9 +290,12 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
           const response = await fetch(recording.audioUrl);
           const audioBlob = await response.blob();
           
+          // Extract the exact question UUID natively out of the shuffled array layer
+          const qId = getExamData().questions[recording.questionIndex]?.id || "";
+
           // Get presigned URL for this recording
           const urlResponse = await fetch(
-            `https://www.server.speakeval.org/get-practice-upload-url?token=${token}&index=${recording.questionIndex}`,
+            `https://www.server.speakeval.org/get-practice-upload-url?token=${token}&index=${recording.questionIndex}&questionId=${qId}`,
             { method: "GET" }
           );
           
@@ -298,7 +318,7 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
             throw new Error(`Failed to upload question ${recording.questionIndex}`);
           }
           
-          return { success: true, questionIndex: recording.questionIndex };
+          return { success: true, questionIndex: recording.questionIndex, questionId: qId };
         } catch (error) {
           console.error(`❌ Failed to upload question ${recording.questionIndex}:`, error);
           return { success: false, questionIndex: recording.questionIndex, error: error.message };
@@ -328,6 +348,7 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
             },
             body: JSON.stringify({
               uploadedQuestions: successfulUploads.map(r => r.questionIndex),
+              uploadedQuestionIds: successfulUploads.map(r => r.questionId).filter(id => id), // Add explicitly mapped UUID array to the request payload
               totalQuestions: recordings.length,
             }),
           }
@@ -398,6 +419,30 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
             </button>
           </div>
 
+          {examData?.questions?.some(q => q.transcription !== undefined) && (
+            <div className="flex justify-center mb-4">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={showTranscriptions}
+                  onChange={() => setShowTranscriptions(!showTranscriptions)}
+                  className="mr-2"
+                />
+                <span className="text-foreground">Show Transcriptions</span>
+              </label>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-b from-background to-gray-900">
+      <div className="glass-morphism p-8 w-full max-w-2xl">
+        <h1 className="text-3xl font-bold mb-6 text-center text-foreground">Practice Exam</h1>
+
+        {examData?.questions?.some(q => q.transcription !== undefined) && (
           <div className="flex justify-center mb-4">
             <label className="flex items-center">
               <input
@@ -409,27 +454,7 @@ export default function PracticeAudioRecorder({ examData, onComplete, isAssignme
               <span className="text-foreground">Show Transcriptions</span>
             </label>
           </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-b from-background to-gray-900">
-      <div className="glass-morphism p-8 w-full max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6 text-center text-foreground">Practice Exam</h1>
-
-        <div className="flex justify-center mb-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={showTranscriptions}
-              onChange={() => setShowTranscriptions(!showTranscriptions)}
-              className="mr-2"
-            />
-            <span className="text-foreground">Show Transcriptions</span>
-          </label>
-        </div>
+        )}
 
         <div className="text-5xl font-bold text-center mb-8 text-primary neon-border p-4 rounded-lg">
           {displayTime}

@@ -19,7 +19,9 @@ const CreateAssignment = () => {
     description: '',
     dueDate: '',
     timeLimit: 60,
-    thinkingTime: 10
+    thinkingTime: 10,
+    forceTranscriptionsOff: false,
+    questionOrder: 'up_to_students'
   });
 
   useEffect(() => {
@@ -90,6 +92,8 @@ const CreateAssignment = () => {
         configName: selectedSet.name,
         timeLimit: Number(formData.timeLimit) || 60,
         thinkingTime: Number(formData.thinkingTime) || 10,
+        forceTranscriptionsOff: formData.forceTranscriptionsOff,
+        questionOrder: formData.questionOrder,
         created: Date.now()
       };
 
@@ -246,6 +250,45 @@ const CreateAssignment = () => {
                             max="60"
                             className="w-full px-4 py-3 bg-slate-800/50 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-300"
                           />
+                        </div>
+                      </div>
+
+                      {/* Advanced Settings */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <div className="bg-slate-800/50 p-4 rounded-xl border border-gray-700">
+                          <label className="flex text-white font-semibold mb-3 items-center justify-between">
+                            <span className="flex items-center text-sm">
+                              <FaInfoCircle className="mr-2 text-cyan-400" />
+                              Force Transcriptions Off
+                            </span>
+                            <label className="switch">
+                              <input
+                                type="checkbox"
+                                name="forceTranscriptionsOff"
+                                checked={formData.forceTranscriptionsOff}
+                                onChange={(e) => setFormData(prev => ({...prev, forceTranscriptionsOff: e.target.checked}))}
+                              />
+                              <span className="slider round"></span>
+                            </label>
+                          </label>
+                          <p className="text-gray-400 text-sm">Prevent students from viewing question text</p>
+                        </div>
+                        
+                        <div className="bg-slate-800/50 p-4 rounded-xl border border-gray-700">
+                          <label className="block text-white font-semibold mb-3 flex items-center text-sm">
+                            <FaInfoCircle className="mr-2 text-cyan-400" />
+                            Question Execution Sequence
+                          </label>
+                          <select
+                            name="questionOrder"
+                            value={formData.questionOrder}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2 bg-slate-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                          >
+                            <option value="up_to_students">Up to Students</option>
+                            <option value="in_order">In Order</option>
+                            <option value="random">Randomized</option>
+                          </select>
                         </div>
                       </div>
                     </form>

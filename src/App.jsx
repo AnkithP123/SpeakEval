@@ -27,7 +27,7 @@ import Download from "./pages/Download";
 import TeacherVerifyPage from "./pages/TeacherVerifyPage";
 import CreatePractice from "./pages/CreatePractice";
 import Practice from "./pages/Practice";
-import PracticeExam from "./pages/PracticeExam";
+import UnifiedPracticeExam from "./pages/UnifiedPracticeExam";
 import RegisterPage from "./pages/RegisterPage";
 import GradeBotCreator from "./pages/GradeBotCreator";
 import ResetPasswordPage from "./pages/ResetPassword";
@@ -190,7 +190,7 @@ function App() {
             }
           />
           <Route path="/practice" element={<Practice />} />
-          <Route path="/practice-exam" element={<PracticeExam />} />
+          <Route path="/practice-exam" element={<UnifiedPracticeExam />} />
           <Route
             path="/practice-exams"
             element={

@@ -6,7 +6,7 @@ import AssignmentDetail from './components/AssignmentDetail';
 import CreateClass from './components/CreateClass';
 import JoinClass from './components/JoinClass';
 import CreateAssignment from './components/CreateAssignment';
-import TakeAssignment from './components/TakeAssignment';
+import UnifiedPracticeExam from '../pages/UnifiedPracticeExam';
 import GradingView from './components/GradingView';
 import StudentList from './components/StudentList';
 import ClassroomLogin from './components/ClassroomLogin';
@@ -73,7 +73,7 @@ const ClassroomApp = () => {
                       
                       <Route path="/:classId/assignments/:assignmentId/take" element={
                         <AuthRequired>
-                          <TakeAssignment />
+                          <UnifiedPracticeExam />
                         </AuthRequired>
                       } />
                       
