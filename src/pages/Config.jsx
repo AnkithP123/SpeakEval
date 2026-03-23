@@ -356,7 +356,7 @@ const Config = ({
   const handleDataAvailable = (event) => {
     if (event.data.size > 0) {
       const recordedQuestion = URL.createObjectURL(event.data);
-      setQuestions((prevQuestions) => [...prevQuestions, recordedQuestion]);
+      setQuestions((prevQuestions) => [...prevQuestions, { id: crypto.randomUUID(), url: recordedQuestion, isNew: true }]);
     }
   };
 
@@ -377,7 +377,7 @@ const Config = ({
               (event) => {
                 if (event.data.size > 0) {
                   const recordedClip = URL.createObjectURL(event.data);
-                  setPromptClips((prevClips) => [...prevClips, recordedClip]);
+                  setPromptClips((prevClips) => [...prevClips, { id: crypto.randomUUID(), url: recordedClip, isNew: true }]);
                 }
               },
             );
@@ -944,7 +944,8 @@ const Config = ({
           .filter((url) => url !== null);
 
         if (audioUrls.length > 0) {
-          setQuestions((prevQuestions) => [...prevQuestions, ...audioUrls]);
+          const newQuestionObjs = audioUrls.map(url => ({ id: crypto.randomUUID(), url, isNew: true }));
+          setQuestions((prevQuestions) => [...prevQuestions, ...newQuestionObjs]);
           toast.success(
             `Successfully added ${audioUrls.length} audio questions`,
           );
@@ -1074,7 +1075,7 @@ const Config = ({
             url = URL.createObjectURL(blob);
           }
           if (url) {
-            loadedPromptClips.push(url);
+            loadedPromptClips.push({ id: question.id || crypto.randomUUID(), url, isNew: false });
           }
         }
         setPromptClips(loadedPromptClips);
@@ -1105,20 +1106,25 @@ const Config = ({
     if (autofillOptions.questions && config.questions) {
       // Only load questions if not Simulated_Conversation (those are loaded as prompt clips above)
       if (config.configType !== "Simulated_Conversation") {
-        config.questions.map(async (question) => {
-          let url;
-          if (question.audioUrl) {
-            url = question.audioUrl;
-          } else if (question.audio) {
-            const blob = await fetch(
-              `data:audio/wav;base64,${question.audio}`,
-            ).then((res) => res.blob());
-            url = URL.createObjectURL(blob);
+        const loadQuestions = async () => {
+          const loadedQuestions = [];
+          for (const question of config.questions) {
+            let url;
+            if (question.audioUrl) {
+              url = question.audioUrl;
+            } else if (question.audio) {
+              const blob = await fetch(
+                `data:audio/wav;base64,${question.audio}`,
+              ).then((res) => res.blob());
+              url = URL.createObjectURL(blob);
+            }
+            if (url) {
+              loadedQuestions.push({ id: question.id || crypto.randomUUID(), url, isNew: false });
+            }
           }
-          if (url) {
-            setQuestions((prevQuestions) => [...prevQuestions, url]);
-          }
-        });
+          setQuestions(loadedQuestions);
+        };
+        loadQuestions();
       }
     }
 
@@ -1245,13 +1251,16 @@ const Config = ({
 
       if (isUpdate) {
         toast.success("Updating configuration...");
+        
+        const filesToUpload = configType === "Simulated_Conversation" ? promptClips : questions;
+        const questionIdsArr = filesToUpload.map(q => q.id);
 
         const updateResponse = await fetch(
           `https://www.server.speakeval.org/updateconfig?id=${id}&pin=${userId}&rubric=${encodeURIComponent(
             rubricString,
           )}&limit=${maxTime}&language=${language}&configType=${configType}&instructions=${encodeURIComponent(
             instructionsString,
-          )}`,
+          )}&questionIds=${encodeURIComponent(JSON.stringify(questionIdsArr))}`,
           {
             method: "POST",
           },
@@ -1265,17 +1274,19 @@ const Config = ({
 
         toast.success("Config updated successfully, uploading audio files...");
 
-        // Upload files based on config type
-        const filesToUpload =
-          configType === "Simulated_Conversation" ? promptClips : questions;
-        const totalFiles = filesToUpload.length;
+        const newFiles = filesToUpload.filter(q => q.isNew);
+        const totalFiles = newFiles.length || 1;
+        let uploadedCount = 0;
 
         for (let i = 0; i < filesToUpload.length; i++) {
-          const res = await fetch(filesToUpload[i]);
+          const fileObj = filesToUpload[i];
+          if (!fileObj.isNew) continue;
+
+          const res = await fetch(fileObj.url);
           const blob = await res.blob();
 
           const uploadUrlResponse = await fetch(
-            `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}`,
+            `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}&questionId=${fileObj.id}`,
             {
               method: "GET",
             },
@@ -1319,26 +1330,29 @@ const Config = ({
             throw new Error(
               questionResult.error ||
                 `Failed to upload ${
-                  configType === "Simulated_Conversation"
-                    ? "prompt"
-                    : "question"
+                  configType === "Simulated_Conversation" ? "prompt" : "question"
                 } ${i + 1}`,
             );
           }
 
-          setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
+          uploadedCount++;
+          setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
         }
 
         toast.success("Question Set updated successfully");
         setIsConfigRegistered(true);
       } else {
         console.log("Registering new configuration...");
+        
+        const filesToUpload = configType === "Simulated_Conversation" ? promptClips : questions;
+        const questionIdsArr = filesToUpload.map(q => q.id);
+
         const configResponse = await fetch(
           `https://www.server.speakeval.org/createconfig?pin=${userId}&id=${id}&rubric=${encodeURIComponent(
             rubricString,
           )}&limit=${maxTime}&language=${language}&configType=${configType}&instructions=${encodeURIComponent(
             instructionsString,
-          )}`,
+          )}&questionIds=${encodeURIComponent(JSON.stringify(questionIdsArr))}`,
           {
             method: "POST",
           },
@@ -1352,13 +1366,15 @@ const Config = ({
 
         toast.success("Question set registered. Uploading audio files...");
 
-        // Upload files based on config type
-        const filesToUpload =
-          configType === "Simulated_Conversation" ? promptClips : questions;
-        const totalFiles = filesToUpload.length;
+        const newFiles = filesToUpload.filter(q => q.isNew);
+        const totalFiles = newFiles.length || 1;
+        let uploadedCount = 0;
 
         for (let i = 0; i < filesToUpload.length; i++) {
-          const res = await fetch(filesToUpload[i]);
+          const fileObj = filesToUpload[i];
+          if (!fileObj.isNew) continue;
+
+          const res = await fetch(fileObj.url);
           const blob = await res.blob();
 
           const base64Audio = await new Promise((resolve) => {
@@ -1371,7 +1387,7 @@ const Config = ({
           });
 
           const uploadUrlResponse = await fetch(
-            `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}`,
+            `https://www.server.speakeval.org/get-upload-url?pin=${userId}&config=${id}&index=${i}&questionId=${fileObj.id}`,
             {
               method: "GET",
             },
@@ -1415,14 +1431,13 @@ const Config = ({
             throw new Error(
               questionResult.error ||
                 `Failed to upload ${
-                  configType === "Simulated_Conversation"
-                    ? "prompt"
-                    : "question"
+                  configType === "Simulated_Conversation" ? "prompt" : "question"
                 } ${i + 1}`,
             );
           }
 
-          setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
+          uploadedCount++;
+          setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
         }
 
         cuteAlert({
@@ -1961,7 +1976,7 @@ const Config = ({
                                 <div className="bg-black/30 p-3 rounded-lg border border-cyan-500/30">
                                   <audio
                                     controls
-                                    src={clip}
+                                    src={clip.url}
                                     style={{
                                       backgroundColor: "transparent",
                                       border: "none",
@@ -2082,7 +2097,7 @@ const Config = ({
                           >
                             <audio
                               controls
-                              src={question}
+                              src={question.url}
                               className="mr-2"
                               style={{
                                 backgroundColor: "transparent",

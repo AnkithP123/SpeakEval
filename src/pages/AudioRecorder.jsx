@@ -43,6 +43,7 @@ export default function AudioRecorder() {
   const [allowRepeat, setAllowRepeat] = useState(true);
   const [timeLimit, setTimeLimit] = useState(-1); // Time limit in seconds (-1 means no limit)
   const [remainingTime, setRemainingTime] = useState(-1); // Current remaining time in seconds
+  const [currentQuestionId, setCurrentQuestionId] = useState(null); // The UUID of the current question
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [examStarted, setExamStarted] = useState(false); // Track when exam has actually started
   const [finishedRecording, setFinishedRecording] = useState(false);
@@ -577,7 +578,12 @@ export default function AudioRecorder() {
           roomRestarted,
           newRoomCode,
           newToken,
+          currentQuestionId,
         } = payload;
+
+        if (currentQuestionId) {
+          setCurrentQuestionId(currentQuestionId);
+        }
 
         // Update time limit if provided (only if recording hasn't finished)
         if (timeLimit !== undefined) {
@@ -2512,7 +2518,7 @@ export default function AudioRecorder() {
     try {
       // First, get a presigned URL for upload
       const uploadUrlResponse = await fetch(
-        `https://www.server.speakeval.org/get-recording-upload-url?token=${token}`,
+        `https://www.server.speakeval.org/get-recording-upload-url?token=${token}${currentQuestionId ? `&questionId=${currentQuestionId}` : ""}`,
         {
           method: "GET",
         },

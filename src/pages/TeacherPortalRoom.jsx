@@ -191,90 +191,86 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
           Number.parseInt(baseCode + (i + 1).toString().padStart(3, "0"))
       );
 
-      // Step 2: Fetch ALL question data in parallel
+      // Step 2: Fetch ALL question data in parallel natively!
       let completedRequests = 0;
       const totalRequests = questionCodes.length * 2;
 
       const allResults = [];
       const allQuestionAudioUrls = {}; // Collect questionAudioUrls from all responses
       
-      for (let i = 0; i < questionCodes.length; i++) {
-        const questionCode = questionCodes[i];
+      const fetchPromises = questionCodes.map(async (questionCode) => {
         try {
-          const dataResponse = await fetch(
-            `https://www.server.speakeval.org/downloadall?code=${questionCode}&token=${localStorage.getItem(
-              "token"
-            )}`,
-            {
-              headers: {
-                "Cache-Control": "no-store",
-                Pragma: "no-cache",
-                Expires: "0",
-              },
-            }
-          );
-          let dataResponseJson = await dataResponse.json();
-          if (dataResponseJson.error) {
-            toast.error(dataResponseJson.error);
-            continue;
-          }
-          if (("" + questionCode).slice(-3) === "001") {
-            setInfo(dataResponseJson.info || {});
-          }
-          
-          // Collect questionAudioUrls from this response (merge into master object)
-          if (dataResponseJson.questionAudioUrls && typeof dataResponseJson.questionAudioUrls === 'object') {
-            Object.assign(allQuestionAudioUrls, dataResponseJson.questionAudioUrls);
-          }
-          // if (!config.name) {
-          //   console.log("Fetching config for question:", dataResponseJson);
-          //   let configResponse = await fetch(
-          //     `https://www.server.speakeval.org/getconfig?name=${
-          //       dataResponseJson.config
-          //     }&pin=${localStorage.getItem("token")}`
-          //   );
-          //   let configData = await configResponse.json();
-          //   if (configData.error) {
-          //     toast.error(configData.error);
-          //   }
-          //   setConfig(configData);
-          //   // console.log(
-          //   //   "Config loaded: " +
-          //   //     JSON.stringify(configData) +
-          //   //     " Question Code: " +
-          //   //     questionCode
-          //   // );
-          // }
-          const cheatersResponse = await fetch(
-            `https://www.server.speakeval.org/get_cheaters?token=${localStorage.getItem(
-              "token"
-            )}&code=${questionCode}`
-          );
-
-          const [data, cheatersData] = await Promise.all([
-            dataResponseJson,
-            cheatersResponse.json(),
+          // Fire both the data download and cheater scrape contemporaneously
+          const [dataResponse, cheatersResponse] = await Promise.all([
+            fetch(
+              `https://www.server.speakeval.org/downloadall?code=${questionCode}&token=${localStorage.getItem(
+                "token"
+              )}`,
+              {
+                headers: {
+                  "Cache-Control": "no-store",
+                  Pragma: "no-cache",
+                  Expires: "0",
+                },
+              }
+            ),
+            fetch(
+              `https://www.server.speakeval.org/get_cheaters?token=${localStorage.getItem(
+                "token"
+              )}&code=${questionCode}`
+            )
           ]);
 
-          completedRequests += 2;
+          const data = await dataResponse.json();
+          let cheatersData = { cheaters: [] };
+          try {
+            cheatersData = await cheatersResponse.json();
+          } catch(e) {}
 
-          allResults.push({
+          return {
             questionCode,
             data: data.error ? null : data,
             cheaters: cheatersData.cheaters || [],
-          });
+            error: !!data.error,
+            errorMessage: data.error
+          };
         } catch (error) {
           console.error(
             `❌ Error fetching data for question ${questionCode}:`,
             error
           );
-          completedRequests += 2;
-          allResults.push({
+          return {
             questionCode,
             data: null,
             cheaters: [],
-          });
+            error: true
+          };
         }
+      });
+
+      const results = await Promise.all(fetchPromises);
+
+      for (const res of results) {
+        completedRequests += 2; // Keep tracker for legacy refs
+        if (res.error && res.errorMessage) {
+          toast.error(res.errorMessage);
+          continue;
+        }
+
+        if (("" + res.questionCode).slice(-3) === "001" && res.data) {
+          setInfo(res.data.info || {});
+        }
+        
+        // Collect questionAudioUrls from this response (merge into master object)
+        if (res.data && res.data.questionAudioUrls && typeof res.data.questionAudioUrls === 'object') {
+          Object.assign(allQuestionAudioUrls, res.data.questionAudioUrls);
+        }
+
+        allResults.push({
+          questionCode: res.questionCode,
+          data: res.data,
+          cheaters: res.cheaters,
+        });
       }
 
       // Initialize question audio cache with all collected URLs (once after all requests)
@@ -297,10 +293,13 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
         completeStore.cheatingData[questionCode] = cheaters;
 
         if (data && data.participants) {
+          // Use optimally grouped questionData if present, fallback to participant[0] (legacy API payloads)
+          const qData = data.questionData || data.participants[0] || {};
+          
           completeStore.questionDetails[questionCode] = {
             questionText:
-              data.participants[0]?.questionText || "No question available",
-            question: data.participants[0]?.question || "",
+              qData.questionText || "No question available",
+            question: qData.question || "",
             rubric: data.rubric,
             rubric2: data.rubric2,
           };
@@ -357,6 +356,9 @@ function TeacherPortalRoom({ initialRoomCode, pin }) {
 
             completeStore.students[studentName].responses[questionCode] = {
               ...participant,
+              questionText: qData.questionText,
+              questionAudioUrl: qData.questionAudioUrl,
+              promptAudioUrls: qData.promptAudioUrls,
               questionCode: questionCode,
               studentName: studentName,
               cheatingData: cheaters.filter((c) => c.name === studentName),
