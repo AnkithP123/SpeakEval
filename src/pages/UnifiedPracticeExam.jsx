@@ -17,6 +17,7 @@ const UnifiedPracticeExam = () => {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [examCompleted, setExamCompleted] = useState(false);
+  const [isTeacher, setIsTeacher] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -27,6 +28,7 @@ const UnifiedPracticeExam = () => {
             headers: { Authorization: `Bearer ${effectiveToken}` }
           });
           const assignment = response.data?.assignment || response.data;
+          setIsTeacher(response.data?.isTeacher || false);
           setExamData({
             title: assignment.title,
             description: assignment.description,
@@ -67,6 +69,11 @@ const UnifiedPracticeExam = () => {
 
   const handleComplete = async (recordings) => {
     if (isClassroom) {
+      if (isTeacher) {
+        toast.success('Assignment Preview completed successfully! (No submission saved)');
+        navigate(`/classroom/${classId}`);
+        return;
+      }
       setSubmitting(true);
       try {
         const effectiveToken = localStorage.getItem('token') || localStorage.getItem('classroom_token');
@@ -108,7 +115,8 @@ const UnifiedPracticeExam = () => {
         toast.success('Assignment submitted successfully!');
         navigate(`/classroom/${classId}`);
       } catch (error) {
-        toast.error('Failed to submit assignment. Please try again.');
+        const errorMsg = error.response?.data?.error || 'Failed to submit assignment. Please try again.';
+        toast.error(errorMsg);
         setSubmitting(false);
       }
     } else {
