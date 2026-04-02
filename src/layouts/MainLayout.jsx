@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { ToastContainer } from "react-toastify";
 import { Analytics } from "@vercel/analytics/react";
@@ -46,6 +46,9 @@ if (isMobile) {
 }
 
 function MainLayout({ set, set2, set3, set4 }) {
+  const location = useLocation();
+  const isClassroom = location.pathname.startsWith('/classroom');
+
   return (
     <div className="relative min-h-screen flex flex-col bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 custom-scrollbar">
       {/* Animated background elements */}
@@ -56,7 +59,7 @@ function MainLayout({ set, set2, set3, set4 }) {
       </div>
 
       <Analytics />
-      <Navbar setVar={set} setVar2={set2} setVar3={set3} setVar4={set4} />
+      {!isClassroom && <Navbar setVar={set} setVar2={set2} setVar3={set3} setVar4={set4} />}
       <div className="flex-grow relative z-10 pt-20">
         <Outlet />
       </div>

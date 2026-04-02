@@ -34,12 +34,12 @@ const ClassroomNavbar = () => {
     // Get user from localStorage - check both main site and classroom authentication
     const mainSiteUsername = localStorage.getItem('username');
     const classroomUserStr = localStorage.getItem('classroom_user');
-    
+
     if (classroomUserStr) {
       try {
         const classroomUser = JSON.parse(classroomUserStr);
         if (classroomUser.isAuthenticated && classroomUser.username) {
-          setUser({ 
+          setUser({
             username: classroomUser.username,
             userType: classroomUser.userType,
             isTeacher: classroomUser.userType === 'teacher',
@@ -51,7 +51,7 @@ const ClassroomNavbar = () => {
         console.error('Error parsing classroom user:', error);
       }
     }
-    
+
     // Fallback to main site authentication
     if (mainSiteUsername) {
       setUser({ username: mainSiteUsername, userType: 'teacher', isTeacher: true });
@@ -61,23 +61,23 @@ const ClassroomNavbar = () => {
   useEffect(() => {
     // Initial load
     updateUserFromStorage();
-    
+
     // Listen for storage changes (when user logs in/out)
     const handleStorageChange = (e) => {
       if (e.key === 'classroom_user' || e.key === 'username') {
         updateUserFromStorage();
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
-    
+
     // Also listen for custom events (for same-tab updates)
     const handleUserUpdate = () => {
       updateUserFromStorage();
     };
-    
+
     window.addEventListener('userUpdated', handleUserUpdate);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('userUpdated', handleUserUpdate);
@@ -115,12 +115,12 @@ const ClassroomNavbar = () => {
     localStorage.removeItem('classroom_token');
     localStorage.removeItem('speakeval_student_token');
     localStorage.removeItem('speakeval_room_session');
-    
+
     // Clear all cookies using centralized utility
     cookieUtils.deleteCookie('auth_token', { path: '/' });
     cookieUtils.deleteCookie('token', { path: '/' });
     cookieUtils.deleteCookie('classroom_token', { path: '/' });
-    
+
     // Try to clear httpOnly cookies via server endpoint
     try {
       await fetch('https://www.server.speakeval.org/logout', {
@@ -133,10 +133,10 @@ const ClassroomNavbar = () => {
     } catch (error) {
       console.log('Server logout endpoint not available, continuing with client-side cleanup');
     }
-    
+
     // Dispatch custom event to update navbar
     window.dispatchEvent(new CustomEvent('userUpdated'));
-    
+
     // Navigate to home page
     window.location.href = '/';
   };
@@ -147,11 +147,10 @@ const ClassroomNavbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
           ? "bg-black/80 backdrop-blur-md border-b border-cyan-500/30"
           : "bg-gradient-to-r from-blue-900/90 to-purple-900/90 backdrop-blur-sm"
-      }`}
+        }`}
       style={{ fontFamily: "Montserrat" }}
     >
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
@@ -179,7 +178,7 @@ const ClassroomNavbar = () => {
                   textShadow: "0 0 15px rgba(80, 200, 255, 0.5)",
                 }}
               >
-                SpeakEval
+                peakEval
               </span>
             </Link>
           </div>
@@ -188,39 +187,40 @@ const ClassroomNavbar = () => {
           <div className="hidden md:flex items-center space-x-6">
             <Link
               to="/classroom"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                isActive('/classroom')
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${isActive('/classroom')
                   ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30'
                   : 'text-cyan-300 hover:text-white hover:bg-white/10'
-              }`}
+                }`}
             >
               <FaHome className="w-4 h-4" />
               <span>Dashboard</span>
             </Link>
-            
-            <Link
-              to="/classroom/create"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                isActive('/classroom/create')
-                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30'
-                  : 'text-cyan-300 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <FaPlus className="w-4 h-4" />
-              <span>Create Class</span>
-            </Link>
-            
-            <Link
-              to="/classroom/join"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                isActive('/classroom/join')
-                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30'
-                  : 'text-cyan-300 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <FaUsers className="w-4 h-4" />
-              <span>Join Class</span>
-            </Link>
+
+            {(!user || isTeacher) && (
+              <Link
+                to="/classroom/create"
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${isActive('/classroom/create')
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30'
+                    : 'text-cyan-300 hover:text-white hover:bg-white/10'
+                  }`}
+              >
+                <FaPlus className="w-4 h-4" />
+                <span>Create Class</span>
+              </Link>
+            )}
+
+            {(!user || !isTeacher) && (
+              <Link
+                to="/classroom/join"
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${isActive('/classroom/join')
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30'
+                    : 'text-cyan-300 hover:text-white hover:bg-white/10'
+                  }`}
+              >
+                <FaUsers className="w-4 h-4" />
+                <span>Join Class</span>
+              </Link>
+            )}
           </div>
 
           {/* User Menu */}
@@ -233,19 +233,17 @@ const ClassroomNavbar = () => {
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     onMouseEnter={() => setHoverButton(true)}
                     onMouseLeave={() => setHoverButton(false)}
-                    className={`relative overflow-hidden text-white text-base rounded-md px-5 py-2.5 flex items-center transition-all duration-300 ${
-                      hoverButton || dropdownOpen
+                    className={`relative overflow-hidden text-white text-base rounded-md px-5 py-2.5 flex items-center transition-all duration-300 ${hoverButton || dropdownOpen
                         ? "bg-gradient-to-r from-cyan-500 to-purple-600 shadow-lg shadow-cyan-500/30"
                         : "bg-gradient-to-r from-cyan-600/50 to-purple-700/50"
-                    }`}
+                      }`}
                   >
                     <span className="relative z-10 flex items-center">
                       <FaUser className="w-4 h-4 mr-2" />
                       {user.username}
                       <svg
-                        className={`ml-2 h-5 w-5 transition-transform duration-300 ${
-                          dropdownOpen ? "rotate-180" : ""
-                        }`}
+                        className={`ml-2 h-5 w-5 transition-transform duration-300 ${dropdownOpen ? "rotate-180" : ""
+                          }`}
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 20 20"
                         fill="currentColor"
@@ -311,11 +309,10 @@ const ClassroomNavbar = () => {
                 onClick={() => navigate('/login')}
                 onMouseEnter={() => setHoverButton(true)}
                 onMouseLeave={() => setHoverButton(false)}
-                className={`relative overflow-hidden text-white text-base rounded-md px-5 py-2.5 transition-all duration-300 ${
-                  hoverButton
+                className={`relative overflow-hidden text-white text-base rounded-md px-5 py-2.5 transition-all duration-300 ${hoverButton
                     ? "bg-gradient-to-r from-cyan-500 to-purple-600 shadow-lg shadow-cyan-500/30"
                     : "bg-gradient-to-r from-cyan-600/50 to-purple-700/50"
-                }`}
+                  }`}
               >
                 <span className="relative z-10">Login</span>
               </button>
