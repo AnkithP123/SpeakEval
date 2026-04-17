@@ -711,7 +711,9 @@ const Config = ({
       );
 
       if (!response.ok) {
-        throw new Error("Failed to process text. Please try again.");
+        throw new Error(
+          response.error || "Failed to process text. Please try again.",
+        );
       }
       const result = await response.json();
 
